@@ -1,0 +1,41 @@
+name: release-pullrequest
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch Chart.yaml with dummy versions
+        run: |
+          sed -i 's/CHART_VERSION/0.0.0-pr/g' ./chart/Chart.yaml
+          sed -i 's/APP_VERSION/0.0.0-pr/g'   ./chart/Chart.yaml
+          sed -i 's/CHART_VERSION/0.0.0-pr/g'  ./crd-chart/Chart.yaml
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Helm lint crd-chart
+        run: helm lint ./crd-chart
+
+      - name: Helm lint chart
+        run: |
+          helm dependency build ./chart
+          helm lint ./chart
+
+      - name: Dry-run package
+        run: |
+          helm package ./crd-chart --destination ./.helm-packages
+          helm package ./chart     --destination ./.helm-packages
+          echo "Packaged charts:"
+          ls -lh ./.helm-packages/
