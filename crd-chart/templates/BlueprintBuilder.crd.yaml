@@ -1,0 +1,242 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: blueprintbuilders.widgets.templates.krateo.io
+spec:
+  group: widgets.templates.krateo.io
+  names:
+    categories:
+    - widgets
+    - krateo
+    kind: BlueprintBuilder
+    listKind: BlueprintBuilderList
+    plural: blueprintbuilders
+    singular: blueprintbuilder
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              apiRef:
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              resourcesRefs:
+                properties:
+                  items:
+                    items:
+                      properties:
+                        apiVersion:
+                          type: string
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        payload:
+                          type: object
+                          x-kubernetes-preserve-unknown-fields: true
+                        resource:
+                          type: string
+                        slice:
+                          properties:
+                            continue:
+                              type: boolean
+                            offset:
+                              format: int32
+                              type: integer
+                            page:
+                              format: int32
+                              type: integer
+                            perPage:
+                              format: int32
+                              type: integer
+                          required:
+                          - page
+                          - perPage
+                          type: object
+                        verb:
+                          enum:
+                          - POST
+                          - PUT
+                          - PATCH
+                          - DELETE
+                          - GET
+                          type: string
+                      required:
+                      - id
+                      type: object
+                    type: array
+                  slice:
+                    properties:
+                      continue:
+                        type: boolean
+                      offset:
+                        format: int32
+                        type: integer
+                      page:
+                        format: int32
+                        type: integer
+                      perPage:
+                        format: int32
+                        type: integer
+                    required:
+                    - page
+                    - perPage
+                    type: object
+                required:
+                - items
+                type: object
+              resourcesRefsTemplate:
+                items:
+                  properties:
+                    iterator:
+                      type: string
+                    template:
+                      properties:
+                        apiVersion:
+                          type: string
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        payload:
+                          type: object
+                          x-kubernetes-preserve-unknown-fields: true
+                        resource:
+                          type: string
+                        verb:
+                          enum:
+                          - POST
+                          - PUT
+                          - PATCH
+                          - DELETE
+                          - GET
+                          type: string
+                      type: object
+                  type: object
+                type: array
+              widgetData:
+                properties:
+                  availableResources:
+                    description: List of Kubernetes resource types available for use
+                      as nodes in the builder
+                    items:
+                      properties:
+                        apiVersion:
+                          description: Kubernetes API version (e.g. apps/v1, v1)
+                          type: string
+                        category:
+                          description: Resource category for grouping in the palette
+                          enum:
+                          - workloads
+                          - networking
+                          - config
+                          - storage
+                          - rbac
+                          - custom
+                          type: string
+                        icon:
+                          description: FontAwesome icon class name (e.g. fa-cubes)
+                          type: string
+                        kind:
+                          description: Kubernetes resource kind (e.g. Deployment,
+                            Service)
+                          type: string
+                        schema:
+                          description: OpenAPI-style JSON schema for this resource
+                            kind, read from the API server. Properties describe the
+                            spec fields available for configuration.
+                          properties:
+                            description:
+                              type: string
+                            properties:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            required:
+                              items:
+                                type: string
+                              type: array
+                            type:
+                              type: string
+                          type: object
+                          x-kubernetes-preserve-unknown-fields: true
+                      required:
+                      - apiVersion
+                      - category
+                      - kind
+                      type: object
+                    type: array
+                  chartDefaults:
+                    description: Default values for the Helm chart metadata
+                    properties:
+                      appVersion:
+                        description: Default application version
+                        type: string
+                      description:
+                        description: Default chart description
+                        type: string
+                      name:
+                        description: Default chart name
+                        type: string
+                      version:
+                        description: Default chart version
+                        type: string
+                    type: object
+                type: object
+              widgetDataTemplate:
+                items:
+                  properties:
+                    expression:
+                      type: string
+                    forPath:
+                      type: string
+                  type: object
+                type: array
+            required:
+            - widgetData
+            type: object
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
