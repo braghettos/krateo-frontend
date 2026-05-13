@@ -188,7 +188,7 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
 
   if (isLoading) {
     return (
-      <div className={styles.loading}>
+      <div className={styles.loading} data-widget-renderer>
         <Skeleton active />
       </div>
     )
