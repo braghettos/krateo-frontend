@@ -1,7 +1,6 @@
 /* eslint-disable sort-keys/sort-keys-fix */
 /* this rules conflicts with react-query ordering required for correct type inference */
 
-import { useEffect } from 'react'
 import { useInfiniteQuery, useIsFetching } from '@tanstack/react-query'
 
 import { useConfigContext } from '../context/ConfigContext'
@@ -104,26 +103,20 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
     },
   })
 
-  // Auto-pagination: when the latest page signals hasNextPage, fire the
-  // next page fetch in the background without waiting for user interaction.
-  // Together with the latest-page-wins select() above, this drives the
-  // progressive-rendering UX: widget renders page 1 immediately, then page 2
-  // replaces it when ready (with 2x more data), and so on until the cumulative
-  // slice covers the full data set and slice.continue becomes false.
-  useEffect(() => {
-    if (
-      queryResult.hasNextPage
-      && !queryResult.isFetchingNextPage
-      && !queryResult.isFetching
-    ) {
-      void queryResult.fetchNextPage()
-    }
-  }, [
-    queryResult.hasNextPage,
-    queryResult.isFetchingNextPage,
-    queryResult.isFetching,
-    queryResult.fetchNextPage,
-  ])
+  // NOTE: Path B (task #188) — the unconditional auto-pagination useEffect
+  // that previously lived here was deleted. It fired `fetchNextPage` on
+  // every commit where `hasNextPage===true`, walking ALL pages eagerly
+  // regardless of viewport. This raced with — and bypassed —
+  // ScrollPagination's intersection-observer-driven advance
+  // (src/components/Pagination/ScrollPagination.tsx:25-29), making the
+  // intersection-observer dead code. With the eager effect gone, page
+  // advance is exclusively driven by ScrollPagination when its sentinel
+  // enters the viewport, so list-widget cold paint only fetches page 1
+  // instead of fanning out N*perPage card /calls upfront.
+  //
+  // Non-paginating widgets (Page, Panel, Row, Table, Markdown, etc.) are
+  // unaffected: `getNextPageParam` returns undefined immediately for them
+  // and ScrollPagination is only wired around DataGrid in WidgetRenderer.
 
   const resourcesRefsPaths = typeof queryResult.data?.status === 'object'
     ? queryResult.data.status.resourcesRefs?.items?.map((item) => item.path) ?? []
