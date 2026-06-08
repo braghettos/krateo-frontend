@@ -1,0 +1,9 @@
+apiVersion: core.krateo.io/v1alpha1
+kind: CompositionDefinition
+metadata:
+  name: frontend
+  namespace: krateo-system
+spec:
+  chart:
+    url: oci://ghcr.io/braghettos/charts/frontend
+    version: "1.0.10"

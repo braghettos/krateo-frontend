@@ -1,0 +1,357 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "title": "Frontend",
+  "description": "Krateo Frontend blueprint — full-coverage schema (chart 1.0.10).",
+  "additionalProperties": false,
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "title": "Replica count",
+      "default": 1
+    },
+    "image": {
+      "type": "object",
+      "title": "Image",
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string",
+          "title": "Image repository",
+          "default": "ghcr.io/krateoplatformops/frontend"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "title": "Image pull policy",
+          "enum": ["IfNotPresent", "Always", "Never"],
+          "default": "IfNotPresent"
+        },
+        "tag": {
+          "type": "string",
+          "title": "Image tag",
+          "description": "Overrides the image tag whose default is the chart appVersion.",
+          "default": ""
+        }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "title": "Image pull secrets",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "nameOverride": {
+      "type": "string",
+      "title": "Name override",
+      "default": ""
+    },
+    "fullnameOverride": {
+      "type": "string",
+      "title": "Fullname override",
+      "default": ""
+    },
+    "serviceAccount": {
+      "type": "object",
+      "title": "Service account",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "title": "Create service account",
+          "default": true
+        },
+        "automount": {
+          "type": "boolean",
+          "title": "Automount service account token",
+          "default": true
+        },
+        "annotations": {
+          "type": "object",
+          "title": "Service account annotations",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "name": {
+          "type": "string",
+          "title": "Service account name",
+          "default": ""
+        }
+      }
+    },
+    "podAnnotations": {
+      "type": "object",
+      "title": "Pod annotations",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "podLabels": {
+      "type": "object",
+      "title": "Pod labels",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "title": "Pod security context",
+      "default": {}
+    },
+    "securityContext": {
+      "type": "object",
+      "title": "Container security context",
+      "default": {}
+    },
+    "service": {
+      "type": "object",
+      "title": "Service",
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "type": "object",
+          "title": "Service annotations",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "type": {
+          "type": "string",
+          "title": "Service type",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer"],
+          "default": "ClusterIP"
+        },
+        "port": {
+          "type": "integer",
+          "title": "Service port",
+          "default": 8080
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "title": "Ingress",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable ingress",
+          "default": false
+        },
+        "className": {
+          "type": "string",
+          "title": "Ingress class name",
+          "default": ""
+        },
+        "annotations": {
+          "type": "object",
+          "title": "Ingress annotations",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "hosts": {
+          "type": "array",
+          "title": "Ingress hosts",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string",
+                "title": "Host"
+              },
+              "paths": {
+                "type": "array",
+                "title": "Paths",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "title": "Path"
+                    },
+                    "pathType": {
+                      "type": "string",
+                      "title": "Path type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": [
+            {
+              "host": "chart-example.local",
+              "paths": [
+                {
+                  "path": "/",
+                  "pathType": "ImplementationSpecific"
+                }
+              ]
+            }
+          ]
+        },
+        "tls": {
+          "type": "array",
+          "title": "TLS configuration",
+          "items": {
+            "type": "object"
+          },
+          "default": []
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "title": "Resources",
+      "default": {}
+    },
+    "livenessProbe": {
+      "type": "object",
+      "title": "Liveness probe",
+      "default": {
+        "httpGet": {
+          "path": "/",
+          "port": "http"
+        }
+      }
+    },
+    "readinessProbe": {
+      "type": "object",
+      "title": "Readiness probe",
+      "default": {
+        "httpGet": {
+          "path": "/",
+          "port": "http"
+        }
+      }
+    },
+    "autoscaling": {
+      "type": "object",
+      "title": "Autoscaling",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable autoscaling",
+          "default": false
+        },
+        "minReplicas": {
+          "type": "integer",
+          "title": "Minimum replicas",
+          "default": 1
+        },
+        "maxReplicas": {
+          "type": "integer",
+          "title": "Maximum replicas",
+          "default": 100
+        },
+        "targetCPUUtilizationPercentage": {
+          "type": "integer",
+          "title": "Target CPU utilization percentage",
+          "default": 80
+        },
+        "targetMemoryUtilizationPercentage": {
+          "type": "integer",
+          "title": "Target memory utilization percentage"
+        }
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "title": "Node selector",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "tolerations": {
+      "type": "array",
+      "title": "Tolerations",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "affinity": {
+      "type": "object",
+      "title": "Affinity",
+      "default": {}
+    },
+    "config": {
+      "type": "object",
+      "title": "Frontend runtime config",
+      "description": "Runtime configuration rendered into the frontend ConfigMap (API base URLs and loader routes).",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {
+        "SNOWPLOW_API_BASE_URL": {
+          "type": "string",
+          "title": "Snowplow API base URL",
+          "default": "http://localhost:8081"
+        },
+        "AUTHN_API_BASE_URL": {
+          "type": "string",
+          "title": "Authn API base URL",
+          "default": "http://localhost:8082"
+        },
+        "EVENTS_PUSH_API_BASE_URL": {
+          "type": "string",
+          "title": "Events push API base URL",
+          "default": "http://localhost:8083"
+        },
+        "EVENTS_API_BASE_URL": {
+          "type": "string",
+          "title": "Events API base URL",
+          "default": "http://localhost:8083"
+        },
+        "SMITHERY_API_BASE_URL": {
+          "type": "string",
+          "title": "Smithery API base URL",
+          "default": "http://localhost:8088"
+        },
+        "INIT": {
+          "type": "string",
+          "title": "Init route",
+          "default": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system"
+        },
+        "ROUTES_LOADER": {
+          "type": "string",
+          "title": "Routes loader route",
+          "default": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
+        }
+      },
+      "default": {
+        "SNOWPLOW_API_BASE_URL": "http://localhost:8081",
+        "AUTHN_API_BASE_URL": "http://localhost:8082",
+        "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
+        "EVENTS_API_BASE_URL": "http://localhost:8083",
+        "SMITHERY_API_BASE_URL": "http://localhost:8088",
+        "INIT": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system",
+        "ROUTES_LOADER": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
+      }
+    },
+    "env": {
+      "type": "object",
+      "title": "Environment variables",
+      "description": "Free-form extra environment variables for the frontend container.",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "global": {
+      "type": "object",
+      "title": "Global values",
+      "description": "Helm global values (injected when used as a subchart)."
+    }
+  }
+}
