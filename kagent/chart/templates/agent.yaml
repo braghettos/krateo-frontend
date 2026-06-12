@@ -1,0 +1,62 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: krateo-frontend-agent
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: krateo-frontend-agent
+    app.kubernetes.io/part-of: krateo-frontend
+spec:
+  type: Declarative
+  description: >-
+    The Krateo frontend expert: authors Composable Portal widget CRDs (Table, Page, Button, NavMenu, Route, Panel, ...) and knows the SPA. Knows braghettos/frontend + braghettos/krateo-frontend-chart.
+  declarative:
+    deployment:
+      env:
+{{- include "krateo-frontend-agent.genaiEnv" . | nindent 8 }}
+    modelConfig: {{ .Values.modelConfig.name }}
+    stream: true
+    promptTemplate:
+      dataSources:
+        - kind: ConfigMap
+          name: krateo-frontend-agent-prompts-{{ .Values.prompts.language }}
+          alias: prompts
+    systemMessage: |
+      {{`{{include "prompts/frontend_agent"}}`}}
+    tools:
+      - type: McpServer
+        mcpServer:
+          name: kagent-tool-server
+          kind: RemoteMCPServer
+          apiGroup: kagent.dev
+          toolNames:
+            - k8s_get_resources
+            - k8s_get_resource_yaml
+            - k8s_apply_manifest
+      - type: McpServer
+        mcpServer:
+          name: krateo-portal-tools
+          kind: RemoteMCPServer
+          apiGroup: kagent.dev
+{{- if .Values.github.enabled }}
+      - type: McpServer
+        mcpServer:
+          name: {{ .Values.github.mcpServer }}
+          kind: RemoteMCPServer
+          apiGroup: kagent.dev
+          toolNames:
+            - get_file_contents
+            - search_code
+{{- end }}
+    a2aConfig:
+      skills:
+        - id: portal-widgets
+          name: Compose Portal widgets
+          description: Author Composable Portal widget CRs (Table, Page, Button, NavMenu, ...), grounded in the widget CRDs + SPA source.
+          tags: [krateo, frontend, portal, widgets]
+          examples:
+            - Create a Table widget with static data.
+            - Build a dashboard Page with a panel and a navmenu entry.
+    deployment:
+      resources:
+{{- toYaml .Values.resources | nindent 8 }}

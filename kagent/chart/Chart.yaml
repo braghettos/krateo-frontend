@@ -1,0 +1,19 @@
+apiVersion: v2
+name: krateo-frontend-agent
+description: >-
+  The Krateo frontend expert: authors Composable Portal widget CRDs (Table, Page, Button, NavMenu, Route, Panel, ...) and knows the SPA. Knows braghettos/frontend + braghettos/krateo-frontend-chart.
+type: application
+version: 0.1.0
+appVersion: 0.1.0
+home: https://krateo.io
+icon: https://github.com/krateoplatformops/krateo/blob/main/docs/media/logo.svg
+keywords:
+  - krateo
+  - platformops
+  - kagent
+  - ai-agent
+  - frontend
+  - portal
+sources:
+  - https://github.com/braghettos/frontend
+  - https://github.com/braghettos/krateo-frontend-chart

@@ -15,10 +15,18 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: CHART_VERSION
+# Pinned (NOT the CHART_VERSION tag): the frontend widget CRDs version
+# independently of the frontend app chart. The installer pins frontend-crd 1.0.25.
+version: 1.0.25
 
+
+appVersion: 1.0.25
 home: https://krateo.io
-icon: "https://github.com/krateoplatformops/krateo/blob/main/docs/media/logo.svg"
-
+icon: https://github.com/krateoplatformops/krateo/blob/main/docs/media/logo.svg
+keywords:
+  - krateo
+  - platformops
+  - frontend
+  - crd
 sources:
-  - https://github.com/krateoplatformops/frontend-chart
+  - https://github.com/braghettos/frontend
