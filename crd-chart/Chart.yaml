@@ -19,8 +19,14 @@ type: application
 # independently of the frontend app chart. The installer pins frontend-crd 1.0.25.
 version: 1.0.25
 
-home: https://krateo.io
-icon: "https://github.com/krateoplatformops/krateo/blob/main/docs/media/logo.svg"
 
+appVersion: 1.0.25
+home: https://krateo.io
+icon: https://github.com/krateoplatformops/krateo/blob/main/docs/media/logo.svg
+keywords:
+  - krateo
+  - platformops
+  - frontend
+  - crd
 sources:
-  - https://github.com/krateoplatformops/frontend-chart
+  - https://github.com/braghettos/frontend
