@@ -1,0 +1,55 @@
+# Server-driven portal shell
+# Target: a fully CR-defined shell — NavMenu in the sidebar, Notifications in the
+# header, and a Page widget as the content.
+# Expected behavior: the layout renders each slot from its resolved widget endpoint.
+kind: AppShell
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-appshell
+  namespace: krateo-system
+spec:
+  widgetData:
+    sidebar: sidebar-nav
+    headerRight:
+      - header-notifications
+    content: main-page
+  resourcesRefs:
+    items:
+      - id: sidebar-nav
+        allowed: true
+        resource: navmenus
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: sidebar-nav-menu
+        namespace: krateo-system
+        verb: GET
+      - id: header-notifications
+        allowed: true
+        resource: notifications
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: header-notifications
+        namespace: krateo-system
+        verb: GET
+      - id: main-page
+        allowed: true
+        resource: pages
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: home-page
+        namespace: krateo-system
+        verb: GET
+status:
+  widgetData:
+    sidebar: sidebar-nav
+    headerRight:
+      - header-notifications
+    content: main-page
+  resourcesRefs:
+    items:
+      - id: sidebar-nav
+        allowed: true
+        path: "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system"
+      - id: header-notifications
+        allowed: true
+        path: "/call?resource=notifications&apiVersion=widgets.templates.krateo.io/v1beta1&name=header-notifications&namespace=krateo-system"
+      - id: main-page
+        allowed: true
+        path: "/call?resource=pages&apiVersion=widgets.templates.krateo.io/v1beta1&name=home-page&namespace=krateo-system"

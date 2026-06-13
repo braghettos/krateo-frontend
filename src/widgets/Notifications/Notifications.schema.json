@@ -1,0 +1,53 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "Notifications",
+      "description": "Notifications renders the events Server-Sent-Events stream as a bell badge that opens a drawer list. Place it in a header slot of an AppShell.",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["widgetData"],
+      "additionalProperties": false,
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "topic": {
+              "type": "string",
+              "description": "the Server-Sent-Events topic to subscribe to (default `krateo`)"
+            }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

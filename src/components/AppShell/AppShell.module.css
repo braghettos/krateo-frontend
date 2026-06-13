@@ -1,0 +1,79 @@
+.shell {
+  display: flex;
+  height: 100%;
+  overflow: auto;
+  width: 100%;
+}
+
+.sidebar {
+  background-image: linear-gradient(var(--menubgstart-color), var(--menubgend-color));
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 250px;
+}
+
+.logo {
+  border-bottom: 1px solid transparent;
+  flex-shrink: 0;
+  height: 64px;
+  max-height: 64px;
+  overflow: hidden;
+}
+
+.image {
+  padding: var(--spacing-sm);
+}
+
+.sidebarContent {
+  flex-grow: 1;
+  overflow-y: scroll;
+  scrollbar-color: #ccc transparent;
+  scrollbar-width: thin;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
+}
+
+.header {
+  align-items: center;
+  background-color: var(--light-color);
+  border-bottom: solid 1px var(--border-color);
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+  height: 64px;
+  justify-content: space-between;
+  padding: 0 var(--spacing-md);
+}
+
+.headerLeft {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerRight {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+  justify-self: flex-end;
+}
+
+.content {
+  box-sizing: border-box;
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden scroll;
+  padding: var(--spacing-lg) var(--spacing-md);
+  width: 100%;
+}

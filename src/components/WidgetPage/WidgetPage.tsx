@@ -2,18 +2,20 @@ import { useIsFetching } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useLocation, useSearchParams } from 'react-router'
 
+import { useConfigContext } from '../../context/ConfigContext'
 import { useRoutesContext } from '../../context/RoutesContext'
 import Page404 from '../../pages/Page404'
 import Drawer from '../../widgets/Drawer'
 import Modal from '../../widgets/Modal'
-import Header from '../Header'
-import Sidebar from '../Sidebar'
+import AppShell from '../AppShell'
+import Breadcrumb from '../Breadcrumb'
+import Notifications from '../Notifications'
+import UserMenu from '../UserMenu'
 import WidgetRenderer from '../WidgetRenderer'
-
-import styles from './WidgetPage.module.css'
 
 export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: string }) => {
   const location = useLocation()
+  const { config } = useConfigContext()
   const { menuRoutes } = useRoutesContext()
   const [searchParams] = useSearchParams()
   const queryParamWidgetEndpoint = searchParams.get('widgetEndpoint')
@@ -39,17 +41,16 @@ export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: 
   })
 
   return (
-    <div className={styles.widgetPage}>
-      <Sidebar />
-      <div className={styles.container}>
-        <Header breadcrumbVisible={widgetEndpoint !== null} />
-        <div className={styles.content}>
-          {widgetEndpoint || isFetchingRoutes ? <WidgetRenderer key={'content'} widgetEndpoint={widgetEndpoint} /> : <Page404 />}
-        </div>
-      </div>
+    <>
+      <AppShell
+        content={widgetEndpoint || isFetchingRoutes ? <WidgetRenderer key={'content'} widgetEndpoint={widgetEndpoint} /> : <Page404 />}
+        headerLeft={<Breadcrumb />}
+        headerRight={<><Notifications /><UserMenu /></>}
+        sidebar={<WidgetRenderer key={'sidebar'} widgetEndpoint={config!.api.INIT} />}
+      />
       <Drawer />
       <Modal />
-    </div>
+    </>
   )
 }
 
