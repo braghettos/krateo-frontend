@@ -19,9 +19,23 @@
           "required": ["text"],
           "properties": {
             "text": {
-              "description": "the content of the paragraph to be displayed",
+              "description": "the content of the paragraph (the antd Typography children, as text)",
               "type": "string"
-            }
+            },
+            "type": {
+              "type": "string",
+              "enum": ["secondary", "success", "warning", "danger"],
+              "description": "antd Typography type"
+            },
+            "strong": { "type": "boolean", "description": "antd Typography strong" },
+            "italic": { "type": "boolean", "description": "antd Typography italic" },
+            "underline": { "type": "boolean", "description": "antd Typography underline" },
+            "delete": { "type": "boolean", "description": "antd Typography delete (strikethrough)" },
+            "code": { "type": "boolean", "description": "antd Typography code" },
+            "mark": { "type": "boolean", "description": "antd Typography mark (highlight)" },
+            "disabled": { "type": "boolean", "description": "antd Typography disabled" },
+            "copyable": { "type": "boolean", "description": "antd Typography copyable" },
+            "ellipsis": { "type": "boolean", "description": "antd Typography ellipsis" }
           },
           "additionalProperties": false
         },

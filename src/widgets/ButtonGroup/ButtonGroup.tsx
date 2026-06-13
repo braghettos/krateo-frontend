@@ -1,3 +1,5 @@
+import { Space } from 'antd'
+
 import WidgetRenderer from '../../components/WidgetRenderer'
 import type { WidgetProps } from '../../types/Widget'
 import { getEndpointUrl } from '../../utils/utils'
@@ -7,41 +9,40 @@ import type { ButtonGroup as WidgetType } from './ButtonGroup.type'
 
 export type ButtonGroupWidgetData = WidgetType['spec']['widgetData']
 
-const gapMap: Record<NonNullable<ButtonGroupWidgetData['gap']>, React.CSSProperties['gap']> = {
-  'extra-small': 'var(--spacing-xs)',
-  large: 'var(--spacing-lg)',
-  medium: 'var(--spacing-md)',
-  small: 'var(--spacing-sm)',
+// legacy `gap` → antd Space `size`
+const legacyGapToSize: Record<string, 'small' | 'middle' | 'large'> = {
+  'extra-small': 'small',
+  large: 'large',
+  medium: 'middle',
+  small: 'small',
 }
 
-const justifyContentMap: Record< NonNullable<ButtonGroupWidgetData['alignment']>, React.CSSProperties['justifyContent']> = {
+// `alignment` (main-axis justify) has no antd Space prop — kept as a Krateo wrapper concern.
+const justifyContentMap: Record<NonNullable<ButtonGroupWidgetData['alignment']>, React.CSSProperties['justifyContent']> = {
   center: 'center',
   left: 'flex-start',
   right: 'flex-end',
 }
 
 const ButtonGroup = ({ resourcesRefs, uid, widgetData }: WidgetProps<ButtonGroupWidgetData>) => {
-  const { alignment, gap, items } = widgetData
+  const { alignment, direction, items, size, wrap } = widgetData
+  const legacyGap = (widgetData as { gap?: string }).gap
+  const spaceSize = size ?? (legacyGap ? legacyGapToSize[legacyGap] : 'small')
 
   return (
-    <div
-      className={styles.inlineGroup}
-      key={uid}
-      style={{
-        gap: gapMap[gap ?? 'small'],
-        justifyContent: justifyContentMap[alignment ?? 'left'],
-      }}
-    >
-      {items
-        .map(({ resourceRefId }, index) => {
-          const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
-          if (!endpoint) {
-            return null
-          }
+    <div className={styles.inlineGroup} key={uid} style={{ justifyContent: justifyContentMap[alignment ?? 'left'] }}>
+      <Space direction={direction} size={spaceSize} wrap={wrap}>
+        {items
+          .map(({ resourceRefId }, index) => {
+            const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
+            if (!endpoint) {
+              return null
+            }
 
-          return <WidgetRenderer key={`${uid}-${index}`} widgetEndpoint={endpoint} />
-        })
-        .filter(Boolean)}
+            return <WidgetRenderer key={`${uid}-${index}`} widgetEndpoint={endpoint} />
+          })
+          .filter(Boolean)}
+      </Space>
     </div>
   )
 }
