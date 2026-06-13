@@ -13,6 +13,18 @@ export interface Form {
      */
     widgetData: {
       /**
+       * antd Form layout
+       */
+      layout?: 'horizontal' | 'vertical' | 'inline'
+      /**
+       * antd Form size
+       */
+      size?: 'small' | 'middle' | 'large'
+      /**
+       * antd Form disabled (disables all fields)
+       */
+      disabled?: boolean
+      /**
        * the actions of the widget
        */
       actions: {

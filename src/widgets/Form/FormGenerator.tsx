@@ -28,6 +28,10 @@ type FormGeneratorType = {
   dependencies?: FormWidgetData['dependencies']
   objectFields?: FormWidgetData['objectFields']
   initialValues?: FormWidgetData['initialValues']
+  // antd Form props
+  layout?: 'horizontal' | 'vertical' | 'inline'
+  size?: 'small' | 'middle' | 'large'
+  disabled?: boolean
 }
 
 const getOptionalCount = (node: JSONSchema4, requiredFields: string[]) => {
@@ -80,12 +84,15 @@ const FormGenerator = ({
   autocomplete,
   dependencies,
   descriptionTooltip = false,
+  disabled,
   formId,
   initialValues,
+  layout,
   objectFields,
   onSubmit,
   resourcesRefs,
   schema,
+  size,
 }: FormGeneratorType) => {
   const [form] = Form.useForm()
   const requiredFields: string[] = Array.isArray(schema.required) ? schema.required : []
@@ -622,9 +629,10 @@ const FormGenerator = ({
               }
               <Form
                 autoComplete='off'
+                disabled={disabled}
                 form={form}
                 id={formId}
-                layout='vertical'
+                layout={layout ?? 'vertical'}
                 name='formGenerator'
                 onFinish={(values: Record<string, unknown>) => {
                   onSubmit(values).catch((error) => {
@@ -636,6 +644,7 @@ const FormGenerator = ({
                   event.preventDefault()
                   setInitialValues()
                 }}
+                size={size}
               >
                 {parseData(schema)}
               </Form>
