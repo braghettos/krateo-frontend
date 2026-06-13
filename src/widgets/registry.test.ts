@@ -1,7 +1,11 @@
 import yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
 
-import { widgetRegistry } from './registry'
+import './load'
+
+import { getWidgetRegistry } from './registry'
+
+const widgetRegistry = getWidgetRegistry()
 
 /** Raw contents of every example fixture, loaded through Vite's glob import. */
 const exampleFiles = import.meta.glob<string>('../examples/widgets/**/*.example.yaml', {

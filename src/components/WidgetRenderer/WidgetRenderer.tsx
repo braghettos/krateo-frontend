@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import useCatchError from '../../hooks/useCatchError'
 import { useWidgetQuery } from '../../hooks/useWidgetQuery'
 import type { Widget } from '../../types/Widget'
-import { widgetRegistry } from '../../widgets/registry'
+import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
 import { WidgetError, WidgetLoading } from '../WidgetStates'
@@ -44,7 +44,7 @@ const parseWidget = (
     uid: metadata.uid,
   }
 
-  const module = widgetRegistry[kind]
+  const module = getWidgetModule(kind)
 
   if (!module) {
     throw new Error(`Unknown widget kind: ${kind}`)

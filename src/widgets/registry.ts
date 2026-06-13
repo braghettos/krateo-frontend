@@ -1,17 +1,18 @@
 import type { WidgetModule } from './widget-module'
 
 /**
- * Auto-discovered widget registry. Every `src/widgets/<Kind>/index.ts` whose
- * default export is a `WidgetModule` is registered by its `kind`.
+ * Leaf registry: a plain `kind → WidgetModule` map plus accessors. This module
+ * imports NOTHING heavy, so `WidgetRenderer` can depend on it without a cycle.
  *
- * `Drawer` and `Modal` also have an `index.ts`, but their default export is the
- * component itself (no `.kind`), so the type guard below excludes them — they
- * are mounted directly by `WidgetPage`, not rendered through the registry.
+ * Population happens in `./load` (the eager glob lives there, outside the
+ * render cycle). `./load` is imported once at app bootstrap (`App.tsx`).
  */
-const modules = import.meta.glob<WidgetModule>('./*/index.ts', { eager: true, import: 'default' })
+const registry = new Map<string, WidgetModule>()
 
-export const widgetRegistry: Record<string, WidgetModule> = Object.fromEntries(
-  Object.values(modules)
-    .filter((module): module is WidgetModule => !!module && typeof module.kind === 'string')
-    .map((module) => [module.kind, module])
-)
+export const registerWidget = (module: WidgetModule): void => {
+  registry.set(module.kind, module)
+}
+
+export const getWidgetModule = (kind: string): WidgetModule | undefined => registry.get(kind)
+
+export const getWidgetRegistry = (): Record<string, WidgetModule> => Object.fromEntries(registry)

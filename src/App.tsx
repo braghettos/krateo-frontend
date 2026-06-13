@@ -12,6 +12,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router'
 import '../index.css'
 import './theme/variables.css'
 import 'reactflow/dist/style.css'
+import './widgets/load'
 
 import styles from './App.module.css'
 import FiltersProvider from './components/FiltesProvider/FiltersProvider'
@@ -24,9 +25,9 @@ library.add(fab, fas, far)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30 * 1000,
       refetchOnWindowFocus: false,
       retry: false,
+      staleTime: 30 * 1000,
     },
   },
 })
