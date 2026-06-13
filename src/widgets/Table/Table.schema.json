@@ -69,9 +69,9 @@
                 "additionalProperties": false
               }
             },
-            "data": {
+            "dataSource": {
               "type": "array",
-              "description": "Array of table rows",
+              "description": "antd Table dataSource — the table rows (renamed from `data`; `data` still accepted for back-compat)",
               "items": {
                 "type": "array",
                 "description": "Row represented as array of cells",
@@ -133,10 +133,24 @@
                 }
               }
             },
-            "pageSize": {
-              "description": "number of rows displayed per page",
-              "type": "integer"
+            "pagination": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "antd Table pagination config (subproperties mirror antd). Replaces the flat `pageSize`, which is still accepted for back-compat.",
+              "properties": {
+                "pageSize": { "type": "integer", "description": "number of rows per page" },
+                "defaultPageSize": { "type": "integer", "description": "default page size" },
+                "hideOnSinglePage": { "type": "boolean", "description": "hide the pager when there is a single page" },
+                "simple": { "type": "boolean", "description": "use the simple pager" },
+                "position": {
+                  "type": "array",
+                  "description": "pager position(s)",
+                  "items": { "type": "string", "enum": ["topLeft", "topCenter", "topRight", "bottomLeft", "bottomCenter", "bottomRight"] }
+                }
+              }
             },
+            "bordered": { "type": "boolean", "description": "antd Table bordered" },
+            "size": { "type": "string", "enum": ["large", "middle", "small"], "description": "antd Table size" },
             "prefix": {
               "description": "it's the filters prefix to get right values",
               "type": "string"

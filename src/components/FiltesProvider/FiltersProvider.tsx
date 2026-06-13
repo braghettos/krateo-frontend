@@ -12,7 +12,7 @@ export type FilterType = {
 }
 
 type FilterMap = Record<string, FilterType[]>
-type TableRow = TableWidgetData['data'][number]
+type TableRow = NonNullable<TableWidgetData['dataSource']>[number]
 type FilterableRow = Record<string, unknown> | TableRow
 
 type FiltersContextType = {

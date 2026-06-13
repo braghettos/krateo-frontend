@@ -27,9 +27,9 @@
               "type": "string",
               "description": "the label shown on the upload control"
             },
-            "fieldName": {
+            "name": {
               "type": "string",
-              "description": "the multipart form field name used for the file (defaults to `file`)"
+              "description": "antd Upload `name` — the multipart form field name for the file (defaults to `file`); legacy `fieldName` still accepted"
             },
             "listType": {
               "type": "string",
