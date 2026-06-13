@@ -1,0 +1,92 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "default": "Statistic",
+      "description": "Statistic highlights a single numeric value",
+      "type": "string"
+    },
+    "spec": {
+      "additionalProperties": false,
+      "properties": {
+        "apiRef": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "namespace"
+          ],
+          "type": "object"
+        },
+        "widgetData": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "title": {
+              "description": "the statistic label",
+              "type": "string"
+            },
+            "value": {
+              "description": "the statistic value",
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
+            "precision": {
+              "description": "the number of decimal places",
+              "type": "integer"
+            },
+            "prefix": {
+              "description": "text shown before the value",
+              "type": "string"
+            },
+            "suffix": {
+              "description": "text shown after the value",
+              "type": "string"
+            }
+          }
+        },
+        "widgetDataTemplate": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expression": {
+                "type": "string"
+              },
+              "forPath": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "widgetData"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "default": "v1beta1",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ],
+  "type": "object"
+}

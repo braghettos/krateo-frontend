@@ -1,0 +1,87 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "default": "Divider",
+      "description": "Divider separates content with a horizontal rule and optional label",
+      "type": "string"
+    },
+    "spec": {
+      "additionalProperties": false,
+      "properties": {
+        "apiRef": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "namespace"
+          ],
+          "type": "object"
+        },
+        "widgetData": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "label": {
+              "description": "optional text shown on the divider",
+              "type": "string"
+            },
+            "orientation": {
+              "description": "where the label sits",
+              "enum": [
+                "left",
+                "right",
+                "center"
+              ],
+              "type": "string"
+            },
+            "dashed": {
+              "description": "render a dashed line",
+              "type": "boolean"
+            },
+            "plain": {
+              "description": "render the label in a plain (non-bold) style",
+              "type": "boolean"
+            }
+          }
+        },
+        "widgetDataTemplate": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expression": {
+                "type": "string"
+              },
+              "forPath": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "widgetData"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "default": "v1beta1",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ],
+  "type": "object"
+}

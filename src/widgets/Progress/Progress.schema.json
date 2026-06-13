@@ -20,7 +20,7 @@
           "additionalProperties": false,
           "properties": {
             "percent": {
-              "type": "number",
+              "type": "integer",
               "description": "the completion percentage (0-100)"
             },
             "type": {

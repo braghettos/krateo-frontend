@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { widgetRegistry } from './registry'
 
 /** Raw contents of every example fixture, loaded through Vite's glob import. */
-const exampleFiles = import.meta.glob('../examples/widgets/**/*.example.yaml', {
+const exampleFiles = import.meta.glob<string>('../examples/widgets/**/*.example.yaml', {
   eager: true,
   import: 'default',
   query: '?raw',

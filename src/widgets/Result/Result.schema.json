@@ -1,0 +1,84 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "default": "Result",
+      "description": "Result shows the outcome of an operation with a status icon",
+      "type": "string"
+    },
+    "spec": {
+      "additionalProperties": false,
+      "properties": {
+        "apiRef": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "namespace"
+          ],
+          "type": "object"
+        },
+        "widgetData": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "the result status",
+              "enum": [
+                "success",
+                "error",
+                "info",
+                "warning"
+              ],
+              "type": "string"
+            },
+            "title": {
+              "description": "the result title",
+              "type": "string"
+            },
+            "subTitle": {
+              "description": "the result detail text",
+              "type": "string"
+            }
+          }
+        },
+        "widgetDataTemplate": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expression": {
+                "type": "string"
+              },
+              "forPath": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "widgetData"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "default": "v1beta1",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ],
+  "type": "object"
+}

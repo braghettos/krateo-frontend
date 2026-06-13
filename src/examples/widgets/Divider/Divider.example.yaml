@@ -1,0 +1,21 @@
+# Plain divider
+kind: Divider
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-divider-plain
+  namespace: krateo-system
+spec:
+  widgetData:
+
+---
+# Divider with a label
+kind: Divider
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-divider-label
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: "Details"
+    orientation: "left"
+    plain: true

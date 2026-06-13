@@ -1,0 +1,20 @@
+# Count badge
+kind: Badge
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-badge-count
+  namespace: krateo-system
+spec:
+  widgetData:
+    count: 5
+---
+# Status badge
+kind: Badge
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-badge-status
+  namespace: krateo-system
+spec:
+  widgetData:
+    status: "success"
+    text: "Running"

@@ -51,7 +51,7 @@ Follow [this guide](https://docs.krateo.io/how-to-guides/install-krateo/installi
 
 ### **Step 2: Generate CRDs from JSON Schemas**
 
-Install [`krateoctl`](https://github.com/krateoplatformops/krateoctl) if you haven’t already.
+Install [`krateoctl`](https://github.com/krateoplatformops/krateoctl) (it also needs a Go toolchain in `PATH` and a reachable `GOPROXY`, since it runs `controller-gen`).
 
 Then run the script that uses `krateoctl` to generate CRDs for all `.schema.json` files in the repository:
 
@@ -59,7 +59,9 @@ Then run the script that uses `krateoctl` to generate CRDs for all `.schema.json
 npm run generate-crds
 ```
 
-All generated `.crd.yaml` files will be saved in `scripts/krateoctl-output/`.
+All generated `.crd.yaml` files will be saved in `scripts/krateoctl-output/` (gitignored build artifacts).
+
+> **Adding widgets?** See [`docs/widget-authoring.md`](docs/widget-authoring.md). Widgets are auto-registered (drop a folder — no `WidgetRenderer` edit). Scaffold one with `npm run scaffold-widget`, or generate a batch from the Ant Design catalog with `npm run gen-antd-widgets`.
 
 ### **Step 3: Apply Custom Resources**
 

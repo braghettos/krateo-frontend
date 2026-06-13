@@ -1,3 +1,5 @@
+/* eslint-disable sort-keys/sort-keys-fix, sort-keys */
+// Token scales are ordered semantically (xs → xl, token before components), not alphabetically.
 import type { ThemeConfig } from 'antd'
 
 /**
