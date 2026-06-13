@@ -1,14 +1,15 @@
-# Generic list of items (no domain coupling)
-# Target: a list of arbitrary objects mapped to rows via itemTemplate.
-# Expected behavior: three rows; avatar color from `severity` via the color map;
-# right side shows the timestamp (formatted) and the source.
+# Data list (rows from data via itemTemplate) — antd List API
+# Target: arbitrary objects mapped to rows; antd `bordered` + `size` honored.
+# Expected behavior: three bordered rows; avatar color from `severity` via the map.
 kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
-  name: example-list-basic
+  name: example-list-rows
   namespace: krateo-system
 spec:
   widgetData:
+    bordered: true
+    size: large
     itemTemplate:
       primaryText: "{title}"
       subPrimaryText: "{detail}"
@@ -17,33 +18,39 @@ spec:
       icon: "fa-circle-info"
       color:
         value: "{severity}"
-        map:
-          info: blue
-          warning: orange
-          error: red
+        map: { info: blue, warning: orange, error: red }
         default: gray
       formats:
         secondaryText: datetime
-    items:
-      - title: "Composition reconciled"
-        detail: "All resources are healthy"
-        severity: info
-        source: "controller"
-        updatedAt: "2026-06-13T09:30:00Z"
-      - title: "Drift detected"
-        detail: "Spec differs from live state"
-        severity: warning
-        source: "reconciler"
-        updatedAt: "2026-06-13T09:32:00Z"
-      - title: "Provisioning failed"
-        detail: "Backend returned 500"
-        severity: error
-        source: "provisioner"
-        updatedAt: "2026-06-13T09:35:00Z"
+    dataSource:
+      - { title: "Composition reconciled", detail: "All resources healthy", severity: info, source: controller, updatedAt: "2026-06-13T09:30:00Z" }
+      - { title: "Drift detected", detail: "Spec differs from live state", severity: warning, source: reconciler, updatedAt: "2026-06-13T09:32:00Z" }
+      - { title: "Provisioning failed", detail: "Backend returned 500", severity: error, source: provisioner, updatedAt: "2026-06-13T09:35:00Z" }
 ---
-# Streaming list (Server-Sent Events)
-# Target: a list whose items arrive from an SSE topic, capped at 50.
-# Expected behavior: shows a loading state until the first event, then prepends.
+# Grid of child widgets (replaces DataGrid) — antd List `grid` API
+# Target: dataSource elements carrying resourceRefId render as child widgets in a grid.
+# Expected behavior: responsive grid (1/2/3 columns) of the referenced widgets.
+kind: List
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-list-grid
+  namespace: krateo-system
+spec:
+  widgetData:
+    grid: { gutter: 16, xs: 1, sm: 1, md: 2, lg: 3, xl: 3, xxl: 4 }
+    dataSource:
+      - { resourceRefId: card-1 }
+      - { resourceRefId: card-2 }
+  resourcesRefs:
+    items:
+      - id: card-1
+        allowed: true
+      - id: card-2
+        allowed: true
+---
+# Streaming list (Server-Sent Events) — Krateo extension
+# Target: items arrive from an SSE topic, capped at 50.
+# Expected behavior: loading until the first event, then prepends rows.
 kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
@@ -62,9 +69,7 @@ spec:
       icon: "fa-bolt"
       color:
         value: "{type}"
-        map:
-          Normal: blue
-          Warning: orange
+        map: { Normal: blue, Warning: orange }
         default: gray
       formats:
         secondaryText: datetime

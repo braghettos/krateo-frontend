@@ -26,8 +26,8 @@ const EventList = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<Event
   const { events, prefix, sseEndpoint, sseTopic } = widgetData
 
   const listWidgetData = {
+    dataSource: events ?? [],
     itemTemplate: EVENT_ITEM_TEMPLATE,
-    items: events ?? [],
     maxItems: 200,
     prefix,
     sseEndpoint,

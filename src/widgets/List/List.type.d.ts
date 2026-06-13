@@ -1,63 +1,74 @@
 export interface List {
   version: string
   /**
-   * List renders any array of items as rows, mapping each item's fields to row slots via itemTemplate. Optionally streams items from a Server-Sent-Events source.
+   * List renders an array of items, following the Ant Design List API (grid, itemLayout, size, bordered, split, header, footer). Each dataSource element is rendered via itemTemplate, or as a child widget when it carries a resourceRefId. Supersedes DataGrid.
    */
   kind: string
   spec: {
     widgetData: {
       /**
-       * the items to render (free-form objects); may also be appended from the SSE source
+       * antd List grid layout (ListGridType); presence enables grid mode
        */
-      items?: {
+      grid?: {
+        gutter?: number
+        column?: number
+        xs?: number
+        sm?: number
+        md?: number
+        lg?: number
+        xl?: number
+        xxl?: number
+      }
+      /**
+       * antd List itemLayout
+       */
+      itemLayout?: 'horizontal' | 'vertical'
+      /**
+       * antd List size
+       */
+      size?: 'default' | 'large' | 'small'
+      /**
+       * antd List bordered
+       */
+      bordered?: boolean
+      /**
+       * antd List split
+       */
+      split?: boolean
+      /**
+       * antd List loading
+       */
+      loading?: boolean
+      /**
+       * antd List header (ReactNode in antd; string here)
+       */
+      header?: string
+      /**
+       * antd List footer (ReactNode in antd; string here)
+       */
+      footer?: string
+      /**
+       * antd List dataSource. Each element is a data object (rendered via itemTemplate) or { resourceRefId } (rendered as a child widget).
+       */
+      dataSource?: {
         [k: string]: unknown
       }[]
       /**
-       * maps each item's fields to row slots; slot values are templates with {dot.path} placeholders ({a|b} picks the first non-empty)
+       * serializable substitute for antd renderItem: maps a data element's fields to row slots ({dot.path}; {a|b} first-non-empty)
        */
-      itemTemplate: {
-        /**
-         * the main row text
-         */
+      itemTemplate?: {
         primaryText?: string
-        /**
-         * the right-aligned row text (e.g. a timestamp)
-         */
         secondaryText?: string
-        /**
-         * secondary text under the primary text
-         */
         subPrimaryText?: string
-        /**
-         * secondary text above the secondary text
-         */
         subSecondaryText?: string
-        /**
-         * font awesome icon name, or a {path}
-         */
         icon?: string
-        /**
-         * row avatar color
-         */
         color?: {
-          /**
-           * a palette color name, or a {path} resolved against the item
-           */
           value?: string
-          /**
-           * map a resolved value to a palette color, e.g. { Normal: blue, Warning: orange }
-           */
           map?: {
             [k: string]: string
           }
-          /**
-           * fallback palette color
-           */
           default?: string
         }
-        /**
-         * per-slot value formatting
-         */
         formats?: {
           primaryText?: 'text' | 'datetime'
           secondaryText?: 'text' | 'datetime'
@@ -66,21 +77,34 @@ export interface List {
         }
       }
       /**
-       * optional Server-Sent-Events endpoint to stream items from
+       * optional SSE endpoint to stream items from (Krateo extension)
        */
       sseEndpoint?: string
       /**
-       * optional Server-Sent-Events subscription topic
+       * optional SSE subscription topic (Krateo extension)
        */
       sseTopic?: string
       /**
-       * filter prefix used to filter items via the Filters widget
+       * Filters prefix (Krateo extension)
        */
       prefix?: string
       /**
-       * the maximum number of items to keep when streaming (default 200)
+       * max items kept when streaming (Krateo extension, default 200)
        */
       maxItems?: number
+    }
+    resourcesRefs?: {
+      items: {
+        allowed: boolean
+        apiVersion?: string
+        id: string
+        name?: string
+        namespace?: string
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+        [k: string]: unknown
+      }[]
+      [k: string]: unknown
     }
     apiRef?: {
       name: string
