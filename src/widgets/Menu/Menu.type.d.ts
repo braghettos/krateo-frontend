@@ -1,4 +1,4 @@
-export interface NavMenu {
+export interface Menu {
   version: string
   /**
    * NavMenu is a container for NavMenuItem widgets, which are used to setup navigation inside the application

@@ -7,8 +7,8 @@
       "default": "v1beta1"
     },
     "kind": {
-      "default": "Panel",
-      "description": "Panel is a container to display information",
+      "default": "Card",
+      "description": "Card is a container to display information",
       "type": "string"
     },
     "spec": {
@@ -299,11 +299,11 @@
             },
             "headerLeft": {
               "type": "string",
-              "description": "optional text to be displayed under the title, on the left side of the Panel"
+              "description": "optional text to be displayed under the title, on the left side of the Card"
             },
             "headerRight": {
               "type": "string",
-              "description": "optional text to be displayed under the title, on the right side of the Panel"
+              "description": "optional text to be displayed under the title, on the right side of the Card"
             },
             "icon": {
               "type": "object",

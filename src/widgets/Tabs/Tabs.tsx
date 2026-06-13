@@ -1,17 +1,17 @@
 import type { TabsProps } from 'antd'
-import { Empty, Result, Tabs } from 'antd'
+import { Empty, Result, Tabs as AntdTabs } from 'antd'
 import { useMemo } from 'react'
 
 import WidgetRenderer from '../../components/WidgetRenderer'
 import type { WidgetProps } from '../../types/Widget'
 import { getEndpointUrl } from '../../utils/utils'
 
-import styles from './TabList.module.css'
-import type { TabList as WidgetType } from './TabList.type'
+import styles from './Tabs.module.css'
+import type { Tabs as WidgetType } from './Tabs.type'
 
-export type TabListWidgetData = WidgetType['spec']['widgetData']
+export type TabsWidgetData = WidgetType['spec']['widgetData']
 
-const TabList = ({ resourcesRefs, uid, widgetData }: WidgetProps<TabListWidgetData>) => {
+const Tabs = ({ resourcesRefs, uid, widgetData }: WidgetProps<TabsWidgetData>) => {
   const { items } = widgetData
 
   const tabItems = useMemo(() => {
@@ -44,7 +44,7 @@ const TabList = ({ resourcesRefs, uid, widgetData }: WidgetProps<TabListWidgetDa
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
-  return <Tabs items={tabItems} key={uid} />
+  return <AntdTabs items={tabItems} key={uid} />
 }
 
-export default TabList
+export default Tabs

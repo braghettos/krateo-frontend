@@ -1,7 +1,7 @@
-export interface Panel {
+export interface Card {
   version: string
   /**
-   * Panel is a container to display information
+   * Card is a container to display information
    */
   kind: string
   spec: {
@@ -206,11 +206,11 @@ export interface Panel {
         resourceRefId: string
       }[]
       /**
-       * optional text to be displayed under the title, on the left side of the Panel
+       * optional text to be displayed under the title, on the left side of the Card
        */
       headerLeft?: string
       /**
-       * optional text to be displayed under the title, on the right side of the Panel
+       * optional text to be displayed under the title, on the right side of the Card
        */
       headerRight?: string
       /**

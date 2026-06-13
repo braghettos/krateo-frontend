@@ -8,14 +8,15 @@
       "default": "v1beta1"
     },
     "kind": {
-      "default": "Column",
-      "description": "Column is a layout component that arranges its children in a vertical stack, aligning them one above the other with spacing between them",
+      "default": "Tabs",
+      "description": "Tabs display a set of tab items for navigation or content grouping",
       "type": "string"
     },
     "spec": {
       "type": "object",
       "properties": {
         "widgetData": {
+          "description": "the data that will be passed to the widget on the frontend",
           "type": "object",
           "required": ["allowedResources", "items"],
           "properties": {
@@ -47,25 +48,27 @@
               }
             },
             "items": {
-              "description": "the items of the column",
               "type": "array",
+              "description": "the items of the tab list",
               "items": {
                 "type": "object",
                 "required": ["resourceRefId"],
                 "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "text displayed on the tab"
+                  },
                   "resourceRefId": {
-                    "description": "the identifier of the k8s Custom Resource that should be represented, usually a widget",
-                    "type": "string"
+                    "type": "string",
+                    "description": "the identifier of the k8s custom resource represented by the tab content"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "optional title to be displayed inside the tab"
                   }
                 },
                 "additionalProperties": false
               }
-            },
-            "size": {
-              "description": "the number of cells that the column will occupy, from 0 (not displayed) to 24 (occupies all space)",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 24
             }
           },
           "additionalProperties": false
@@ -138,8 +141,8 @@
               "type": "string"
             }
           },
-          "required": ["name", "namespace"],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "required": ["name", "namespace"]
         },
         "widgetDataTemplate": {
           "type": "array",
@@ -154,10 +157,11 @@
               }
             },
             "additionalProperties": false
-          }
+          },
+          "additionalProperties": false
         }
       },
-      "required": ["widgetData", "resourcesRefs"],
+      "required": ["widgetData"],
       "additionalProperties": false
     }
   },

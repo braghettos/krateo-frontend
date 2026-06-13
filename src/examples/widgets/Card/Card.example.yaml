@@ -1,7 +1,7 @@
 # Action not found
 # Target: ensure the widget correctly handles missing action definition within "actions".
 # Expected behavior: clicking the panel triggers an error notification ("The widget definition does not include an action ...").
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-no-action
@@ -18,7 +18,7 @@ spec:
 # Basic panel with title only
 # Target: verify correct rendering of title text and base layout.
 # Expected behavior: panel displays the title “Overview” with default style and no interactive behavior.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-basic
@@ -34,7 +34,7 @@ spec:
 # Panel with icon and title
 # Target: confirm correct alignment and rendering of icon with title.
 # Expected behavior: icon appears to the left of the title with correct spacing and tooltip.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-with-icon
@@ -54,7 +54,7 @@ spec:
 # Panel with header sections
 # Target: ensure proper rendering of left and right header text beneath the main title.
 # Expected behavior: left and right aligned text display under the header section.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-with-header
@@ -72,7 +72,7 @@ spec:
 # Panel with tags and footer items
 # Target: verify correct layout for tags and footer widgets.
 # Expected behavior: panel footer shows tag list and embedded widgets from footer resource references.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-footer-tags
@@ -100,7 +100,7 @@ spec:
 # Panel with multiple child widgets
 # Target: ensure correct rendering of multiple resource items in the body.
 # Expected behavior: both child widgets are rendered sequentially inside the panel body.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-multiple-items
@@ -130,7 +130,7 @@ spec:
 # navigate action - Navigation to another page using `path`
 # Target: trigger navigation to a static route (`/barchart`) when the panel is clicked.
 # Expected behavior: clicking the panel redirects the user to `/barchart`.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-navigate-path
@@ -151,7 +151,7 @@ spec:
 # navigate action - Navigation to another resource using `resourceRefId`
 # Target: navigate to another dashboard resource identified by its ref ID.
 # Expected behavior: clicking the panel triggers navigation to the target resource page.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-navigate-resource
@@ -178,7 +178,7 @@ spec:
 # navigate action - Navigation with confirmation prompt (`requireConfirmation: true`)
 # Target: prevent accidental navigation by requiring explicit user confirmation.
 # Expected behavior: before navigating, a confirmation dialog is shown; navigation proceeds only upon confirmation.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-navigate-confirm
@@ -200,7 +200,7 @@ spec:
 # navigate action - Navigation with loading indicator
 # Target: provide visual feedback while navigation is being processed.
 # Expected behavior: panel shows loading state during navigation.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-navigate-loading
@@ -223,7 +223,7 @@ spec:
 # openDrawer - default size
 # Target: verify that a drawer opens using a defined resource reference.
 # Expected behavior: drawer opens at default width and displays resource contents.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-drawer-default
@@ -252,7 +252,7 @@ spec:
 # openDrawer - large size
 # Target: verify that a drawer opens in large mode.
 # Expected behavior: a large-size drawer opens with the defined title and resource content.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-drawer-large
@@ -283,7 +283,7 @@ spec:
 # openModal - default size
 # Target: ensure that a modal dialog can be opened and displays the referenced resource.
 # Expected behavior: modal appears at the default width and loads the resource correctly.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-modal-default
@@ -314,7 +314,7 @@ spec:
 # openModal - large size with confirmation
 # Target: ensure that the modal opens only after user confirmation when `requireConfirmation` is enabled.
 # Expected behavior: confirmation prompt appears; modal opens after acceptance.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-modal-large
@@ -346,7 +346,7 @@ spec:
 # openModal - custom width
 # Target: confirm that a modal can be displayed with a custom width setting.
 # Expected behavior: modal expands to the defined custom width and shows the referenced resource.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-modal-custom
@@ -378,7 +378,7 @@ spec:
 # openModal - fullscreen mode
 # Target: verify that a modal can occupy the full viewport width when configured in fullscreen mode.
 # Expected behavior: modal expands to fill the entire screen and displays its resource.
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-modal-fullscreen

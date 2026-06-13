@@ -1,10 +1,10 @@
-export interface Column {
+export interface Col {
   /**
    * widget version
    */
   version: string
   /**
-   * Column is a layout component that arranges its children in a vertical stack, aligning them one above the other with spacing between them
+   * Col is a layout component that arranges its children in a vertical stack, aligning them one above the other with spacing between them
    */
   kind: string
   spec: {

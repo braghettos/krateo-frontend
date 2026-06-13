@@ -2,7 +2,7 @@
 # Target: simulate a column configuration that defines no child widgets.
 # Expected behavior: renders an empty column with no content, leaving the area visually blank. 
 # This helps validate that the layout system gracefully handles intentionally empty structures.
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-empty
@@ -20,7 +20,7 @@ spec:
 # because the corresponding resourceRefId is not listed in resourcesRefs.
 # Expected behavior: skips rendering that specific child (returns null), 
 # but continues rendering other valid items if present.
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-missing-ref
@@ -38,7 +38,7 @@ spec:
 # Target: simulate a column with size=0.
 # Expected behavior: column is effectively hidden (occupies no visible horizontal space), 
 # ensuring layout calculations remain consistent in multi-column grids.
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-zero-size
@@ -62,7 +62,7 @@ spec:
 # Target: validate that a simple column with one valid child widget renders correctly.
 # Expected behavior: displays one resource inside a vertically stacked layout space.
 # This case confirms that a single resolved child is passed through the WidgetRenderer without issues.
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-single-child
@@ -86,7 +86,7 @@ spec:
 # Target: validate that a simple column with one valid child widget renders correctly and occupies all available space.
 # Expected behavior: displays one resource inside a vertically stacked layout space full screen.
 # This case confirms that a single resolved child is passed through the WidgetRenderer without issues.
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-single-child-full-screen
@@ -109,7 +109,7 @@ spec:
 # Target: simulate a partially broken layout where one of the referenced widgets cannot be resolved.
 # Expected behavior: valid child widgets are rendered normally, 
 # while unresolved references are silently ignored without breaking layout continuity.
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-mixed
@@ -135,7 +135,7 @@ spec:
 # preserving vertical stacking and consistent spacing.
 # Expected behavior: both child widgets appear in order, each occupying its logical vertical slot 
 # within the column.
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-multiple-child
@@ -167,7 +167,7 @@ spec:
 # confirming the recursive nature of layout widgets.
 # Expected behavior: outer column renders correctly and the nested column is properly 
 # delegated to WidgetRenderer, producing a consistent layout hierarchy.
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-nested

@@ -7,7 +7,7 @@
       "default": "v1beta1"
     },
     "kind": {
-      "default": "NavMenu",
+      "default": "Menu",
       "description": "NavMenu is a container for NavMenuItem widgets, which are used to setup navigation inside the application",
       "type": "string"
     },

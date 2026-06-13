@@ -11,10 +11,10 @@ import { getColorCode } from '../../theme/palette'
 import type { ResourcesRefs, WidgetAction, WidgetProps } from '../../types/Widget'
 import { getEndpointUrl } from '../../utils/utils'
 
-import styles from './Panel.module.css'
-import type { Panel as WidgetType } from './Panel.type'
+import styles from './Card.module.css'
+import type { Card as WidgetType } from './Card.type'
 
-export type PanelWidgetData = WidgetType['spec']['widgetData']
+export type CardWidgetData = WidgetType['spec']['widgetData']
 
 const FooterItem = ({ resourceRefId, resourcesRefs }: { resourceRefId: string; resourcesRefs: ResourcesRefs }) => {
   const [isLoading, setIsLoading] = useState(true)
@@ -29,7 +29,7 @@ const FooterItem = ({ resourceRefId, resourcesRefs }: { resourceRefId: string; r
   )
 }
 
-const Panel = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<PanelWidgetData>) => {
+const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidgetData>) => {
   const { notification } = useApp()
   const { handleAction, isActionLoading } = useHandleAction()
 
@@ -145,4 +145,4 @@ const Panel = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<PanelWidg
   )
 }
 
-export default Panel
+export default Card

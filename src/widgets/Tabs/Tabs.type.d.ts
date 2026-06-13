@@ -1,10 +1,10 @@
-export interface TabList {
+export interface Tabs {
   /**
    * widget version
    */
   version: string
   /**
-   * TabList display a set of tab items for navigation or content grouping
+   * Tabs display a set of tab items for navigation or content grouping
    */
   kind: string
   spec: {
