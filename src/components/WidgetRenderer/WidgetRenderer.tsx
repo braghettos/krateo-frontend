@@ -1,5 +1,4 @@
-import { Result, Skeleton } from 'antd'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect } from 'react'
 
 import useCatchError from '../../hooks/useCatchError'
 import { useWidgetQuery } from '../../hooks/useWidgetQuery'
@@ -7,6 +6,7 @@ import type { Widget } from '../../types/Widget'
 import { widgetRegistry } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
+import { WidgetError, WidgetLoading } from '../WidgetStates'
 
 import styles from './WidgetRenderer.module.css'
 
@@ -70,16 +70,6 @@ const parseWidget = (
   return element
 }
 
-const WidgetRendererError = ({ children, subtitle }: { children?: ReactNode; subtitle: string }) => {
-  return (
-    <div className={styles.message}>
-      <Result status='error' subTitle={subtitle} title={'Error while rendering widget'}>
-        {children}
-      </Result>
-    </div>
-  )
-}
-
 const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndpoint, wrapper }: WidgetRendererProps) => {
   const { isWidgetFilteredByProps } = useFilter()
   const { catchError } = useCatchError()
@@ -98,26 +88,22 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
   }, [isLoading, onLoadingChange])
 
   if (isLoading) {
-    return (
-      <div className={styles.loading} data-widget-renderer>
-        <Skeleton active />
-      </div>
-    )
+    return <WidgetLoading />
   }
 
   if (error) {
     console.error(error)
-    return <WidgetRendererError subtitle={`There has been an error while fetching the widget: ${error}`} />
+    return <WidgetError subtitle={`There has been an error while fetching the widget: ${error}`} />
   }
 
   if (!widget) {
-    return invisible ? null : <WidgetRendererError subtitle={'The widget does not exist'} />
+    return invisible ? null : <WidgetError subtitle={'The widget does not exist'} />
   }
 
   const { code, kind, message, status } = widget
 
   if (!status) {
-    return <WidgetRendererError subtitle={`Widget ${kind} does not have a status specification`} />
+    return <WidgetError subtitle={`Widget ${kind} does not have a status specification`} />
   }
 
   if (typeof status === 'string') {
@@ -149,7 +135,7 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
       const params = new URLSearchParams(widgetEndpoint)
 
       return (
-        <WidgetRendererError subtitle={`There has been an error while rendering a widget with the following specification:`}>
+        <WidgetError subtitle={`There has been an error while rendering a widget with the following specification:`}>
           <div className={styles.content}>
             <pre className={styles.pre}>
               <b>Name:</b> {params.get('name')}
@@ -165,11 +151,11 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
               {'\n'}
             </pre>
           </div>
-        </WidgetRendererError>
+        </WidgetError>
       )
     }
 
-    return <WidgetRendererError subtitle={`Status for ${kind} widget is in string format: ${status}`} />
+    return <WidgetError subtitle={`Status for ${kind} widget is in string format: ${status}`} />
   }
 
   if (prefix && isWidgetFilteredByProps(status.widgetData, prefix)) {

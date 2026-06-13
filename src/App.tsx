@@ -17,7 +17,7 @@ import styles from './App.module.css'
 import FiltersProvider from './components/FiltesProvider/FiltersProvider'
 import { ConfigProvider, useConfigContext } from './context/ConfigContext'
 import { RoutesProvider, useRoutesContext } from './context/RoutesContext'
-import { cssVariables } from './theme/palette'
+import { cssVariables } from './theme/tokens'
 
 library.add(fab, fas, far)
 
