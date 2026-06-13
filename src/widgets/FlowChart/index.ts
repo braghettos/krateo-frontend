@@ -1,3 +1,5 @@
+import { defineWidget } from '../widget-module'
+
 import FlowChart from './FlowChart'
 
-export default FlowChart
+export default defineWidget({ component: FlowChart, kind: 'FlowChart' })

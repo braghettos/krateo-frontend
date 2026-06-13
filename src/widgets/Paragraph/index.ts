@@ -1,3 +1,5 @@
+import { defineWidget } from '../widget-module'
+
 import Paragraph from './Paragraph'
 
-export default Paragraph
+export default defineWidget({ component: Paragraph, kind: 'Paragraph' })

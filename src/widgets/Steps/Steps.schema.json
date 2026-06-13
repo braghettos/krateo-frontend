@@ -1,0 +1,119 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "Steps",
+      "description": "Steps displays a sequence of numbered steps that guide the user through a process",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["items"],
+          "additionalProperties": false,
+          "properties": {
+            "current": {
+              "type": "integer",
+              "description": "the index of the current step (0-based)"
+            },
+            "direction": {
+              "type": "string",
+              "enum": ["horizontal", "vertical"],
+              "description": "the layout direction of the steps"
+            },
+            "size": {
+              "type": "string",
+              "enum": ["default", "small"],
+              "description": "the size of the steps"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["wait", "process", "finish", "error"],
+              "description": "the status of the current step"
+            },
+            "labelPlacement": {
+              "type": "string",
+              "enum": ["horizontal", "vertical"],
+              "description": "where the label is placed relative to the step icon"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["default", "navigation", "inline"],
+              "description": "the visual type of the steps"
+            },
+            "items": {
+              "type": "array",
+              "description": "the steps to display",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["title"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "the title of the step"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "the description of the step"
+                  },
+                  "subTitle": {
+                    "type": "string",
+                    "description": "the subtitle of the step"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["wait", "process", "finish", "error"],
+                    "description": "the status of this step"
+                  },
+                  "icon": {
+                    "type": "string",
+                    "description": "a font awesome icon name for the step (eg: `fa-user`)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}
