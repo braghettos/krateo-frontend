@@ -13,6 +13,22 @@ export interface Tabs {
      */
     widgetData: {
       /**
+       * antd Tabs type
+       */
+      type?: 'line' | 'card' | 'editable-card'
+      /**
+       * antd Tabs size
+       */
+      size?: 'small' | 'middle' | 'large'
+      /**
+       * antd Tabs tabPosition
+       */
+      tabPosition?: 'top' | 'right' | 'bottom' | 'left'
+      /**
+       * antd Tabs centered
+       */
+      centered?: boolean
+      /**
        * the list of resources that are allowed to be children of this widget or referenced by it
        */
       allowedResources: (

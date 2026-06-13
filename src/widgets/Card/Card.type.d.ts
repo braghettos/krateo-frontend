@@ -7,9 +7,9 @@ export interface Card {
   spec: {
     widgetData: {
       /**
-       * the actions of the widget
+       * the Krateo event actions of the widget (renamed from `actions`, which collides with antd Card.actions)
        */
-      actions: {
+      widgetActions?: {
         /**
          * rest api call actions triggered by the widget
          */
@@ -210,9 +210,21 @@ export interface Card {
        */
       headerLeft?: string
       /**
-       * optional text to be displayed under the title, on the right side of the Card
+       * antd Card extra — content shown top-right of the card header (renamed from `headerRight`)
        */
-      headerRight?: string
+      extra?: string
+      /**
+       * antd Card bordered (outlined vs borderless)
+       */
+      bordered?: boolean
+      /**
+       * antd Card size
+       */
+      size?: 'default' | 'small'
+      /**
+       * resourceRefId of a widget rendered as the antd Card cover
+       */
+      cover?: string
       /**
        * icon displayed in the panel header
        */

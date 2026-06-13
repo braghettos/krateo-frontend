@@ -33,9 +33,14 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   const { notification } = useApp()
   const { handleAction, isActionLoading } = useHandleAction()
 
-  const { actions, clickActionId, footer, headerLeft, headerRight, icon, items, tags, title, tooltip } = widgetData
+  const { bordered, clickActionId, cover, footer, headerLeft, icon, items, size, tags, title, tooltip } = widgetData
+  // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions` (legacy `actions` still read).
+  const widgetActions = widgetData.widgetActions ?? (widgetData as { actions?: CardWidgetData['widgetActions'] }).actions
+  // antd Card `extra` (renamed from `headerRight`).
+  const extra = widgetData.extra ?? (widgetData as { headerRight?: string }).headerRight
+  const coverEndpoint = cover ? getEndpointUrl(cover, resourcesRefs) : undefined
 
-  const action: WidgetAction | undefined = Object.values(actions ?? {})
+  const action: WidgetAction | undefined = Object.values(widgetActions ?? {})
     .flat()
     .find(({ id }) => id === clickActionId)
 
@@ -62,9 +67,8 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   }
 
   const panelHeader = (
-    <div className={`${styles.bodyHeader} ${!headerLeft && headerRight ? styles.right : ''}`}>
+    <div className={styles.bodyHeader}>
       <div>{headerLeft}</div>
-      <div>{headerRight}</div>
     </div>
   )
   const panelFooter = (
@@ -95,16 +99,25 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
     <AntdCard
       className={`${styles.panel} ${action ? styles.clickable : ''}`}
       classNames={{ body: styles.bodyWrapper, header: styles.header, title: styles.title }}
+      cover={coverEndpoint ? <WidgetRenderer widgetEndpoint={coverEndpoint} /> : undefined}
       extra={
-        tooltip && (
-          <Tooltip title={tooltip}>
-            <Button icon={<QuestionCircleOutlined />} type='text' />
-          </Tooltip>
-        )
+        (extra || tooltip)
+          ? (
+            <>
+              {extra}
+              {tooltip && (
+                <Tooltip title={tooltip}>
+                  <Button icon={<QuestionCircleOutlined />} type='text' />
+                </Tooltip>
+              )}
+            </>
+          )
+          : undefined
       }
       key={uid}
       loading={isActionLoading}
       onClick={handleClick}
+      size={size}
       title={
         (title || icon) && (
           <div className={styles.title}>
@@ -123,10 +136,10 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
           </div>
         )
       }
-      variant={'borderless'}
+      variant={bordered ? 'outlined' : 'borderless'}
     >
       <div className={styles.content}>
-        {(headerLeft || headerRight) && panelHeader}
+        {headerLeft && panelHeader}
         <div className={styles.body}>
           {items
             .map(({ resourceRefId }, index) => {

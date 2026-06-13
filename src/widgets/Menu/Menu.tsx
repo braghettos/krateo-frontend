@@ -28,7 +28,8 @@ type NavMenuItemResponse = Omit<NavMenuItem, 'status'> & {
   }
 }
 
-export function Menu({ resourcesRefs, uid }: WidgetProps<MenuWidgetData>) {
+export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetData>) {
+  const { mode, theme } = widgetData
   const location = useLocation()
   const navigate = useNavigate()
   const { menuRoutes, updateMenuRoutes } = useRoutesContext()
@@ -131,9 +132,10 @@ export function Menu({ resourcesRefs, uid }: WidgetProps<MenuWidgetData>) {
         defaultSelectedKeys={loadedAllMenuItems && menuItems.length > 0 ? [menuItems[0].key as string] : []}
         items={menuItems}
         key={uid}
-        mode='inline'
+        mode={mode ?? 'inline'}
         onClick={(item) => handleClick(item.key)}
         selectedKeys={[location.pathname]}
+        theme={theme}
       />
 
       <WidgetRenderer invisible={true} widgetEndpoint={config!.api.ROUTES_LOADER} />

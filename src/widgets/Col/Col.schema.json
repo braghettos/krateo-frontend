@@ -61,12 +61,21 @@
                 "additionalProperties": false
               }
             },
-            "size": {
-              "description": "the number of cells that the column will occupy, from 0 (not displayed) to 24 (occupies all space)",
+            "span": {
+              "description": "antd Col span — cells occupied, 0 (hidden) to 24 (full width). Renamed from `size`, which is still accepted.",
               "type": "integer",
               "minimum": 0,
               "maximum": 24
-            }
+            },
+            "offset": { "type": "integer", "description": "antd Col offset", "minimum": 0, "maximum": 24 },
+            "order": { "type": "integer", "description": "antd Col order" },
+            "flex": { "type": "string", "description": "antd Col flex" },
+            "xs": { "type": "integer", "description": "antd Col xs span", "minimum": 0, "maximum": 24 },
+            "sm": { "type": "integer", "description": "antd Col sm span", "minimum": 0, "maximum": 24 },
+            "md": { "type": "integer", "description": "antd Col md span", "minimum": 0, "maximum": 24 },
+            "lg": { "type": "integer", "description": "antd Col lg span", "minimum": 0, "maximum": 24 },
+            "xl": { "type": "integer", "description": "antd Col xl span", "minimum": 0, "maximum": 24 },
+            "xxl": { "type": "integer", "description": "antd Col xxl span", "minimum": 0, "maximum": 24 }
           },
           "additionalProperties": false
         },

@@ -7,6 +7,14 @@ export interface Menu {
   spec: {
     widgetData: {
       /**
+       * antd Menu mode (default inline)
+       */
+      mode?: 'vertical' | 'horizontal' | 'inline'
+      /**
+       * antd Menu theme
+       */
+      theme?: 'light' | 'dark'
+      /**
        * the list of resources that are allowed to be children of this widget or referenced by it
        */
       allowedResources: 'navmenuitems'[]

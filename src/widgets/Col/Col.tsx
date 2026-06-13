@@ -10,14 +10,16 @@ import type { Col as WidgetType } from './Col.type'
 export type ColWidgetData = WidgetType['spec']['widgetData']
 
 const Col = ({ resourcesRefs, uid, widgetData }: WidgetProps<ColWidgetData>) => {
-  const { items, size } = widgetData
+  const { flex, items, lg, md, offset, order, sm, span, xl, xs, xxl } = widgetData
+  // antd `span`, with back-compat for the legacy `size`.
+  const colSpan = span ?? (widgetData as { size?: number }).size
 
-  if (size === 0) {
+  if (colSpan === 0) {
     return null
   }
 
   return (
-    <AntdCol className={styles.column} key={uid} span={size}>
+    <AntdCol className={styles.column} flex={flex} key={uid} lg={lg} md={md} offset={offset} order={order} sm={sm} span={colSpan} xl={xl} xs={xs} xxl={xxl}>
       {items
         .map(({ resourceRefId }, index) => {
           const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
