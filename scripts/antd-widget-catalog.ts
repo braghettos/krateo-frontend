@@ -4,8 +4,12 @@ import type { WidgetSpec } from './widget-codegen'
  * Declarative catalog mapping Ant Design components → Krateo widgets.
  *
  * Inclusion rule (server-driven model): a component qualifies when its inputs
- * are JSON-serializable display props. Each prop name here matches the antd
- * prop name 1:1, so the generated component is a typed pass-through.
+ * are JSON-serializable display props.
+ *
+ * antd fidelity (see docs/widget-authoring.md): each `kind` IS the antd
+ * component name, and each prop name + value shape matches the antd prop
+ * VERBATIM — so the generated widget is a typed pass-through. Diverge only for
+ * non-serializable props (functions/ReactNode), via serializable substitutes.
  *
  * OUT OF SCOPE (do NOT add here) — these need bespoke handling, not codegen:
  *   - Imperative / portal APIs: message, notification, Modal.method
