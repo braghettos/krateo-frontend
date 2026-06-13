@@ -11,7 +11,7 @@ const registry = new Map<string, WidgetModule>()
 
 export const registerWidget = (module: WidgetModule): void => {
   registry.set(module.kind, module)
-  // Back-compat: legacy kind names resolve to the same component (e.g. DataGrid → List).
+  // Back-compat: legacy kind names resolve to the same component (e.g. Panel→Card, DataGrid→List).
   module.aliases?.forEach((alias) => registry.set(alias, module))
 }
 
