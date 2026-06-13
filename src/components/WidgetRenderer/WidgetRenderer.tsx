@@ -79,7 +79,7 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
   }
 
   const { isFetchingResourcesRefs, queryResult } = useWidgetQuery(widgetEndpoint)
-  const { data: widget, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading } = queryResult
+  const { data: widget, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, refetch } = queryResult
 
   useEffect(() => {
     if (onLoadingChange) {
@@ -87,13 +87,20 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     }
   }, [isLoading, onLoadingChange])
 
-  if (isLoading) {
+  // `isPending` (not `isLoading`) keeps the loading state visible across retry
+  // backoff gaps, so a not-yet-ready backend shows a skeleton — not the error
+  // "red cross" — until retries are exhausted (see useWidgetQuery retry config).
+  if (isPending) {
     return <WidgetLoading />
   }
 
   if (error) {
     console.error(error)
-    return <WidgetError subtitle={`There has been an error while fetching the widget: ${error}`} />
+    const failedToFetch = error instanceof Error && (error instanceof TypeError || error.message.includes('Failed to fetch'))
+    const subtitle = failedToFetch
+      ? "Couldn't reach the server. It may still be starting up."
+      : `There has been an error while fetching the widget: ${error instanceof Error ? error.message : 'unknown error'}`
+    return <WidgetError onRetry={() => { void refetch() }} subtitle={subtitle} />
   }
 
   if (!widget) {
