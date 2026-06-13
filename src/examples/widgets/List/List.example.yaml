@@ -1,0 +1,70 @@
+# Generic list of items (no domain coupling)
+# Target: a list of arbitrary objects mapped to rows via itemTemplate.
+# Expected behavior: three rows; avatar color from `severity` via the color map;
+# right side shows the timestamp (formatted) and the source.
+kind: List
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-list-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    itemTemplate:
+      primaryText: "{title}"
+      subPrimaryText: "{detail}"
+      secondaryText: "{updatedAt}"
+      subSecondaryText: "{source}"
+      icon: "fa-circle-info"
+      color:
+        value: "{severity}"
+        map:
+          info: blue
+          warning: orange
+          error: red
+        default: gray
+      formats:
+        secondaryText: datetime
+    items:
+      - title: "Composition reconciled"
+        detail: "All resources are healthy"
+        severity: info
+        source: "controller"
+        updatedAt: "2026-06-13T09:30:00Z"
+      - title: "Drift detected"
+        detail: "Spec differs from live state"
+        severity: warning
+        source: "reconciler"
+        updatedAt: "2026-06-13T09:32:00Z"
+      - title: "Provisioning failed"
+        detail: "Backend returned 500"
+        severity: error
+        source: "provisioner"
+        updatedAt: "2026-06-13T09:35:00Z"
+---
+# Streaming list (Server-Sent Events)
+# Target: a list whose items arrive from an SSE topic, capped at 50.
+# Expected behavior: shows a loading state until the first event, then prepends.
+kind: List
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-list-streaming
+  namespace: krateo-system
+spec:
+  widgetData:
+    sseEndpoint: "/notifications"
+    sseTopic: "krateo"
+    maxItems: 50
+    itemTemplate:
+      primaryText: "{involvedObject.kind}/{involvedObject.name}"
+      subPrimaryText: "{message}"
+      secondaryText: "{lastTimestamp|firstTimestamp|eventTime}"
+      subSecondaryText: "{reason}"
+      icon: "fa-bolt"
+      color:
+        value: "{type}"
+        map:
+          Normal: blue
+          Warning: orange
+        default: gray
+      formats:
+        secondaryText: datetime
