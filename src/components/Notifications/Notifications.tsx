@@ -23,10 +23,10 @@ const NOTIFICATION_ITEM_TEMPLATE: ItemTemplate = {
   subSecondaryText: '{involvedObject.kind}.{involvedObject.apiVersion}/{involvedObject.namespace}/{involvedObject.name}',
 }
 
-const Notifications = () => {
+const Notifications = ({ topic = 'krateo' }: { topic?: string } = {}) => {
   const [drawerVisible, setDrawerVisible] = useState(false)
 
-  const { data: notifications, isLoading } = useGetEvents({ registerToSSE: drawerVisible, topic: 'krateo' })
+  const { data: notifications, isLoading } = useGetEvents({ registerToSSE: drawerVisible, topic })
 
   return (
     <>

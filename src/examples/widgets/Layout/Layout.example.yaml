@@ -1,0 +1,65 @@
+# Ant Design Layout
+# Target: a collapsible Sider (a Menu) + Header + Content, fully defined by a CR.
+# Expected behavior: the widget renders antd Layout with each region resolved
+# from its child widget endpoint; the Sider collapses below the `lg` breakpoint.
+kind: Layout
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-layout
+  namespace: krateo-system
+spec:
+  widgetData:
+    hasSider: true
+    sider:
+      resourceRefId: sider-nav
+      width: 240
+      collapsible: true
+      breakpoint: lg
+      theme: dark
+    header: top-bar
+    content: main-content
+  resourcesRefs:
+    items:
+      - id: sider-nav
+        allowed: true
+        resource: navmenus
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: sider-nav-menu
+        namespace: krateo-system
+        verb: GET
+      - id: top-bar
+        allowed: true
+        resource: buttongroups
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: header-toolbar
+        namespace: krateo-system
+        verb: GET
+      - id: main-content
+        allowed: true
+        resource: pages
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: home-page
+        namespace: krateo-system
+        verb: GET
+status:
+  widgetData:
+    hasSider: true
+    sider:
+      resourceRefId: sider-nav
+      width: 240
+      collapsible: true
+      breakpoint: lg
+      theme: dark
+    header: top-bar
+    content: main-content
+  resourcesRefs:
+    items:
+      - id: sider-nav
+        allowed: true
+        path: "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sider-nav-menu&namespace=krateo-system"
+      - id: top-bar
+        allowed: true
+        path: "/call?resource=buttongroups&apiVersion=widgets.templates.krateo.io/v1beta1&name=header-toolbar&namespace=krateo-system"
+      - id: main-content
+        allowed: true
+        path: "/call?resource=pages&apiVersion=widgets.templates.krateo.io/v1beta1&name=home-page&namespace=krateo-system"

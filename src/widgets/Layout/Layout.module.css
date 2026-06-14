@@ -1,0 +1,7 @@
+.shell {
+  height: 100%;
+}
+
+.content {
+  overflow: auto;
+}
