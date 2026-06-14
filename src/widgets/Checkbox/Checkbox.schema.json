@@ -1,0 +1,70 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "default": "v1beta1" },
+    "kind": {
+      "default": "Checkbox",
+      "description": "Checkbox is a form-control widget wrapping Ant Design Checkbox.Group (multi-select). It renders inside a Form widget's context and binds its value (array) by `name`.",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["widgetData"],
+      "additionalProperties": false,
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "options"],
+          "properties": {
+            "name": { "type": "string", "description": "form field key — antd Form.Item `name`" },
+            "label": { "type": "string", "description": "antd Form.Item `label`" },
+            "required": { "type": "boolean", "description": "add a required validation rule" },
+            "defaultValue": {
+              "type": "array",
+              "description": "initially-checked values — antd Form.Item `initialValue`",
+              "items": { "type": "string" }
+            },
+            "options": {
+              "type": "array",
+              "description": "antd Checkbox.Group `options`",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["value"],
+                "properties": {
+                  "label": { "type": "string", "description": "option label (defaults to value)" },
+                  "value": { "type": "string", "description": "option value" },
+                  "disabled": { "type": "boolean", "description": "antd option `disabled`" }
+                }
+              }
+            },
+            "disabled": { "type": "boolean", "description": "antd Checkbox.Group `disabled`" }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

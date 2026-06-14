@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "default": "v1beta1" },
+    "kind": {
+      "default": "Slider",
+      "description": "Slider is a form-control widget wrapping Ant Design Slider. It renders inside a Form widget's context and binds its value by `name`. (min/max/step are integers — controller-gen rejects floats.)",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["widgetData"],
+      "additionalProperties": false,
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string", "description": "form field key — antd Form.Item `name`" },
+            "label": { "type": "string", "description": "antd Form.Item `label`" },
+            "defaultValue": { "type": "integer", "description": "antd Form.Item `initialValue`" },
+            "min": { "type": "integer", "description": "antd Slider `min`" },
+            "max": { "type": "integer", "description": "antd Slider `max`" },
+            "step": { "type": "integer", "description": "antd Slider `step`" },
+            "disabled": { "type": "boolean", "description": "antd Slider `disabled`" }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

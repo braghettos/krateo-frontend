@@ -1,0 +1,15 @@
+# Ant Design Checkbox.Group as a form control (child of a Form widget).
+kind: Checkbox
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-checkbox
+  namespace: krateo-system
+spec:
+  widgetData:
+    name: features
+    label: Features
+    defaultValue: [logging]
+    options:
+      - { label: Logging, value: logging }
+      - { label: Metrics, value: metrics }
+      - { label: Tracing, value: tracing }

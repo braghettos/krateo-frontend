@@ -1,0 +1,14 @@
+# Ant Design Slider as a form control (child of a Form widget).
+kind: Slider
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-slider
+  namespace: krateo-system
+spec:
+  widgetData:
+    name: threshold
+    label: Threshold
+    min: 0
+    max: 100
+    step: 5
+    defaultValue: 50
