@@ -39,7 +39,9 @@ describe('widgetRegistry', () => {
   it('registers all 23 known kinds (regression gate for the switch removal)', () => {
     for (const kind of KNOWN_KINDS) {
       expect(widgetRegistry[kind], `kind "${kind}" should be registered`).toBeDefined()
-      expect(widgetRegistry[kind].component).toBeTypeOf('function')
+      // A component may be a function OR a React exotic object (lazy/memo/forwardRef);
+      // the chart widgets use React.lazy() for code-splitting, so accept both.
+      expect(['function', 'object']).toContain(typeof widgetRegistry[kind].component)
     }
   })
 
