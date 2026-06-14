@@ -1,0 +1,90 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "Progress",
+      "description": "Progress displays the completion status of an operation as a line, circle or dashboard gauge",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["percent"],
+          "additionalProperties": false,
+          "properties": {
+            "percent": {
+              "type": "integer",
+              "description": "the completion percentage (0-100)"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["line", "circle", "dashboard"],
+              "description": "the visual type of the progress indicator"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["success", "exception", "normal", "active"],
+              "description": "the status of the progress indicator"
+            },
+            "strokeColor": {
+              "type": "string",
+              "enum": ["blue", "darkBlue", "orange", "gray", "red", "green", "violet"],
+              "description": "the color of the progress stroke"
+            },
+            "showInfo": {
+              "type": "boolean",
+              "description": "whether to display the progress value text"
+            },
+            "size": {
+              "type": "string",
+              "enum": ["default", "small"],
+              "description": "the size of the progress indicator"
+            },
+            "steps": {
+              "type": "integer",
+              "description": "render the progress as a discrete number of steps"
+            }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

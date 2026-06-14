@@ -1,0 +1,38 @@
+# Basic file upload
+# Target: a single-file upload button posting to a resolved RESTAction endpoint.
+# Expected behavior: clicking selects a file and uploads it (multipart) with the bearer token
+# to the endpoint resolved from resourceRefId "upload-target"; a toast reports success/failure.
+kind: Upload
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-upload-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    resourceRefId: upload-target
+    label: "Click to upload"
+    listType: text
+    accept: ".json,.yaml"
+    multiple: false
+  resourcesRefs:
+    items:
+      - id: upload-target
+        allowed: true
+        resource: restactions
+        apiVersion: templates.krateo.io/v1alpha1
+        name: upload-file
+        namespace: krateo-system
+        verb: POST
+status:
+  widgetData:
+    resourceRefId: upload-target
+    label: "Click to upload"
+    listType: text
+    accept: ".json,.yaml"
+    multiple: false
+  resourcesRefs:
+    items:
+      - id: upload-target
+        allowed: true
+        path: "/call?resource=restactions&apiVersion=templates.krateo.io/v1alpha1&name=upload-file&namespace=krateo-system"
+        verb: POST

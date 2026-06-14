@@ -1,0 +1,99 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "default": "Alert",
+      "description": "Alert displays an inline contextual message",
+      "type": "string"
+    },
+    "spec": {
+      "additionalProperties": false,
+      "properties": {
+        "apiRef": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "namespace"
+          ],
+          "type": "object"
+        },
+        "widgetData": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "message"
+          ],
+          "properties": {
+            "message": {
+              "description": "the alert title",
+              "type": "string"
+            },
+            "description": {
+              "description": "the alert detail text",
+              "type": "string"
+            },
+            "type": {
+              "description": "the alert severity",
+              "enum": [
+                "success",
+                "info",
+                "warning",
+                "error"
+              ],
+              "type": "string"
+            },
+            "showIcon": {
+              "description": "whether to show the severity icon",
+              "type": "boolean"
+            },
+            "banner": {
+              "description": "render as a full-width banner",
+              "type": "boolean"
+            },
+            "closable": {
+              "description": "whether the alert can be dismissed",
+              "type": "boolean"
+            }
+          }
+        },
+        "widgetDataTemplate": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expression": {
+                "type": "string"
+              },
+              "forPath": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "widgetData"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "default": "v1beta1",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ],
+  "type": "object"
+}

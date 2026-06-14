@@ -1,0 +1,139 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "Upload",
+      "description": "Upload lets the user select files and uploads them to a resolved backend endpoint (resourceRefId) with the current bearer token",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["resourceRefId"],
+          "additionalProperties": false,
+          "properties": {
+            "resourceRefId": {
+              "type": "string",
+              "description": "the id of the resourceRef (in resourcesRefs) describing the upload target endpoint"
+            },
+            "label": {
+              "type": "string",
+              "description": "the label shown on the upload control"
+            },
+            "fieldName": {
+              "type": "string",
+              "description": "the multipart form field name used for the file (defaults to `file`)"
+            },
+            "listType": {
+              "type": "string",
+              "enum": ["text", "picture", "picture-card", "picture-circle"],
+              "description": "how the uploaded file list is rendered"
+            },
+            "accept": {
+              "type": "string",
+              "description": "the accepted file types (the input `accept` attribute, eg: `.json,.yaml`)"
+            },
+            "multiple": {
+              "type": "boolean",
+              "description": "whether multiple files can be selected"
+            },
+            "directory": {
+              "type": "boolean",
+              "description": "whether to allow selecting an entire directory"
+            },
+            "maxCount": {
+              "type": "integer",
+              "description": "the maximum number of files allowed"
+            },
+            "successMessage": {
+              "type": "string",
+              "description": "message displayed in a toast after a successful upload"
+            },
+            "errorMessage": {
+              "type": "string",
+              "description": "message displayed in a toast when an upload fails"
+            }
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
+                  }
+                },
+                "required": ["allowed", "id"]
+              }
+            }
+          },
+          "required": ["items"]
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

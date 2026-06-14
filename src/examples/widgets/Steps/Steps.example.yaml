@@ -1,0 +1,44 @@
+# Basic horizontal steps
+# Target: render a multi-step process with the second step active.
+# Expected behavior: three steps shown horizontally, step index 1 in the "process" state.
+kind: Steps
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-steps-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    current: 1
+    direction: horizontal
+    items:
+      - title: "Login"
+        description: "Authenticate with the platform"
+        status: finish
+      - title: "Verification"
+        description: "Validate your account"
+      - title: "Done"
+        description: "All set"
+---
+# Vertical steps with icons
+# Target: vertical layout, per-step status and font-awesome icons.
+# Expected behavior: steps stacked vertically, each rendering its icon and status.
+kind: Steps
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-steps-vertical
+  namespace: krateo-system
+spec:
+  widgetData:
+    current: 0
+    direction: vertical
+    size: small
+    items:
+      - title: "Plan"
+        icon: "fa-clipboard-list"
+        status: process
+      - title: "Build"
+        icon: "fa-hammer"
+        status: wait
+      - title: "Ship"
+        icon: "fa-rocket"
+        status: wait

@@ -1,0 +1,23 @@
+# Success result
+kind: Result
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-result-success
+  namespace: krateo-system
+spec:
+  widgetData:
+    status: "success"
+    subTitle: "Your resources are being provisioned."
+    title: "Composition created"
+---
+# Error result
+kind: Result
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-result-error
+  namespace: krateo-system
+spec:
+  widgetData:
+    status: "error"
+    subTitle: "Check the form and try again."
+    title: "Submission failed"

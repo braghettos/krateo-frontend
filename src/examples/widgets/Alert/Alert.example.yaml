@@ -1,0 +1,24 @@
+# Info alert with icon
+kind: Alert
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-alert-info
+  namespace: krateo-system
+spec:
+  widgetData:
+    description: "Your composition is being reconciled."
+    message: "Heads up"
+    showIcon: true
+    type: "info"
+---
+# Error banner
+kind: Alert
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-alert-error
+  namespace: krateo-system
+spec:
+  widgetData:
+    banner: true
+    message: "Reconciliation failed"
+    type: "error"

@@ -10,6 +10,8 @@
     "lint:css": "stylelint \"src/**/*.module.css\" --fix",
     "generate-types": "tsx scripts/generate-types.ts",
     "generate-crds": "tsx scripts/gen-crds.ts",
+    "scaffold-widget": "tsx scripts/scaffold-widget.ts",
+    "gen-antd-widgets": "tsx scripts/gen-antd-widgets.ts",
     "apply-all": "tsx scripts/apply-k8s-yamls.ts",
     "validate-schemas": "tsx scripts/validate-schemas.ts",
     "get-access-token": "tsx scripts/get-access-token.ts",

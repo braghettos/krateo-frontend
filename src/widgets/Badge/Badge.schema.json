@@ -1,0 +1,93 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "default": "Badge",
+      "description": "Badge shows a small count or status dot",
+      "type": "string"
+    },
+    "spec": {
+      "additionalProperties": false,
+      "properties": {
+        "apiRef": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "namespace"
+          ],
+          "type": "object"
+        },
+        "widgetData": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "count": {
+              "description": "the number shown in the badge",
+              "type": "integer"
+            },
+            "text": {
+              "description": "the text shown next to a status dot",
+              "type": "string"
+            },
+            "status": {
+              "description": "the status style",
+              "enum": [
+                "success",
+                "processing",
+                "default",
+                "error",
+                "warning"
+              ],
+              "type": "string"
+            },
+            "showZero": {
+              "description": "whether to show the badge when count is zero",
+              "type": "boolean"
+            },
+            "dot": {
+              "description": "render a dot instead of a count",
+              "type": "boolean"
+            }
+          }
+        },
+        "widgetDataTemplate": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expression": {
+                "type": "string"
+              },
+              "forPath": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "widgetData"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "default": "v1beta1",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ],
+  "type": "object"
+}

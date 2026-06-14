@@ -1,3 +1,5 @@
+import { defineWidget } from '../widget-module'
+
 import LineChart from './LineChart'
 
-export default LineChart
+export default defineWidget({ component: LineChart, kind: 'LineChart' })

@@ -1,0 +1,28 @@
+# Line progress at 60%
+# Target: default line progress with info text.
+# Expected behavior: a horizontal bar filled to 60% showing "60%".
+kind: Progress
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-progress-line
+  namespace: krateo-system
+spec:
+  widgetData:
+    percent: 60
+    type: line
+    showInfo: true
+---
+# Circle progress, success state
+# Target: circular gauge in the success state with a custom stroke color.
+# Expected behavior: a green circle filled to 100% with a success check.
+kind: Progress
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-progress-circle
+  namespace: krateo-system
+spec:
+  widgetData:
+    percent: 100
+    type: circle
+    status: success
+    strokeColor: green

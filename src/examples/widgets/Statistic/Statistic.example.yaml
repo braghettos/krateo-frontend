@@ -1,0 +1,23 @@
+# Basic statistic
+kind: Statistic
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-statistic-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    title: "Active compositions"
+    value: 42
+---
+# Statistic with suffix
+kind: Statistic
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-statistic-suffix
+  namespace: krateo-system
+spec:
+  widgetData:
+    precision: 1
+    suffix: "%"
+    title: "Uptime"
+    value: 99.9
