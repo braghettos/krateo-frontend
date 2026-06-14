@@ -1,0 +1,13 @@
+# Ant Design DatePicker as a form control (child of a Form widget).
+kind: DatePicker
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-datepicker
+  namespace: krateo-system
+spec:
+  widgetData:
+    name: startDate
+    label: Start date
+    required: true
+    picker: date
+    placeholder: Pick a date

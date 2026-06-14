@@ -1,0 +1,69 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "default": "v1beta1" },
+    "kind": {
+      "default": "Radio",
+      "description": "Radio is a form-control widget wrapping Ant Design Radio.Group. It renders inside a Form widget's context and binds its value by `name`.",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["widgetData"],
+      "additionalProperties": false,
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "options"],
+          "properties": {
+            "name": { "type": "string", "description": "form field key — antd Form.Item `name`" },
+            "label": { "type": "string", "description": "antd Form.Item `label`" },
+            "required": { "type": "boolean", "description": "add a required validation rule" },
+            "defaultValue": { "type": "string", "description": "antd Form.Item `initialValue`" },
+            "options": {
+              "type": "array",
+              "description": "antd Radio.Group `options`",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["value"],
+                "properties": {
+                  "label": { "type": "string", "description": "option label (defaults to value)" },
+                  "value": { "type": "string", "description": "option value" },
+                  "disabled": { "type": "boolean", "description": "antd option `disabled`" }
+                }
+              }
+            },
+            "optionType": { "type": "string", "enum": ["default", "button"], "description": "antd Radio.Group `optionType`" },
+            "buttonStyle": { "type": "string", "enum": ["outline", "solid"], "description": "antd Radio.Group `buttonStyle`" },
+            "size": { "type": "string", "enum": ["small", "middle", "large"], "description": "antd Radio.Group `size`" },
+            "disabled": { "type": "boolean", "description": "antd Radio.Group `disabled`" }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}
