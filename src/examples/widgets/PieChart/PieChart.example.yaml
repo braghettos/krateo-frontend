@@ -1,118 +1,27 @@
-# Missing series
-# Target: simulate a pie chart without any data provided.
-# Expected behavior: the widget indicates absence of data by showing a placeholder.
+# Empty data — renders the <Empty/> placeholder.
 kind: PieChart
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
-  name: example-piechart-empty-series
+  name: example-piechart-empty
   namespace: krateo-system
 spec:
   widgetData:
-    title: "No data chart"
-    description: "Should render <Empty /> placeholder"
+    data: []
+    angleField: value
+    colorField: type
 ---
-# Empty data array
-# Target: handle a chart configuration where no segments are defined.
-# Expected behavior: the chart displays a single neutral (gray) segment representing the full total.
+# Pie (@ant-design/charts Pie): a flat `data` array + angle/color field mappings.
 kind: PieChart
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
-  name: example-piechart-empty-data
+  name: example-piechart
   namespace: krateo-system
 spec:
   widgetData:
-    title: "Empty data"
-    description: "No segments provided"
-    series:
-      total: 100
-      data: []
----
-# Partial total not fully filled
-# Target: visualize situations where the sum of segment values does not reach the total.
-# Expected behavior: colored segments reflect provided values, remaining portion is shown in gray to indicate unused capacity.
-kind: PieChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-piechart-partial-fill
-  namespace: krateo-system
-spec:
-  widgetData:
-    title: "Partial fill"
-    description: "Gray area represents remaining value"
-    series:
-      total: 100
-      data:
-        - color: blue
-          value: 30
-          label: "Blue"
-        - color: orange
-          value: 20
-          label: "Orange"
----
-# Fully filled total
-# Target: confirm rendering when segment values exactly match the total.
-# Expected behavior: chart shows only the defined segments; no neutral remainder is displayed.
-kind: PieChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-piechart-full-fill
-  namespace: krateo-system
-spec:
-  widgetData:
-    title: "Full fill"
-    description: "All values sum to total"
-    series:
-      total: 100
-      data:
-        - color: blue
-          value: 40
-          label: "Blue"
-        - color: green
-          value: 30
-          label: "Green"
-        - color: orange
-          value: 30
-          label: "Orange"
----
-# Overfilled total
-# Target: test behavior when total of segment values exceeds the declared total.
-# Expected behavior: all provided segments are rendered; no neutral portion is shown since the chart is fully occupied.
-kind: PieChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-piechart-overfilled
-  namespace: krateo-system
-spec:
-  widgetData:
-    title: "Overfilled total"
-    description: "Sum exceeds total (no gray remainder)"
-    series:
-      total: 50
-      data:
-        - color: red
-          value: 30
-          label: "Red"
-        - color: violet
-          value: 40
-          label: "Violet"
----
-# Missing description field
-# Target: ensure chart displays correctly even when optional description is omitted.
-# Expected behavior: chart renders normally with only the title visible; subtitle area remains empty.
-kind: PieChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-piechart-no-description
-  namespace: krateo-system
-spec:
-  widgetData:
-    title: "No description"
-    series:
-      total: 100
-      data:
-        - color: orange
-          value: 40
-          label: "Orange"
-        - color: green
-          value: 60
-          label: "Green"
+    data:
+      - { type: Running, value: 8 }
+      - { type: Pending, value: 2 }
+      - { type: Failed, value: 1 }
+    angleField: value
+    colorField: type
+    legend: true

@@ -1,6 +1,4 @@
-# Empty lines
-# Target: rendering fallback UI when no data is provided.
-# Expected behavior: displays <Empty /> placeholder since "lines" is null.
+# Empty data — renders the <Empty/> placeholder.
 kind: LineChart
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
@@ -8,116 +6,27 @@ metadata:
   namespace: krateo-system
 spec:
   widgetData:
-    lines: []
+    data: []
+    xField: time
+    yField: value
 ---
-# Single line
-# Target: rendering a single smooth line with valid coords.
-# Expected behavior: one line appears with correct color and legend entry.
+# Multi-series line (@ant-design/charts Line): a flat `data` array + field mappings.
 kind: LineChart
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
-  name: example-linechart-single
+  name: example-linechart
   namespace: krateo-system
 spec:
   widgetData:
-    lines:
-      - name: "CPU Usage"
-        color: "blue"
-        coords:
-          - xAxis: "00:00"
-            yAxis: "20"
-          - xAxis: "01:00"
-            yAxis: "45"
-          - xAxis: "02:00"
-            yAxis: "30"
-          - xAxis: "03:00"
-            yAxis: "50"
-    xAxisName: "Time"
-    yAxisName: "CPU (%)"
----
-# Multiple lines
-# Target: rendering multiple data series in a single chart.
-# Expected behavior: all lines appear together with distinct colors and shared x-axis.
-kind: LineChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-linechart-multi
-  namespace: krateo-system
-spec:
-  widgetData:
-    lines:
-      - name: "Temperature"
-        color: "red"
-        coords:
-          - xAxis: "00:00"
-            yAxis: "22"
-          - xAxis: "01:00"
-            yAxis: "24"
-          - xAxis: "02:00"
-            yAxis: "21"
-          - xAxis: "03:00"
-            yAxis: "26"
-      - name: "Humidity"
-        color: "blue"
-        coords:
-          - xAxis: "00:00"
-            yAxis: "45"
-          - xAxis: "01:00"
-            yAxis: "48"
-          - xAxis: "02:00"
-            yAxis: "50"
-          - xAxis: "03:00"
-            yAxis: "52"
-    xAxisName: "Time"
-    yAxisName: "Value"
----
-# Missing coords
-# Target: handling lines with empty or missing coordinate arrays.
-# Expected behavior: line with no coords is skipped; chart renders remaining valid lines.
-kind: LineChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-linechart-missing-coords
-  namespace: krateo-system
-spec:
-  widgetData:
-    lines:
-      - name: "Line A"
-        color: "green"
-        coords: []
-      - name: "Line B"
-        color: "orange"
-        coords:
-          - xAxis: "1"
-            yAxis: "10"
-          - xAxis: "2"
-            yAxis: "20"
-          - xAxis: "3"
-            yAxis: "15"
-    xAxisName: "Index"
-    yAxisName: "Value"
----
-# Non-numeric values
-# Target: ensuring chart stability when encountering string or malformed yAxis values.
-# Expected behavior: invalid values are treated as NaN; chart shows disconnected points (no connecting line) for valid ones, no crash occurs.
-kind: LineChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-linechart-invalid-values
-  namespace: krateo-system
-spec:
-  widgetData:
-    lines:
-      - name: "Temperature"
-        color: "red"
-        coords:
-          - xAxis: "00:00"
-            yAxis: "25"
-          - xAxis: "01:00"
-            yAxis: "twenty-eight"  # invalid numeric value
-          - xAxis: "02:00"
-            yAxis: "29"
-          - xAxis: "03:00"
-            yAxis: "thirty"       # invalid numeric value
-    xAxisName: "Time"
-    yAxisName: "°C"
+    data:
+      - { time: "00:00", value: 22, metric: Temperature }
+      - { time: "01:00", value: 24, metric: Temperature }
+      - { time: "02:00", value: 21, metric: Temperature }
+      - { time: "00:00", value: 45, metric: Humidity }
+      - { time: "01:00", value: 48, metric: Humidity }
+      - { time: "02:00", value: 50, metric: Humidity }
+    xField: time
+    yField: value
+    colorField: metric
+    shapeField: smooth
+    legend: true

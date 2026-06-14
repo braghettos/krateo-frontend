@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 
 import useCatchError from '../../hooks/useCatchError'
 import { useWidgetQuery } from '../../hooks/useWidgetQuery'
@@ -51,7 +51,13 @@ const parseWidget = (
   }
 
   const Component = module.component
-  const element = <Component {...props} widget={widget} widgetData={widgetData} />
+  // Suspense boundary so lazy-loaded widgets (e.g. the chart widgets, which
+  // code-split the heavy G2 bundle) show the loading state while their chunk loads.
+  const element = (
+    <Suspense fallback={<WidgetLoading />}>
+      <Component {...props} widget={widget} widgetData={widgetData} />
+    </Suspense>
+  )
 
   if (module.paginated) {
     return (

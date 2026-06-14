@@ -8,7 +8,7 @@
     },
     "kind": {
       "default": "LineChart",
-      "description": "LineChart displays a customizable line chart based on time series or numerical data. It supports multiple lines with colored coordinates and axis labels, typically used to visualize metrics from Kubernetes resources",
+      "description": "LineChart wraps the @ant-design/charts Line component (AntV G2). It mirrors that library's data + field-mapping API: pass a flat `data` array and map fields to positions/color.",
       "type": "string"
     },
     "spec": {
@@ -16,76 +16,30 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "description": "data used to render the chart including lines and axis labels",
+          "additionalProperties": false,
+          "required": ["data", "xField", "yField"],
+          "description": "@ant-design/charts Line config (AntV G2)",
           "properties": {
-            "lines": {
+            "data": {
               "type": "array",
-              "description": "list of data series to be rendered as individual lines",
-              "items": {
-                "type": "object",
-                "description": "configuration for a single line in the chart",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "label of the line displayed in the legend"
-                  },
-                  "color": {
-                    "type": "string",
-                    "enum": [
-                      "blue",
-                      "darkBlue",
-                      "orange",
-                      "gray",
-                      "red",
-                      "green",
-                      "violet"
-                    ],
-                    "description": "color used to render the line"
-                  },
-                  "coords": {
-                    "type": "array",
-                    "description": "data points that define the line",
-                    "items": {
-                      "type": "object",
-                      "required": ["xAxis", "yAxis"],
-                      "properties": {
-                        "xAxis": {
-                          "type": "string",
-                          "description": "value on the x axis"
-                        },
-                        "yAxis": {
-                          "type": "string",
-                          "description": "value on the y axis"
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  }
-                },
-                "additionalProperties": false
-              }
+              "description": "chart data records (G2 `data`)",
+              "items": { "type": "object", "additionalProperties": true }
             },
-            "xAxisName": {
-              "type": "string",
-              "description": "label for the x axis"
-            },
-            "yAxisName": {
-              "type": "string",
-              "description": "label for the y axis"
-            }
-          },
-          "required": ["lines"],
-          "additionalProperties": false
+            "xField": { "type": "string", "description": "field mapped to the x position (G2 `xField`)" },
+            "yField": { "type": "string", "description": "field mapped to the y position (G2 `yField`)" },
+            "colorField": { "type": "string", "description": "field mapped to color / series (G2 `colorField`)" },
+            "shapeField": { "type": "string", "description": "line shape, e.g. 'smooth' or 'line' (G2 `shapeField`)" },
+            "stack": { "type": "boolean", "description": "stack the series (G2 `stack`)" },
+            "legend": { "type": "boolean", "description": "show the legend; false hides it (G2 `legend`)" },
+            "title": { "type": "string", "description": "chart title (G2 `title`)" },
+            "height": { "type": "integer", "description": "fixed height in px (G2 `height`); omit to autofit" }
+          }
         },
         "apiRef": {
           "type": "object",
           "properties": {
-            "name": {
-              "type": "string"
-            },
-            "namespace": {
-              "type": "string"
-            }
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
           },
           "required": ["name", "namespace"],
           "additionalProperties": false
@@ -95,12 +49,8 @@
           "items": {
             "type": "object",
             "properties": {
-              "forPath": {
-                "type": "string"
-              },
-              "expression": {
-                "type": "string"
-              }
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
             },
             "additionalProperties": false
           }

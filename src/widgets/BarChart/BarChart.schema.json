@@ -8,7 +8,7 @@
     },
     "kind": {
       "default": "BarChart",
-      "description": "BarChart express quantities through a bar's length, using a common baseline. Bar charts series should contain a `data` property containing an array of values",
+      "description": "BarChart wraps the @ant-design/charts Column component (AntV G2 — vertical bars). It mirrors that library's data + field-mapping API.",
       "type": "string"
     },
     "spec": {
@@ -16,67 +16,30 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": ["data"],
+          "additionalProperties": false,
+          "required": ["data", "xField", "yField"],
+          "description": "@ant-design/charts Column config (AntV G2)",
           "properties": {
             "data": {
               "type": "array",
-              "description": "Array of grouped data entries for the bar chart",
-              "items": {
-                "type": "object",
-                "required": ["bars"],
-                "properties": {
-                  "label": {
-                    "type": "string",
-                    "description": "Label for the group/category"
-                  },
-                  "bars": {
-                    "type": "array",
-                    "description": "Bars within the group, each representing a value",
-                    "items": {
-                      "type": "object",
-                      "required": ["value", "percentage"],
-                      "properties": {
-                        "value": {
-                          "type": "string",
-                          "description": "Label or identifier for the bar"
-                        },
-                        "percentage": {
-                          "type": "integer",
-                          "description": "Height of the bar as a percentage (0–100)"
-                        },
-                        "color": {
-                          "type": "string",
-                          "enum": [
-                            "blue",
-                            "darkBlue",
-                            "orange",
-                            "gray",
-                            "red",
-                            "green",
-                            "violet"
-                          ],
-                          "description": "Color of the bar"
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  }
-                },
-                "additionalProperties": false
-              }
-            }
-          },
-          "additionalProperties": false
+              "description": "chart data records (G2 `data`)",
+              "items": { "type": "object", "additionalProperties": true }
+            },
+            "xField": { "type": "string", "description": "field mapped to the category axis (G2 `xField`)" },
+            "yField": { "type": "string", "description": "field mapped to the value axis (G2 `yField`)" },
+            "colorField": { "type": "string", "description": "field mapped to color / series (G2 `colorField`)" },
+            "stack": { "type": "boolean", "description": "stack series sharing an x value (G2 `stack`)" },
+            "group": { "type": "boolean", "description": "group series side-by-side at each x value (G2 `group`)" },
+            "legend": { "type": "boolean", "description": "show the legend; false hides it (G2 `legend`)" },
+            "title": { "type": "string", "description": "chart title (G2 `title`)" },
+            "height": { "type": "integer", "description": "fixed height in px (G2 `height`); omit to autofit" }
+          }
         },
         "apiRef": {
           "type": "object",
           "properties": {
-            "name": {
-              "type": "string"
-            },
-            "namespace": {
-              "type": "string"
-            }
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
           },
           "additionalProperties": false,
           "required": ["name", "namespace"]
@@ -86,12 +49,8 @@
           "items": {
             "type": "object",
             "properties": {
-              "forPath": {
-                "type": "string"
-              },
-              "expression": {
-                "type": "string"
-              }
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
             },
             "additionalProperties": false
           }

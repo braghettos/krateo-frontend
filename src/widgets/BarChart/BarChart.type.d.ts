@@ -1,37 +1,52 @@
 export interface BarChart {
   version: string
   /**
-   * BarChart express quantities through a bar's length, using a common baseline. Bar charts series should contain a `data` property containing an array of values
+   * BarChart wraps the @ant-design/charts Column component (AntV G2 — vertical bars). It mirrors that library's data + field-mapping API.
    */
   kind: string
   spec: {
+    /**
+     * @ant-design/charts Column config (AntV G2)
+     */
     widgetData: {
       /**
-       * Array of grouped data entries for the bar chart
+       * chart data records (G2 `data`)
        */
       data: {
-        /**
-         * Label for the group/category
-         */
-        label?: string
-        /**
-         * Bars within the group, each representing a value
-         */
-        bars: {
-          /**
-           * Label or identifier for the bar
-           */
-          value: string
-          /**
-           * Height of the bar as a percentage (0–100)
-           */
-          percentage: number
-          /**
-           * Color of the bar
-           */
-          color?: 'blue' | 'darkBlue' | 'orange' | 'gray' | 'red' | 'green' | 'violet'
-        }[]
+        [k: string]: unknown
       }[]
+      /**
+       * field mapped to the category axis (G2 `xField`)
+       */
+      xField: string
+      /**
+       * field mapped to the value axis (G2 `yField`)
+       */
+      yField: string
+      /**
+       * field mapped to color / series (G2 `colorField`)
+       */
+      colorField?: string
+      /**
+       * stack series sharing an x value (G2 `stack`)
+       */
+      stack?: boolean
+      /**
+       * group series side-by-side at each x value (G2 `group`)
+       */
+      group?: boolean
+      /**
+       * show the legend; false hides it (G2 `legend`)
+       */
+      legend?: boolean
+      /**
+       * chart title (G2 `title`)
+       */
+      title?: string
+      /**
+       * fixed height in px (G2 `height`); omit to autofit
+       */
+      height?: number
     }
     apiRef?: {
       name: string
