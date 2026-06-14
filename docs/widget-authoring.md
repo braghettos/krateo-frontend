@@ -36,6 +36,20 @@ The backend (snowplow) resolves a `Widget` CR and the frontend renders its
 - If a schema declares `spec.actions`, it must include **all four** action types
   (enforced by `npm run validate-schemas`).
 
+## Ant Design fidelity (the naming + property-schema convention)
+
+Widgets respect Ant Design **as much as possible** — both the kind name and the `widgetData` property schema:
+
+- **Kind name.** A widget that 1:1-wraps a single antd component takes that component's exact name as its `kind` (`Card`←Panel, `Col`←Column, `Tabs`←TabList, `Menu`←NavMenu). Composites, distinct concepts, and non-antd widgets keep a descriptive name (`Filters`, `BarChart`, `ButtonGroup`, `PieChart`, `FlowChart`, `AppShell`).
+- **Property schema.** `widgetData` copies antd's prop **names, enums and value shapes verbatim** for every serializable prop. Example — `List` mirrors antd `List`: `grid` is antd's `ListGridType` (`{ gutter, column, xs…xxl }`), plus `itemLayout`, `size`, `bordered`, `split`, `loading`, `dataSource`.
+- **Necessary divergences** (a CR can't carry functions or ReactNodes), each with a serializable substitute:
+  - `renderItem` (function) → an `itemTemplate` (field→slot mapping), or a child widget when a `dataSource` element carries a `resourceRefId`.
+  - `header`/`footer` (ReactNode) → `string`.
+  - event handlers (`onClick`, …) → a `WidgetActions` id.
+  - `pagination` (antd page-based) → Krateo's cumulative-slice `ScrollPagination` (the registry `paginated` flag).
+- **Krateo-only props are additive**: `sseEndpoint`/`sseTopic`, filter `prefix`, `maxItems`.
+- **Renames keep back-compat:** the old `kind` stays as a registry `alias` (`Panel`→`Card`, `DataGrid`→`List`), so existing CRs render unchanged. Regenerated CRDs use the new kind name — retain old CRDs (or add a snowplow kind-alias) for clusters with legacy CRs.
+
 ## Prop classification
 
 When mapping an antd component, sort each prop into one of:
