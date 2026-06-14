@@ -1,14 +1,16 @@
 import { LoadingOutlined } from '@ant-design/icons'
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Result, Space, Spin } from 'antd'
+import { Button, Form as AntdForm, Result, Space, Spin } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import dayjs from 'dayjs'
 import type { JSONSchema4 } from 'json-schema'
 import { useEffect, useId, useRef } from 'react'
 
+import WidgetRenderer from '../../components/WidgetRenderer'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import type { WidgetProps } from '../../types/Widget'
+import { getEndpointUrl } from '../../utils/utils'
 import { useDrawerContext } from '../Drawer/DrawerContext'
 
 import styles from './Form.module.css'
@@ -82,6 +84,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     disabled,
     fieldDescription,
     initialValues,
+    items,
     layout,
     objectFields,
     schema,
@@ -109,19 +112,21 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     .flat()
     .find(({ id }) => id === submitActionId)
 
-  if (!schema && !stringSchema) {
+  const hasGenerator = Boolean(schema || stringSchema)
+
+  if (!hasGenerator && !items?.length) {
     return (
       <div className={styles.message}>
         <Result
           status='error'
-          subTitle={`The widget definition does not include a schema or stringSchema for Form fields`}
+          subTitle={`The Form widget needs a schema/stringSchema (generator) or items (composable form-control widgets)`}
           title='Error while rendering widget'
         />
       </div>
     )
   }
 
-  const formSchema = (stringSchema ? JSON.parse(stringSchema) : schema) as JSONSchema4
+  const formSchema = hasGenerator ? ((stringSchema ? JSON.parse(stringSchema) : schema) as JSONSchema4) : undefined
 
   // If the form is inside a Drawer, button will be already rendered in the Drawer
   const shouldRenderButtonsInsideForm = !insideDrawer
@@ -169,20 +174,38 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
 
   return (
     <div className={styles.form} data-inside-drawer={insideDrawer}>
-      <FormGenerator
-        autocomplete={autocomplete}
-        dependencies={dependencies}
-        descriptionTooltip={fieldDescription === 'tooltip'}
-        disabled={disabled}
-        formId={formId}
-        initialValues={initialValues}
-        layout={layout}
-        objectFields={objectFields}
-        onSubmit={values => onSubmit(values)}
-        resourcesRefs={resourcesRefs}
-        schema={formSchema}
-        size={size}
-      />
+      {hasGenerator
+        ? (
+          <FormGenerator
+            autocomplete={autocomplete}
+            dependencies={dependencies}
+            descriptionTooltip={fieldDescription === 'tooltip'}
+            disabled={disabled}
+            formId={formId}
+            initialValues={initialValues}
+            layout={layout}
+            objectFields={objectFields}
+            onSubmit={values => onSubmit(values)}
+            resourcesRefs={resourcesRefs}
+            schema={formSchema as JSONSchema4}
+            size={size}
+          />
+        )
+        : (
+          <AntdForm
+            disabled={disabled}
+            id={formId}
+            initialValues={initialValues}
+            layout={layout}
+            onFinish={(values) => { void onSubmit(values as Record<string, unknown>) }}
+            size={size}
+          >
+            {(items ?? []).map(({ resourceRefId }, index) => {
+              const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
+              return endpoint ? <WidgetRenderer key={`${formId}-${index}`} widgetEndpoint={endpoint} /> : null
+            })}
+          </AntdForm>
+        )}
 
       <div className={styles.extra}>
         {shouldRenderButtonsInsideForm ? <FormExtra buttonConfig={buttonConfig} form={formId} loading={isActionLoading} /> : null}

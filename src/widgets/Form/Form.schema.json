@@ -348,6 +348,18 @@
               "description": "the schema of the form as a string",
               "type": "string"
             },
+            "items": {
+              "description": "resourceRefIds of form-control widgets (Input, Select, Switch, …) to compose inside the Form. Composable mode — an alternative to the schema/stringSchema generator.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["resourceRefId"],
+                "additionalProperties": false,
+                "properties": {
+                  "resourceRefId": { "type": "string", "description": "the identifier of the form-control widget to render" }
+                }
+              }
+            },
             "submitActionId": {
               "description": "the id of the action to be called when the form is submitted",
               "type": "string"

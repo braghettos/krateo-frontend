@@ -254,6 +254,15 @@ export interface Form {
        */
       stringSchema?: string
       /**
+       * resourceRefIds of form-control widgets (Input, Select, Switch, …) to compose inside the Form. Composable mode — an alternative to the schema/stringSchema generator.
+       */
+      items?: {
+        /**
+         * the identifier of the form-control widget to render
+         */
+        resourceRefId: string
+      }[]
+      /**
        * the id of the action to be called when the form is submitted
        */
       submitActionId: string
