@@ -1,6 +1,0 @@
-.listObjectFields {
-  /* Hides 'No Data' placeholder when the List is empty */
-  :global(.ant-list-empty-text) {
-    display: none;
-  }
-}

@@ -1,0 +1,15 @@
+# Ant Design InputNumber as a form control (child of a Form widget).
+kind: InputNumber
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-inputnumber
+  namespace: krateo-system
+spec:
+  widgetData:
+    name: replicas
+    label: Replicas
+    required: true
+    min: 1
+    max: 10
+    step: 1
+    defaultValue: 3

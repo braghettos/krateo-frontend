@@ -1,0 +1,16 @@
+# Ant Design Radio.Group as a form control (child of a Form widget).
+kind: Radio
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-radio
+  namespace: krateo-system
+spec:
+  widgetData:
+    name: visibility
+    label: Visibility
+    required: true
+    optionType: button
+    defaultValue: private
+    options:
+      - { label: Private, value: private }
+      - { label: Public, value: public }

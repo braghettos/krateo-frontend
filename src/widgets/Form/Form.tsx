@@ -1,41 +1,31 @@
 import { LoadingOutlined } from '@ant-design/icons'
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Result, Space, Spin } from 'antd'
+import { Button, Form as AntdForm, Result, Space, Spin } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import dayjs from 'dayjs'
-import type { JSONSchema4 } from 'json-schema'
 import { useEffect, useId, useRef } from 'react'
 
+import WidgetRenderer from '../../components/WidgetRenderer'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import type { WidgetProps } from '../../types/Widget'
+import { getEndpointUrl } from '../../utils/utils'
 import { useDrawerContext } from '../Drawer/DrawerContext'
 
 import styles from './Form.module.css'
 import type { Form as WidgetType } from './Form.type'
-import FormGenerator from './FormGenerator'
 
 export type FormWidgetData = WidgetType['spec']['widgetData']
 
 /**
- * Returns a new object where all Dayjs instances in a flat input object
- * are converted into ISO 8601 string format using `.toISOString()`.
- *
- * This function does not mutate the original object. It returns a shallow copy
- * of the input where any Dayjs values are stringified.
- *
- * @param values - A flat object with values that may include Dayjs instances
- * @returns A new object with Dayjs instances converted to ISO strings
+ * Returns a shallow copy of a flat object where Dayjs values are converted to ISO
+ * strings (form-control values like DatePicker are Dayjs; they must be serialized).
  */
 export const convertDayjsToISOString = (values: Record<string, unknown>) => {
   const result: Record<string, unknown> = {}
 
   Object.entries(values).forEach(([key, value]) => {
-    if (dayjs.isDayjs(value)) {
-      result[key] = value.toISOString()
-    } else {
-      result[key] = value
-    }
+    result[key] = dayjs.isDayjs(value) ? value.toISOString() : value
   })
 
   return result
@@ -73,22 +63,15 @@ const FormExtra = ({ buttonConfig, disabled = false, form, loading }: FormExtraP
   )
 }
 
+/**
+ * Composable Form: provides the antd Form context + submit, and renders its
+ * child form-control widgets (Input/Select/Switch/…) which self-bind by
+ * `Form.Item` name. There is no client-side schema generator — a CR that needs
+ * to build fields from a source schema does so server-side via a jq expression
+ * in `widgetDataTemplate` that populates `items`.
+ */
 const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>) => {
-  const {
-    actions,
-    autocomplete,
-    buttonConfig,
-    dependencies,
-    disabled,
-    fieldDescription,
-    initialValues,
-    layout,
-    objectFields,
-    schema,
-    size,
-    stringSchema,
-    submitActionId,
-  } = widgetData
+  const { actions, buttonConfig, disabled, initialValues, items, layout, size, submitActionId } = widgetData
   const { insideDrawer, setDrawerData } = useDrawerContext()
   const alreadySetDrawerData = useRef(false)
 
@@ -109,23 +92,6 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     .flat()
     .find(({ id }) => id === submitActionId)
 
-  if (!schema && !stringSchema) {
-    return (
-      <div className={styles.message}>
-        <Result
-          status='error'
-          subTitle={`The widget definition does not include a schema or stringSchema for Form fields`}
-          title='Error while rendering widget'
-        />
-      </div>
-    )
-  }
-
-  const formSchema = (stringSchema ? JSON.parse(stringSchema) : schema) as JSONSchema4
-
-  // If the form is inside a Drawer, button will be already rendered in the Drawer
-  const shouldRenderButtonsInsideForm = !insideDrawer
-
   const onSubmit = async (formValues: Record<string, unknown>) => {
     if (!action) {
       notification.error({
@@ -137,7 +103,6 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       return
     }
 
-    // TODO: check if in the future Form should handle other action types
     if (action.type !== 'rest') {
       notification.error({
         description: 'Submit action type is not "rest"',
@@ -148,15 +113,25 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       return
     }
 
-    // TODO: handle disabled buttons
     if (action.onEventNavigateTo) {
-      /* FIXME: This is a bit dirty, should disable the already present buttons instead */
       setDrawerData({ extra: <FormExtra buttonConfig={buttonConfig} disabled form={formId} loading={isActionLoading} /> })
     }
 
     const values = convertDayjsToISOString(formValues)
 
     await handleAction(action, resourcesRefs, values, widget)
+  }
+
+  if (!items?.length) {
+    return (
+      <div className={styles.message}>
+        <Result
+          status='error'
+          subTitle={`The Form widget has no items (form-control widgets) to render`}
+          title='Error while rendering widget'
+        />
+      </div>
+    )
   }
 
   if (isActionLoading) {
@@ -167,22 +142,24 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     )
   }
 
+  // If the form is inside a Drawer, buttons are already rendered in the Drawer
+  const shouldRenderButtonsInsideForm = !insideDrawer
+
   return (
     <div className={styles.form} data-inside-drawer={insideDrawer}>
-      <FormGenerator
-        autocomplete={autocomplete}
-        dependencies={dependencies}
-        descriptionTooltip={fieldDescription === 'tooltip'}
+      <AntdForm
         disabled={disabled}
-        formId={formId}
+        id={formId}
         initialValues={initialValues}
         layout={layout}
-        objectFields={objectFields}
-        onSubmit={values => onSubmit(values)}
-        resourcesRefs={resourcesRefs}
-        schema={formSchema}
+        onFinish={(formValues) => { void onSubmit(formValues as Record<string, unknown>) }}
         size={size}
-      />
+      >
+        {items.map(({ resourceRefId }, index) => {
+          const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
+          return endpoint ? <WidgetRenderer key={`${formId}-${index}`} widgetEndpoint={endpoint} /> : null
+        })}
+      </AntdForm>
 
       <div className={styles.extra}>
         {shouldRenderButtonsInsideForm ? <FormExtra buttonConfig={buttonConfig} form={formId} loading={isActionLoading} /> : null}

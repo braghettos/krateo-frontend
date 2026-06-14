@@ -1,0 +1,17 @@
+# Ant Design Select as a form control (child of a Form widget).
+kind: Select
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-select
+  namespace: krateo-system
+spec:
+  widgetData:
+    name: environment
+    label: Environment
+    placeholder: Choose an environment
+    required: true
+    allowClear: true
+    options:
+      - { label: Development, value: dev }
+      - { label: Staging, value: staging }
+      - { label: Production, value: prod }

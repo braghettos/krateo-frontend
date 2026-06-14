@@ -15,62 +15,60 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": ["fields", "prefix"],
+          "required": ["items", "prefix"],
+          "additionalProperties": false,
           "properties": {
             "prefix": {
-              "description": "the prefix to share filters values to other widgets",
+              "description": "the prefix used to share filter values with the widgets being filtered",
               "type": "string"
             },
-            "fields": {
+            "items": {
+              "description": "resourceRefIds of form-control widgets (Input/Select/Switch/DatePicker/…) composed as filter fields. Each control's `name` is the dotted data path it filters; the match strategy is inferred from the value type.",
               "type": "array",
-              "description": "it defines the filters as fields of a Form",
               "items": {
                 "type": "object",
-                "required": ["label", "type", "name"],
+                "required": ["resourceRefId"],
+                "additionalProperties": false,
                 "properties": {
-                  "label": {
-                    "description": "the label of the field",
-                    "type": "string"
-                  },
-                  "name": {
-                    "description": "the name of the filter field, it must to be identical to the widget prop name to filter or data in dataset",
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "description": {
-                    "description": "text to show as tooltip",
-                    "type": "string"
-                  },
-                  "type": {
-                    "description": "it's the filter field type, to render input, select, radio buttons, date picker or daterange picker",
+                  "resourceRefId": {
                     "type": "string",
-                    "enum": ["string", "boolean", "number", "date", "daterange"]
-                  },
-                  "options": {
-                    "description": "they're the options for select or radio, the type must be 'string'",
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                    "description": "the identifier of the form-control widget to render as a filter field"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": { "type": "boolean" },
+                  "apiVersion": { "type": "string" },
+                  "id": { "type": "string" },
+                  "name": { "type": "string" },
+                  "namespace": { "type": "string" },
+                  "resource": { "type": "string" },
+                  "verb": {
+                    "type": "string",
+                    "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
                   }
                 },
-                "additionalProperties": false
+                "required": ["allowed", "id"]
               }
             }
           },
-          "additionalProperties": false
+          "required": ["items"]
         },
         "apiRef": {
           "type": "object",
           "properties": {
-            "name": {
-              "type": "string"
-            },
-            "namespace": {
-              "type": "string"
-            }
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
           },
           "required": ["name", "namespace"],
           "additionalProperties": false
@@ -80,12 +78,8 @@
           "items": {
             "type": "object",
             "properties": {
-              "forPath": {
-                "type": "string"
-              },
-              "expression": {
-                "type": "string"
-              }
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
             },
             "additionalProperties": false
           }

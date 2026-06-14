@@ -6,9 +6,19 @@ import { useEvents } from '../../hooks/useEvents'
 import type { TableWidgetData } from '../../widgets/Table/Table'
 
 export type FilterType = {
-  fieldType: 'string' | 'number' | 'boolean' | 'date' | 'daterange'
+  // Optional: when omitted (e.g. filters built from composed control widgets), the
+  // match strategy is inferred from the value type. Table-style filters still pass it.
+  fieldType?: 'string' | 'number' | 'boolean' | 'date' | 'daterange'
   fieldName: string[]
   fieldValue: unknown
+}
+
+const inferFieldType = (value: unknown): NonNullable<FilterType['fieldType']> => {
+  if (dayjs.isDayjs(value)) { return 'date' }
+  if (Array.isArray(value) && dayjs.isDayjs(value[0])) { return 'daterange' }
+  if (typeof value === 'boolean') { return 'boolean' }
+  if (typeof value === 'number') { return 'number' }
+  return 'string'
 }
 
 type FilterMap = Record<string, FilterType[]>
@@ -95,7 +105,8 @@ const FiltersProvider = ({ children }: { children: ReactNode }) => {
   }, [off, on])
 
   const matchesFilter = (itemValue: unknown, filter: FilterType): boolean => {
-    const { fieldType, fieldValue } = filter
+    const { fieldValue } = filter
+    const fieldType = filter.fieldType ?? inferFieldType(fieldValue)
 
     if (itemValue === null || itemValue === undefined) {
       return false

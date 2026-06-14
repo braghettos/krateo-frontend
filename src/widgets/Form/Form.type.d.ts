@@ -246,87 +246,18 @@ export interface Form {
        */
       initialValues?: Record<string, unknown>
       /**
-       * the schema of the form as an object
+       * resourceRefIds of form-control widgets (Input, Select, Switch, …) to compose inside the Form. Composable mode — an alternative to the schema/stringSchema generator.
        */
-      schema?: object
-      /**
-       * the schema of the form as a string
-       */
-      stringSchema?: string
-      /**
-       * the id of the action to be called when the form is submitted
-       */
-      submitActionId: string
-      /**
-       * the displaying mode of the field description, default is inline but it could also be displayed as a tooltip
-       */
-      fieldDescription?: 'tooltip' | 'inline'
-      /**
-       * Configuration for the Autocomplete form fields. The field options could be configured using enum values coming from the schema or via an API call made using a RESTAction which sould be defined below. The RESTActions shuold contain a `status` field, which is an array of object with the `{ label, value }` format.
-       */
-      autocomplete?: {
+      items?: {
         /**
-         * parameter to be added to the RESTAction call
-         */
-        extra?: {
-          /**
-           * the key of the additional parameter
-           */
-          key: string
-        }
-        /**
-         * the name of the autocomplete field
-         */
-        name: string
-        /**
-         * the identifier of the RESTAction that should be called to retrieve autocomplete data
-         */
-        resourceRefId?: string
-      }[]
-      /**
-       * Configuration for the form fields who are dependent from other form fields. The field options are set via an API call made using a RESTAction which sould be defined below. The RESTActions shuold contain a `status` field, which is an array of object with the `{ label, value }` format.
-       */
-      dependencies?: {
-        /**
-         * the field on which this field depends on
-         */
-        dependsOn: {
-          /**
-           * the name of the field on which this field depends on
-           */
-          name: string
-        }
-        /**
-         * parameter to be added to the RESTAction call
-         */
-        extra: {
-          /**
-           * the key of the additional parameter
-           */
-          key: string
-        }
-        /**
-         * the name of the autocomplete field
-         */
-        name: string
-        /**
-         * the identifier of the RESTAction that should be called to retrieve dependency data
+         * the identifier of the form-control widget to render
          */
         resourceRefId: string
       }[]
       /**
-       * configuration for object fields in the form
+       * the id of the action to be called when the form is submitted
        */
-      objectFields?: {
-        /**
-         * the path of the object field
-         */
-        path: string
-        /**
-         * the field to display in the objects list
-         */
-        displayField: string
-      }[]
+      submitActionId: string
     }
     apiRef?: {
       name: string
