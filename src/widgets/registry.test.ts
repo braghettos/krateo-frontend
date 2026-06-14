@@ -65,8 +65,10 @@ describe('widgetRegistry', () => {
     }
   })
 
-  it('marks DataGrid as paginated', () => {
-    expect(widgetRegistry.DataGrid?.paginated).toBe(true)
+  it('marks List as paginated and resolves DataGrid as a back-compat alias of List', () => {
+    expect(widgetRegistry.List?.paginated).toBe(true)
+    // DataGrid folded into List: the legacy kind resolves to the very same module
+    expect(widgetRegistry.DataGrid).toBe(widgetRegistry.List)
   })
 
   it('excludes Drawer and Modal (mounted directly by WidgetPage, not via the registry)', () => {
