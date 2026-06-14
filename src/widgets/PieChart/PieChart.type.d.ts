@@ -24,6 +24,10 @@ export interface PieChart {
        */
       colorField: string
       /**
+       * donut hole as a percentage of the radius, 0-100 (maps to antd Pie `innerRadius` ÷ 100); omit for a full pie
+       */
+      innerRadius?: number
+      /**
        * show the legend; false hides it (G2 `legend`)
        */
       legend?: boolean
