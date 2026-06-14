@@ -20,6 +20,20 @@
           "type": "object",
           "required": ["actions", "submitActionId"],
           "properties": {
+            "layout": {
+              "description": "antd Form layout",
+              "type": "string",
+              "enum": ["horizontal", "vertical", "inline"]
+            },
+            "size": {
+              "description": "antd Form size",
+              "type": "string",
+              "enum": ["small", "middle", "large"]
+            },
+            "disabled": {
+              "description": "antd Form disabled (disables all fields)",
+              "type": "boolean"
+            },
             "actions": {
               "description": "the actions of the widget",
               "type": "object",

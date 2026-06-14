@@ -48,10 +48,19 @@
                 ]
               }
             },
-            "gap": {
-              "description": "the spacing between the items of the ButtonGroup. Default is 'small'",
-              "enum": ["extra-small", "small", "medium", "large"],
+            "size": {
+              "description": "antd Space size — spacing between items (legacy `gap` still accepted)",
+              "enum": ["small", "middle", "large"],
               "type": "string"
+            },
+            "direction": {
+              "description": "antd Space direction",
+              "enum": ["horizontal", "vertical"],
+              "type": "string"
+            },
+            "wrap": {
+              "description": "antd Space wrap",
+              "type": "boolean"
             },
             "items": {
               "description": "the items of the ButtonGroup",

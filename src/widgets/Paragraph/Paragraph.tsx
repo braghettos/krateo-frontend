@@ -9,10 +9,23 @@ import type { Paragraph as WidgetType } from './Paragraph.type'
 export type ParagraphWidgetData = WidgetType['spec']['widgetData']
 
 const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
-  const { text } = widgetData
+  const { code, copyable, delete: del, disabled, ellipsis, italic, mark, strong, text, type, underline } = widgetData
 
   return (
-    <Typography.Paragraph className={styles.paragraph} key={uid}>
+    <Typography.Paragraph
+      className={styles.paragraph}
+      code={code}
+      copyable={copyable}
+      delete={del}
+      disabled={disabled}
+      ellipsis={ellipsis}
+      italic={italic}
+      key={uid}
+      mark={mark}
+      strong={strong}
+      type={type}
+      underline={underline}
+    >
       <Linkify
         options={{
           rel: 'noopener noreferrer',

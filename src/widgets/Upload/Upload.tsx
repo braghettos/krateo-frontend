@@ -13,7 +13,9 @@ import type { Upload as WidgetType } from './Upload.type'
 export type UploadWidgetData = WidgetType['spec']['widgetData']
 
 const Upload = ({ resourcesRefs, uid, widgetData }: WidgetProps<UploadWidgetData>) => {
-  const { accept, directory, errorMessage, fieldName, label, listType, maxCount, multiple, resourceRefId, successMessage } = widgetData
+  const { accept, directory, errorMessage, label, listType, maxCount, multiple, resourceRefId, successMessage } = widgetData
+  // antd Upload `name`, with back-compat for the legacy `fieldName`.
+  const name = widgetData.name ?? (widgetData as { fieldName?: string }).fieldName
 
   const { config } = useConfigContext()
   const { notification } = useApp()
@@ -31,7 +33,7 @@ const Upload = ({ resourcesRefs, uid, widgetData }: WidgetProps<UploadWidgetData
 
     const url = `${config!.api.SNOWPLOW_API_BASE_URL}${resourceRef.path}`
     const formData = new FormData()
-    formData.append(fieldName || 'file', file as Blob)
+    formData.append(name || 'file', file as Blob)
 
     const xhr = new XMLHttpRequest()
     xhr.open(resourceRef.verb || 'POST', url)

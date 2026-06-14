@@ -13,7 +13,11 @@ import type { Table as WidgetType } from './Table.type'
 export type TableWidgetData = WidgetType['spec']['widgetData']
 
 const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>) => {
-  const { columns, data, pageSize, prefix } = widgetData
+  const { bordered, columns, pagination, prefix, size } = widgetData
+  // antd-faithful `dataSource`/`pagination`, with back-compat for the legacy `data`/`pageSize`.
+  const legacy = widgetData as { data?: TableWidgetData['dataSource']; pageSize?: number }
+  const data = widgetData.dataSource ?? legacy.data ?? []
+  const pageSize = pagination?.pageSize ?? pagination?.defaultPageSize ?? legacy.pageSize
   const { getFilteredData } = useFilter()
 
   // TODO: check if this works with RESTAction, it should not be displayed
@@ -27,17 +31,18 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
     )
   }
 
-  let dataTable: TableWidgetData['data'] = data
+  let dataTable: TableWidgetData['dataSource'] = data
   if (prefix && data?.length > 0) {
-    dataTable = getFilteredData(data, prefix) as TableWidgetData['data']
+    dataTable = getFilteredData(data, prefix) as TableWidgetData['dataSource']
   }
 
   return (
     <AntdTable
+      bordered={bordered}
       columns={columns?.map(({ color, title, valueKey }, index) => ({
         dataIndex: valueKey,
         key: `${uid}-col-${index}`,
-        render: (_: unknown, row: TableWidgetData['data'][number]) => {
+        render: (_: unknown, row: NonNullable<TableWidgetData['dataSource']>[number]) => {
           const cell = row.find((cell) => cell.valueKey === valueKey)
 
           if (!cell) {
@@ -107,8 +112,9 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
       }))}
       dataSource={dataTable}
       key={uid}
-      pagination={dataTable && pageSize && dataTable.length > pageSize ? { defaultPageSize: pageSize } : false}
+      pagination={pagination ?? (dataTable && pageSize && dataTable.length > pageSize ? { defaultPageSize: pageSize } : false)}
       scroll={{ x: 'max-content' }}
+      size={size}
     />
   )
 }
