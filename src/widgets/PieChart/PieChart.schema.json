@@ -27,6 +27,7 @@
             },
             "angleField": { "type": "string", "description": "field mapped to the slice value / angle (G2 `angleField`)" },
             "colorField": { "type": "string", "description": "field mapped to color / category (G2 `colorField`)" },
+            "innerRadius": { "type": "integer", "description": "donut hole as a percentage of the radius, 0-100 (maps to antd Pie `innerRadius` ÷ 100); omit for a full pie" },
             "legend": { "type": "boolean", "description": "show the legend; false hides it (G2 `legend`)" },
             "title": { "type": "string", "description": "chart title (G2 `title`)" },
             "height": { "type": "integer", "description": "fixed height in px (G2 `height`); omit to autofit" }
