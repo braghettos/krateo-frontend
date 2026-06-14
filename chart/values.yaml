@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/braghettos/frontend
+  repository: ghcr.io/braghettos/krateo-frontend
   pullPolicy: IfNotPresent
   # Empty -> the chart appVersion (= APP_VERSION = latest tag of the frontend app repo), so the
   # chart always deploys the image the app fork actually built. Override here to pin a tag.
