@@ -7,8 +7,8 @@
       "default": "v1beta1"
     },
     "kind": {
-      "default": "Panel",
-      "description": "Panel is a container to display information",
+      "default": "Card",
+      "description": "Card is a container to display information",
       "type": "string"
     },
     "spec": {
@@ -17,8 +17,8 @@
         "widgetData": {
           "type": "object",
           "properties": {
-            "actions": {
-              "description": "the actions of the widget",
+            "widgetActions": {
+              "description": "the Krateo event actions of the widget (renamed from `actions`, which collides with antd Card.actions)",
               "type": "object",
               "properties": {
                 "rest": {
@@ -299,12 +299,15 @@
             },
             "headerLeft": {
               "type": "string",
-              "description": "optional text to be displayed under the title, on the left side of the Panel"
+              "description": "optional text to be displayed under the title, on the left side of the Card"
             },
-            "headerRight": {
+            "extra": {
               "type": "string",
-              "description": "optional text to be displayed under the title, on the right side of the Panel"
+              "description": "antd Card extra — content shown top-right of the card header (renamed from `headerRight`)"
             },
+            "bordered": { "type": "boolean", "description": "antd Card bordered (outlined vs borderless)" },
+            "size": { "type": "string", "enum": ["default", "small"], "description": "antd Card size" },
+            "cover": { "type": "string", "description": "resourceRefId of a widget rendered as the antd Card cover" },
             "icon": {
               "type": "object",
               "description": "icon displayed in the panel header",
@@ -352,7 +355,7 @@
               "description": "optional tooltip text shown on the top right side of the card to provide additional context"
             }
           },
-          "required": ["items", "actions"],
+          "required": ["items"],
           "additionalProperties": false
         },
         "resourcesRefs": {

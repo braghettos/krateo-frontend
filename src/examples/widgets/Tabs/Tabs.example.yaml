@@ -2,7 +2,7 @@
 # Target: TabList definition with no items provided.
 # Expected behavior: The widget renders no tabs and no content. This is an intentional empty state.
 # It should not throw validation errors, as `items` can be empty.
-kind: TabList
+kind: Tabs
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-tablist-empty-items
@@ -20,7 +20,7 @@ spec:
 # Target: references a non-existing resourceRefId.
 # Expected behavior: The tab label is still rendered, but an error is displayed,
 # to inform that the referenced resource cannot be resolved from `resourcesRefs`.
-kind: TabList
+kind: Tabs
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-tablist-invalid-resource
@@ -39,7 +39,7 @@ spec:
 # Basic tab list with single valid tab
 # Target: one correctly resolved tab referencing a markdown resource.
 # Expected behavior: the widget displays a single tab with its label and the resolved child content.
-kind: TabList
+kind: Tabs
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-tablist-single-tab
@@ -63,7 +63,7 @@ spec:
 # Multiple tabs with mixed content types
 # Target: demonstrates rendering multiple tabs where each tab references a different type of resource.
 # Expected behavior: each tab loads its corresponding widget; switching between tabs should change the visible content.
-kind: TabList
+kind: Tabs
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-tablist-mixed-resources
@@ -107,7 +107,7 @@ spec:
 # Tab list with titles for all tabs
 # Target: uses the `title` field for each item to provide contextual headers inside each tab.
 # Expected behavior: each tab displays its title above the tab content.
-kind: TabList
+kind: Tabs
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-tablist-titled-tabs

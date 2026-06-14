@@ -1,10 +1,10 @@
-export interface TabList {
+export interface Tabs {
   /**
    * widget version
    */
   version: string
   /**
-   * TabList display a set of tab items for navigation or content grouping
+   * Tabs display a set of tab items for navigation or content grouping
    */
   kind: string
   spec: {
@@ -12,6 +12,22 @@ export interface TabList {
      * the data that will be passed to the widget on the frontend
      */
     widgetData: {
+      /**
+       * antd Tabs type
+       */
+      type?: 'line' | 'card' | 'editable-card'
+      /**
+       * antd Tabs size
+       */
+      size?: 'small' | 'middle' | 'large'
+      /**
+       * antd Tabs tabPosition
+       */
+      tabPosition?: 'top' | 'right' | 'bottom' | 'left'
+      /**
+       * antd Tabs centered
+       */
+      centered?: boolean
       /**
        * the list of resources that are allowed to be children of this widget or referenced by it
        */

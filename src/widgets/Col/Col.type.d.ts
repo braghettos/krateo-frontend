@@ -1,10 +1,10 @@
-export interface Column {
+export interface Col {
   /**
    * widget version
    */
   version: string
   /**
-   * Column is a layout component that arranges its children in a vertical stack, aligning them one above the other with spacing between them
+   * Col is a layout component that arranges its children in a vertical stack, aligning them one above the other with spacing between them
    */
   kind: string
   spec: {
@@ -42,9 +42,45 @@ export interface Column {
         resourceRefId: string
       }[]
       /**
-       * the number of cells that the column will occupy, from 0 (not displayed) to 24 (occupies all space)
+       * antd Col span — cells occupied, 0 (hidden) to 24 (full width). Renamed from `size`, which is still accepted.
        */
-      size?: number
+      span?: number
+      /**
+       * antd Col offset
+       */
+      offset?: number
+      /**
+       * antd Col order
+       */
+      order?: number
+      /**
+       * antd Col flex
+       */
+      flex?: string
+      /**
+       * antd Col xs span
+       */
+      xs?: number
+      /**
+       * antd Col sm span
+       */
+      sm?: number
+      /**
+       * antd Col md span
+       */
+      md?: number
+      /**
+       * antd Col lg span
+       */
+      lg?: number
+      /**
+       * antd Col xl span
+       */
+      xl?: number
+      /**
+       * antd Col xxl span
+       */
+      xxl?: number
     }
     resourcesRefs: {
       items: {

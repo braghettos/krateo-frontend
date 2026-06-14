@@ -1,4 +1,4 @@
-export interface NavMenu {
+export interface Menu {
   version: string
   /**
    * NavMenu is a container for NavMenuItem widgets, which are used to setup navigation inside the application
@@ -6,6 +6,14 @@ export interface NavMenu {
   kind: string
   spec: {
     widgetData: {
+      /**
+       * antd Menu mode (default inline)
+       */
+      mode?: 'vertical' | 'horizontal' | 'inline'
+      /**
+       * antd Menu theme
+       */
+      theme?: 'light' | 'dark'
       /**
        * the list of resources that are allowed to be children of this widget or referenced by it
        */

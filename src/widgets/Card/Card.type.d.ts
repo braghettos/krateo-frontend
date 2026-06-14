@@ -1,15 +1,15 @@
-export interface Panel {
+export interface Card {
   version: string
   /**
-   * Panel is a container to display information
+   * Card is a container to display information
    */
   kind: string
   spec: {
     widgetData: {
       /**
-       * the actions of the widget
+       * the Krateo event actions of the widget (renamed from `actions`, which collides with antd Card.actions)
        */
-      actions: {
+      widgetActions?: {
         /**
          * rest api call actions triggered by the widget
          */
@@ -206,13 +206,25 @@ export interface Panel {
         resourceRefId: string
       }[]
       /**
-       * optional text to be displayed under the title, on the left side of the Panel
+       * optional text to be displayed under the title, on the left side of the Card
        */
       headerLeft?: string
       /**
-       * optional text to be displayed under the title, on the right side of the Panel
+       * antd Card extra — content shown top-right of the card header (renamed from `headerRight`)
        */
-      headerRight?: string
+      extra?: string
+      /**
+       * antd Card bordered (outlined vs borderless)
+       */
+      bordered?: boolean
+      /**
+       * antd Card size
+       */
+      size?: 'default' | 'small'
+      /**
+       * resourceRefId of a widget rendered as the antd Card cover
+       */
+      cover?: string
       /**
        * icon displayed in the panel header
        */

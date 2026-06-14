@@ -50,6 +50,21 @@ describe('widgetRegistry', () => {
     }
   })
 
+  it('registers antd-named kinds with legacy names as back-compat aliases', () => {
+    const renames: Array<[antd: string, legacy: string]> = [
+      ['Card', 'Panel'],
+      ['Col', 'Column'],
+      ['Tabs', 'TabList'],
+      ['Menu', 'NavMenu'],
+    ]
+    for (const [antd, legacy] of renames) {
+      expect(widgetRegistry[antd], `antd kind "${antd}" should be registered`).toBeDefined()
+      expect(widgetRegistry[legacy], `legacy alias "${legacy}" should still resolve`).toBeDefined()
+      // alias and primary resolve to the very same module
+      expect(widgetRegistry[legacy]).toBe(widgetRegistry[antd])
+    }
+  })
+
   it('marks DataGrid as paginated', () => {
     expect(widgetRegistry.DataGrid?.paginated).toBe(true)
   })

@@ -1,7 +1,7 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useQueries } from '@tanstack/react-query'
-import { Menu } from 'antd'
+import { Menu as AntdMenu } from 'antd'
 import type { MenuItemType } from 'antd/es/menu/interface'
 import { useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router'
@@ -14,10 +14,10 @@ import type { ResourceRef, WidgetProps } from '../../types/Widget'
 import { getAccessToken } from '../../utils/getAccessToken'
 import type { NavMenuItem } from '../NavMenuItem/NavMenuItem.type'
 
-import styles from './NavMenu.module.css'
-import type { NavMenu as WidgetType } from './NavMenu.type'
+import styles from './Menu.module.css'
+import type { Menu as WidgetType } from './Menu.type'
 
-export type NavMenuWidgetData = WidgetType['spec']['widgetData']
+export type MenuWidgetData = WidgetType['spec']['widgetData']
 
 type NavMenuItemResponse = Omit<NavMenuItem, 'status'> & {
   status: {
@@ -28,7 +28,8 @@ type NavMenuItemResponse = Omit<NavMenuItem, 'status'> & {
   }
 }
 
-export function NavMenu({ resourcesRefs, uid }: WidgetProps<NavMenuWidgetData>) {
+export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetData>) {
+  const { mode, theme } = widgetData
   const location = useLocation()
   const navigate = useNavigate()
   const { menuRoutes, updateMenuRoutes } = useRoutesContext()
@@ -126,14 +127,15 @@ export function NavMenu({ resourcesRefs, uid }: WidgetProps<NavMenuWidgetData>) 
 
   return (
     <>
-      <Menu
+      <AntdMenu
         className={styles.menu}
         defaultSelectedKeys={loadedAllMenuItems && menuItems.length > 0 ? [menuItems[0].key as string] : []}
         items={menuItems}
         key={uid}
-        mode='inline'
+        mode={mode ?? 'inline'}
         onClick={(item) => handleClick(item.key)}
         selectedKeys={[location.pathname]}
+        theme={theme}
       />
 
       <WidgetRenderer invisible={true} widgetEndpoint={config!.api.ROUTES_LOADER} />
