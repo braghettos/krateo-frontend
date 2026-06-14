@@ -10,7 +10,6 @@ import { useMemo } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 
 import '../index.css'
-import './theme/variables.css'
 import 'reactflow/dist/style.css'
 import './widgets/load'
 
