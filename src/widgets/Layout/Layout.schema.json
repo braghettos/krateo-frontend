@@ -7,8 +7,8 @@
       "default": "v1beta1"
     },
     "kind": {
-      "default": "AppShell",
-      "description": "AppShell is the portal layout: a sidebar (logo + nav) and a header (left/right slots) around a central content area. Each slot references a child widget.",
+      "default": "Layout",
+      "description": "Layout wraps the Ant Design Layout component: optional Header, Sider, Content and Footer regions, each rendering a child widget. The Sider exposes antd's collapse/responsive props.",
       "type": "string"
     },
     "spec": {
@@ -20,27 +20,39 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "logoSrc": {
+            "hasSider": {
+              "type": "boolean",
+              "description": "antd Layout `hasSider` — declares a Sider child so the flex direction is correct on first paint"
+            },
+            "header": {
               "type": "string",
-              "description": "the logo image URL shown at the top of the sidebar"
-            },
-            "sidebar": {
-              "type": "string",
-              "description": "resourceRefId of the widget rendered in the sidebar (typically a NavMenu)"
-            },
-            "headerLeft": {
-              "type": "array",
-              "description": "resourceRefIds of the widgets rendered on the left of the header",
-              "items": { "type": "string" }
-            },
-            "headerRight": {
-              "type": "array",
-              "description": "resourceRefIds of the widgets rendered on the right of the header",
-              "items": { "type": "string" }
+              "description": "resourceRefId of the widget rendered in antd Layout.Header"
             },
             "content": {
               "type": "string",
-              "description": "resourceRefId of the widget rendered in the central content area"
+              "description": "resourceRefId of the widget rendered in antd Layout.Content"
+            },
+            "footer": {
+              "type": "string",
+              "description": "resourceRefId of the widget rendered in antd Layout.Footer"
+            },
+            "sider": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "antd Layout.Sider region",
+              "properties": {
+                "resourceRefId": {
+                  "type": "string",
+                  "description": "resourceRefId of the widget rendered inside the Sider"
+                },
+                "width": { "type": "integer", "description": "antd Sider `width` in px" },
+                "collapsible": { "type": "boolean", "description": "antd Sider `collapsible` (renders a collapse trigger)" },
+                "collapsedWidth": { "type": "integer", "description": "antd Sider `collapsedWidth` in px" },
+                "breakpoint": { "type": "string", "enum": ["xs", "sm", "md", "lg", "xl", "xxl"], "description": "antd Sider responsive `breakpoint`; auto-collapses below it" },
+                "theme": { "type": "string", "enum": ["light", "dark"], "description": "antd Sider `theme`" },
+                "defaultCollapsed": { "type": "boolean", "description": "antd Sider `defaultCollapsed`" },
+                "reverseArrow": { "type": "boolean", "description": "antd Sider `reverseArrow`" }
+              }
             }
           }
         },
