@@ -1,113 +1,22 @@
-# String filter
-# Target: text-based filtering on a single string field.
-# Expected behavior: matches rows containing the substring (case-insensitive).
+# Filters composes form-control widgets as filter fields. Each control's `name`
+# is the dotted data path it filters; on Apply, the values are pushed to widgets
+# that share the same `prefix` (the match strategy is inferred from the value type).
 kind: Filters
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
-  name: example-filters-string
+  name: example-filters
   namespace: krateo-system
 spec:
   widgetData:
-    prefix: example-filters-string
-    fields:
-      - label: Pod Name
-        name:
-          - metadata.name
-        type: string
----
-# Number filter
-# Target: numeric filtering for integer or float fields.
-# Expected behavior: matches rows with exact numeric value.
-kind: Filters
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-filters-number
-  namespace: krateo-system
-spec:
-  widgetData:
-    prefix: example-filters-number
-    fields:
-      - label: CPU Cores
-        name:
-          - spec.resources.cpu
-        type: number
----
-# Boolean filter
-# Target: true/false filtering for logical properties.
-# Expected behavior: filters resources by boolean state.
-kind: Filters
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-filters-boolean
-  namespace: krateo-system
-spec:
-  widgetData:
-    prefix: example-filters-boolean
-    fields:
-      - label: Active
-        name:
-          - spec.resources.active
-        type: boolean
----
-# Date filter
-# Target: time-based filtering on a single date field.
-# Expected behavior: matches resources created on the selected date.
-kind: Filters
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-filters-date
-  namespace: krateo-system
-spec:
-  widgetData:
-    prefix: example-filters-date
-    fields:
-      - label: Created At
-        name:
-          - metadata.creationTimestamp
-        type: date
----
-# Date range filter
-# Target: time-window filtering between two selected dates.
-# Expected behavior: shows resources with timestamps inside the selected range.
-kind: Filters
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-filters-daterange
-  namespace: krateo-system
-spec:
-  widgetData:
-    prefix: example-filters-daterange
-    fields:
-      - label: Created between
-        name:
-          - metadata.creationTimestamp
-        type: daterange
----
-# Combined filters
-# Target: mixed configuration to test multiple field types.
-# Expected behavior: combines string, number, boolean, and date filters in the same form.
-kind: Filters
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-filters-combined
-  namespace: krateo-system
-spec:
-  widgetData:
-    prefix: example-filters-combined
-    fields:
-      - label: Pod Name
-        name:
-          - metadata.name
-        type: string
-      - label: CPU Cores
-        name:
-          - spec.resources.cpu
-        type: number
-      - label: Active
-        name:
-          - spec.resources.active
-        type: boolean
-      - label: Created At
-        name:
-          - metadata.creationTimestamp
-        type: date
+    prefix: pods
+    items:
+      - resourceRefId: filter-name
+      - resourceRefId: filter-status
+  resourcesRefs:
+    items:
+      - id: filter-name
+        allowed: true
+        path: "/call?resource=inputs&apiVersion=widgets.templates.krateo.io/v1beta1&name=filter-name&namespace=krateo-system"
+      - id: filter-status
+        allowed: true
+        path: "/call?resource=selects&apiVersion=widgets.templates.krateo.io/v1beta1&name=filter-status&namespace=krateo-system"

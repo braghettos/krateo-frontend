@@ -4,34 +4,31 @@ export interface Filters {
   spec: {
     widgetData: {
       /**
-       * the prefix to share filters values to other widgets
+       * the prefix used to share filter values with the widgets being filtered
        */
       prefix: string
       /**
-       * it defines the filters as fields of a Form
+       * resourceRefIds of form-control widgets (Input/Select/Switch/DatePicker/…) composed as filter fields. Each control's `name` is the dotted data path it filters; the match strategy is inferred from the value type.
        */
-      fields: {
+      items: {
         /**
-         * the label of the field
+         * the identifier of the form-control widget to render as a filter field
          */
-        label: string
-        /**
-         * the name of the filter field, it must to be identical to the widget prop name to filter or data in dataset
-         */
-        name: string[]
-        /**
-         * text to show as tooltip
-         */
-        description?: string
-        /**
-         * it's the filter field type, to render input, select, radio buttons, date picker or daterange picker
-         */
-        type: 'string' | 'boolean' | 'number' | 'date' | 'daterange'
-        /**
-         * they're the options for select or radio, the type must be 'string'
-         */
-        options?: string[]
+        resourceRefId: string
       }[]
+    }
+    resourcesRefs?: {
+      items: {
+        allowed: boolean
+        apiVersion?: string
+        id: string
+        name?: string
+        namespace?: string
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+        [k: string]: unknown
+      }[]
+      [k: string]: unknown
     }
     apiRef?: {
       name: string
