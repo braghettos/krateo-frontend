@@ -11,7 +11,7 @@ jobs:
   build:
     name: Build and Push
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       packages: write
@@ -89,331 +89,100 @@ jobs:
           name: frontend-crds-yaml-files
           path: ${{ github.workspace }}/scripts/krateoctl-output/*.yaml
 
-      - name: Push .yaml files to braghettos/frontend-chart via PR
+      - name: Push CRDs to braghettos/krateo-frontend-chart (crds-chart) via PR
         env:
           GH_TOKEN: ${{ secrets.PAT }}
         run: |
-          # Get the latest tag from the local repository
-          cd $GITHUB_WORKSPACE
+          set -eo pipefail
+          cd "$GITHUB_WORKSPACE"
+
+          TARGET_REPO="braghettos/krateo-frontend-chart"
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "main")
           BRANCH="krateoctl-${LATEST_TAG}"
-          
-          echo "Latest local tag: $LATEST_TAG"
-          echo "Branch name: $BRANCH"
+          echo "Target repo: $TARGET_REPO | tag: $LATEST_TAG | branch: $BRANCH"
+
+          # The generated CRDs must exist locally before we touch the chart repo.
+          shopt -s nullglob
+          LOCAL_CRDS=("$GITHUB_WORKSPACE"/scripts/krateoctl-output/*.yaml)
+          if [ "${#LOCAL_CRDS[@]}" -eq 0 ]; then
+            echo "ERROR: no generated CRDs found in scripts/krateoctl-output" >&2
+            exit 1
+          fi
+          echo "Generated ${#LOCAL_CRDS[@]} CRD file(s)."
 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Clone target repository
-          gh repo clone braghettos/frontend-chart /tmp/frontend-chart
-          cd /tmp/frontend-chart
-
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/braghettos/frontend-chart.git
+          # Clone the chart repo and authenticate the push remote.
+          gh repo clone "$TARGET_REPO" /tmp/chart
+          cd /tmp/chart
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${TARGET_REPO}.git"
           git fetch origin
           git checkout main
           git pull origin main
 
-          # Ensure crd-chart/templates directory exists
-          mkdir -p crd-chart/templates
-
-          # Compare local YAML files with target repo's crd-chart/templates
-          echo "=== Checking alignment between local and remote YAML files ==="
-          
-          echo "Files in remote crd-chart/templates:"
-          ls -la crd-chart/templates/ || echo "No files in crd-chart/templates"
-          
-          echo "Files in local krateoctl-output:"
-          ls -la "$GITHUB_WORKSPACE/scripts/krateoctl-output/" || echo "No files in krateoctl-output"
-          
-          TEMP_DIR=$(mktemp -d)
-          mkdir -p "$TEMP_DIR/remote" "$TEMP_DIR/local"
-          
-          # Copy current remote files (only .yaml files)
-          if ls crd-chart/templates/*.yaml >/dev/null 2>&1; then
-            cp crd-chart/templates/*.yaml "$TEMP_DIR/remote/"
-            echo "Copied remote .yaml files:"
-            ls -la "$TEMP_DIR/remote/"
-          else
-            echo "No .yaml files in remote crd-chart/templates directory"
+          # One-time migration: rename the legacy crd-chart/ -> crds-chart/.
+          # git mv preserves Chart.yaml/values.* so the Helm chart name (frontend-crd, pinned by
+          # the installer) is unchanged — only the directory moves.
+          if [ -d crd-chart ] && [ ! -d crds-chart ]; then
+            echo "Migrating crd-chart/ -> crds-chart/"
+            git mv crd-chart crds-chart
           fi
-          
-          # Copy local files
-          if ls "$GITHUB_WORKSPACE/scripts/krateoctl-output/"*.yaml >/dev/null 2>&1; then
-            cp "$GITHUB_WORKSPACE/scripts/krateoctl-output/"*.yaml "$TEMP_DIR/local/"
-            echo "Copied local .yaml files:"
-            ls -la "$TEMP_DIR/local/"
-          else
-            echo "ERROR: No .yaml files found in local krateoctl-output directory"
-            exit 1
-          fi
+          mkdir -p crds-chart/templates
 
-          # Compare directories with detailed output
-          echo "=== Comparing directories ==="
-          if diff -r "$TEMP_DIR/remote" "$TEMP_DIR/local" >/dev/null 2>&1; then
-            echo "✅ YAML files are aligned - no changes needed"
-            rm -rf "$TEMP_DIR"
+          # Refresh the CRD templates: drop the previous set, copy the freshly generated one.
+          # The new antd-fidelity kinds replace the legacy ones (legacy CRs are migrated separately).
+          rm -f crds-chart/templates/*.yaml
+          cp "$GITHUB_WORKSPACE"/scripts/krateoctl-output/*.yaml crds-chart/templates/
+
+          # Safety net: the old chart directory must not survive.
+          if [ -d crd-chart ]; then git rm -r crd-chart; fi
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "✅ crds-chart already matches the generated CRDs — nothing to push."
             exit 0
-          else
-            echo "❌ YAML files are NOT aligned"
-            echo "=== DIFFERENCES ==="
-            # Show file-by-file comparison
-            for local_file in "$TEMP_DIR/local"/*.yaml; do
-              filename=$(basename "$local_file")
-              remote_file="$TEMP_DIR/remote/$filename"
-              
-              if [ -f "$remote_file" ]; then
-                if ! diff "$remote_file" "$local_file" >/dev/null 2>&1; then
-                  echo "--- File: $filename differs ---"
-                  diff "$remote_file" "$local_file" || true
-                  echo "--- End of $filename ---"
-                fi
-              else
-                echo "--- File: $filename (NEW) ---"
-                echo "This file exists locally but not remotely"
-              fi
-            done
-            
-            # Check for files that exist remotely but not locally
-            if ls "$TEMP_DIR/remote"/*.yaml >/dev/null 2>&1; then
-              for remote_file in "$TEMP_DIR/remote"/*.yaml; do
-                filename=$(basename "$remote_file")
-                local_file="$TEMP_DIR/local/$filename"
-                
-                if [ ! -f "$local_file" ]; then
-                  echo "--- File: $filename (DELETED) ---"
-                  echo "This file exists remotely but not locally"
-                fi
-              done
-            fi
-            echo "==================="
           fi
 
-          rm -rf "$TEMP_DIR"
+          echo "=== Changes to publish ==="
+          git diff --cached --name-status
 
-          # Check if branch already exists remotely and delete it
+          # Recreate a clean per-tag branch off main, then carry the staged changes onto it.
           if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
-            echo "Branch '$BRANCH' already exists - deleting it to create fresh"
-            git push origin --delete "$BRANCH"
+            echo "Deleting stale remote branch '$BRANCH'"
+            git push origin --delete "$BRANCH" || true
           fi
-          
-          echo "Creating new branch '$BRANCH' from main"
           git checkout -b "$BRANCH"
 
-          # Copy local YAML files to crd-chart/templates
-          echo "=== DETAILED COPY DEBUGGING ==="
-          echo "Current working directory: $(pwd)"
-          echo "Current git branch: $(git branch --show-current)"
-          
-          echo "Source directory check:"
-          echo "  Path: $GITHUB_WORKSPACE/scripts/krateoctl-output/"
-          echo "  Exists: $([ -d "$GITHUB_WORKSPACE/scripts/krateoctl-output/" ] && echo "YES" || echo "NO")"
-          echo "  Files: $(ls -la "$GITHUB_WORKSPACE/scripts/krateoctl-output/" 2>/dev/null || echo "Directory not accessible")"
-          
-          echo "Destination directory check:"
-          echo "  Path: $(pwd)/crd-chart/templates"
-          echo "  Exists: $([ -d "crd-chart/templates" ] && echo "YES" || echo "NO")"
-          echo "  Before copy: $(ls -la crd-chart/templates/ 2>/dev/null || echo "Directory empty or not accessible")"
-          
-          echo "Git status before copy:"
-          git status --porcelain
-          
-          echo "Checking .gitignore rules:"
-          git check-ignore crd-chart/templates/*.yaml 2>/dev/null && echo "FILES ARE GITIGNORED!" || echo "Files not gitignored"
-          
-          # Remove all existing .yaml files first, then copy new ones
-          echo "Removing existing .yaml files..."
-          rm -f crd-chart/templates/*.yaml 2>/dev/null || true
-          
-          echo "Copying files..."
-          if cp "$GITHUB_WORKSPACE/scripts/krateoctl-output/"*.yaml crd-chart/templates/ 2>&1; then
-            echo "Copy command succeeded"
-          else
-            echo "Copy command failed with exit code: $?"
-            exit 1
-          fi
-          
-          echo "After copy:"
-          echo "  Files in crd-chart/templates: $(ls -la crd-chart/templates/ 2>/dev/null || echo "Directory empty or not accessible")"
-          echo "  File count: $(ls crd-chart/templates/*.yaml 2>/dev/null | wc -l)"
-          
-          echo "Git status after copy:"
-          git status --porcelain
-          
-          echo "Git diff check:"
-          git diff --name-only
-          
-          echo "Untracked files:"
-          git ls-files --others --exclude-standard
+          git commit -m "Update widget CRDs (crds-chart) from tag ${LATEST_TAG}
 
-          # Check if there are changes to commit
-          if git diff --quiet -- crd-chart/templates && git diff --cached --quiet -- crd-chart/templates; then
-            echo "=== NO CHANGES DETECTED - DEBUGGING ==="
-            echo "Git thinks there are no changes. Let's investigate..."
-            
-            echo "1. Files in crd-chart/templates directory:"
-            find crd-chart/templates -name "*.yaml" -exec echo "  File: {}" \; -exec wc -l {} \;
-            
-            echo "2. Git status (verbose):"
-            git status
-            
-            echo "3. Are files tracked?"
-            git ls-files crd-chart/templates/
-            
-            echo "4. Are files in working directory different from index?"
-            git diff --name-status -- crd-chart/templates/
-            
-            echo "5. Are there untracked files?"
-            git ls-files --others --exclude-standard crd-chart/templates/
-            
-            echo "6. What does git see in the directory?"
-            git ls-tree HEAD crd-chart/templates/ 2>/dev/null || echo "No crd-chart/templates in HEAD"
-            
-            echo "7. Forcing add to see what happens:"
-            git add crd-chart/templates/ -v
-            
-            echo "8. After forced add:"
-            git status --porcelain
-            
-            if git diff --cached --quiet; then
-              echo "CONCLUSION: Even after forced add, no changes are staged"
-              echo "This means the files are identical to what's already in git"
-              exit 1
-            else
-              echo "CONCLUSION: Files were successfully staged after forced add"
-            fi
-          fi
-
-          # Stage and commit changes
-          git add crd-chart/templates
-          git commit -m "Update krateoctl YAML files from tag ${LATEST_TAG}
-
-          Updated YAML files in crd-chart/templates directory to align with local krateoctl output.
-          Source tag: ${LATEST_TAG}
+          Regenerated from braghettos/frontend @ ${LATEST_TAG}.
+          Migrates crd-chart -> crds-chart and replaces the legacy CRDs with the
+          new Ant Design-fidelity widget kinds. Helm chart name unchanged: frontend-crd.
           Workflow run: ${GITHUB_RUN_ID}"
 
-          # Push to remote branch
-          echo "Pushing changes to remote branch '$BRANCH'"
           git push origin "$BRANCH"
 
-          # Check PR status and create/update/reopen as needed
-          echo "=== Checking PR status ==="
-          
-          # Check if PR exists and get its state
-          if gh pr view "$BRANCH" --repo braghettos/frontend-chart --json state,number,title >/dev/null 2>&1; then
-            PR_INFO=$(gh pr view "$BRANCH" --repo braghettos/frontend-chart --json state,number,title)
-            PR_STATE=$(echo "$PR_INFO" | jq -r '.state')
-            PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number')
-            PR_TITLE=$(echo "$PR_INFO" | jq -r '.title')
-            
-            echo "Found existing PR #$PR_NUMBER: $PR_TITLE (State: $PR_STATE)"
-            
-            case "$PR_STATE" in
-              "OPEN")
-                echo "✅ PR #$PR_NUMBER is already open - it has been updated with new commits"
-                ;;
-              "CLOSED")
-                echo "🔄 PR #$PR_NUMBER was closed - attempting to reopen it"
-                # Try to reopen, but fall back to creating new PR if it fails
-                if gh pr reopen "$PR_NUMBER" --repo braghettos/frontend-chart 2>/dev/null; then
-                  echo "✅ PR #$PR_NUMBER has been reopened and updated with new commits"
-                else
-                  echo "⚠️ Failed to reopen PR #$PR_NUMBER, creating a new PR instead"
-                  echo "This could be due to merge conflicts, permissions, or the PR being in an unreopenable state"
-                  
-                  # Create a new PR with reference to the old one
-                  gh pr create \
-                    --title "Update krateoctl YAML files (${LATEST_TAG})" \
-                    --body "## krateoctl YAML Update
+          # Open a PR against the chart repo, or update the existing one for this branch.
+          PR_TITLE="Update widget CRDs (crds-chart) — ${LATEST_TAG}"
+          PR_BODY="Automated update of widget CRDs in \`crds-chart/templates/\` from \`braghettos/frontend\` @ \`${LATEST_TAG}\`.
 
-          This PR updates the YAML files in \`crd-chart/templates/\` directory to align with the local krateoctl output.
+          - Migrates \`crd-chart\` → \`crds-chart\` (Helm chart name unchanged: \`frontend-crd\`).
+          - Replaces the legacy CRDs with the regenerated Ant Design-fidelity widget kinds.
 
-          **Source Information:**
-          - Local repository tag: \`${LATEST_TAG}\`
-          - Workflow run: \`${GITHUB_RUN_ID}\`
+          Workflow run: \`${GITHUB_RUN_ID}\`."
 
-          **Changes:**
-          - Updated YAML files in \`crd-chart/templates/\` directory
-          - Files were not aligned between local and remote repositories
-
-          **Note:** This replaces closed PR #${PR_NUMBER} which could not be reopened.
-
-          This PR was automatically generated by the krateoctl workflow." \
-                    --head "$BRANCH" \
-                    --base main \
-                    --repo braghettos/frontend-chart
-                  echo "✅ Created new PR to replace closed PR #$PR_NUMBER"
-                fi
-                ;;
-              "MERGED")
-                echo "ℹ️ PR #$PR_NUMBER was already merged - creating a new PR"
-                # Create a new PR since the old one was merged
-                gh pr create \
-                  --title "Update krateoctl YAML files (${LATEST_TAG})" \
-                  --body "## krateoctl YAML Update
-
-          This PR updates the YAML files in \`crd-chart/templates/\` directory to align with the local krateoctl output.
-
-          **Source Information:**
-          - Local repository tag: \`${LATEST_TAG}\`
-          - Workflow run: \`${GITHUB_RUN_ID}\`
-
-          **Changes:**
-          - Updated YAML files in \`crd-chart/templates/\` directory
-          - Files were not aligned between local and remote repositories
-
-          **Note:** Previous PR #${PR_NUMBER} was already merged.
-
-          This PR was automatically generated by the krateoctl workflow." \
-                  --head "$BRANCH" \
-                  --base main \
-                  --repo braghettos/frontend-chart
-                echo "✅ Created new PR to replace merged PR #$PR_NUMBER"
-                ;;
-              *)
-                echo "⚠️ PR #$PR_NUMBER has unexpected state: $PR_STATE"
-                echo "Creating a new PR"
-                gh pr create \
-                  --title "Update krateoctl YAML files (${LATEST_TAG})" \
-                  --body "## krateoctl YAML Update
-
-          This PR updates the YAML files in \`crd-chart/templates/\` directory to align with the local krateoctl output.
-
-          **Source Information:**
-          - Local repository tag: \`${LATEST_TAG}\`
-          - Workflow run: \`${GITHUB_RUN_ID}\`
-
-          **Changes:**
-          - Updated YAML files in \`crd-chart/templates/\` directory
-          - Files were not aligned between local and remote repositories
-
-          **Note:** Previous PR #${PR_NUMBER} had unexpected state: ${PR_STATE}
-
-          This PR was automatically generated by the krateoctl workflow." \
-                  --head "$BRANCH" \
-                  --base main \
-                  --repo braghettos/frontend-chart
-                echo "✅ Created new PR (previous PR #$PR_NUMBER had state: $PR_STATE)"
-                ;;
-            esac
-          else
-            echo "📝 No existing PR found for branch '$BRANCH' - creating new PR"
-            gh pr create \
-              --title "Update krateoctl YAML files (${LATEST_TAG})" \
-              --body "## krateoctl YAML Update
-
-          This PR updates the YAML files in \`crd-chart/templates/\` directory to align with the local krateoctl output.
-
-          **Source Information:**
-          - Local repository tag: \`${LATEST_TAG}\`
-          - Workflow run: \`${GITHUB_RUN_ID}\`
-
-          **Changes:**
-          - Updated YAML files in \`crd-chart/templates/\` directory
-          - Files were not aligned between local and remote repositories
-
-          This PR was automatically generated by the krateoctl workflow." \
-              --head "$BRANCH" \
-              --base main \
-              --repo braghettos/frontend-chart
-            echo "✅ Created new PR for branch '$BRANCH'"
-          fi
+          PR_STATE=$(gh pr view "$BRANCH" --repo "$TARGET_REPO" --json state -q .state 2>/dev/null || echo "NONE")
+          case "$PR_STATE" in
+            OPEN)
+              echo "✅ Existing open PR for '$BRANCH' was updated by the push."
+              ;;
+            CLOSED)
+              gh pr reopen "$BRANCH" --repo "$TARGET_REPO" \
+                || gh pr create --title "$PR_TITLE" --body "$PR_BODY" --head "$BRANCH" --base main --repo "$TARGET_REPO"
+              ;;
+            *)
+              gh pr create --title "$PR_TITLE" --body "$PR_BODY" --head "$BRANCH" --base main --repo "$TARGET_REPO"
+              ;;
+          esac
