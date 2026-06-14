@@ -89,7 +89,7 @@ jobs:
           name: frontend-crds-yaml-files
           path: ${{ github.workspace }}/scripts/krateoctl-output/*.yaml
 
-      - name: Push CRDs to braghettos/krateo-frontend-chart (crds-chart) via PR
+      - name: Push CRDs to braghettos/krateo-frontend-chart (crds-subchart) via PR
         env:
           GH_TOKEN: ${{ secrets.PAT }}
         run: |
@@ -121,27 +121,35 @@ jobs:
           git checkout main
           git pull origin main
 
-          # One-time migration: rename the legacy crd-chart/ -> crds-chart/.
+          # One-time migration: rename any legacy CRD sub-chart dir -> crds-subchart/.
+          # Handles both the original crd-chart/ and a prior interim crds-chart/ (a
+          # chart repo that already migrated to crds-chart before this standardization).
           # git mv preserves Chart.yaml/values.* so the Helm chart name (frontend-crd, pinned by
           # the installer) is unchanged — only the directory moves.
-          if [ -d crd-chart ] && [ ! -d crds-chart ]; then
-            echo "Migrating crd-chart/ -> crds-chart/"
-            git mv crd-chart crds-chart
+          if [ ! -d crds-subchart ]; then
+            if [ -d crds-chart ]; then
+              echo "Migrating crds-chart/ -> crds-subchart/"
+              git mv crds-chart crds-subchart
+            elif [ -d crd-chart ]; then
+              echo "Migrating crd-chart/ -> crds-subchart/"
+              git mv crd-chart crds-subchart
+            fi
           fi
-          mkdir -p crds-chart/templates
+          mkdir -p crds-subchart/templates
 
           # Refresh the CRD templates: drop the previous set, copy the freshly generated one.
           # The new antd-fidelity kinds replace the legacy ones (legacy CRs are migrated separately).
-          rm -f crds-chart/templates/*.yaml
-          cp "$GITHUB_WORKSPACE"/scripts/krateoctl-output/*.yaml crds-chart/templates/
+          rm -f crds-subchart/templates/*.yaml
+          cp "$GITHUB_WORKSPACE"/scripts/krateoctl-output/*.yaml crds-subchart/templates/
 
-          # Safety net: the old chart directory must not survive.
+          # Safety net: the old chart directories must not survive.
           if [ -d crd-chart ]; then git rm -r crd-chart; fi
+          if [ -d crds-chart ]; then git rm -r crds-chart; fi
 
           git add -A
 
           if git diff --cached --quiet; then
-            echo "✅ crds-chart already matches the generated CRDs — nothing to push."
+            echo "✅ crds-subchart already matches the generated CRDs — nothing to push."
             exit 0
           fi
 
@@ -155,20 +163,21 @@ jobs:
           fi
           git checkout -b "$BRANCH"
 
-          git commit -m "Update widget CRDs (crds-chart) from tag ${LATEST_TAG}
+          git commit -m "Update widget CRDs (crds-subchart) from tag ${LATEST_TAG}
 
           Regenerated from braghettos/frontend @ ${LATEST_TAG}.
-          Migrates crd-chart -> crds-chart and replaces the legacy CRDs with the
-          new Ant Design-fidelity widget kinds. Helm chart name unchanged: frontend-crd.
+          Migrates any legacy crd-chart/crds-chart -> crds-subchart and replaces the
+          legacy CRDs with the new Ant Design-fidelity widget kinds. Helm chart name
+          unchanged: frontend-crd.
           Workflow run: ${GITHUB_RUN_ID}"
 
           git push origin "$BRANCH"
 
           # Open a PR against the chart repo, or update the existing one for this branch.
-          PR_TITLE="Update widget CRDs (crds-chart) — ${LATEST_TAG}"
-          PR_BODY="Automated update of widget CRDs in \`crds-chart/templates/\` from \`braghettos/frontend\` @ \`${LATEST_TAG}\`.
+          PR_TITLE="Update widget CRDs (crds-subchart) — ${LATEST_TAG}"
+          PR_BODY="Automated update of widget CRDs in \`crds-subchart/templates/\` from \`braghettos/frontend\` @ \`${LATEST_TAG}\`.
 
-          - Migrates \`crd-chart\` → \`crds-chart\` (Helm chart name unchanged: \`frontend-crd\`).
+          - Migrates any legacy \`crd-chart\`/\`crds-chart\` → \`crds-subchart\` (Helm chart name unchanged: \`frontend-crd\`).
           - Replaces the legacy CRDs with the regenerated Ant Design-fidelity widget kinds.
 
           Workflow run: \`${GITHUB_RUN_ID}\`."
