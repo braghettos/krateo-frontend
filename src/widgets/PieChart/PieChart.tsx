@@ -25,7 +25,7 @@ const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
         colorField={widgetData.colorField}
         data={widgetData.data}
         height={widgetData.height}
-        innerRadius={widgetData.innerRadius == null ? undefined : widgetData.innerRadius / 100}
+        innerRadius={widgetData.innerRadius === null || widgetData.innerRadius === undefined ? undefined : widgetData.innerRadius / 100}
         key={uid}
         legend={widgetData.legend === false ? false : undefined}
         title={widgetData.title}
