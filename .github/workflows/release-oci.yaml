@@ -37,7 +37,7 @@ env:
   OCI_REPO: oci://ghcr.io/braghettos/krateo
   # The application (codebase) repo whose latest semver tag is APP_VERSION — the deployed image
   # tag. The chart's image lives at ghcr.io/braghettos/<app> (built by this repo on its tags).
-  APP_REPO: braghettos/frontend
+  APP_REPO: braghettos/krateo-frontend
 
 jobs:
   package-and-push:
