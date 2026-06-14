@@ -1,114 +1,27 @@
-# Empty dataset
-# Expected behavior: The chart will not display any bars and will instead show an empty state.
-# This case is useful when the data source may not provide values yet, or when a monitored service has no metrics available.
+# Empty data — renders the <Empty/> placeholder.
 kind: BarChart
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
-  name: example-barchart-empty-array
+  name: example-barchart-empty
   namespace: krateo-system
 spec:
   widgetData:
     data: []
+    xField: namespace
+    yField: count
 ---
-# Single bar
-# Expected behavior: Displays a single bar representing one metric (e.g., disk usage) with its value and percentage.
-# Useful for simple widgets that monitor a single resource or KPI.
+# Column chart (@ant-design/charts Column — vertical bars): a flat `data` array + field mappings.
 kind: BarChart
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
-  name: example-barchart-single-bar
+  name: example-barchart
   namespace: krateo-system
 spec:
   widgetData:
     data:
-      - label: Disk usage
-        bars:
-          - value: "540"
-            percentage: 42
-            color: green
----
-# Multiple bars in a single group
-# Expected behavior: Shows multiple bars under the same label, allowing comparison between related metrics (e.g., inbound vs outbound traffic).
-# Useful for grouped or comparative metrics that share a common label or category.
-kind: BarChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-barchart-multiple-bars-same-group
-  namespace: krateo-system
-spec:
-  widgetData:
-    data:
-      - label: Network throughput
-        bars:
-          - value: "230"
-            percentage: 20
-            color: blue
-          - value: "410"
-            percentage: 45
-            color: red
-          - value: "650"
-            percentage: 70
-            color: orange
----
-# Multiple groups with single bars
-# Expected behavior: Displays several independent metrics, each represented by a single bar and label.
-# Useful for dashboards summarizing multiple entities such as pods, nodes, or services.
-kind: BarChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-barchart-multiple-groups-single-bar
-  namespace: krateo-system
-spec:
-  widgetData:
-    data:
-      - label: Pod A
-        bars:
-          - value: "56"
-            percentage: 22
-            color: red
-      - label: Pod B
-        bars:
-          - value: "78"
-            percentage: 44
-            color: orange
-      - label: Pod C
-        bars:
-          - value: "91"
-            percentage: 88
-            color: green
----
-# Extreme percentage values
-# Expected behavior: Includes both 0% and 100% values to visualize minimum and maximum utilization scenarios.
-# Useful for validating the visual range of metrics (e.g., fully utilized vs idle resources).
-kind: BarChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-barchart-extreme-percentages
-  namespace: krateo-system
-spec:
-  widgetData:
-    data:
-      - label: Downloads
-        bars:
-          - value: "0"
-            percentage: 0
-            color: gray
-          - value: "999"
-            percentage: 100
-            color: blue
----
-# Missing color field
-# Expected behavior: The bar will render using a default or fallback color if the color field is not defined.
-# Useful for testing robustness of configuration when some optional fields are omitted.
-kind: BarChart
-apiVersion: widgets.templates.krateo.io/v1beta1
-metadata:
-  name: example-barchart-missing-color
-  namespace: krateo-system
-spec:
-  widgetData:
-    data:
-      - label: API latency
-        bars:
-          - value: "123"
-            percentage: 56
+      - { namespace: default, count: 12 }
+      - { namespace: kube-system, count: 30 }
+      - { namespace: krateo-system, count: 18 }
+    xField: namespace
+    yField: count
+    colorField: namespace

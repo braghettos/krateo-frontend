@@ -1,48 +1,52 @@
 export interface LineChart {
   version: string
   /**
-   * LineChart displays a customizable line chart based on time series or numerical data. It supports multiple lines with colored coordinates and axis labels, typically used to visualize metrics from Kubernetes resources
+   * LineChart wraps the @ant-design/charts Line component (AntV G2). It mirrors that library's data + field-mapping API: pass a flat `data` array and map fields to positions/color.
    */
   kind: string
   spec: {
     /**
-     * data used to render the chart including lines and axis labels
+     * @ant-design/charts Line config (AntV G2)
      */
     widgetData: {
       /**
-       * list of data series to be rendered as individual lines
+       * chart data records (G2 `data`)
        */
-      lines: {
-        /**
-         * label of the line displayed in the legend
-         */
-        name?: string
-        /**
-         * color used to render the line
-         */
-        color?: 'blue' | 'darkBlue' | 'orange' | 'gray' | 'red' | 'green' | 'violet'
-        /**
-         * data points that define the line
-         */
-        coords?: {
-          /**
-           * value on the x axis
-           */
-          xAxis: string
-          /**
-           * value on the y axis
-           */
-          yAxis: string
-        }[]
+      data: {
+        [k: string]: unknown
       }[]
       /**
-       * label for the x axis
+       * field mapped to the x position (G2 `xField`)
        */
-      xAxisName?: string
+      xField: string
       /**
-       * label for the y axis
+       * field mapped to the y position (G2 `yField`)
        */
-      yAxisName?: string
+      yField: string
+      /**
+       * field mapped to color / series (G2 `colorField`)
+       */
+      colorField?: string
+      /**
+       * line shape, e.g. 'smooth' or 'line' (G2 `shapeField`)
+       */
+      shapeField?: string
+      /**
+       * stack the series (G2 `stack`)
+       */
+      stack?: boolean
+      /**
+       * show the legend; false hides it (G2 `legend`)
+       */
+      legend?: boolean
+      /**
+       * chart title (G2 `title`)
+       */
+      title?: string
+      /**
+       * fixed height in px (G2 `height`); omit to autofit
+       */
+      height?: number
     }
     apiRef?: {
       name: string

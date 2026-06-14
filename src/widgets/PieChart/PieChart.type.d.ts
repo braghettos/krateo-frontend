@@ -1,45 +1,40 @@
 export interface PieChart {
   version: string
   /**
-   * PieChart is a visual component used to display categorical data as segments of a pie chart
+   * PieChart wraps the @ant-design/charts Pie component (AntV G2). It mirrors that library's data + field-mapping API.
    */
   kind: string
   spec: {
+    /**
+     * @ant-design/charts Pie config (AntV G2)
+     */
     widgetData: {
       /**
-       * title displayed above the chart
+       * chart data records (G2 `data`)
        */
-      title: string
+      data: {
+        [k: string]: unknown
+      }[]
       /**
-       * supplementary text displayed below or near the title
+       * field mapped to the slice value / angle (G2 `angleField`)
        */
-      description?: string
+      angleField: string
       /**
-       * data to be visualized in the pie chart
+       * field mapped to color / category (G2 `colorField`)
        */
-      series?: {
-        /**
-         * sum of all data values, used to calculate segment sizes
-         */
-        total: number
-        /**
-         * individual segments of the pie chart
-         */
-        data: {
-          /**
-           * color used to represent the segment
-           */
-          color: 'blue' | 'darkBlue' | 'orange' | 'gray' | 'red' | 'green' | 'violet'
-          /**
-           * numeric value for the segment
-           */
-          value: number
-          /**
-           * label for the segment
-           */
-          label: string
-        }[]
-      }
+      colorField: string
+      /**
+       * show the legend; false hides it (G2 `legend`)
+       */
+      legend?: boolean
+      /**
+       * chart title (G2 `title`)
+       */
+      title?: string
+      /**
+       * fixed height in px (G2 `height`); omit to autofit
+       */
+      height?: number
     }
     apiRef?: {
       name: string

@@ -8,7 +8,7 @@
     },
     "kind": {
       "default": "PieChart",
-      "description": "PieChart is a visual component used to display categorical data as segments of a pie chart",
+      "description": "PieChart wraps the @ant-design/charts Pie component (AntV G2). It mirrors that library's data + field-mapping API.",
       "type": "string"
     },
     "spec": {
@@ -16,72 +16,27 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": ["title"],
+          "additionalProperties": false,
+          "required": ["data", "angleField", "colorField"],
+          "description": "@ant-design/charts Pie config (AntV G2)",
           "properties": {
-            "title": {
-              "type": "string",
-              "description": "title displayed above the chart"
+            "data": {
+              "type": "array",
+              "description": "chart data records (G2 `data`)",
+              "items": { "type": "object", "additionalProperties": true }
             },
-            "description": {
-              "type": "string",
-              "description": "supplementary text displayed below or near the title"
-            },
-            "series": {
-              "type": "object",
-              "description": "data to be visualized in the pie chart",
-              "required": ["total", "data"],
-              "properties": {
-                "total": {
-                  "type": "integer",
-                  "description": "sum of all data values, used to calculate segment sizes"
-                },
-                "data": {
-                  "type": "array",
-                  "description": "individual segments of the pie chart",
-                  "items": {
-                    "type": "object",
-                    "required": ["color", "value", "label"],
-                    "properties": {
-                      "color": {
-                        "type": "string",
-                        "enum": [
-                          "blue",
-                          "darkBlue",
-                          "orange",
-                          "gray",
-                          "red",
-                          "green",
-                          "violet"
-                        ],
-                        "description": "color used to represent the segment"
-                      },
-                      "value": {
-                        "type": "integer",
-                        "description": "numeric value for the segment"
-                      },
-                      "label": {
-                        "type": "string",
-                        "description": "label for the segment"
-                      }
-                    },
-                    "additionalProperties": false
-                  }
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
+            "angleField": { "type": "string", "description": "field mapped to the slice value / angle (G2 `angleField`)" },
+            "colorField": { "type": "string", "description": "field mapped to color / category (G2 `colorField`)" },
+            "legend": { "type": "boolean", "description": "show the legend; false hides it (G2 `legend`)" },
+            "title": { "type": "string", "description": "chart title (G2 `title`)" },
+            "height": { "type": "integer", "description": "fixed height in px (G2 `height`); omit to autofit" }
+          }
         },
         "apiRef": {
           "type": "object",
           "properties": {
-            "name": {
-              "type": "string"
-            },
-            "namespace": {
-              "type": "string"
-            }
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
           },
           "required": ["name", "namespace"],
           "additionalProperties": false
@@ -91,12 +46,8 @@
           "items": {
             "type": "object",
             "properties": {
-              "forPath": {
-                "type": "string"
-              },
-              "expression": {
-                "type": "string"
-              }
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
             },
             "additionalProperties": false
           }
