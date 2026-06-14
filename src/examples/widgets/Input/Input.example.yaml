@@ -1,0 +1,16 @@
+# Ant Design Input as a form control.
+# Meant to be placed inside a Form widget, which provides the antd Form context
+# and collects this field's value (by `name`) on submit.
+kind: Input
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-input
+  namespace: krateo-system
+spec:
+  widgetData:
+    name: username
+    label: Username
+    placeholder: Enter your username
+    required: true
+    allowClear: true
+    size: middle
