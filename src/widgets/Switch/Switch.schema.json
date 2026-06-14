@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "default": "v1beta1" },
+    "kind": {
+      "default": "Switch",
+      "description": "Switch is a form-control widget wrapping Ant Design Switch. It renders inside a Form widget's context and binds its boolean value by `name`.",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["widgetData"],
+      "additionalProperties": false,
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string", "description": "form field key — antd Form.Item `name`" },
+            "label": { "type": "string", "description": "antd Form.Item `label`" },
+            "defaultChecked": { "type": "boolean", "description": "initial checked state — antd Form.Item `initialValue`" },
+            "disabled": { "type": "boolean", "description": "antd Switch `disabled`" },
+            "size": { "type": "string", "enum": ["default", "small"], "description": "antd Switch `size`" },
+            "checkedChildren": { "type": "string", "description": "antd Switch `checkedChildren` (on-state label)" },
+            "unCheckedChildren": { "type": "string", "description": "antd Switch `unCheckedChildren` (off-state label)" }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

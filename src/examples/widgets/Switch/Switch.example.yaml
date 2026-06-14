@@ -1,0 +1,13 @@
+# Ant Design Switch as a form control (child of a Form widget).
+kind: Switch
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-switch
+  namespace: krateo-system
+spec:
+  widgetData:
+    name: autoSync
+    label: Auto-sync
+    defaultChecked: true
+    checkedChildren: "on"
+    unCheckedChildren: "off"
