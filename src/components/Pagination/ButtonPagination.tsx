@@ -4,14 +4,12 @@ export const ButtonPagination = ({
   children,
   fetchNextPage,
   hasNextPage,
-  isFetching,
   isFetchingNextPage,
   isFetchingResourcesRefs,
 }: {
   fetchNextPage: () => Promise<unknown> | void
   hasNextPage: boolean
   children: React.ReactNode
-  isFetching: boolean
   isFetchingNextPage: boolean
   isFetchingResourcesRefs: boolean
 }) => {
@@ -25,12 +23,6 @@ export const ButtonPagination = ({
             Load more
           </Button>
         )}
-      </div>
-      <div>
-        <div>isFetching: {isFetching.toString()}</div>
-        <div>isFetchingNextPage: {isFetchingNextPage.toString()}</div>
-        <div>isFetchingResourcesRefs: {isFetchingResourcesRefs.toString()}</div>
-        <div>has more items: {hasNextPage?.toString()}</div>
       </div>
     </>
   )

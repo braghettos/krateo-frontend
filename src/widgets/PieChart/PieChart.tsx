@@ -9,7 +9,7 @@ import type { PieChart as WidgetType } from './PieChart.type'
 export type PieChartWidgetData = WidgetType['spec']['widgetData']
 
 /**
- * Faithful wrapper of the @ant-design/charts `Pie` (AntV G2): data + angle/color
+ * Faithful wrapper of the @ant-design/plots `Pie` (AntV G2): data + angle/color
  * field mappings. Colors come from G2's palette via `colorField`, not a Krateo enum.
  */
 const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
