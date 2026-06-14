@@ -1,14 +1,13 @@
-import { ConfigProvider } from 'antd'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 
 import App from './App.tsx'
-import { antdTheme } from './theme/tokens.ts'
+import { ThemeModeProvider } from './context/ThemeModeContext.tsx'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ConfigProvider theme={antdTheme}>
+    <ThemeModeProvider>
       <App />
-    </ConfigProvider>
+    </ThemeModeProvider>
   </React.StrictMode>
 )

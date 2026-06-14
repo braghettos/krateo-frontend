@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import AppShell from '../../components/AppShell'
 import Breadcrumb from '../../components/Breadcrumb'
 import Notifications from '../../components/Notifications'
+import ThemeToggle from '../../components/ThemeToggle'
 import UserMenu from '../../components/UserMenu'
 import WidgetRenderer from '../../components/WidgetRenderer'
 import { useConfigContext } from '../../context/ConfigContext'
@@ -62,7 +63,7 @@ const Profile = () => {
         </Card>
       }
       headerLeft={<Breadcrumb />}
-      headerRight={<><Notifications /><UserMenu /></>}
+      headerRight={<><ThemeToggle /><Notifications /><UserMenu /></>}
       sidebar={<WidgetRenderer key={'sidebar'} widgetEndpoint={config!.api.INIT} />}
     />
   )

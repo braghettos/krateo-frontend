@@ -10,6 +10,7 @@ import Modal from '../../widgets/Modal'
 import AppShell from '../AppShell'
 import Breadcrumb from '../Breadcrumb'
 import Notifications from '../Notifications'
+import ThemeToggle from '../ThemeToggle'
 import UserMenu from '../UserMenu'
 import WidgetRenderer from '../WidgetRenderer'
 
@@ -45,7 +46,7 @@ export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: 
       <AppShell
         content={widgetEndpoint || isFetchingRoutes ? <WidgetRenderer key={'content'} widgetEndpoint={widgetEndpoint} /> : <Page404 />}
         headerLeft={<Breadcrumb />}
-        headerRight={<><Notifications /><UserMenu /></>}
+        headerRight={<><ThemeToggle /><Notifications /><UserMenu /></>}
         sidebar={<WidgetRenderer key={'sidebar'} widgetEndpoint={config!.api.INIT} />}
       />
       <Drawer />
