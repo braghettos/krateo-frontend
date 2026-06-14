@@ -1,0 +1,111 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "List",
+      "description": "List renders any array of items as rows, mapping each item's fields to row slots via itemTemplate. Optionally streams items from a Server-Sent-Events source.",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["widgetData"],
+      "additionalProperties": false,
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["itemTemplate"],
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "type": "array",
+              "description": "the items to render (free-form objects); may also be appended from the SSE source",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "itemTemplate": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "maps each item's fields to row slots; slot values are templates with {dot.path} placeholders ({a|b} picks the first non-empty)",
+              "properties": {
+                "primaryText": { "type": "string", "description": "the main row text" },
+                "secondaryText": { "type": "string", "description": "the right-aligned row text (e.g. a timestamp)" },
+                "subPrimaryText": { "type": "string", "description": "secondary text under the primary text" },
+                "subSecondaryText": { "type": "string", "description": "secondary text above the secondary text" },
+                "icon": { "type": "string", "description": "font awesome icon name, or a {path}" },
+                "color": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "row avatar color",
+                  "properties": {
+                    "value": { "type": "string", "description": "a palette color name, or a {path} resolved against the item" },
+                    "map": {
+                      "type": "object",
+                      "additionalProperties": { "type": "string" },
+                      "description": "map a resolved value to a palette color, e.g. { Normal: blue, Warning: orange }"
+                    },
+                    "default": { "type": "string", "description": "fallback palette color" }
+                  }
+                },
+                "formats": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "per-slot value formatting",
+                  "properties": {
+                    "primaryText": { "type": "string", "enum": ["text", "datetime"] },
+                    "secondaryText": { "type": "string", "enum": ["text", "datetime"] },
+                    "subPrimaryText": { "type": "string", "enum": ["text", "datetime"] },
+                    "subSecondaryText": { "type": "string", "enum": ["text", "datetime"] }
+                  }
+                }
+              }
+            },
+            "sseEndpoint": {
+              "type": "string",
+              "description": "optional Server-Sent-Events endpoint to stream items from"
+            },
+            "sseTopic": {
+              "type": "string",
+              "description": "optional Server-Sent-Events subscription topic"
+            },
+            "prefix": {
+              "type": "string",
+              "description": "filter prefix used to filter items via the Filters widget"
+            },
+            "maxItems": {
+              "type": "integer",
+              "description": "the maximum number of items to keep when streaming (default 200)"
+            }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}
