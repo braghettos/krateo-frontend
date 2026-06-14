@@ -196,11 +196,11 @@ export interface Button {
         }[]
       }
       /**
-       * the background color of the button
+       * ***DEPRECATED*** prefer antd `color` + `variant`; sets an inline background color
        */
       backgroundColor?: 'blue' | 'darkBlue' | 'orange' | 'gray' | 'red' | 'green' | 'violet'
       /**
-       * ***DEPRECATED*** the color of the button
+       * antd Button color (pair with `variant`)
        */
       color?:
         | 'default'
@@ -219,6 +219,26 @@ export interface Button {
         | 'geekblue'
         | 'lime'
         | 'gold'
+      /**
+       * antd Button variant (pair with `color`)
+       */
+      variant?: 'outlined' | 'dashed' | 'solid' | 'filled' | 'text' | 'link'
+      /**
+       * antd Button danger
+       */
+      danger?: boolean
+      /**
+       * antd Button disabled
+       */
+      disabled?: boolean
+      /**
+       * antd Button block (full width)
+       */
+      block?: boolean
+      /**
+       * antd Button ghost
+       */
+      ghost?: boolean
       /**
        * the label of the button
        */

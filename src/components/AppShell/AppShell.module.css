@@ -1,0 +1,76 @@
+.shell {
+  height: 100%;
+  overflow: auto;
+  width: 100%;
+}
+
+/* antd Sider: replace the themed background with the brand gradient. */
+.shell :global(.ant-layout-sider) {
+  background: linear-gradient(var(--menubgstart-color), var(--menubgend-color));
+}
+
+/* Sider body: a fixed logo above a scrollable nav. */
+.sidebarInner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  height: 100%;
+}
+
+.logo {
+  border-bottom: 1px solid transparent;
+  flex-shrink: 0;
+  height: 64px;
+  max-height: 64px;
+  overflow: hidden;
+}
+
+.image {
+  padding: var(--spacing-sm);
+}
+
+.sidebarContent {
+  flex-grow: 1;
+  overflow-y: auto;
+  scrollbar-color: #ccc transparent;
+  scrollbar-width: thin;
+}
+
+.container {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* antd Header: the portal's light top bar with left/right slots. */
+.shell :global(.ant-layout-header) {
+  align-items: center;
+  background: var(--light-color);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  gap: var(--spacing-md);
+  height: 64px;
+  justify-content: space-between;
+  padding: 0 var(--spacing-md);
+}
+
+.headerLeft {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerRight {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+}
+
+/* antd Content: the scrollable, padded body. */
+.shell :global(.ant-layout-content) {
+  box-sizing: border-box;
+  overflow: hidden scroll;
+  padding: var(--spacing-lg) var(--spacing-md);
+}

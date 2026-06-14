@@ -31,6 +31,8 @@
 
 import { describe, it, expect } from 'vitest'
 
+import { MAX_WIDGET_FETCH_RETRIES, shouldRetryWidgetFetch, WidgetFetchError, widgetFetchRetryDelay } from './useWidgetQuery'
+
 /**
  * Pure replica of ScrollPagination.tsx:25-29 — the intersection-observer
  * gate that is the SOLE remaining `fetchNextPage` driver in the datagrid
@@ -185,5 +187,35 @@ describe('Path B — non-paginating widget kinds are unaffected', () => {
     const widgetWithoutPageParam = { status: { resourcesRefs: { slice: { continue: true } } } }
     const pageParam = computeNextPageParam(widgetWithoutPageParam, { page: undefined, perPage: 5 })
     expect(pageParam).toBeUndefined()
+  })
+})
+
+describe('initial-render retry — transient failures retry, permanent ones do not', () => {
+  it('retries network errors (no status) up to the cap, then stops', () => {
+    // "Server has not yet answered": fetch rejects with a TypeError that has
+    // no .status — the case behind the initial-render red cross.
+    const networkError = new TypeError('Failed to fetch')
+    expect(shouldRetryWidgetFetch(0, networkError)).toBe(true)
+    expect(shouldRetryWidgetFetch(MAX_WIDGET_FETCH_RETRIES - 1, networkError)).toBe(true)
+    expect(shouldRetryWidgetFetch(MAX_WIDGET_FETCH_RETRIES, networkError)).toBe(false)
+  })
+
+  it('retries 5xx (transient server errors, e.g. snowplow still starting)', () => {
+    expect(shouldRetryWidgetFetch(0, new WidgetFetchError('boom', 503))).toBe(true)
+    expect(shouldRetryWidgetFetch(0, new WidgetFetchError('boom', 500))).toBe(true)
+  })
+
+  it('never retries 4xx (auth / forbidden / not-found / bad-request)', () => {
+    for (const status of [400, 401, 403, 404]) {
+      expect(shouldRetryWidgetFetch(0, new WidgetFetchError('nope', status))).toBe(false)
+    }
+  })
+
+  it('uses capped exponential backoff between attempts', () => {
+    expect(widgetFetchRetryDelay(0)).toBe(700)
+    expect(widgetFetchRetryDelay(1)).toBe(1400)
+    expect(widgetFetchRetryDelay(2)).toBe(2800)
+    // capped
+    expect(widgetFetchRetryDelay(10)).toBe(5000)
   })
 })

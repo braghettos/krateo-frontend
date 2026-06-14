@@ -1,0 +1,31 @@
+# Ant Design Breadcrumb
+# Target: a static breadcrumb trail provided by the CR.
+# Expected behavior: renders antd Breadcrumb with the given items and separator.
+# (A routed shell can instead compute items client-side and render this widget.)
+kind: Breadcrumb
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-breadcrumb
+  namespace: krateo-system
+spec:
+  widgetData:
+    items:
+      - title: Home
+        href: /
+      - title: Compositions
+        href: /compositions
+      - title: my-composition
+    separator: "/"
+  resourcesRefs:
+    items: []
+status:
+  widgetData:
+    items:
+      - title: Home
+        href: /
+      - title: Compositions
+        href: /compositions
+      - title: my-composition
+    separator: "/"
+  resourcesRefs:
+    items: []

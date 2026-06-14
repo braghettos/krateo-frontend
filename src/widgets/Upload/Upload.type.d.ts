@@ -15,9 +15,9 @@ export interface Upload {
        */
       label?: string
       /**
-       * the multipart form field name used for the file (defaults to `file`)
+       * antd Upload `name` — the multipart form field name for the file (defaults to `file`); legacy `fieldName` still accepted
        */
-      fieldName?: string
+      name?: string
       /**
        * how the uploaded file list is rendered
        */

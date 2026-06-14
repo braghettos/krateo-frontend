@@ -1,0 +1,92 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "Breadcrumb",
+      "description": "Breadcrumb wraps the Ant Design Breadcrumb component: an ordered list of crumbs, each an optional link.",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["widgetData"],
+      "additionalProperties": false,
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["items"],
+          "properties": {
+            "items": {
+              "type": "array",
+              "description": "antd Breadcrumb `items`",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["title"],
+                "properties": {
+                  "title": { "type": "string", "description": "crumb label (antd Breadcrumb ItemType.title)" },
+                  "href": { "type": "string", "description": "optional link target (antd Breadcrumb ItemType.href)" }
+                }
+              }
+            },
+            "separator": {
+              "type": "string",
+              "description": "antd Breadcrumb `separator` (default \"/\")"
+            }
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": { "type": "boolean" },
+                  "apiVersion": { "type": "string" },
+                  "id": { "type": "string" },
+                  "name": { "type": "string" },
+                  "namespace": { "type": "string" },
+                  "resource": { "type": "string" },
+                  "verb": {
+                    "type": "string",
+                    "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
+                  }
+                },
+                "required": ["allowed", "id"]
+              }
+            }
+          },
+          "required": ["items"]
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

@@ -12,6 +12,37 @@ function parseNumberParam(param: string | null) {
   return isNaN(parsed!) ? undefined : parsed
 }
 
+/** Error carrying the HTTP status so retry logic can tell transient from permanent failures. */
+export class WidgetFetchError extends Error {
+  status?: number
+  constructor(message: string, status?: number) {
+    super(message)
+    this.name = 'WidgetFetchError'
+    this.status = status
+  }
+}
+
+export const MAX_WIDGET_FETCH_RETRIES = 3
+
+/**
+ * Whether a failed widget fetch should be retried. The global QueryClient sets
+ * `retry: false`, so without this a backend that has not answered yet (network
+ * error / 5xx during startup) lands immediately in the error state — the
+ * "red cross on initial render". We retry transient failures (network errors,
+ * which carry no status, and 5xx) but never permanent ones (4xx: auth /
+ * forbidden / not-found / bad-request).
+ */
+export const shouldRetryWidgetFetch = (failureCount: number, error: unknown): boolean => {
+  const status = (error as { status?: number } | null)?.status
+  if (typeof status === 'number' && status >= 400 && status < 500) {
+    return false
+  }
+  return failureCount < MAX_WIDGET_FETCH_RETRIES
+}
+
+/** Exponential backoff (capped) between widget-fetch retries. */
+export const widgetFetchRetryDelay = (attemptIndex: number): number => Math.min(700 * 2 ** attemptIndex, 5000)
+
 export const useWidgetQuery = (widgetEndpoint: string) => {
   const { config } = useConfigContext()
   const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${widgetEndpoint}`
@@ -51,7 +82,7 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
     })
 
     if (!res.ok) {
-      throw new Error(`Widget fetch failed: ${res.status} ${res.statusText}`)
+      throw new WidgetFetchError(`Widget fetch failed: ${res.status} ${res.statusText}`, res.status)
     }
 
     const widget = (await res.json()) as Widget
@@ -61,6 +92,11 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   const queryResult = useInfiniteQuery({
     queryKey: ['widgets', widgetEndpoint],
     queryFn: ({ pageParam }) => fetchWidget(pageParam),
+    // Override the global `retry: false` for widget data: a backend that is not
+    // ready yet should keep showing a loading state and retry, not flash the
+    // error "red cross" on first paint. See shouldRetryWidgetFetch.
+    retry: shouldRetryWidgetFetch,
+    retryDelay: widgetFetchRetryDelay,
     initialPageParam: {
       page: initialPage,
       perPage: initialPerPage,

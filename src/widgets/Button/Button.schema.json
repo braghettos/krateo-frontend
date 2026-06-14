@@ -280,7 +280,7 @@
               "additionalProperties": false
             },
             "backgroundColor": {
-              "description": "the background color of the button",
+              "description": "***DEPRECATED*** prefer antd `color` + `variant`; sets an inline background color",
               "type": "string",
               "enum": [
                 "blue",
@@ -293,7 +293,7 @@
               ]
             },
             "color": {
-              "description": "***DEPRECATED*** the color of the button",
+              "description": "antd Button color (pair with `variant`)",
               "type": "string",
               "enum": [
                 "default",
@@ -314,6 +314,15 @@
                 "gold"
               ]
             },
+            "variant": {
+              "description": "antd Button variant (pair with `color`)",
+              "type": "string",
+              "enum": ["outlined", "dashed", "solid", "filled", "text", "link"]
+            },
+            "danger": { "type": "boolean", "description": "antd Button danger" },
+            "disabled": { "type": "boolean", "description": "antd Button disabled" },
+            "block": { "type": "boolean", "description": "antd Button block (full width)" },
+            "ghost": { "type": "boolean", "description": "antd Button ghost" },
             "label": {
               "description": "the label of the button",
               "type": "string"

@@ -1,4 +1,4 @@
-import { Empty, Result, Skeleton } from 'antd'
+import { Button, Empty, Result, Skeleton } from 'antd'
 import type { ReactNode } from 'react'
 
 import styles from './WidgetStates.module.css'
@@ -17,10 +17,15 @@ export const WidgetEmpty = ({ description }: { description?: ReactNode }) => (
   </div>
 )
 
-/** Shared error state for a widget. Optional `children` render extra detail. */
-export const WidgetError = ({ children, subtitle }: { children?: ReactNode; subtitle: string }) => (
+/** Shared error state for a widget. Optional `children` render extra detail; `onRetry` adds a Retry button. */
+export const WidgetError = ({ children, onRetry, subtitle }: { children?: ReactNode; onRetry?: () => void; subtitle: string }) => (
   <div className={styles.message}>
-    <Result status='error' subTitle={subtitle} title='Error while rendering widget'>
+    <Result
+      extra={onRetry ? <Button onClick={onRetry} type='primary'>Retry</Button> : undefined}
+      status='error'
+      subTitle={subtitle}
+      title='Error while rendering widget'
+    >
       {children}
     </Result>
   </div>

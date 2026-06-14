@@ -79,10 +79,13 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     autocomplete,
     buttonConfig,
     dependencies,
+    disabled,
     fieldDescription,
     initialValues,
+    layout,
     objectFields,
     schema,
+    size,
     stringSchema,
     submitActionId,
   } = widgetData
@@ -170,12 +173,15 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
         autocomplete={autocomplete}
         dependencies={dependencies}
         descriptionTooltip={fieldDescription === 'tooltip'}
+        disabled={disabled}
         formId={formId}
         initialValues={initialValues}
+        layout={layout}
         objectFields={objectFields}
         onSubmit={values => onSubmit(values)}
         resourcesRefs={resourcesRefs}
         schema={formSchema}
+        size={size}
       />
 
       <div className={styles.extra}>

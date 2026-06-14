@@ -28,18 +28,22 @@ const buildPropSchema = (type: JsonType, description: string, enumValues: string
 
 async function main() {
   console.log(chalk.blue('\n🧩 Scaffold a new Krateo widget\n'))
+  console.log(chalk.gray('Convention: mirror Ant Design. For a 1:1 wrapper, the kind = the antd component'))
+  console.log(chalk.gray('name, and each prop uses the antd prop name/shape verbatim. See docs/widget-authoring.md.\n'))
 
+  // antd component first, so the kind can default to it (the 1:1-wrapper convention).
+  const component = await input({ message: 'Ant Design component to wrap (exact export name, e.g. Tag):' })
   const kind = await input({
-    message: 'Widget kind (PascalCase, also the CR kind):',
+    default: component,
+    message: 'Widget kind (PascalCase; defaults to the antd component name — keep it for a 1:1 wrapper):',
     validate: (value) => /^[A-Z][A-Za-z0-9]+$/.test(value) || 'Use PascalCase, e.g. StatusBadge',
   })
-  const component = await input({ default: kind, message: 'Ant Design component to wrap (export name):' })
   const description = await input({ message: 'One-line description:' })
 
   const props: WidgetPropDef[] = []
   let addMore = await confirm({ default: true, message: 'Add a widgetData property?' })
   while (addMore) {
-    const name = await input({ message: '  prop name (matches the antd prop):' })
+    const name = await input({ message: '  prop name (use the EXACT antd prop name + value shape):' })
     const type = await select<JsonType>({
       choices: ['string', 'integer', 'boolean', 'array', 'object'].map((value) => ({ value: value as JsonType })),
       message: '  prop type:',

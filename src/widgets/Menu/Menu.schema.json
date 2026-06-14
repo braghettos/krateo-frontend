@@ -1,0 +1,141 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "Menu",
+      "description": "NavMenu is a container for NavMenuItem widgets, which are used to setup navigation inside the application",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["allowedResources", "items"],
+          "properties": {
+            "mode": { "type": "string", "enum": ["vertical", "horizontal", "inline"], "description": "antd Menu mode (default inline)" },
+            "theme": { "type": "string", "enum": ["light", "dark"], "description": "antd Menu theme" },
+            "allowedResources": {
+              "description": "the list of resources that are allowed to be children of this widget or referenced by it",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["navmenuitems"]
+              }
+            },
+            "items": {
+              "type": "array",
+              "description": "list of navigation entries each pointing to a k8s custom resource",
+              "items": {
+                "type": "object",
+                "required": ["resourceRefId"],
+                "properties": {
+                  "resourceRefId": {
+                    "type": "string",
+                    "description": "the identifier of the k8s custom resource that should be represented, usually a NavMenuItem"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["page", "perPage"]
+                  }
+                },
+                "required": ["allowed", "id"]
+              }
+            }
+          },
+          "required": ["items"]
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

@@ -36,9 +36,17 @@ export interface ButtonGroup {
         | 'yamlviewers'
       )[]
       /**
-       * the spacing between the items of the ButtonGroup. Default is 'small'
+       * antd Space size — spacing between items (legacy `gap` still accepted)
        */
-      gap?: 'extra-small' | 'small' | 'medium' | 'large'
+      size?: 'small' | 'middle' | 'large'
+      /**
+       * antd Space direction
+       */
+      direction?: 'horizontal' | 'vertical'
+      /**
+       * antd Space wrap
+       */
+      wrap?: boolean
       /**
        * the items of the ButtonGroup
        */

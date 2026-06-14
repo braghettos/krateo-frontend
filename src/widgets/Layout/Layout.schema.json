@@ -1,0 +1,108 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "Layout",
+      "description": "Layout wraps the Ant Design Layout component: optional Header, Sider, Content and Footer regions, each rendering a child widget. The Sider exposes antd's collapse/responsive props.",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["widgetData"],
+      "additionalProperties": false,
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasSider": {
+              "type": "boolean",
+              "description": "antd Layout `hasSider` — declares a Sider child so the flex direction is correct on first paint"
+            },
+            "header": {
+              "type": "string",
+              "description": "resourceRefId of the widget rendered in antd Layout.Header"
+            },
+            "content": {
+              "type": "string",
+              "description": "resourceRefId of the widget rendered in antd Layout.Content"
+            },
+            "footer": {
+              "type": "string",
+              "description": "resourceRefId of the widget rendered in antd Layout.Footer"
+            },
+            "sider": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "antd Layout.Sider region",
+              "properties": {
+                "resourceRefId": {
+                  "type": "string",
+                  "description": "resourceRefId of the widget rendered inside the Sider"
+                },
+                "width": { "type": "integer", "description": "antd Sider `width` in px" },
+                "collapsible": { "type": "boolean", "description": "antd Sider `collapsible` (renders a collapse trigger)" },
+                "collapsedWidth": { "type": "integer", "description": "antd Sider `collapsedWidth` in px" },
+                "breakpoint": { "type": "string", "enum": ["xs", "sm", "md", "lg", "xl", "xxl"], "description": "antd Sider responsive `breakpoint`; auto-collapses below it" },
+                "theme": { "type": "string", "enum": ["light", "dark"], "description": "antd Sider `theme`" },
+                "defaultCollapsed": { "type": "boolean", "description": "antd Sider `defaultCollapsed`" },
+                "reverseArrow": { "type": "boolean", "description": "antd Sider `reverseArrow`" }
+              }
+            }
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": { "type": "boolean" },
+                  "apiVersion": { "type": "string" },
+                  "id": { "type": "string" },
+                  "name": { "type": "string" },
+                  "namespace": { "type": "string" },
+                  "resource": { "type": "string" },
+                  "verb": {
+                    "type": "string",
+                    "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
+                  }
+                },
+                "required": ["allowed", "id"]
+              }
+            }
+          },
+          "required": ["items"]
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": { "type": "string" },
+              "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

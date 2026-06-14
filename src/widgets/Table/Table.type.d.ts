@@ -39,9 +39,9 @@ export interface Table {
         valueKey: string
       }[]
       /**
-       * Array of table rows
+       * antd Table dataSource — the table rows (renamed from `data`; `data` still accepted for back-compat)
        */
-      data: {
+      dataSource?: {
         /**
          * the key of the column this cell belongs to
          */
@@ -80,9 +80,38 @@ export interface Table {
         arrayValue?: string[]
       }[][]
       /**
-       * number of rows displayed per page
+       * antd Table pagination config (subproperties mirror antd). Replaces the flat `pageSize`, which is still accepted for back-compat.
        */
-      pageSize?: number
+      pagination?: {
+        /**
+         * number of rows per page
+         */
+        pageSize?: number
+        /**
+         * default page size
+         */
+        defaultPageSize?: number
+        /**
+         * hide the pager when there is a single page
+         */
+        hideOnSinglePage?: boolean
+        /**
+         * use the simple pager
+         */
+        simple?: boolean
+        /**
+         * pager position(s)
+         */
+        position?: ('topLeft' | 'topCenter' | 'topRight' | 'bottomLeft' | 'bottomCenter' | 'bottomRight')[]
+      }
+      /**
+       * antd Table bordered
+       */
+      bordered?: boolean
+      /**
+       * antd Table size
+       */
+      size?: 'large' | 'middle' | 'small'
       /**
        * it's the filters prefix to get right values
        */
