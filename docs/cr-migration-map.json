@@ -1,0 +1,47 @@
+{
+  "$comment": "Hard-break migration map for Krateo Widget CRs (Ant Design fidelity, Phase 0). Apply to live Widget CRs in lockstep with the frontend deploy that removes the back-compat aliases/props. The frontend no longer resolves any of the legacy keys/props below.",
+  "kinds": {
+    "Panel": "Card",
+    "Column": "Col",
+    "TabList": "Tabs",
+    "NavMenu": "Menu",
+    "DataGrid": "List"
+  },
+  "resourcePlurals": {
+    "panels": "cards",
+    "columns": "cols",
+    "tablists": "tabs",
+    "navmenus": "menus",
+    "datagrids": "lists"
+  },
+  "widgetData": {
+    "Table": {
+      "data": "dataSource",
+      "pageSize": "pagination.pageSize"
+    },
+    "ButtonGroup": {
+      "gap": "size",
+      "gapValueMap": { "extra-small": "small", "small": "small", "medium": "middle", "large": "large" }
+    },
+    "Card": {
+      "actions": "widgetActions",
+      "headerRight": "extra"
+    },
+    "Button": {
+      "backgroundColor": "color (pair with variant; map brand name -> antd color)"
+    }
+  },
+  "actions": {
+    "rest.payloadKey": "REMOVED — send the request payload flat (no nesting key)"
+  },
+  "appliesTo": [
+    "Every Widget CR's top-level `kind` (kinds map).",
+    "Every `spec.resourcesRefs.items[].resource` (resourcePlurals map).",
+    "Every container widget's `spec.widgetData.allowedResources[]` enum (resourcePlurals map)."
+  ],
+  "notes": [
+    "resourcePlurals are derived from the antd kind via controller-gen; confirm against the CRDs produced by `npm run generate-crds` (krateoctl) before applying to a cluster.",
+    "No transitional aliases exist post-deploy — run this transform in lockstep with the frontend rollout.",
+    "antd Card.actions (footer nodes) is unrelated to the Krateo event map, which is now widgetData.widgetActions."
+  ]
+}
