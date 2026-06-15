@@ -30,7 +30,7 @@ for (const raw of Object.values(exampleFiles)) {
 /** Every registry kind (antd-named; legacy aliases removed in the hard-break). */
 const KNOWN_KINDS = [
   'BarChart', 'Button', 'ButtonGroup', 'Card', 'Col',
-  'EventList', 'Filters', 'FlowChart', 'Form', 'LineChart', 'List', 'Markdown',
+  'EventList', 'Filters', 'Flex', 'FlowChart', 'Form', 'LineChart', 'List', 'Markdown',
   'Menu', 'Page', 'Paragraph', 'PieChart', 'Route', 'RoutesLoader', 'Row',
   'Table', 'Tabs', 'YamlViewer',
 ]
