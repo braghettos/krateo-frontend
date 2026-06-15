@@ -11,7 +11,7 @@ import type { Button as WidgetType } from './Button.type'
 export type ButtonWidgetData = WidgetType['spec']['widgetData']
 
 const Button = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ButtonWidgetData>) => {
-  const { actions, backgroundColor, block, clickActionId, color, danger, disabled, ghost, icon, label, shape, size, type, variant } = widgetData
+  const { actions, block, clickActionId, color, danger, disabled, ghost, icon, label, shape, size, type, variant } = widgetData
 
   const { notification } = useApp()
   const { handleAction, isActionLoading } = useHandleAction()
@@ -56,7 +56,6 @@ const Button = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ButtonWi
         onClick={(event) => handleClick(event)}
         shape={shape || 'default'}
         size={size || 'middle'}
-        style={{ backgroundColor: backgroundColor || undefined }}
         type={type || 'primary'}
         variant={variant}
       >

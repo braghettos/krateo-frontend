@@ -33,11 +33,8 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   const { notification } = useApp()
   const { handleAction, isActionLoading } = useHandleAction()
 
-  const { bordered, clickActionId, cover, footer, headerLeft, icon, items, size, tags, title, tooltip } = widgetData
-  // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions` (legacy `actions` still read).
-  const widgetActions = widgetData.widgetActions ?? (widgetData as { actions?: CardWidgetData['widgetActions'] }).actions
-  // antd Card `extra` (renamed from `headerRight`).
-  const extra = widgetData.extra ?? (widgetData as { headerRight?: string }).headerRight
+  // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions`.
+  const { bordered, clickActionId, cover, extra, footer, headerLeft, icon, items, size, tags, title, tooltip, widgetActions } = widgetData
   const coverEndpoint = cover ? getEndpointUrl(cover, resourcesRefs) : undefined
 
   const action: WidgetAction | undefined = Object.values(widgetActions ?? {})

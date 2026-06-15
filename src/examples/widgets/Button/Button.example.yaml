@@ -113,7 +113,6 @@ metadata:
 spec:
   widgetData:
     label: Restart
-    backgroundColor: red
     type: primary
     
     size: middle

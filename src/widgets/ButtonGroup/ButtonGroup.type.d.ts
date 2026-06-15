@@ -28,15 +28,15 @@ export interface ButtonGroup {
         | 'forms'
         | 'linecharts'
         | 'markdowns'
-        | 'panels'
+        | 'cards'
         | 'paragraphs'
         | 'piecharts'
         | 'tables'
-        | 'tablists'
+        | 'tabs'
         | 'yamlviewers'
       )[]
       /**
-       * antd Space size — spacing between items (legacy `gap` still accepted)
+       * antd Space size — spacing between items
        */
       size?: 'small' | 'middle' | 'large'
       /**

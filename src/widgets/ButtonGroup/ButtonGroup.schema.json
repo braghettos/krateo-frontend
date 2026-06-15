@@ -39,17 +39,17 @@
                   "forms",
                   "linecharts",
                   "markdowns",
-                  "panels",
+                  "cards",
                   "paragraphs",
                   "piecharts",
                   "tables",
-                  "tablists",
+                  "tabs",
                   "yamlviewers"
                 ]
               }
             },
             "size": {
-              "description": "antd Space size — spacing between items (legacy `gap` still accepted)",
+              "description": "antd Space size — spacing between items",
               "enum": ["small", "middle", "large"],
               "type": "string"
             },

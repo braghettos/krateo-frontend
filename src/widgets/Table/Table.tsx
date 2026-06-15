@@ -13,11 +13,9 @@ import type { Table as WidgetType } from './Table.type'
 export type TableWidgetData = WidgetType['spec']['widgetData']
 
 const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>) => {
-  const { bordered, columns, pagination, prefix, size } = widgetData
-  // antd-faithful `dataSource`/`pagination`, with back-compat for the legacy `data`/`pageSize`.
-  const legacy = widgetData as { data?: TableWidgetData['dataSource']; pageSize?: number }
-  const data = widgetData.dataSource ?? legacy.data ?? []
-  const pageSize = pagination?.pageSize ?? pagination?.defaultPageSize ?? legacy.pageSize
+  const { bordered, columns, dataSource, pagination, prefix, size } = widgetData
+  const data = dataSource ?? []
+  const pageSize = pagination?.pageSize ?? pagination?.defaultPageSize
   const { getFilteredData } = useFilter()
 
   // TODO: check if this works with RESTAction, it should not be displayed

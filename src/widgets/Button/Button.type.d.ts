@@ -18,10 +18,6 @@ export interface Button {
          */
         rest?: {
           /**
-           * ***DEPRECATED*** key used to nest the payload in the request body
-           */
-          payloadKey?: string
-          /**
            * unique identifier for the action
            */
           id: string
@@ -195,10 +191,6 @@ export interface Button {
           size?: 'default' | 'large' | 'fullscreen' | 'custom'
         }[]
       }
-      /**
-       * ***DEPRECATED*** prefer antd `color` + `variant`; sets an inline background color
-       */
-      backgroundColor?: 'blue' | 'darkBlue' | 'orange' | 'gray' | 'red' | 'green' | 'violet'
       /**
        * antd Button color (pair with `variant`)
        */

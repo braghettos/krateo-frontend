@@ -45,10 +45,6 @@
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
-                      "payloadKey": {
-                        "type": "string",
-                        "description": "***DEPRECATED*** key used to nest the payload in the request body"
-                      },
                       "headers": {
                         "description": "array of headers as strings, format 'key: value'",
                         "type": "array",

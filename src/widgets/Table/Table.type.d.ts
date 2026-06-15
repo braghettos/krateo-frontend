@@ -80,7 +80,7 @@ export interface Table {
         arrayValue?: string[]
       }[][]
       /**
-       * antd Table pagination config (subproperties mirror antd). Replaces the flat `pageSize`, which is still accepted for back-compat.
+       * antd Table pagination config (subproperties mirror antd).
        */
       pagination?: {
         /**

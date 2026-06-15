@@ -33,10 +33,6 @@ export interface Form {
          */
         rest?: {
           /**
-           * ***DEPRECATED*** key used to nest the payload in the request body
-           */
-          payloadKey?: string
-          /**
            * array of headers as strings, format 'key: value'
            */
           headers: string[]

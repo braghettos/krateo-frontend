@@ -49,7 +49,6 @@ export type WidgetActions = {
     type: 'rest'
     id: string
     payload?: Record<string, unknown>
-    payloadKey?: string
     resourceRefId: string
     requireConfirmation?: boolean
     successMessage?: string

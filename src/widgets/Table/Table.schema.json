@@ -136,7 +136,7 @@
             "pagination": {
               "type": "object",
               "additionalProperties": false,
-              "description": "antd Table pagination config (subproperties mirror antd). Replaces the flat `pageSize`, which is still accepted for back-compat.",
+              "description": "antd Table pagination config (subproperties mirror antd).",
               "properties": {
                 "pageSize": { "type": "integer", "description": "number of rows per page" },
                 "defaultPageSize": { "type": "integer", "description": "default page size" },

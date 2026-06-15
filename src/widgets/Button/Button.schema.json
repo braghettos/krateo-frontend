@@ -29,10 +29,6 @@
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
-                      "payloadKey": {
-                        "type": "string",
-                        "description": "***DEPRECATED*** key used to nest the payload in the request body"
-                      },
                       "id": {
                         "type": "string",
                         "description": "unique identifier for the action"
@@ -278,19 +274,6 @@
                 }
               },
               "additionalProperties": false
-            },
-            "backgroundColor": {
-              "description": "***DEPRECATED*** prefer antd `color` + `variant`; sets an inline background color",
-              "type": "string",
-              "enum": [
-                "blue",
-                "darkBlue",
-                "orange",
-                "gray",
-                "red",
-                "green",
-                "violet"
-              ]
             },
             "color": {
               "description": "antd Button color (pair with `variant`)",
