@@ -32,6 +32,9 @@
     },
     "Divider": {
       "orientation": "titlePlacement (antd 6 rename; values left/right/center unchanged)"
+    },
+    "Row": {
+      "alignment": "value center→middle (antd Row `align`)"
     }
   },
   "actions": {

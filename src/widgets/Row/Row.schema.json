@@ -49,8 +49,8 @@
             },
             "alignment": {
               "type": "string",
-              "description": "the alignment of the element inside the row. Default is 'center'",
-              "enum": ["bottom", "center", "top"]
+              "description": "vertical alignment of items in the row (antd Row `align`). Default is 'middle'",
+              "enum": ["top", "middle", "bottom"]
             },
             "items": {
               "description": "the items of the row",
@@ -70,7 +70,7 @@
                   },
                   "alignment": {
                     "type": "string",
-                    "description": "the alignment of the element inside the cell. Default is 'left'",
+                    "description": "Krateo-only: horizontal alignment of the widget inside its cell (no antd Col equivalent; applied via flex justify-content). Default is 'left'",
                     "enum": ["center", "left", "right"]
                   }
                 },

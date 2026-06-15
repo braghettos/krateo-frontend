@@ -36,9 +36,9 @@ export interface Row {
         | 'yamlviewers'
       )[]
       /**
-       * the alignment of the element inside the row. Default is 'center'
+       * vertical alignment of items in the row (antd Row `align`). Default is 'middle'
        */
-      alignment?: 'bottom' | 'center' | 'top'
+      alignment?: 'top' | 'middle' | 'bottom'
       /**
        * the items of the row
        */
@@ -49,7 +49,7 @@ export interface Row {
          */
         size?: number
         /**
-         * the alignment of the element inside the cell. Default is 'left'
+         * Krateo-only: horizontal alignment of the widget inside its cell (no antd Col equivalent; applied via flex justify-content). Default is 'left'
          */
         alignment?: 'center' | 'left' | 'right'
       }[]

@@ -16,7 +16,7 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": ["json", "items"],
+          "required": ["json"],
           "properties": {
             "json": {
               "description": "json string to be converted and displayed as yaml",

@@ -9,7 +9,7 @@ export interface FlowChart {
       /**
        * list of kubernetes resources and their relationships to render as nodes in the flow chart
        */
-      data?: {
+      data: {
         /**
          * optional date value to be shown in the node, formatted as ISO 8601 string
          */

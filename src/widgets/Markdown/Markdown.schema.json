@@ -16,7 +16,7 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": ["markdown", "items"],
+          "required": ["markdown"],
           "properties": {
             "allowCopy": {
               "description": "displays a copy button on top of the widget to allow copy to clipboard",
