@@ -1,9 +1,7 @@
 .flowChart {
+  background: var(--background-color);
+  border-radius: var(--radius-lg);
   height: 100%;
-  min-height: 500px;
-}
-
-.flowChart :global(.react-flow) {
   min-height: 500px;
 }
 
