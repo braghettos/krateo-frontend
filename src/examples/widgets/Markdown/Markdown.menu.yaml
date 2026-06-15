@@ -59,46 +59,46 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-markdown-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-markdown-basic-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-markdown-basic-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-markdown-copy-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-markdown-copy-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET      
       - id: example-markdown-download-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-markdown-download-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET       
       - id: example-markdown-download-md-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-markdown-download-md-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-markdown-combined-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-markdown-combined-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-markdown-long-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-markdown-long-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-markdown-empty-panel
@@ -118,7 +118,7 @@ spec:
         resource: markdowns
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-markdown-basic-panel
@@ -138,7 +138,7 @@ spec:
         resource: markdowns
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-markdown-copy-panel
@@ -158,7 +158,7 @@ spec:
         resource: markdowns
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-markdown-download-panel
@@ -178,7 +178,7 @@ spec:
         resource: markdowns
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-markdown-download-md-panel
@@ -198,7 +198,7 @@ spec:
         resource: markdowns
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-markdown-combined-panel
@@ -218,7 +218,7 @@ spec:
         resource: markdowns
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-markdown-long-panel

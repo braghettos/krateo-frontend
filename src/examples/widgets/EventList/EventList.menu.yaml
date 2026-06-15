@@ -56,28 +56,28 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-eventlist-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-eventlist-basic-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-eventlist-basic-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-eventlist-with-prefix-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-eventlist-with-prefix-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET      
       - id: example-eventlist-sse-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-eventlist-sse-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-eventlist-empty-panel
@@ -97,7 +97,7 @@ spec:
         resource: eventlists
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-eventlist-basic-panel
@@ -117,7 +117,7 @@ spec:
         resource: eventlists
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-eventlist-with-prefix-panel
@@ -144,7 +144,7 @@ spec:
         resource: filters
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-eventlist-sse-panel

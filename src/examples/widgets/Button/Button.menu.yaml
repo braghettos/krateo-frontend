@@ -37,10 +37,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-tablist
         namespace: krateo-system
-        resource: tablists
+        resource: tabs
         verb: GET
 ---
-kind: TabList
+kind: Tabs
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-tablist
@@ -60,16 +60,16 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-examples-column
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET
       - id: example-button-actions-column
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-actions-column
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET
 ---
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-examples-column
@@ -93,52 +93,52 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-basic-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-with-icon-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-with-icon-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-icon-circle-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-icon-circle-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-button-rounded-red-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rounded-red-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-button-large-primary-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-large-primary-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET    
       - id: example-button-small-dashed-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-small-dashed-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-button-link-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-link-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-button-text-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-text-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-actions-column
@@ -180,160 +180,160 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-no-action-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-navigate-path-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-navigate-path-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET    
       - id: example-button-navigate-resource-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-navigate-resource-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-button-navigate-confirm-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-navigate-confirm-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-button-navigate-loading-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-navigate-loading-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-button-open-drawer-default-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-open-drawer-default-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-button-open-drawer-large-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-open-drawer-large-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-button-open-modal-default-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-open-modal-default-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-open-modal-large-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-open-modal-large-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-open-modal-custom-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-open-modal-custom-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-open-modal-fullscreen-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-open-modal-fullscreen-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-invalid-resource-ref-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-invalid-resource-ref-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-malformed-headers-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-malformed-headers-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-conflicting-navigations-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-conflicting-navigations-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-static-payload-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-static-payload-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-merged-payload-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-merged-payload-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-payload-overrides-static-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-payload-overrides-static-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-payload-overrides-jq-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-payload-overrides-jq-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-success-message-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-success-message-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-success-message-jq-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-success-message-jq-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-error-message-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-error-message-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-error-message-jq-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-error-message-jq-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-success-redirect-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-success-redirect-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-success-redirect-jq-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-success-redirect-jq-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-event-navigation-fail-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-event-navigation-fail-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-button-rest-event-navigation-success-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-button-rest-event-navigation-success-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-no-action-panel
@@ -353,7 +353,7 @@ spec:
         resource: buttons
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-basic-panel
@@ -373,7 +373,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-with-icon-panel
@@ -393,7 +393,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-icon-circle-panel
@@ -413,7 +413,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rounded-red-panel
@@ -433,7 +433,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-large-primary-panel
@@ -453,7 +453,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-small-dashed-panel
@@ -473,7 +473,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-link-panel
@@ -493,7 +493,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-text-panel
@@ -513,7 +513,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-navigate-path-panel
@@ -533,7 +533,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-navigate-resource-panel
@@ -553,7 +553,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-navigate-confirm-panel
@@ -573,7 +573,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-navigate-loading-panel
@@ -593,7 +593,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-open-drawer-default-panel
@@ -613,7 +613,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-open-drawer-large-panel
@@ -633,7 +633,7 @@ spec:
         resource: buttons
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-open-modal-default-panel
@@ -653,7 +653,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-open-modal-large-panel
@@ -673,7 +673,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-open-modal-custom-panel
@@ -693,7 +693,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-open-modal-fullscreen-panel
@@ -713,7 +713,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-invalid-resource-ref-panel
@@ -733,7 +733,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-malformed-headers-panel
@@ -753,7 +753,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-conflicting-navigations-panel
@@ -773,7 +773,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-static-payload-panel
@@ -793,7 +793,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-merged-payload-panel
@@ -813,7 +813,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-payload-overrides-static-panel
@@ -833,7 +833,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-payload-overrides-jq-panel
@@ -853,7 +853,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-success-message-panel
@@ -873,7 +873,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-success-message-jq-panel
@@ -893,7 +893,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-error-message-panel
@@ -913,7 +913,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-error-message-jq-panel
@@ -933,7 +933,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-success-redirect-panel
@@ -953,7 +953,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-success-redirect-jq-panel
@@ -973,7 +973,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-event-navigation-fail-panel
@@ -993,7 +993,7 @@ spec:
         resource: buttons
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-button-rest-event-navigation-success-panel

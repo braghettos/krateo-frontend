@@ -3,7 +3,7 @@
 # Expected behavior: since there are no referenced widgets, the grid displays an empty layout area 
 # without elements. This ensures that the layout handles absence of children gracefully, 
 # without errors.
-kind: DataGrid
+kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-empty
@@ -18,7 +18,7 @@ spec:
 # Target: test what happens when item identifiers do not correspond to any known resource reference.
 # Expected behavior: since there are no referenced widgets, the grid displays an empty layout area 
 # without elements. The unresolved references are ignored during layout rendering.
-kind: DataGrid
+kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-missing-resources
@@ -38,7 +38,7 @@ spec:
 # the widget behaves as a simple list displaying its single child vertically.
 # Expected behavior: a single element is rendered, filling the available horizontal space 
 # and aligned consistently with list-style rendering.
-kind: DataGrid
+kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-single-list
@@ -63,7 +63,7 @@ spec:
 # the widget behaves as a simple list displaying its children vertically.
 # Expected behavior: multiple elements are rendered, filling the available horizontal space 
 # and aligned consistently with list-style rendering.
-kind: DataGrid
+kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-multiple-list
@@ -102,7 +102,7 @@ spec:
 # and no explicit grid configuration is provided.
 # Expected behavior: widgets are distributed evenly using default spacing and responsive behavior, 
 # maintaining visual balance across screen sizes.
-kind: DataGrid
+kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-multiple-default
@@ -141,7 +141,7 @@ spec:
 # across screen sizes.
 # Expected behavior: widgets are displayed in a dense grid,
 # emphasizing the effect of manual configuration compared to the default automatic layout.
-kind: DataGrid
+kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-custom-grid
@@ -188,7 +188,7 @@ spec:
 # to access shared contextual data such as applied filters.
 # Expected behavior: all child widgets use the same prefix to retrieve and display 
 # contextually filtered content, maintaining data consistency within the grid.
-kind: DataGrid
+kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-with-prefix
@@ -207,13 +207,13 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-with-prefix-panel-1
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-datagrid-with-prefix-panel-2
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-with-prefix-panel-2
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
 kind: Filters
@@ -240,7 +240,7 @@ spec:
     markdown: |
       This is the first panel content text.
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-with-prefix-panel-1
@@ -269,7 +269,7 @@ spec:
     markdown: |
       This is the second panel content text.
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-with-prefix-panel-2
@@ -292,7 +292,7 @@ spec:
 # Target: verify hierarchical layout composition by including a grid within another grid.
 # Expected behavior: both grids render correctly, with the inner one maintaining its own spacing 
 # and alignment rules, confirming isolation between parent and child grid configurations.
-kind: DataGrid
+kind: List
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-nested
@@ -317,7 +317,7 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-multiple-default
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET
       - id: example-table-basic
         apiVersion: widgets.templates.krateo.io/v1beta1

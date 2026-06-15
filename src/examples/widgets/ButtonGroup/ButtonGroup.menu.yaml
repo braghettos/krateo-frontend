@@ -58,46 +58,46 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-buttongroup-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-buttongroup-missing-ref-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-buttongroup-missing-ref-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-buttongroup-single-center-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-buttongroup-single-center-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-buttongroup-multiple-default-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-buttongroup-multiple-default-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-buttongroup-large-gap-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-buttongroup-large-gap-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET   
       - id: example-buttongroup-right-aligned-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-buttongroup-right-aligned-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-buttongroup-mixed-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-buttongroup-mixed-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET    
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-buttongroup-empty-panel
@@ -117,7 +117,7 @@ spec:
         resource: buttongroups
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-buttongroup-missing-ref-panel
@@ -137,7 +137,7 @@ spec:
         resource: buttongroups
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-buttongroup-single-center-panel
@@ -157,7 +157,7 @@ spec:
         resource: buttongroups
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-buttongroup-multiple-default-panel
@@ -177,7 +177,7 @@ spec:
         resource: buttongroups
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-buttongroup-large-gap-panel
@@ -197,7 +197,7 @@ spec:
         resource: buttongroups
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-buttongroup-right-aligned-panel

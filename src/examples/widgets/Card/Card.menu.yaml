@@ -37,10 +37,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-tablist
         namespace: krateo-system
-        resource: tablists
+        resource: tabs
         verb: GET
 ---
-kind: TabList
+kind: Tabs
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-tablist
@@ -60,16 +60,16 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-examples-column
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET
       - id: example-panel-actions-column
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-actions-column
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET
 ---
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-examples-column
@@ -90,34 +90,34 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-basic-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-panel-with-icon-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-with-icon-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-panel-with-header-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-with-header-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-panel-footer-tags-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-footer-tags-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-panel-multiple-items-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-multiple-items-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET    
 ---
-kind: Column
+kind: Col
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-actions-column
@@ -144,70 +144,70 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-no-action-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-panel-navigate-path-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-navigate-path-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET    
       - id: example-panel-navigate-resource-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-navigate-resource-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-panel-navigate-confirm-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-navigate-confirm-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-panel-navigate-loading-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-navigate-loading-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-panel-open-drawer-default-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-drawer-default-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-panel-open-drawer-large-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-drawer-large-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-panel-open-modal-default-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-modal-default-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-panel-open-modal-large-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-modal-large-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-panel-open-modal-custom-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-modal-custom-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-panel-open-modal-fullscreen-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-modal-fullscreen-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-no-action-panel
@@ -224,10 +224,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-no-action
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-basic-panel
@@ -244,10 +244,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-basic
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-with-icon-panel
@@ -264,10 +264,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-with-icon
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-with-header-panel
@@ -284,10 +284,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-with-header
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-footer-tags-panel
@@ -304,10 +304,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-footer-tags
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-multiple-items-panel
@@ -324,10 +324,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-multiple-items
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-navigate-path-panel
@@ -344,10 +344,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-navigate-path
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-navigate-resource-panel
@@ -364,10 +364,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-navigate-resource
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-navigate-confirm-panel
@@ -384,10 +384,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-navigate-confirm
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-navigate-loading-panel
@@ -404,10 +404,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-navigate-loading
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-drawer-default-panel
@@ -424,10 +424,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-drawer-default
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-drawer-large-panel
@@ -444,10 +444,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-drawer-large
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-modal-default-panel
@@ -464,10 +464,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-modal-default
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-modal-large-panel
@@ -484,10 +484,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-modal-large
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-modal-custom-panel
@@ -504,10 +504,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-modal-custom
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-panel-open-modal-fullscreen-panel
@@ -524,5 +524,5 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-panel-open-modal-fullscreen
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET

@@ -60,52 +60,52 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-column-missing-ref-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-missing-ref-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-column-zero-size-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-zero-size-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET   
       - id: example-column-single-child-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-single-child-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-column-single-child-full-screen-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-single-child-full-screen-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-column-mixed-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-mixed-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET    
       - id: example-column-multiple-child-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-multiple-child-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-column-nested-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-nested-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-empty-panel
@@ -122,10 +122,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-empty
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-missing-ref-panel
@@ -142,10 +142,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-missing-ref
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-zero-size-panel
@@ -162,10 +162,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-zero-size
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-single-child-panel
@@ -182,10 +182,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-single-child
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-single-child-full-screen-panel
@@ -202,10 +202,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-single-child-full-screen
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-mixed-panel
@@ -222,10 +222,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-mixed
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-multiple-child-panel
@@ -242,10 +242,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-multiple-child
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-column-nested-panel
@@ -262,5 +262,5 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-nested
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET 

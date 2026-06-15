@@ -13,8 +13,6 @@ export interface WidgetModule<T = unknown> {
   component: React.ComponentType<WidgetProps<T>>
   /** When true, `WidgetRenderer` wraps the component in `ScrollPagination`. */
   paginated?: boolean
-  /** Legacy `kind` names that resolve to this same component (back-compat after a rename/fold). */
-  aliases?: string[]
 }
 
 /** Identity helper that preserves the generic while enforcing the shape. */

@@ -61,58 +61,58 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-flowchart-empty-nodes-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-empty-nodes-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-flowchart-no-edges-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-no-edges-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET      
       - id: example-flowchart-basic-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-basic-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET       
       - id: example-flowchart-hierarchy-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-hierarchy-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-flowchart-cross-ns-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-cross-ns-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-flowchart-status-mix-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-status-mix-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-flowchart-orphans-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-orphans-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-flowchart-multi-root-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-flowchart-multi-root-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-empty-panel
@@ -132,7 +132,7 @@ spec:
         resource: flowcharts
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-empty-nodes-panel
@@ -152,7 +152,7 @@ spec:
         resource: flowcharts
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-no-edges-panel
@@ -172,7 +172,7 @@ spec:
         resource: flowcharts
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-basic-panel
@@ -192,7 +192,7 @@ spec:
         resource: flowcharts
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-hierarchy-panel
@@ -212,7 +212,7 @@ spec:
         resource: flowcharts
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-cross-ns-panel
@@ -232,7 +232,7 @@ spec:
         resource: flowcharts
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-status-mix-panel
@@ -252,7 +252,7 @@ spec:
         resource: flowcharts
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-orphans-panel
@@ -272,7 +272,7 @@ spec:
         resource: flowcharts
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-flowchart-multi-root-panel

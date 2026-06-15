@@ -60,58 +60,58 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-datagrid-missing-resources-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-missing-resources-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-datagrid-single-list-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-single-list-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-datagrid-multiple-list-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-multiple-list-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET   
       - id: example-datagrid-multiple-default-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-multiple-default-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-datagrid-custom-grid-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-custom-grid-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-datagrid-with-prefix-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-with-prefix-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET    
       - id: example-datagrid-multiple-child-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-multiple-child-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-datagrid-nested-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-nested-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-empty-panel
@@ -128,10 +128,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-empty
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-missing-resources-panel
@@ -148,10 +148,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-missing-resources
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-single-list-panel
@@ -168,10 +168,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-single-list
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-multiple-list-panel
@@ -188,10 +188,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-multiple-list
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-multiple-default-panel
@@ -208,10 +208,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-multiple-default
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-custom-grid-panel
@@ -228,10 +228,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-custom-grid
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-with-prefix-panel
@@ -255,10 +255,10 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-with-prefix
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-datagrid-nested-panel
@@ -275,5 +275,5 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-datagrid-nested
         namespace: krateo-system
-        resource: datagrids
+        resource: lists
         verb: GET 

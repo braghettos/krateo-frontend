@@ -57,34 +57,34 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-yamlviewer-empty-json-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-yamlviewer-invalid-json-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-yamlviewer-invalid-json-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-yamlviewer-valid-json
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-yamlviewer-valid-json
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET      
       - id: example-yamlviewer-nested-json-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-yamlviewer-nested-json-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET       
       - id: example-yamlviewer-special-chars-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-yamlviewer-special-chars-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-yamlviewer-empty-json-panel
@@ -104,7 +104,7 @@ spec:
         resource: yamlviewers
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-yamlviewer-invalid-json-panel
@@ -124,7 +124,7 @@ spec:
         resource: yamlviewers
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-yamlviewer-valid-json
@@ -144,7 +144,7 @@ spec:
         resource: yamlviewers
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-yamlviewer-nested-json-panel
@@ -164,7 +164,7 @@ spec:
         resource: yamlviewers
         verb: GET   
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-yamlviewer-special-chars-panel

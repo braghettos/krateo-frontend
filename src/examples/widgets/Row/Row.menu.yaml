@@ -61,58 +61,58 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-row-invalid-ref-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-invalid-ref-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-row-single-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-single-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET   
       - id: example-row-even-split-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-even-split-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-row-custom-sizes-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-custom-sizes-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-row-cells-alignment-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-cells-alignment-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET    
       - id: example-row-nested-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-nested-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-row-responsive-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-responsive-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
       - id: example-row-alignment-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-row-alignment-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-empty-panel
@@ -132,7 +132,7 @@ spec:
         resource: rows
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-invalid-ref-panel
@@ -152,7 +152,7 @@ spec:
         resource: rows
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-single-panel
@@ -172,7 +172,7 @@ spec:
         resource: rows
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-even-split-panel
@@ -192,7 +192,7 @@ spec:
         resource: rows
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-custom-sizes-panel
@@ -212,7 +212,7 @@ spec:
         resource: rows
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-cells-alignment-panel
@@ -232,7 +232,7 @@ spec:
         resource: rows
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-nested-panel
@@ -252,7 +252,7 @@ spec:
         resource: rows
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-responsive-panel
@@ -272,7 +272,7 @@ spec:
         resource: rows
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-row-alignment-panel

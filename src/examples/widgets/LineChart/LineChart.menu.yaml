@@ -57,34 +57,34 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-linechart-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-linechart-single-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-linechart-single-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-linechart-multi-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-linechart-multi-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET      
       - id: example-linechart-missing-coords-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-linechart-missing-coords-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET       
       - id: example-linechart-invalid-values-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-linechart-invalid-values-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-linechart-empty-panel
@@ -104,7 +104,7 @@ spec:
         resource: linecharts
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-linechart-single-panel
@@ -124,7 +124,7 @@ spec:
         resource: linecharts
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-linechart-multi-panel
@@ -144,7 +144,7 @@ spec:
         resource: linecharts
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-linechart-missing-coords-panel
@@ -164,7 +164,7 @@ spec:
         resource: linecharts
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-linechart-invalid-values-panel

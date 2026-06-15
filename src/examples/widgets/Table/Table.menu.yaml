@@ -61,58 +61,58 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-empty-columns-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-table-empty-data-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-empty-data-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-table-basic-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-basic-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET      
       - id: example-table-mixed-types-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-mixed-types-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET       
       - id: example-table-icons-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-icons-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-table-nested-widget-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-nested-widget-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-table-null-values-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-null-values-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-table-with-filter-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-with-filter-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-table-with-pagination-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-table-with-pagination-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-empty-columns-panel
@@ -132,7 +132,7 @@ spec:
         resource: tables
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-empty-data-panel
@@ -152,7 +152,7 @@ spec:
         resource: tables
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-basic-panel
@@ -172,7 +172,7 @@ spec:
         resource: tables
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-mixed-types-panel
@@ -192,7 +192,7 @@ spec:
         resource: tables
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-icons-panel
@@ -212,7 +212,7 @@ spec:
         resource: tables
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-nested-widget-panel
@@ -232,7 +232,7 @@ spec:
         resource: tables
         verb: GET   
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-null-values-panel
@@ -252,7 +252,7 @@ spec:
         resource: tables
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-with-filter-panel
@@ -279,7 +279,7 @@ spec:
         resource: tables
         verb: GET 
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-table-with-pagination-panel

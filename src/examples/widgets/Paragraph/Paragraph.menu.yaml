@@ -58,40 +58,40 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-paragraph-empty-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-paragraph-basic-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-paragraph-basic-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET  
       - id: example-paragraph-link-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-paragraph-link-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET      
       - id: example-paragraph-multiline-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-paragraph-multiline-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET       
       - id: example-paragraph-special-chars-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-paragraph-special-chars-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
       - id: example-paragraph-long-panel
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-paragraph-long-panel
         namespace: krateo-system
-        resource: panels
+        resource: cards
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-paragraph-empty-panel
@@ -111,7 +111,7 @@ spec:
         resource: paragraphs
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-paragraph-basic-panel
@@ -131,7 +131,7 @@ spec:
         resource: paragraphs
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-paragraph-link-panel
@@ -151,7 +151,7 @@ spec:
         resource: paragraphs
         verb: GET
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-paragraph-multiline-panel
@@ -171,7 +171,7 @@ spec:
         resource: paragraphs
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-paragraph-special-chars-panel
@@ -191,7 +191,7 @@ spec:
         resource: paragraphs
         verb: GET  
 ---
-kind: Panel
+kind: Card
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-paragraph-long-panel

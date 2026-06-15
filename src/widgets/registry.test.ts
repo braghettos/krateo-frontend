@@ -27,12 +27,12 @@ for (const raw of Object.values(exampleFiles)) {
   }
 }
 
-/** The kinds that had a hand-written `case` in the old parseWidget switch. */
+/** Every registry kind (antd-named; legacy aliases removed in the hard-break). */
 const KNOWN_KINDS = [
-  'BarChart', 'BlueprintBuilder', 'Button', 'ButtonGroup', 'Column', 'DataGrid',
-  'EventList', 'Filters', 'FlowChart', 'Form', 'LineChart', 'Markdown', 'NavMenu',
-  'Page', 'Panel', 'Paragraph', 'PieChart', 'Route', 'RoutesLoader', 'Row',
-  'Table', 'TabList', 'YamlViewer',
+  'BarChart', 'BlueprintBuilder', 'Button', 'ButtonGroup', 'Card', 'Col',
+  'EventList', 'Filters', 'FlowChart', 'Form', 'LineChart', 'List', 'Markdown',
+  'Menu', 'Page', 'Paragraph', 'PieChart', 'Route', 'RoutesLoader', 'Row',
+  'Table', 'Tabs', 'YamlViewer',
 ]
 
 describe('widgetRegistry', () => {
@@ -52,25 +52,14 @@ describe('widgetRegistry', () => {
     }
   })
 
-  it('registers antd-named kinds with legacy names as back-compat aliases', () => {
-    const renames: Array<[antd: string, legacy: string]> = [
-      ['Card', 'Panel'],
-      ['Col', 'Column'],
-      ['Tabs', 'TabList'],
-      ['Menu', 'NavMenu'],
-    ]
-    for (const [antd, legacy] of renames) {
-      expect(widgetRegistry[antd], `antd kind "${antd}" should be registered`).toBeDefined()
-      expect(widgetRegistry[legacy], `legacy alias "${legacy}" should still resolve`).toBeDefined()
-      // alias and primary resolve to the very same module
-      expect(widgetRegistry[legacy]).toBe(widgetRegistry[antd])
-    }
+  it('marks List as paginated', () => {
+    expect(widgetRegistry.List?.paginated).toBe(true)
   })
 
-  it('marks List as paginated and resolves DataGrid as a back-compat alias of List', () => {
-    expect(widgetRegistry.List?.paginated).toBe(true)
-    // DataGrid folded into List: the legacy kind resolves to the very same module
-    expect(widgetRegistry.DataGrid).toBe(widgetRegistry.List)
+  it('does not resolve legacy kind aliases (hard-break)', () => {
+    for (const legacy of ['Panel', 'Column', 'TabList', 'NavMenu', 'DataGrid']) {
+      expect(widgetRegistry[legacy], `legacy kind "${legacy}" must no longer resolve`).toBeUndefined()
+    }
   })
 
   it('excludes Drawer and Modal (mounted directly by WidgetPage, not via the registry)', () => {
