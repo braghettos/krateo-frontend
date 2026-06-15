@@ -69,6 +69,7 @@ const YamlViewer = ({ uid, widgetData }: WidgetProps<YamlViewerWidgetData>) => {
           </CopyToClipboard>
         </div>
 
+        {/* Non-antd: react-syntax-highlighter — antd has no code/syntax component (see docs/widget-authoring.md). */}
         <SyntaxHighlighter
           language='yaml'
           showLineNumbers

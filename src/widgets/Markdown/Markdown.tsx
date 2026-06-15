@@ -56,6 +56,7 @@ const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
         </div>
       )}
 
+      {/* Non-antd: react-markdown — antd has no markdown renderer (see docs/widget-authoring.md). */}
       <ReactMarkdown key={uid}>{markdown}</ReactMarkdown>
     </div>
   )

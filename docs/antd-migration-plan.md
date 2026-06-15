@@ -1,6 +1,6 @@
 # Complete Migration Plan — Ant Design Fidelity (fidelity-first / hard-break)
 
-_Status: proposed. Derived from the full audit (2026-06-15) of all 46 widgets + 11 components._
+_Status: executed (Phases D, 0, A, C, B on branch `ux-modernization`). Notable deltas from the proposal: **BlueprintBuilder was dropped** (untested drag&drop composer), which let Phase A remove **reactflow entirely** rather than add a second graph engine; and **FlowChart's schema was left unchanged** (its `data` is a domain resource model, not a lib shape), so it needed no CR migration. Derived from the full audit (2026-06-15) of all 46 widgets + 11 components._
 
 ## 0. Default rule & goal
 
