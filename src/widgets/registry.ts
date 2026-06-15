@@ -13,6 +13,13 @@ export const registerWidget = (module: WidgetModule): void => {
   registry.set(module.kind, module)
 }
 
+/** Resolve any registered module — antd widgets AND structural kinds (used by WidgetRenderer). */
 export const getWidgetModule = (kind: string): WidgetModule | undefined => registry.get(kind)
 
-export const getWidgetRegistry = (): Record<string, WidgetModule> => Object.fromEntries(registry)
+/** The antd-mapped widget set — excludes structural navigation/routing kinds. */
+export const getWidgetRegistry = (): Record<string, WidgetModule> =>
+  Object.fromEntries([...registry].filter(([, module]) => !module.structural))
+
+/** The structural navigation/routing kinds (Page/Route/RoutesLoader) — not antd widgets. */
+export const getStructuralRegistry = (): Record<string, WidgetModule> =>
+  Object.fromEntries([...registry].filter(([, module]) => module.structural))
