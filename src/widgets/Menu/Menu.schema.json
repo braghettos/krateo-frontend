@@ -8,7 +8,7 @@
     },
     "kind": {
       "default": "Menu",
-      "description": "NavMenu is a container for NavMenuItem widgets, which are used to setup navigation inside the application",
+      "description": "antd Menu — navigation. `items` are inline nav entries (folded NavMenuItem data) referencing the content widget by resourceRefId; entries without icon/label/path are NavMenuItem CR references (back-compat).",
       "type": "string"
     },
     "spec": {
@@ -25,19 +25,36 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "enum": ["navmenuitems"]
+                "enum": ["navmenuitems", "pages"]
               }
             },
             "items": {
               "type": "array",
-              "description": "list of navigation entries each pointing to a k8s custom resource",
+              "description": "navigation entries; inline nav data (folded NavMenuItem) referencing the content widget by resourceRefId. Entries without icon/label/path are treated as NavMenuItem CR references (back-compat).",
               "items": {
                 "type": "object",
                 "required": ["resourceRefId"],
                 "properties": {
                   "resourceRefId": {
                     "type": "string",
-                    "description": "the identifier of the k8s custom resource that should be represented, usually a NavMenuItem"
+                    "description": "id of the content widget to navigate to (resolved via resourcesRefs); or a NavMenuItem CR in back-compat mode"
+                  },
+                  "icon": {
+                    "type": "string",
+                    "description": "FontAwesome icon name shown beside the label (e.g. 'fa-inbox')"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "menu entry label"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "route path to navigate to on click"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "sort weight for the entry"
                   }
                 },
                 "additionalProperties": false

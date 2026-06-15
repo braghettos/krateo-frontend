@@ -16,6 +16,7 @@ import type { NavMenuItem } from '../NavMenuItem/NavMenuItem.type'
 
 import styles from './Menu.module.css'
 import type { Menu as WidgetType } from './Menu.type'
+import { buildNavModel, hasInlineNav, type InlineNavItem, type NavEntry } from './navModel'
 
 export type MenuWidgetData = WidgetType['spec']['widgetData']
 
@@ -29,72 +30,78 @@ type NavMenuItemResponse = Omit<NavMenuItem, 'status'> & {
 }
 
 export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetData>) {
-  const { mode, theme } = widgetData
+  const { items: navItems = [], mode, theme } = widgetData
   const location = useLocation()
   const navigate = useNavigate()
   const { menuRoutes, updateMenuRoutes } = useRoutesContext()
   const { config } = useConfigContext()
 
-  /* HACK: waiting for the widgetData to return items from the backend via a restaction that sets items from resourcesRefsTemplate */
-  const { items = [] } = resourcesRefs || {}
+  // Folded form: nav data is inline on widgetData.items. Otherwise the items are
+  // NavMenuItem CR references (back-compat) resolved by fetching those CRs.
+  const inline = hasInlineNav(navItems as InlineNavItem[])
 
+  const { items: refItems = [] } = resourcesRefs || {}
   const { loadedAllMenuItems, navMenuItems } = useQueries({
-    combine: (results) => {
-      return {
-        isError: results.some(({ isError }) => isError),
-        isLoading: results.some(({ isLoading }) => isLoading),
-        loadedAllMenuItems: results.every(({ status }) => status === 'success'),
-        navMenuItems: results.map(({ data }) => data),
-      }
-    },
-    queries: (items ?? []).map(({ id, path }) => {
+    combine: (results) => ({
+      loadedAllMenuItems: results.every(({ status }) => status === 'success'),
+      navMenuItems: results.map(({ data }) => data),
+    }),
+    queries: (inline ? [] : refItems).map(({ id, path }) => {
       const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${path}`
       return {
         queryFn: async (): Promise<NavMenuItemResponse> => {
           const res = await fetch(widgetFullUrl, {
-            headers: {
-              Authorization: `Bearer ${getAccessToken()}`,
-            },
+            headers: { Authorization: `Bearer ${getAccessToken()}` },
           })
           if (!res.ok) {
             throw new Error(`NavMenuItem fetch failed: ${res.status} ${res.statusText}`)
           }
-          const widget = (await res.json()) as NavMenuItemResponse
-          return widget
+          return (await res.json()) as NavMenuItemResponse
         },
         queryKey: ['navmenuitems', id, widgetFullUrl],
       }
     }),
   })
 
-  useEffect(() => {
-    if (loadedAllMenuItems && navMenuItems.length > 0) {
-      const validMenuItems = navMenuItems.filter((item): item is NavMenuItemResponse => !!item)
-
-      const routesToSave = validMenuItems
-        .map(item => {
-          const { status } = item
-          const widgetData = status?.widgetData
-          const resourcesRefs = status?.resourcesRefs
-
-          if (!widgetData || !resourcesRefs) { return null }
-
-          const { path, resourceRefId } = widgetData
-          const routeResourceRef = resourcesRefs.items.find(({ id }) => id === resourceRefId)
-          if (!routeResourceRef) { return null }
-
-          return {
-            path,
-            resourceRef: { ...routeResourceRef, payload: {} },
-            resourceRefId,
-          }
-        })
-        .filter(Boolean) as AppRoute[]
-
-      localStorage.setItem('routes', JSON.stringify(routesToSave))
-      updateMenuRoutes(routesToSave)
+  // Unified nav model — from inline items (folded) or from fetched NavMenuItem CRs.
+  const { entries, routes } = useMemo<{ entries: NavEntry[]; routes: AppRoute[] }>(() => {
+    if (inline) {
+      return buildNavModel(navItems as InlineNavItem[], resourcesRefs)
     }
-  }, [loadedAllMenuItems, navMenuItems, updateMenuRoutes])
+
+    if (!loadedAllMenuItems) {
+      return { entries: [], routes: [] }
+    }
+
+    const valid = navMenuItems.filter((item): item is NavMenuItemResponse => !!item)
+
+    const entriesFromCrs: NavEntry[] = valid.flatMap((item) => {
+      const data = item.status?.widgetData
+      return data ? [{ iconName: data.icon, key: data.path, label: data.label }] : []
+    })
+
+    const routesFromCrs = valid
+      .map((item): AppRoute | null => {
+        const data = item.status?.widgetData
+        const refs = item.status?.resourcesRefs
+        if (!data || !refs) { return null }
+
+        const routeResourceRef = refs.items.find(({ id }) => id === data.resourceRefId)
+        if (!routeResourceRef) { return null }
+
+        return { path: data.path, resourceRef: { ...routeResourceRef, payload: {} }, resourceRefId: data.resourceRefId }
+      })
+      .filter(Boolean) as AppRoute[]
+
+    return { entries: entriesFromCrs, routes: routesFromCrs }
+  }, [inline, navItems, resourcesRefs, loadedAllMenuItems, navMenuItems])
+
+  useEffect(() => {
+    if (routes.length > 0) {
+      localStorage.setItem('routes', JSON.stringify(routes))
+      updateMenuRoutes(routes)
+    }
+  }, [routes, updateMenuRoutes])
 
   useEffect(() => {
     if (location.pathname === '/' && menuRoutes.length > 0) {
@@ -102,38 +109,24 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
     }
   }, [location.pathname, menuRoutes, navigate])
 
-  const menuItems: MenuItemType[] = useMemo(() => {
-    if (!loadedAllMenuItems) {
-      return []
-    }
-
-    const validMenuItems = navMenuItems.filter((item): item is NavMenuItemResponse => !!item)
-
-    return validMenuItems.flatMap(item => {
-      const widgetData = item.status?.widgetData
-      if (!widgetData) { return [] }
-      const { icon, label, path } = widgetData
-      return {
-        icon: <FontAwesomeIcon icon={icon as IconProp} />,
-        key: path,
-        label,
-      }
-    })
-  }, [navMenuItems, loadedAllMenuItems])
-
-  const handleClick = (key: string) => {
-    void navigate(key)
-  }
+  const menuItems: MenuItemType[] = useMemo(
+    () => entries.map((entry) => ({
+      icon: entry.iconName ? <FontAwesomeIcon icon={entry.iconName as IconProp} /> : undefined,
+      key: entry.key,
+      label: entry.label,
+    })),
+    [entries]
+  )
 
   return (
     <>
       <AntdMenu
         className={styles.menu}
-        defaultSelectedKeys={loadedAllMenuItems && menuItems.length > 0 ? [menuItems[0].key as string] : []}
+        defaultSelectedKeys={menuItems.length > 0 ? [menuItems[0].key as string] : []}
         items={menuItems}
         key={uid}
         mode={mode ?? 'inline'}
-        onClick={(item) => handleClick(item.key)}
+        onClick={(item) => { void navigate(item.key) }}
         selectedKeys={[location.pathname]}
         theme={theme}
       />

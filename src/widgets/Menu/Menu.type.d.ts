@@ -1,7 +1,7 @@
 export interface Menu {
   version: string
   /**
-   * NavMenu is a container for NavMenuItem widgets, which are used to setup navigation inside the application
+   * antd Menu — navigation. `items` are inline nav entries (folded NavMenuItem data) referencing the content widget by resourceRefId; entries without icon/label/path are NavMenuItem CR references (back-compat).
    */
   kind: string
   spec: {
@@ -17,15 +17,31 @@ export interface Menu {
       /**
        * the list of resources that are allowed to be children of this widget or referenced by it
        */
-      allowedResources: 'navmenuitems'[]
+      allowedResources: ('navmenuitems' | 'pages')[]
       /**
-       * list of navigation entries each pointing to a k8s custom resource
+       * navigation entries; inline nav data (folded NavMenuItem) referencing the content widget by resourceRefId. Entries without icon/label/path are treated as NavMenuItem CR references (back-compat).
        */
       items: {
         /**
-         * the identifier of the k8s custom resource that should be represented, usually a NavMenuItem
+         * id of the content widget to navigate to (resolved via resourcesRefs); or a NavMenuItem CR in back-compat mode
          */
         resourceRefId: string
+        /**
+         * FontAwesome icon name shown beside the label (e.g. 'fa-inbox')
+         */
+        icon?: string
+        /**
+         * menu entry label
+         */
+        label?: string
+        /**
+         * route path to navigate to on click
+         */
+        path?: string
+        /**
+         * sort weight for the entry
+         */
+        order?: number
       }[]
     }
     apiRef?: {
