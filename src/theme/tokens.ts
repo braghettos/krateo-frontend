@@ -116,8 +116,8 @@ const buildComponents = (palette: Record<keyof typeof color, string>): ThemeConf
 /** Light antd theme — reproduces the previous `antdTheme` token block exactly. */
 export const lightTheme: ThemeConfig = {
   algorithm: antdAlgorithms.defaultAlgorithm,
-  // Emit antd's `--ant-color-*` CSS variables so `*.module.css` (e.g.
-  // BlueprintBuilder) that reference them resolve to the active mode's colors.
+  // Emit antd's `--ant-color-*` CSS variables so `*.module.css` consumers
+  // resolve antd colors for the active color mode.
   cssVar: true,
   token: {
     borderRadius: radius.md,

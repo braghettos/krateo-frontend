@@ -29,14 +29,14 @@ for (const raw of Object.values(exampleFiles)) {
 
 /** Every registry kind (antd-named; legacy aliases removed in the hard-break). */
 const KNOWN_KINDS = [
-  'BarChart', 'BlueprintBuilder', 'Button', 'ButtonGroup', 'Card', 'Col',
+  'BarChart', 'Button', 'ButtonGroup', 'Card', 'Col',
   'EventList', 'Filters', 'FlowChart', 'Form', 'LineChart', 'List', 'Markdown',
   'Menu', 'Page', 'Paragraph', 'PieChart', 'Route', 'RoutesLoader', 'Row',
   'Table', 'Tabs', 'YamlViewer',
 ]
 
 describe('widgetRegistry', () => {
-  it('registers all 23 known kinds (regression gate for the switch removal)', () => {
+  it('registers all known registry kinds (regression gate for the switch removal)', () => {
     for (const kind of KNOWN_KINDS) {
       expect(widgetRegistry[kind], `kind "${kind}" should be registered`).toBeDefined()
       // A component may be a function OR a React exotic object (lazy/memo/forwardRef);
