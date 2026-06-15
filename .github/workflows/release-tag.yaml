@@ -1,59 +1,58 @@
+# Krateo COMPONENT release workflow — frontend variant. The `build` job is THE canonical
+# agnostic multi-platform image build (identical to every other component repo). The `crds`
+# job is frontend-specific: widget CRDs are generated from the TypeScript widget definitions
+# via krateoctl (npm), not Go controller-gen, so it cannot use the shared `make generate`
+# entry point. It publishes to krateo-frontend-chart's crds-subchart/ with the same
+# helm.sh/resource-policy: keep deletion-safety injection as the canonical crds job.
 name: release-tag
 
 on:
   push:
-    tags: [ '[0-9]+.[0-9]+.[0-9]+' ]
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
 
 env:
   GHCR_REPO: ghcr.io/${{ github.repository }}
 
 jobs:
   build:
-    name: Build and Push
+    name: Build & push image (multi-platform)
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.GHCR_REPO }}
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.GHCR_REPO }}
-          tags: |
-            type=semver,pattern={{version}}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-      - name: Build and push image
-        uses: docker/build-push-action@v5
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push (linux/amd64, linux/arm64)
+        uses: docker/build-push-action@v7
         with:
-          context: .
+          platforms: linux/amd64,linux/arm64
           push: true
-          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
-          provenance: false # Optional: disables SBOMs if not needed
-          cache-from: type=registry,ref=${{ env.GHCR_REPO }}:buildcache
-          cache-to: type=registry,ref=${{ env.GHCR_REPO }}:buildcache,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Inspect image
-        run: |
-          FIRST_TAG=$(echo '${{ steps.meta.outputs.json }}' | jq -r '.tags[0]')
-          docker buildx imagetools inspect "$FIRST_TAG"
-
+        run: docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ steps.meta.outputs.version }}
 
   crds:
     name: Generate crds
@@ -122,10 +121,6 @@ jobs:
           git pull origin main
 
           # One-time migration: rename any legacy CRD sub-chart dir -> crds-subchart/.
-          # Handles both the original crd-chart/ and a prior interim crds-chart/ (a
-          # chart repo that already migrated to crds-chart before this standardization).
-          # git mv preserves Chart.yaml/values.* so the Helm chart name (frontend-crd, pinned by
-          # the installer) is unchanged — only the directory moves.
           if [ ! -d crds-subchart ]; then
             if [ -d crds-chart ]; then
               echo "Migrating crds-chart/ -> crds-subchart/"
@@ -137,10 +132,17 @@ jobs:
           fi
           mkdir -p crds-subchart/templates
 
-          # Refresh the CRD templates: drop the previous set, copy the freshly generated one.
-          # The new antd-fidelity kinds replace the legacy ones (legacy CRs are migrated separately).
+          # Refresh the CRD templates: drop the previous set, copy the freshly generated ones.
           rm -f crds-subchart/templates/*.yaml
           cp "$GITHUB_WORKSPACE"/scripts/krateoctl-output/*.yaml crds-subchart/templates/
+
+          # Deletion-safety: every published CRD must carry helm.sh/resource-policy: keep so
+          # Helm never garbage-collects it on upgrade/uninstall/prune (this installer
+          # heavy-reconciles and has pruned templated resources mid-cascade). Injected
+          # uniformly and idempotently — same as the canonical crds job.
+          for f in crds-subchart/templates/*.yaml; do
+            yq -i '.metadata.annotations."helm.sh/resource-policy" = "keep"' "$f"
+          done
 
           # Safety net: the old chart directories must not survive.
           if [ -d crd-chart ]; then git rm -r crd-chart; fi
@@ -165,20 +167,16 @@ jobs:
 
           git commit -m "Update widget CRDs (crds-subchart) from tag ${LATEST_TAG}
 
-          Regenerated from braghettos/frontend @ ${LATEST_TAG}.
-          Migrates any legacy crd-chart/crds-chart -> crds-subchart and replaces the
-          legacy CRDs with the new Ant Design-fidelity widget kinds. Helm chart name
-          unchanged: frontend-crd.
+          Regenerated from braghettos/krateo-frontend @ ${LATEST_TAG} via krateoctl.
+          Migrates any legacy crd-chart/crds-chart -> crds-subchart, injects
+          helm.sh/resource-policy: keep. Helm chart name unchanged: frontend-crd.
           Workflow run: ${GITHUB_RUN_ID}"
 
           git push origin "$BRANCH"
 
           # Open a PR against the chart repo, or update the existing one for this branch.
           PR_TITLE="Update widget CRDs (crds-subchart) — ${LATEST_TAG}"
-          PR_BODY="Automated update of widget CRDs in \`crds-subchart/templates/\` from \`braghettos/frontend\` @ \`${LATEST_TAG}\`.
-
-          - Migrates any legacy \`crd-chart\`/\`crds-chart\` → \`crds-subchart\` (Helm chart name unchanged: \`frontend-crd\`).
-          - Replaces the legacy CRDs with the regenerated Ant Design-fidelity widget kinds.
+          PR_BODY="Automated update of widget CRDs in \`crds-subchart/templates/\` from \`braghettos/krateo-frontend\` @ \`${LATEST_TAG}\` (krateoctl). Migrates any legacy \`crd-chart\`/\`crds-chart\` → \`crds-subchart\`; injects \`helm.sh/resource-policy: keep\`. Helm chart name unchanged: \`frontend-crd\`.
 
           Workflow run: \`${GITHUB_RUN_ID}\`."
 
