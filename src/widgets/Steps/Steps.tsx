@@ -9,12 +9,11 @@ import type { Steps as WidgetType } from './Steps.type'
 export type StepsWidgetData = WidgetType['spec']['widgetData']
 
 const Steps = ({ uid, widgetData }: WidgetProps<StepsWidgetData>) => {
-  const { current, direction, items, labelPlacement, size, status, type } = widgetData
+  const { current, items, orientation, size, status, titlePlacement, type } = widgetData
 
   return (
     <AntdSteps
       current={current}
-      direction={direction}
       items={items.map(({ description, icon, status: itemStatus, subTitle, title }) => ({
         description,
         icon: icon ? <FontAwesomeIcon icon={icon as IconProp} /> : undefined,
@@ -23,9 +22,10 @@ const Steps = ({ uid, widgetData }: WidgetProps<StepsWidgetData>) => {
         title,
       }))}
       key={uid}
-      labelPlacement={labelPlacement}
+      orientation={orientation}
       size={size}
       status={status}
+      titlePlacement={titlePlacement}
       type={type}
     />
   )

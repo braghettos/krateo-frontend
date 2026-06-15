@@ -210,9 +210,9 @@ export interface Card {
        */
       extra?: string
       /**
-       * antd Card bordered (outlined vs borderless)
+       * antd Card variant
        */
-      bordered?: boolean
+      variant?: 'outlined' | 'borderless'
       /**
        * antd Card size
        */

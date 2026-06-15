@@ -18,9 +18,9 @@ export interface Tag {
        */
       color?: string
       /**
-       * whether the tag has a border
+       * antd Tag variant
        */
-      bordered?: boolean
+      variant?: 'filled' | 'solid' | 'outlined'
     }
     widgetDataTemplate?: {
       expression?: string

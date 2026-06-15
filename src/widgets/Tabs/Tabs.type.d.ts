@@ -21,9 +21,9 @@ export interface Tabs {
        */
       size?: 'small' | 'middle' | 'large'
       /**
-       * antd Tabs tabPosition
+       * antd Tabs tabPlacement
        */
-      tabPosition?: 'top' | 'right' | 'bottom' | 'left'
+      tabPlacement?: 'top' | 'end' | 'bottom' | 'start'
       /**
        * antd Tabs centered
        */

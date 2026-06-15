@@ -301,7 +301,7 @@
               "type": "string",
               "description": "antd Card extra — content shown top-right of the card header (renamed from `headerRight`)"
             },
-            "bordered": { "type": "boolean", "description": "antd Card bordered (outlined vs borderless)" },
+            "variant": { "type": "string", "enum": ["outlined", "borderless"], "description": "antd Card variant" },
             "size": { "type": "string", "enum": ["default", "small"], "description": "antd Card size" },
             "cover": { "type": "string", "description": "resourceRefId of a widget rendered as the antd Card cover" },
             "icon": {

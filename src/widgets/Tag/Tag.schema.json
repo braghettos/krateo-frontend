@@ -40,9 +40,10 @@
               "description": "the tag color (preset name or hex)",
               "type": "string"
             },
-            "bordered": {
-              "description": "whether the tag has a border",
-              "type": "boolean"
+            "variant": {
+              "description": "antd Tag variant",
+              "enum": ["filled", "solid", "outlined"],
+              "type": "string"
             }
           }
         },

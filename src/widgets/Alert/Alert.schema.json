@@ -29,10 +29,10 @@
           "additionalProperties": false,
           "type": "object",
           "required": [
-            "message"
+            "title"
           ],
           "properties": {
-            "message": {
+            "title": {
               "description": "the alert title",
               "type": "string"
             },

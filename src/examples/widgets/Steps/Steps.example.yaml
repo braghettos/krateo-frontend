@@ -9,7 +9,7 @@ metadata:
 spec:
   widgetData:
     current: 1
-    direction: horizontal
+    orientation: horizontal
     items:
       - title: "Login"
         description: "Authenticate with the platform"
@@ -30,7 +30,7 @@ metadata:
 spec:
   widgetData:
     current: 0
-    direction: vertical
+    orientation: vertical
     size: small
     items:
       - title: "Plan"

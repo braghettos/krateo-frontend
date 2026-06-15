@@ -40,9 +40,9 @@ export interface ButtonGroup {
        */
       size?: 'small' | 'middle' | 'large'
       /**
-       * antd Space direction
+       * antd Space orientation
        */
-      direction?: 'horizontal' | 'vertical'
+      orientation?: 'horizontal' | 'vertical'
       /**
        * antd Space wrap
        */

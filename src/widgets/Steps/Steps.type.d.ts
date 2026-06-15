@@ -11,9 +11,9 @@ export interface Steps {
        */
       current?: number
       /**
-       * the layout direction of the steps
+       * the layout orientation of the steps (antd Steps `orientation`)
        */
-      direction?: 'horizontal' | 'vertical'
+      orientation?: 'horizontal' | 'vertical'
       /**
        * the size of the steps
        */
@@ -23,9 +23,9 @@ export interface Steps {
        */
       status?: 'wait' | 'process' | 'finish' | 'error'
       /**
-       * where the label is placed relative to the step icon
+       * where the title is placed relative to the step icon (antd Steps `titlePlacement`)
        */
-      labelPlacement?: 'horizontal' | 'vertical'
+      titlePlacement?: 'horizontal' | 'vertical'
       /**
        * the visual type of the steps
        */

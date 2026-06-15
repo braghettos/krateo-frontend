@@ -53,8 +53,8 @@
               "enum": ["small", "middle", "large"],
               "type": "string"
             },
-            "direction": {
-              "description": "antd Space direction",
+            "orientation": {
+              "description": "antd Space orientation",
               "enum": ["horizontal", "vertical"],
               "type": "string"
             },

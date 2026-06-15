@@ -12,7 +12,7 @@ export interface Alert {
       /**
        * the alert title
        */
-      message: string
+      title: string
       /**
        * the alert detail text
        */

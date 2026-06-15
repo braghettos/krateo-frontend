@@ -23,10 +23,10 @@
               "type": "integer",
               "description": "the index of the current step (0-based)"
             },
-            "direction": {
+            "orientation": {
               "type": "string",
               "enum": ["horizontal", "vertical"],
-              "description": "the layout direction of the steps"
+              "description": "the layout orientation of the steps (antd Steps `orientation`)"
             },
             "size": {
               "type": "string",
@@ -38,10 +38,10 @@
               "enum": ["wait", "process", "finish", "error"],
               "description": "the status of the current step"
             },
-            "labelPlacement": {
+            "titlePlacement": {
               "type": "string",
               "enum": ["horizontal", "vertical"],
-              "description": "where the label is placed relative to the step icon"
+              "description": "where the title is placed relative to the step icon (antd Steps `titlePlacement`)"
             },
             "type": {
               "type": "string",
