@@ -1,7 +1,6 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Avatar, Flex, Space, Tooltip } from 'antd'
-import { Handle, Position } from 'reactflow'
 
 import { getColorCode } from '../../../theme/palette'
 import { formatISODate } from '../../../utils/utils'
@@ -39,7 +38,6 @@ const FlowChartNodeElement = ({ data }: { data: FlowChartNodeData }) => {
 
   return (
     <div className={styles.node}>
-      <Handle position={Position.Left} type='target' />
       <Space>
         {renderIcon(icon || fallbackIcon)}
         <div>
@@ -55,7 +53,6 @@ const FlowChartNodeElement = ({ data }: { data: FlowChartNodeData }) => {
           </Flex>
         </div>
       </Space>
-      <Handle position={Position.Right} type='source' />
     </div>
   )
 }

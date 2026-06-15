@@ -1,85 +1,49 @@
-import dagre from '@dagrejs/dagre'
+import { FlowGraph, G6 } from '@ant-design/graphs'
+import { ReactNode as G6ReactNode } from '@antv/g6-extension-react'
 import { Empty } from 'antd'
-import { useMemo } from 'react'
-import type { Edge, Node } from 'reactflow'
-import ReactFlow, { Controls, Position, useEdgesState, useNodesState } from 'reactflow'
 
 import type { WidgetProps } from '../../types/Widget'
 
 import styles from './FlowChart.module.css'
 import type { FlowChart as WidgetType } from './FlowChart.type'
 import FlowChartNodeElement from './FlowChartNodeElement'
-import { parseGraphData } from './utils'
+import { toGraphData } from './utils'
 
 export type FlowChartWidgetData = WidgetType['spec']['widgetData']
 export type FlowChartData = FlowChartWidgetData['data']
 export type FlowChartNodeData = NonNullable<FlowChartData>[number]
-export type NodeElement = Node<FlowChartNodeData> & { type: 'nodeElement' }
 
-const getLayoutedElements = (nodes: NodeElement[], edges: Edge[], direction: string) => {
-  const dagreGraph = new dagre.graphlib.Graph()
-  dagreGraph.setDefaultEdgeLabel(() => ({}))
-
-  const nodeWidth = 400
-  const nodeHeight = 200
-
-  dagreGraph.setGraph({ rankdir: direction })
-
-  nodes.forEach(({ id }) => {
-    dagreGraph.setNode(id, { height: nodeHeight, width: nodeWidth })
-  })
-
-  edges.forEach(({ source, target }) => {
-    dagreGraph.setEdge(source, target)
-  })
-
-  dagre.layout(dagreGraph)
-
-  nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id) as {x: number; y: number}
-    node.targetPosition = Position.Left
-    node.sourcePosition = Position.Right
-
-    node.position = {
-      x: nodeWithPosition.x - nodeWidth / 2,
-      y: nodeWithPosition.y - nodeHeight / 2,
-    }
-
-    return node
-  })
-
-  return { edges, nodes }
+// Register the React custom-node type once so antd components render as G6 nodes.
+try {
+  G6.register(G6.ExtensionCategory.NODE, 'react', G6ReactNode)
+} catch {
+  /* already registered */
 }
 
 const FlowChart = ({ uid, widgetData }: WidgetProps<FlowChartWidgetData>) => {
   const { data } = widgetData
+  const graphData = toGraphData(data)
 
-  const nodeType = useMemo(() => ({ nodeElement: FlowChartNodeElement }), [])
-
-  const { parsedEdges, parsedNodes } = parseGraphData(data)
-  const { edges: layoutedEdges, nodes: layoutedNodes } = getLayoutedElements(parsedNodes, parsedEdges, 'LR')
-
-  const [nodes, , onNodesChange] = useNodesState(layoutedNodes)
-  const [edges, , onEdgesChange] = useEdgesState(layoutedEdges)
-
-  if (!data || parsedNodes.length === 0) {
+  if (!data || graphData.nodes.length === 0) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
   return (
     <div className={styles.flowChart} key={uid}>
-      <ReactFlow
-        edges={edges}
-        fitView
-        nodeTypes={nodeType}
-        nodes={nodes}
-        nodesConnectable={false}
-        onEdgesChange={onEdgesChange}
-        onNodesChange={onNodesChange}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Controls showInteractive={false} />
-      </ReactFlow>
+      <FlowGraph
+        autoFit='view'
+        behaviors={['drag-canvas', 'zoom-canvas']}
+        data={graphData}
+        layout={{ nodesep: 24, rankdir: 'LR', ranksep: 60, type: 'dagre' }}
+        node={{
+          style: {
+            component: (datum: { data: FlowChartNodeData }) => <FlowChartNodeElement data={datum.data} />,
+            ports: [{ placement: 'left' }, { placement: 'right' }],
+            size: [300, 140],
+          },
+          type: 'react',
+        }}
+      />
     </div>
   )
 }
