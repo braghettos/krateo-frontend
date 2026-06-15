@@ -116,9 +116,6 @@ const buildComponents = (palette: Record<keyof typeof color, string>): ThemeConf
 /** Light antd theme — reproduces the previous `antdTheme` token block exactly. */
 export const lightTheme: ThemeConfig = {
   algorithm: antdAlgorithms.defaultAlgorithm,
-  // Emit antd's `--ant-color-*` CSS variables so `*.module.css` consumers
-  // resolve antd colors for the active color mode.
-  cssVar: true,
   token: {
     borderRadius: radius.md,
     boxShadow: elevation.md,
@@ -144,7 +141,6 @@ export const lightTheme: ThemeConfig = {
 /** Dark antd theme — antd dark algorithm + brand/neutral overrides from `colorDark`. */
 export const darkTheme: ThemeConfig = {
   algorithm: antdAlgorithms.darkAlgorithm,
-  cssVar: true,
   token: {
     borderRadius: radius.md,
     boxShadow: elevation.md,

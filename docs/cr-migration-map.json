@@ -29,6 +29,9 @@
     },
     "Button": {
       "backgroundColor": "color (pair with variant; map brand name -> antd color)"
+    },
+    "Divider": {
+      "orientation": "titlePlacement (antd 6 rename; values left/right/center unchanged)"
     }
   },
   "actions": {

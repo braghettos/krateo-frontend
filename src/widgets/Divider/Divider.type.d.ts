@@ -14,9 +14,9 @@ export interface Divider {
        */
       label?: string
       /**
-       * where the label sits
+       * where the label sits (antd Divider `titlePlacement`; antd 6 renamed from `orientation`)
        */
-      orientation?: 'left' | 'right' | 'center'
+      titlePlacement?: 'left' | 'right' | 'center'
       /**
        * render a dashed line
        */
