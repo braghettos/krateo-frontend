@@ -12,10 +12,10 @@ Part of the [krateo-installer](https://github.com/braghettos/krateo-installer) e
 | Path | Chart | OCI artifact | Versioning |
 |------|-------|--------------|-----------|
 | `chart/` | `frontend` (appVersion 1.0.10) | `oci://ghcr.io/braghettos/krateo/frontend` | tracks the git tag |
-| `crd-chart/` | `frontend-crd` (24 widget CRDs) | `oci://ghcr.io/braghettos/krateo/frontend-crd` | pinned `1.0.25` (independent of the app tag) |
+| `crds-subchart/` | `frontend-crd` (24 widget CRDs) | `oci://ghcr.io/braghettos/krateo/frontend-crd` | pinned `1.0.25` (independent of the app tag) |
 
 The widget CRDs (`Button`, `NavMenu`, `Page`, `Panel`, `Route`, `DataGrid`, …) version
-independently of the app chart, so `crd-chart/Chart.yaml` carries a literal `version: 1.0.25`
+independently of the app chart, so `crds-subchart/Chart.yaml` carries a literal `version: 1.0.25`
 rather than the `CHART_VERSION` placeholder — the release workflow leaves it untouched.
 
 ## How the installer consumes it
@@ -45,7 +45,7 @@ helm template smoke chart
 
 ## Release
 
-Push a semver tag (`X.Y.Z`) — CI packages `chart/` (at the tag) and `crd-chart/` (at its pinned
+Push a semver tag (`X.Y.Z`) — CI packages `chart/` (at the tag) and `crds-subchart/` (at its pinned
 `1.0.25`) and publishes both to `oci://ghcr.io/braghettos/krateo`.
 
 ## Links

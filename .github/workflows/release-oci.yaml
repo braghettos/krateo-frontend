@@ -1,10 +1,10 @@
 # Canonical OCI publish workflow for Krateo blueprint-fork charts (chart/ + optional
-# crd-chart/). Publishes both to the consolidated registry oci://ghcr.io/braghettos/krateo
+# crds-subchart/). Publishes both to the consolidated registry oci://ghcr.io/braghettos/krateo
 # on a semver tag push. Identical across all single-chart krateo-* fork repos.
 #
 # OCI-NAME-COLLISION GUARD (frontend repo): `helm push <chart>.tgz <OCI_REPO>`
 # derives the artifact repository as <OCI_REPO>/<Chart.yaml name>. This repo's
-# chart is named `frontend` and its crd-chart `frontend-crd` — the SAME strings
+# chart is named `frontend` and its CRD sub-chart `frontend-crd` — the SAME strings
 # as the frontend SPA's own Docker image at ghcr.io/braghettos/frontend (built
 # by braghettos/frontend with tags latest/buildcache/1.0.x). If OCI_REPO is ever
 # the registry ROOT (oci://ghcr.io/braghettos), the chart pushes to
@@ -70,7 +70,7 @@ jobs:
 
       - name: Substitute version placeholders
         run: |
-          for f in chart/Chart.yaml crd-chart/Chart.yaml; do
+          for f in chart/Chart.yaml crds-subchart/Chart.yaml; do
             [ -f "$f" ] || continue
             sed -i "s/CHART_VERSION/${{ steps.ver.outputs.chart_version }}/g" "$f"
             sed -i "s/APP_VERSION/${{ steps.ver.outputs.app_version }}/g" "$f"
@@ -103,17 +103,17 @@ jobs:
       - name: Registry login
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Package & push crd-chart (if present)
+      - name: Package & push crds-subchart (if present)
         run: |
-          if [ -f crd-chart/Chart.yaml ]; then
-            # crd-chart packages deterministically to <name>-<version>.tgz with a
+          if [ -f crds-subchart/Chart.yaml ]; then
+            # crds-subchart packages deterministically to <name>-<version>.tgz with a
             # single artifact in dist/. Push that one tgz explicitly — no error-
             # swallowing fallback (the old `... 2>/dev/null || helm push $(ls ...
             # | head -1)` masked real push failures and could push the wrong
             # artifact if dist/ ever held more than one tgz).
-            helm package crd-chart -d dist/
+            helm package crds-subchart -d dist/
             tgz="$(ls dist/*.tgz)"
-            test "$(printf '%s\n' "$tgz" | grep -c .)" -eq 1 || { echo "::error::expected exactly one crd-chart tgz, got: $tgz"; exit 1; }
+            test "$(printf '%s\n' "$tgz" | grep -c .)" -eq 1 || { echo "::error::expected exactly one crds-subchart tgz, got: $tgz"; exit 1; }
             helm push "$tgz" "${OCI_REPO}"
             rm -rf dist
           fi
