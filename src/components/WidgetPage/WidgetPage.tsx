@@ -4,6 +4,7 @@ import { useLocation, useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
 import { useRoutesContext } from '../../context/RoutesContext'
+import { useLoadRoutes } from '../../hooks/useLoadRoutes'
 import Page404 from '../../pages/Page404'
 import Drawer from '../../widgets/Drawer'
 import Modal from '../../widgets/Modal'
@@ -19,6 +20,10 @@ export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: 
   const { config } = useConfigContext()
   const { menuRoutes } = useRoutesContext()
   const [searchParams] = useSearchParams()
+  // Load the full app route set as data (replaces the Menu→RoutesLoader→Route
+  // invisible-widget chain). Lives here because WidgetPage is the authenticated
+  // area, so a token exists before the routes fetch fires.
+  useLoadRoutes()
   const queryParamWidgetEndpoint = searchParams.get('widgetEndpoint')
   const currentRoute = menuRoutes.find(({ path }) => path === location.pathname)
   const widgetEndpoint = queryParamWidgetEndpoint || currentRoute?.resourceRef?.path || defaultWidgetEndpoint || ''

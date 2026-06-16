@@ -6,7 +6,6 @@ import type { MenuItemType } from 'antd/es/menu/interface'
 import { useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
-import WidgetRenderer from '../../components/WidgetRenderer'
 import { useConfigContext } from '../../context/ConfigContext'
 import type { AppRoute } from '../../context/RoutesContext'
 import { useRoutesContext } from '../../context/RoutesContext'
@@ -119,19 +118,15 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
   )
 
   return (
-    <>
-      <AntdMenu
-        className={styles.menu}
-        defaultSelectedKeys={menuItems.length > 0 ? [menuItems[0].key as string] : []}
-        items={menuItems}
-        key={uid}
-        mode={mode ?? 'inline'}
-        onClick={(item) => { void navigate(item.key) }}
-        selectedKeys={[location.pathname]}
-        theme={theme}
-      />
-
-      <WidgetRenderer invisible={true} widgetEndpoint={config!.api.ROUTES_LOADER} />
-    </>
+    <AntdMenu
+      className={styles.menu}
+      defaultSelectedKeys={menuItems.length > 0 ? [menuItems[0].key as string] : []}
+      items={menuItems}
+      key={uid}
+      mode={mode ?? 'inline'}
+      onClick={(item) => { void navigate(item.key) }}
+      selectedKeys={[location.pathname]}
+      theme={theme}
+    />
   )
 }
