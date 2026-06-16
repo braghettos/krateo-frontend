@@ -20,6 +20,6 @@ export const getWidgetModule = (kind: string): WidgetModule | undefined => regis
 export const getWidgetRegistry = (): Record<string, WidgetModule> =>
   Object.fromEntries([...registry].filter(([, module]) => !module.structural))
 
-/** The structural navigation/routing kinds (Page/Route/RoutesLoader) — not antd widgets. */
+/** The structural navigation kinds (Page) — not antd widgets. */
 export const getStructuralRegistry = (): Record<string, WidgetModule> =>
   Object.fromEntries([...registry].filter(([, module]) => module.structural))

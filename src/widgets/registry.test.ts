@@ -35,8 +35,12 @@ const KNOWN_KINDS = [
   'Table', 'Tabs', 'YamlViewer',
 ]
 
-/** Structural navigation/routing kinds — resolved by WidgetRenderer but NOT antd widgets. */
-const STRUCTURAL_KINDS = ['Page', 'Route', 'RoutesLoader']
+/**
+ * Structural navigation kinds — resolved by WidgetRenderer but NOT antd widgets.
+ * Route/RoutesLoader were removed once route-loading moved into RoutesProvider's
+ * useLoadRoutes (routes-as-data); they are no longer rendered as widgets.
+ */
+const STRUCTURAL_KINDS = ['Page']
 
 describe('widgetRegistry', () => {
   it('registers all known registry kinds (regression gate for the switch removal)', () => {
