@@ -15,37 +15,39 @@ import { theme as antdAlgorithms, type ThemeConfig } from 'antd'
 
 export type ThemeMode = 'light' | 'dark'
 
+// Light = "Refined enterprise" mockup (theme-enterprise.css): antd blue #1677ff,
+// tight 8px radius, soft-tint + bordered status colors, antd-neutral grays.
 export const color = {
-  accent2: '#8b5cf6',
-  accentSoft: '#eef0fe',
-  background: '#f7f8fa',
-  blue: '#6366f1',
-  border: '#e8eaed',
-  dark: '#1c2024',
-  darkBlue: '#05629A',
-  error: '#dc2626',
-  errorSoft: '#fdeced',
-  faint: '#9aa1ab',
-  gray: '#6b7280',
-  green: '#16a34a',
-  info: '#6366f1',
+  accent2: '#11b2e2',
+  accentSoft: '#e8f1ff',
+  background: '#f5f7fa',
+  blue: '#1677ff',
+  border: '#e4e8ef',
+  dark: '#1f2733',
+  darkBlue: '#0958d9',
+  error: '#d4380d',
+  errorSoft: '#fcebe6',
+  faint: '#98a2b3',
+  gray: '#5b6675',
+  green: '#15924c',
+  info: '#1677ff',
   light: '#ffffff',
-  lightgray: '#f4f5f8',
-  line: '#eef0f3',
-  menubgend: '#8b5cf6',
-  menubgstart: '#6366f1',
-  menuitem: '#ffffffcc',
-  menuitembg: '#eef0fe',
-  orange: '#d97706',
+  lightgray: '#f3f5f8',
+  line: '#eef1f5',
+  menubgend: '#11b2e2',
+  menubgstart: '#1677ff',
+  menuitem: '#5b6675',
+  menuitembg: '#e8f1ff',
+  orange: '#ca8504',
   panelbg: '#ffffff',
-  primary: '#6366f1',
-  red: '#dc2626',
-  success: '#16a34a',
-  successSoft: '#e9f7ee',
-  text: '#1c2024',
-  violet: '#8b5cf6',
-  warning: '#d97706',
-  warningSoft: '#fdf3e6',
+  primary: '#1677ff',
+  red: '#d4380d',
+  success: '#15924c',
+  successSoft: '#e7f5ec',
+  text: '#1f2733',
+  violet: '#722ed1',
+  warning: '#ca8504',
+  warningSoft: '#fbf2dd',
 } as const
 
 /**
@@ -74,7 +76,7 @@ export const colorDark: Record<keyof typeof color, string> = {
   line: 'rgba(255,255,255,0.07)',
   menubgend: '#5e8bff',
   menubgstart: '#22d3ee',
-  menuitem: '#ffffffcc',
+  menuitem: '#9aa6c0',
   menuitembg: 'rgba(94,139,255,0.16)',
   orange: '#fbbf24',
   panelbg: 'rgba(255,255,255,0.055)',
@@ -90,7 +92,7 @@ export const colorDark: Record<keyof typeof color, string> = {
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const
 
-export const radius = { sm: 4, md: 9, lg: 12, xl: 16 } as const
+export const radius = { sm: 4, md: 8, lg: 10, xl: 16 } as const
 
 /** Clean (light) elevation — soft, low-contrast shadows on a light canvas. */
 export const elevation = {
@@ -135,6 +137,7 @@ const buildComponents = (palette: Record<keyof typeof color, string>, mode: Them
   Modal: { borderRadiusLG: radius.lg },
   Progress: { defaultColor: palette.primary },
   Select: { borderRadius: radius.md, controlHeight: 36 },
+  Statistic: { contentFontSize: 30, titleFontSize: 13 },
   Steps: { iconSize: 28 },
   Table: { borderRadiusLG: radius.lg, headerBg: palette.lightgray, headerBorderRadius: radius.lg },
   Tabs: { horizontalItemGutter: 24 },

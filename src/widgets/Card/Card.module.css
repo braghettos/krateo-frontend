@@ -105,4 +105,24 @@
       white-space: nowrap;
     }
   }
+
+  /* Card header `extra` slot (top-right): optional tooltip button + stat icon. */
+  .extra {
+    align-items: center;
+    display: flex;
+    gap: var(--spacing-sm);
+  }
+
+  /* Small soft-tint rounded-square icon in the top-right of the card header
+     (enterprise stat-card treatment). Colors are set inline per icon. */
+  .iconBox {
+    align-items: center;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-shrink: 0;
+    font-size: 15px;
+    height: 34px;
+    justify-content: center;
+    width: 34px;
+  }
 }

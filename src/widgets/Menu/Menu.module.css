@@ -33,13 +33,14 @@
   :global(.ant-menu-item-selected) {
     background-color: var(--menuitembg-color);
     border-radius: 0;
-    color: var(--light-color);
+    color: var(--primary-color);
+    font-weight: var(--font-weight-bold);
 
     svg {
       opacity: 1;
       
       path {
-        fill: var(--light-color);
+        fill: var(--primary-color);
       }  
     }
   }
@@ -47,7 +48,7 @@
   :global(.ant-menu-item.ant-menu-item-active),
   :global(.ant-menu-item.ant-menu-item-active:hover) {
     background-color: transparent;
-    color: var(--light-color) !important;
+    color: var(--text-color) !important;
 
     svg {
       opacity: 1;

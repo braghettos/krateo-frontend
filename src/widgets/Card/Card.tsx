@@ -1,7 +1,7 @@
 import { QuestionCircleOutlined } from '@ant-design/icons'
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Card as AntdCard, Avatar, Button, Tag, Tooltip } from 'antd'
+import { Card as AntdCard, Button, Tag, Tooltip } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import { useState } from 'react'
 
@@ -98,16 +98,24 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       classNames={{ body: styles.bodyWrapper, header: styles.header, title: styles.title }}
       cover={coverEndpoint ? <WidgetRenderer widgetEndpoint={coverEndpoint} /> : undefined}
       extra={
-        (extra || tooltip)
+        (icon || extra || tooltip)
           ? (
-            <>
+            <div className={styles.extra}>
               {extra}
               {tooltip && (
                 <Tooltip title={tooltip}>
                   <Button icon={<QuestionCircleOutlined />} type='text' />
                 </Tooltip>
               )}
-            </>
+              {icon && (
+                <span
+                  className={styles.iconBox}
+                  style={{ backgroundColor: `color-mix(in srgb, ${getColorCode(icon.color)} 14%, var(--light-color))`, color: getColorCode(icon.color) }}
+                >
+                  <FontAwesomeIcon icon={icon.name as IconProp} />
+                </span>
+              )}
+            </div>
           )
           : undefined
       }
@@ -116,22 +124,17 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       onClick={handleClick}
       size={size}
       title={
-        (title || icon) && (
-          <div className={styles.title}>
-            {icon && (
-              <Avatar
-                icon={<FontAwesomeIcon icon={icon.name as IconProp} />}
-                size={64}
-                style={{ backgroundColor: getColorCode(icon.color) }}
-              />
-            )}
-            <div className={styles.text}>
-              <Tooltip title={title}>
-                {title}
-              </Tooltip>
+        title
+          ? (
+            <div className={styles.title}>
+              <div className={styles.text}>
+                <Tooltip title={title}>
+                  {title}
+                </Tooltip>
+              </div>
             </div>
-          </div>
-        )
+          )
+          : undefined
       }
       variant={variant}
     >
