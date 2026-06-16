@@ -1,4 +1,4 @@
-import { formatISODate } from '../../utils/utils'
+import { formatISODate, formatRelativeTime } from '../../utils/utils'
 
 /**
  * Generic item → row mapping for the List/Feed widget. This is the seam that
@@ -32,8 +32,8 @@ export interface ItemTemplate {
    */
   iconVariant?: 'avatar' | 'tile' | 'dot'
   color?: ColorSpec
-  /** Per-slot value formatting; `datetime` runs the resolved value through formatISODate. */
-  formats?: Partial<Record<RowSlot, 'text' | 'datetime'>>
+  /** Per-slot value formatting; `datetime` → absolute date+time, `relative` → "3h ago". */
+  formats?: Partial<Record<RowSlot, 'text' | 'datetime' | 'relative'>>
   /** Render `secondaryText` as a soft-tint Tag pill (e.g. a category) rather than plain text. */
   secondaryTextAsTag?: boolean
 }
@@ -75,7 +75,11 @@ export const resolveColor = (spec: ColorSpec | undefined, item: unknown): string
 
 const resolveSlot = (template: ItemTemplate, slot: RowSlot, item: unknown): string => {
   const text = interpolate(template[slot], item)
-  return template.formats?.[slot] === 'datetime' && text ? formatISODate(text, true) : text
+  if (!text) { return text }
+  const format = template.formats?.[slot]
+  if (format === 'datetime') { return formatISODate(text, true) }
+  if (format === 'relative') { return formatRelativeTime(text) }
+  return text
 }
 
 export const resolveRow = (template: ItemTemplate, item: unknown): ResolvedRow => ({

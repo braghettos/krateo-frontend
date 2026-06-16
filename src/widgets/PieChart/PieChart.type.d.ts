@@ -24,6 +24,12 @@ export interface PieChart {
        */
       colorField: string
       /**
+       * map each colorField category to a Krateo palette color name (e.g. {"Healthy":"green","Failed":"red"}); sets the G2 color scale domain/range for semantic slice colors
+       */
+      colorMap?: {
+        [k: string]: string
+      }
+      /**
        * donut hole as a percentage of the radius, 0-100 (maps to antd Pie `innerRadius` ÷ 100); omit for a full pie
        */
       innerRadius?: number

@@ -78,10 +78,10 @@ export interface List {
           default?: string
         }
         formats?: {
-          primaryText?: 'text' | 'datetime'
-          secondaryText?: 'text' | 'datetime'
-          subPrimaryText?: 'text' | 'datetime'
-          subSecondaryText?: 'text' | 'datetime'
+          primaryText?: 'text' | 'datetime' | 'relative'
+          secondaryText?: 'text' | 'datetime' | 'relative'
+          subPrimaryText?: 'text' | 'datetime' | 'relative'
+          subSecondaryText?: 'text' | 'datetime' | 'relative'
         }
       }
       /**

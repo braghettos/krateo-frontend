@@ -1,6 +1,7 @@
 import { Pie } from '@ant-design/plots'
 import { Empty } from 'antd'
 
+import { getColorCode } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 
 import styles from './PieChart.module.css'
@@ -17,6 +18,12 @@ const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
+  // Optional semantic slice colors: map each colorField category to a palette color.
+  const { colorMap } = widgetData
+  const scale = colorMap
+    ? { color: { domain: Object.keys(colorMap), range: Object.keys(colorMap).map((key) => getColorCode(colorMap[key])) } }
+    : undefined
+
   return (
     <div className={styles.pieChart}>
       <Pie
@@ -28,6 +35,7 @@ const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
         innerRadius={widgetData.innerRadius === null || widgetData.innerRadius === undefined ? undefined : widgetData.innerRadius / 100}
         key={uid}
         legend={widgetData.legend === false ? false : undefined}
+        scale={scale}
         title={widgetData.title}
       />
     </div>

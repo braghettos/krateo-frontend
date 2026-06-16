@@ -137,7 +137,7 @@ const buildComponents = (palette: Record<keyof typeof color, string>, mode: Them
   Modal: { borderRadiusLG: radius.lg },
   Progress: { defaultColor: palette.primary },
   Select: { borderRadius: radius.md, controlHeight: 36 },
-  Statistic: { contentFontSize: 30, titleFontSize: 13 },
+  Statistic: { contentFontSize: 31, titleFontSize: 13 },
   Steps: { iconSize: 28 },
   Table: { borderRadiusLG: radius.lg, headerBg: palette.lightgray, headerBorderRadius: radius.lg },
   Tabs: { horizontalItemGutter: 24 },

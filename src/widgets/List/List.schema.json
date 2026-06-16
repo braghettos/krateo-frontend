@@ -80,10 +80,10 @@
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
-                    "primaryText": { "type": "string", "enum": ["text", "datetime"] },
-                    "secondaryText": { "type": "string", "enum": ["text", "datetime"] },
-                    "subPrimaryText": { "type": "string", "enum": ["text", "datetime"] },
-                    "subSecondaryText": { "type": "string", "enum": ["text", "datetime"] }
+                    "primaryText": { "type": "string", "enum": ["text", "datetime", "relative"] },
+                    "secondaryText": { "type": "string", "enum": ["text", "datetime", "relative"] },
+                    "subPrimaryText": { "type": "string", "enum": ["text", "datetime", "relative"] },
+                    "subSecondaryText": { "type": "string", "enum": ["text", "datetime", "relative"] }
                   }
                 }
               }

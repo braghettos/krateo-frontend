@@ -86,7 +86,7 @@
 
   .header {
     border-bottom: none;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-xs);
   }
 
   .title {

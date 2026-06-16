@@ -27,6 +27,7 @@
             },
             "angleField": { "type": "string", "description": "field mapped to the slice value / angle (G2 `angleField`)" },
             "colorField": { "type": "string", "description": "field mapped to color / category (G2 `colorField`)" },
+            "colorMap": { "type": "object", "additionalProperties": { "type": "string" }, "description": "map each colorField category to a Krateo palette color name (e.g. {\"Healthy\":\"green\",\"Failed\":\"red\"}); sets the G2 color scale domain/range for semantic slice colors" },
             "innerRadius": { "type": "integer", "description": "donut hole as a percentage of the radius, 0-100 (maps to antd Pie `innerRadius` ÷ 100); omit for a full pie" },
             "legend": { "type": "boolean", "description": "show the legend; false hides it (G2 `legend`)" },
             "title": { "type": "string", "description": "chart title (G2 `title`)" },
