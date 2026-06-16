@@ -1,4 +1,4 @@
-import { Avatar } from 'antd'
+import { Avatar, Input } from 'antd'
 import { useEffect } from 'react'
 import { Outlet } from 'react-router'
 
@@ -22,7 +22,11 @@ import { ShellSlotsProvider } from './ShellSlots'
  * controls (not server data), so they live in the engine, not as widgets. */
 const HeaderChrome = () => (
   <>
-    <div className={styles.headerLeft}><Breadcrumb /></div>
+    <div className={styles.headerLeft}>
+      <Breadcrumb />
+      {/* Presentational for now — accepts input but has no search backend wired yet. */}
+      <Input.Search allowClear className={styles.search} placeholder='Search resources, blueprints…' />
+    </div>
     <div className={styles.headerRight}><ThemeToggle /><Notifications /><UserMenu /></div>
   </>
 )

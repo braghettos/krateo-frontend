@@ -1,9 +1,13 @@
 .headerLeft {
+  align-items: center;
+  display: flex;
   flex: 1;
+  gap: var(--spacing-md);
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.search {
+  max-width: 280px;
 }
 
 .headerRight {
