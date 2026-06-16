@@ -2,6 +2,29 @@
   height: 100%;
 }
 
+/* Content: scrollable, padded body. */
 .content {
+  box-sizing: border-box;
   overflow: auto;
+  padding: var(--spacing-lg) var(--spacing-md);
+}
+
+/* Sider: a clean surface panel separated from content by a hairline border.
+   --panelbg-color is white in Clean and a translucent glass fill in dark (where
+   index.css adds the backdrop blur), matching the mockup's mode-aware sidebar. */
+.shell :global(.ant-layout-sider) {
+  background: var(--panelbg-color);
+  border-right: 1px solid var(--border-color);
+}
+
+/* Header: the light top bar with left (breadcrumb) / right (controls) slots. */
+.header {
+  align-items: center;
+  background: var(--panelbg-color);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  gap: var(--spacing-md);
+  height: 64px;
+  justify-content: space-between;
+  padding: 0 var(--spacing-md);
 }

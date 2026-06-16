@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import React, { createContext, useCallback, useContext, useState } from 'react'
-import { useParams, type RouteObject } from 'react-router'
+import { useParams, type NonIndexRouteObject, type RouteObject } from 'react-router'
 
+import ShellRoute from '../components/Shell'
 import WidgetPage from '../components/WidgetPage'
 import Auth from '../pages/Auth/Auth'
 import Login from '../pages/Login'
@@ -28,11 +29,23 @@ interface RoutesContextType {
 
 const RoutesContext = createContext<RoutesContextType | undefined>(undefined)
 
+// The authenticated area is a single persistent shell (the `Layout` widget from
+// config INIT) rendered as a pathless layout route; every content route is a
+// CHILD that renders into the shell's <Outlet/>. Login/Auth sit outside it (no
+// chrome). Dynamic routes are inserted into the shell's children by registerRoutes.
+const SHELL_ROUTE_ID = 'shell'
+
 const defaultRoutes: RouteObject[] = [
   { element: <Login />, path: '/login' },
   { element: <Auth />, path: '/auth' },
-  { element: <Profile />, path: '/profile' },
-  { element: <WidgetPage />, path: '*' },
+  {
+    children: [
+      { element: <Profile />, path: '/profile' },
+      { element: <WidgetPage />, path: '*' },
+    ],
+    element: <ShellRoute />,
+    id: SHELL_ROUTE_ID,
+  },
 ]
 
 const normalizeRouteParameters = (route: string) => {
@@ -123,13 +136,24 @@ export const RoutesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const registerRoutes = useCallback((newRoutes: RouteObject[]) => {
     setRoutes((prevRoutes) => {
-      const filteredNewRoutes = newRoutes.filter((newRoute) => !prevRoutes.find((existingRoute) => existingRoute.path === newRoute.path))
+      const shellIndex = prevRoutes.findIndex((route) => route.id === SHELL_ROUTE_ID)
+      if (shellIndex === -1) { return prevRoutes }
 
-      if (filteredNewRoutes.length === 0) {
-        return prevRoutes
-      }
+      // The shell is the pathless layout route (non-index: it has children).
+      const shell = prevRoutes[shellIndex] as NonIndexRouteObject
+      const children = shell.children ?? []
+      const existingPaths = new Set(children.map((child) => child.path))
+      const freshRoutes = newRoutes.filter((route) => !existingPaths.has(route.path))
+      if (freshRoutes.length === 0) { return prevRoutes }
 
-      const updatedRoutes = [...prevRoutes, ...filteredNewRoutes]
+      // Keep the '*' catch-all last among the shell's children.
+      const splatIndex = children.findIndex((child) => child.path === '*')
+      const mergedChildren = splatIndex === -1
+        ? [...children, ...freshRoutes]
+        : [...children.slice(0, splatIndex), ...freshRoutes, ...children.slice(splatIndex)]
+
+      const updatedRoutes = [...prevRoutes]
+      updatedRoutes[shellIndex] = { ...shell, children: mergedChildren }
       setRouterVersion((prev) => prev + 1)
       return updatedRoutes
     })

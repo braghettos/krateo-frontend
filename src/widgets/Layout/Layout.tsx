@@ -1,5 +1,6 @@
 import { Layout as AntdLayout } from 'antd'
 
+import { useShellSlots } from '../../components/Shell/ShellSlots'
 import WidgetRenderer from '../../components/WidgetRenderer'
 import type { ResourcesRefs, WidgetProps } from '../../types/Widget'
 import { getEndpointUrl } from '../../utils/utils'
@@ -25,11 +26,17 @@ const slot = (resourceRefId: string | undefined, resourcesRefs: ResourcesRefs) =
  */
 const Layout = ({ resourcesRefs, widgetData }: WidgetProps<LayoutWidgetData>) => {
   const { content, footer, hasSider, header, sider } = widgetData
+  // When acting as the app shell (loaded via INIT), regions the CR leaves unset
+  // fall back to engine-owned slots: header → interactive chrome, content → the
+  // routed <Outlet/>. Outside the shell these are undefined and render nothing.
+  const shell = useShellSlots()
+  const headerContent = header ? slot(header, resourcesRefs) : shell.header
+  const contentBody = content ? slot(content, resourcesRefs) : shell.content
 
   const regions = (
     <>
-      {header ? <Header>{slot(header, resourcesRefs)}</Header> : null}
-      <Content className={styles.content}>{slot(content, resourcesRefs)}</Content>
+      {headerContent ? <Header className={styles.header}>{headerContent}</Header> : null}
+      <Content className={styles.content}>{contentBody}</Content>
       {footer ? <Footer>{slot(footer, resourcesRefs)}</Footer> : null}
     </>
   )
