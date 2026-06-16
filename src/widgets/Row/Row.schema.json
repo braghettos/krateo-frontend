@@ -27,6 +27,7 @@
                 "type": "string",
                 "enum": [
                   "barcharts",
+                  "flexes",
                   "buttons",
                   "buttongroups",
                   "cols",
@@ -41,8 +42,10 @@
                   "paragraphs",
                   "piecharts",
                   "rows",
+                  "statistics",
                   "tables",
                   "tabs",
+                  "tags",
                   "yamlviewers"
                 ]
               }

@@ -14,6 +14,7 @@ export interface Col {
        */
       allowedResources: (
         | 'barcharts'
+        | 'flexes'
         | 'buttons'
         | 'buttongroups'
         | 'cols'
@@ -28,8 +29,10 @@ export interface Col {
         | 'paragraphs'
         | 'piecharts'
         | 'rows'
+        | 'statistics'
         | 'tables'
         | 'tabs'
+        | 'tags'
         | 'yamlviewers'
       )[]
       /**

@@ -32,8 +32,10 @@ export interface Flex {
         | 'paragraphs'
         | 'piecharts'
         | 'rows'
+        | 'statistics'
         | 'tables'
         | 'tabs'
+        | 'tags'
         | 'yamlviewers'
       )[]
       /**

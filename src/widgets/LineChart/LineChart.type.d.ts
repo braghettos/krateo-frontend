@@ -36,6 +36,10 @@ export interface LineChart {
        */
       stack?: boolean
       /**
+       * render a gradient area fill under the line (G2 `area`); defaults to false
+       */
+      area?: boolean
+      /**
        * show the legend; false hides it (G2 `legend`)
        */
       legend?: boolean

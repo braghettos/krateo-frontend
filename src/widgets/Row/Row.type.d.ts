@@ -17,6 +17,7 @@ export interface Row {
        */
       allowedResources: (
         | 'barcharts'
+        | 'flexes'
         | 'buttons'
         | 'buttongroups'
         | 'cols'
@@ -31,8 +32,10 @@ export interface Row {
         | 'paragraphs'
         | 'piecharts'
         | 'rows'
+        | 'statistics'
         | 'tables'
         | 'tabs'
+        | 'tags'
         | 'yamlviewers'
       )[]
       /**

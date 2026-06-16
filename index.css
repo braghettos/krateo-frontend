@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 html, body, #root {
   height: 100%;
   margin: 0;
@@ -8,7 +10,22 @@ html, body, #root {
 
 body {
   background-color: var(--background-color);
-  font-family: Roboto, sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Glass treatment — scoped to dark mode (App sets document.documentElement.dataset.theme). */
+[data-theme="dark"] body {
+  background-color: #0a0e1a;
+  background-image: radial-gradient(1200px 600px at 15% -10%, rgba(94,139,255,0.10), transparent 60%),
+                    radial-gradient(1000px 500px at 100% 0%, rgba(34,211,238,0.08), transparent 55%);
+  background-attachment: fixed;
+}
+
+[data-theme="dark"] .ant-card,
+[data-theme="dark"] .ant-layout-sider,
+[data-theme="dark"] .ant-layout-header {
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
 }
 
 *::-webkit-scrollbar {

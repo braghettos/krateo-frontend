@@ -92,8 +92,8 @@
   .title {
     align-items: center;
     display: flex;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-lighter);
+    font-size: 15px;
+    font-weight: var(--font-weight-bold);
     gap: var(--spacing-md);
     min-width: 0;
 

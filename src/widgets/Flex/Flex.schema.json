@@ -42,8 +42,10 @@
                   "paragraphs",
                   "piecharts",
                   "rows",
+                  "statistics",
                   "tables",
                   "tabs",
+                  "tags",
                   "yamlviewers"
                 ]
               }

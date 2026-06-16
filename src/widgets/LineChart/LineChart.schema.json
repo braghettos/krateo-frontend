@@ -30,6 +30,7 @@
             "colorField": { "type": "string", "description": "field mapped to color / series (G2 `colorField`)" },
             "shapeField": { "type": "string", "description": "line shape, e.g. 'smooth' or 'line' (G2 `shapeField`)" },
             "stack": { "type": "boolean", "description": "stack the series (G2 `stack`)" },
+            "area": { "type": "boolean", "description": "render a gradient area fill under the line (G2 `area`); defaults to false" },
             "legend": { "type": "boolean", "description": "show the legend; false hides it (G2 `legend`)" },
             "title": { "type": "string", "description": "chart title (G2 `title`)" },
             "height": { "type": "integer", "description": "fixed height in px (G2 `height`); omit to autofit" }

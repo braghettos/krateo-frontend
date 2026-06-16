@@ -16,29 +16,36 @@ import { theme as antdAlgorithms, type ThemeConfig } from 'antd'
 export type ThemeMode = 'light' | 'dark'
 
 export const color = {
-  background: '#f5f5f5',
-  blue: '#11B2E2',
-  border: '#E1E3E8',
-  dark: '#000000',
+  accent2: '#8b5cf6',
+  accentSoft: '#eef0fe',
+  background: '#f7f8fa',
+  blue: '#6366f1',
+  border: '#e8eaed',
+  dark: '#1c2024',
   darkBlue: '#05629A',
-  error: '#f84c4c',
-  gray: '#a0a0a0',
-  green: '#00D690',
-  info: '#11B2E2',
-  light: '#FFFFFF',
-  lightgray: '#F0F0F0',
-  menubgend: '#002f46',
-  menubgstart: '#005d8b',
-  menuitem: '#ffffff80',
-  menuitembg: '#11b2e266',
-  orange: '#FFAA00',
-  panelbg: '#FBFBFB',
-  primary: '#05629A',
-  red: '#F84C4C',
-  success: '#00d690',
-  text: '#323b40',
-  violet: '#722ed1',
-  warning: '#ffaa00',
+  error: '#dc2626',
+  errorSoft: '#fdeced',
+  faint: '#9aa1ab',
+  gray: '#6b7280',
+  green: '#16a34a',
+  info: '#6366f1',
+  light: '#ffffff',
+  lightgray: '#f4f5f8',
+  line: '#eef0f3',
+  menubgend: '#8b5cf6',
+  menubgstart: '#6366f1',
+  menuitem: '#ffffffcc',
+  menuitembg: '#eef0fe',
+  orange: '#d97706',
+  panelbg: '#ffffff',
+  primary: '#6366f1',
+  red: '#dc2626',
+  success: '#16a34a',
+  successSoft: '#e9f7ee',
+  text: '#1c2024',
+  violet: '#8b5cf6',
+  warning: '#d97706',
+  warningSoft: '#fdf3e6',
 } as const
 
 /**
@@ -49,56 +56,77 @@ export const color = {
  * strongest foreground (white).
  */
 export const colorDark: Record<keyof typeof color, string> = {
-  background: '#0b0f17',
-  blue: '#29b6ec',
-  border: '#2a3340',
+  accent2: '#22d3ee',
+  accentSoft: 'rgba(94,139,255,0.16)',
+  background: '#0a0e1a',
+  blue: '#5e8bff',
+  border: 'rgba(255,255,255,0.10)',
   dark: '#ffffff',
   darkBlue: '#7cc6ec',
-  error: '#ff6b6b',
-  gray: '#8a93a3',
-  green: '#1ee0a0',
-  info: '#29b6ec',
-  light: '#1b2230',
-  lightgray: '#202836',
-  menubgend: '#021621',
-  menubgstart: '#06324c',
-  menuitem: '#ffffff99',
-  menuitembg: '#11b2e240',
-  orange: '#ffb84d',
-  panelbg: '#151b24',
-  primary: '#2ba6e0',
-  red: '#ff6b6b',
-  success: '#1ee0a0',
-  text: '#e6e9f0',
-  violet: '#9a7cf0',
-  warning: '#ffb84d',
+  error: '#fb7185',
+  errorSoft: 'rgba(251,113,133,0.16)',
+  faint: '#6b7796',
+  gray: '#9aa6c0',
+  green: '#34d399',
+  info: '#5e8bff',
+  light: 'rgba(255,255,255,0.08)',
+  lightgray: 'rgba(255,255,255,0.08)',
+  line: 'rgba(255,255,255,0.07)',
+  menubgend: '#5e8bff',
+  menubgstart: '#22d3ee',
+  menuitem: '#ffffffcc',
+  menuitembg: 'rgba(94,139,255,0.16)',
+  orange: '#fbbf24',
+  panelbg: 'rgba(255,255,255,0.055)',
+  primary: '#5e8bff',
+  red: '#fb7185',
+  success: '#34d399',
+  successSoft: 'rgba(52,211,153,0.15)',
+  text: '#eaf0fb',
+  violet: '#8b5cf6',
+  warning: '#fbbf24',
+  warningSoft: 'rgba(251,191,36,0.15)',
 }
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const
 
-export const radius = { sm: 4, md: 8, lg: 12, xl: 16 } as const
+export const radius = { sm: 4, md: 9, lg: 12, xl: 16 } as const
 
+/** Clean (light) elevation — soft, low-contrast shadows on a light canvas. */
 export const elevation = {
-  sm: '0 1px 2px rgba(0, 0, 0, 0.06)',
-  md: '0 2px 8px rgba(0, 0, 0, 0.09)',
-  lg: '0 6px 16px rgba(0, 0, 0, 0.12)',
+  sm: '0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06)',
+  md: '0 4px 10px rgba(16,24,40,0.08)',
+  lg: '0 12px 28px rgba(16,24,40,0.10)',
+} as const
+
+/** Glass (dark) elevation — deeper, more diffuse shadows for the dark canvas. */
+export const elevationDark = {
+  sm: '0 2px 10px rgba(0,0,0,0.35)',
+  md: '0 8px 24px rgba(0,0,0,0.45)',
+  lg: '0 22px 50px rgba(0,0,0,0.55)',
 } as const
 
 export const typography = {
-  family: 'Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif',
+  family: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   size: { xxs: 12, xs: 14, sm: 16, md: 18, lg: 24, xl: 30 },
-  weight: { lighter: 300, light: 400, bold: 600 },
+  weight: { lighter: 300, light: 400, medium: 500, bold: 600, bolder: 700 },
 } as const
 
 export const motion = { fast: '0.1s', mid: '0.2s', slow: '0.3s' } as const
 
 export const tokens = { color, elevation, motion, radius, spacing, typography } as const
 
-/** Per-component overrides (radii / sizing are mode-independent; only the
- * palette-derived bits — Progress color, Table header fill — vary by mode). */
-const buildComponents = (palette: Record<keyof typeof color, string>): ThemeConfig['components'] => ({
+/** Per-component overrides. Radii / sizing are mode-independent; the
+ * palette-derived bits (Progress color, Table header fill) and the Card
+ * surface treatment (shadow + radius) vary by mode — Clean keeps tight,
+ * low-elevation cards; Glass uses deeper shadows and a larger radius. */
+const buildComponents = (palette: Record<keyof typeof color, string>, mode: ThemeMode): ThemeConfig['components'] => ({
   Button: { borderRadius: radius.md, controlHeight: 36, fontWeight: typography.weight.bold, primaryShadow: 'none' },
-  Card: { borderRadiusLG: radius.lg, boxShadowTertiary: elevation.sm, paddingLG: spacing.lg },
+  Card: {
+    borderRadiusLG: mode === 'dark' ? radius.xl : radius.lg,
+    boxShadowTertiary: mode === 'dark' ? elevationDark.sm : elevation.sm,
+    paddingLG: 18,
+  },
   DatePicker: { borderRadius: radius.md, controlHeight: 36 },
   Drawer: { paddingLG: spacing.lg },
   Input: { borderRadius: radius.md, controlHeight: 36 },
@@ -135,7 +163,7 @@ export const lightTheme: ThemeConfig = {
     motionDurationMid: motion.mid,
     motionDurationSlow: motion.slow,
   },
-  components: buildComponents(color),
+  components: buildComponents(color, 'light'),
 }
 
 /** Dark antd theme — antd dark algorithm + brand/neutral overrides from `colorDark`. */
@@ -159,7 +187,7 @@ export const darkTheme: ThemeConfig = {
     motionDurationMid: motion.mid,
     motionDurationSlow: motion.slow,
   },
-  components: buildComponents(colorDark),
+  components: buildComponents(colorDark, 'dark'),
 }
 
 /** Back-compat alias (was the single light theme). */
@@ -172,11 +200,12 @@ export const getAntdTheme = (mode: ThemeMode): ThemeConfig => (mode === 'dark' ?
 export const cssVariables = (mode: ThemeMode = 'light') => {
   const root = document.documentElement
   const palette = mode === 'dark' ? colorDark : color
+  const elevationSet = mode === 'dark' ? elevationDark : elevation
 
   Object.entries(palette).forEach(([key, value]) => root.style.setProperty(`--${key}-color`, value))
   Object.entries(spacing).forEach(([key, value]) => root.style.setProperty(`--spacing-${key}`, `${value}px`))
   Object.entries(radius).forEach(([key, value]) => root.style.setProperty(`--radius-${key}`, `${value}px`))
-  Object.entries(elevation).forEach(([key, value]) => root.style.setProperty(`--elevation-${key}`, value))
+  Object.entries(elevationSet).forEach(([key, value]) => root.style.setProperty(`--elevation-${key}`, value))
   Object.entries(motion).forEach(([key, value]) => root.style.setProperty(`--motion-${key}`, value))
   Object.entries(typography.size).forEach(([key, value]) => root.style.setProperty(`--font-size-${key}`, `${value}px`))
   Object.entries(typography.weight).forEach(([key, value]) => root.style.setProperty(`--font-weight-${key}`, `${value}`))

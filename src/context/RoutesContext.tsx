@@ -93,14 +93,22 @@ export const RoutesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [routerVersion, setRouterVersion] = useState(0)
   const [routes, setRoutes] = useState<RouteObject[]>(defaultRoutes)
   const [menuRoutes, setMenuRoutes] = useState<AppRoute[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading] = useState(false)
 
   const queryClient = useQueryClient()
 
+  // The Menu re-derives its `routes` array on every render (its buildNavModel
+  // memo depends on a useQueries.combine output whose reference changes each
+  // render), so this is called repeatedly with content-equal routes. Returning
+  // the previous array reference when nothing actually changed prevents an
+  // infinite render loop (setState → re-render → effect → setState → …).
   const updateMenuRoutes = useCallback((newRoutes: AppRoute[]) => {
-    setIsLoading(true)
-    setMenuRoutes(newRoutes)
-    setIsLoading(false)
+    setMenuRoutes((prev) => {
+      const unchanged = prev.length === newRoutes.length
+        && prev.every((route, index) =>
+          route.path === newRoutes[index].path && route.resourceRefId === newRoutes[index].resourceRefId)
+      return unchanged ? prev : newRoutes
+    })
   }, [])
 
   const reloadRoutes = async () => {
