@@ -46,6 +46,7 @@ export const buildNavModel = (
     path: item.path,
     resourceRef: getResourceRef(item.resourceRefId, resourcesRefs),
     resourceRefId: item.resourceRefId,
+    title: item.label,
   }))
 
   return { entries, routes }

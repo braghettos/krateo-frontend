@@ -12,6 +12,8 @@ export interface AppRoute {
   path: string
   resourceRefId: string
   resourceRef?: ResourceRef
+  /** Browser-tab title for this route (e.g. the nav label); set via useDocumentTitle. */
+  title?: string
 }
 
 interface RoutesContextType {

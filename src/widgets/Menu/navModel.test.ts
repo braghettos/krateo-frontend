@@ -27,7 +27,7 @@ describe('Menu navModel', () => {
 
     expect(entries.map((entry) => entry.label)).toEqual(['Home', 'Settings'])
     expect(entries[0]).toEqual({ iconName: 'fa-home', key: '/home', label: 'Home' })
-    expect(routes[0]).toEqual({ path: '/home', resourceRef: resourcesRefs.items[0], resourceRefId: 'home-page' })
+    expect(routes[0]).toEqual({ path: '/home', resourceRef: resourcesRefs.items[0], resourceRefId: 'home-page', title: 'Home' })
   })
 
   it('skips items missing path or label', () => {

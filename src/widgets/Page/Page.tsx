@@ -8,23 +8,19 @@ import type { Page as WidgetType } from './Page.type'
 export type PageWidgetData = WidgetType['spec']['widgetData']
 
 export function Page({ resourcesRefs, uid, widgetData }: WidgetProps<PageWidgetData>) {
-  const { items, title } = widgetData
+  const { items } = widgetData
 
   return (
-    <>
-      {/* https://react.dev/reference/react-dom/components/title */}
-      {title && <title>{title}</title>}
-      <div className={styles.page} key={uid}>
-        {items
-          .map(({ resourceRefId }, index) => {
-            const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
-            if (!endpoint) { return null }
+    <div className={styles.page} key={uid}>
+      {items
+        .map(({ resourceRefId }, index) => {
+          const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
+          if (!endpoint) { return null }
 
-            return <WidgetRenderer key={`${uid}-${index}`} widgetEndpoint={endpoint} />
-          })
-          .filter(Boolean)
-        }
-      </div>
-    </>
+          return <WidgetRenderer key={`${uid}-${index}`} widgetEndpoint={endpoint} />
+        })
+        .filter(Boolean)
+      }
+    </div>
   )
 }

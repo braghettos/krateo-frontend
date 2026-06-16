@@ -4,6 +4,7 @@ import { useLocation, useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
 import { useRoutesContext } from '../../context/RoutesContext'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { useLoadRoutes } from '../../hooks/useLoadRoutes'
 import Page404 from '../../pages/Page404'
 import Drawer from '../../widgets/Drawer'
@@ -26,6 +27,8 @@ export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: 
   useLoadRoutes()
   const queryParamWidgetEndpoint = searchParams.get('widgetEndpoint')
   const currentRoute = menuRoutes.find(({ path }) => path === location.pathname)
+  // Route-driven browser-tab title (relocated off the Page widget's <title>).
+  useDocumentTitle(currentRoute?.title)
   const widgetEndpoint = queryParamWidgetEndpoint || currentRoute?.resourceRef?.path || defaultWidgetEndpoint || ''
 
   useEffect(() => {
