@@ -62,6 +62,14 @@ export interface List {
         subPrimaryText?: string
         subSecondaryText?: string
         icon?: string
+        /**
+         * leading-indicator style: avatar (solid disc + glyph, default), tile (soft-tint rounded square + glyph), dot (small status dot + halo)
+         */
+        iconVariant?: 'avatar' | 'tile' | 'dot'
+        /**
+         * render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text
+         */
+        secondaryTextAsTag?: boolean
         color?: {
           value?: string
           map?: {
@@ -113,6 +121,20 @@ export interface List {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

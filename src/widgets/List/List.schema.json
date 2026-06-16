@@ -65,6 +65,8 @@
                 "subPrimaryText": { "type": "string" },
                 "subSecondaryText": { "type": "string" },
                 "icon": { "type": "string" },
+                "iconVariant": { "type": "string", "enum": ["avatar", "tile", "dot"], "description": "leading-indicator style: avatar (solid disc + glyph, default), tile (soft-tint rounded square + glyph), dot (small status dot + halo)" },
+                "secondaryTextAsTag": { "type": "boolean", "description": "render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text" },
                 "color": {
                   "type": "object",
                   "additionalProperties": false,
@@ -130,6 +132,52 @@
             "properties": {
               "forPath": { "type": "string" },
               "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
             },
             "additionalProperties": false
           }

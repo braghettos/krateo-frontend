@@ -1,7 +1,11 @@
+import { Avatar } from 'antd'
 import { useEffect } from 'react'
 import { Outlet } from 'react-router'
 
+import logoDark from '../../assets/images/logo_big.svg'
+import logoLight from '../../assets/images/logo_black.png'
 import { useConfigContext } from '../../context/ConfigContext'
+import { useThemeMode } from '../../context/ThemeModeContext'
 import { useLoadRoutes } from '../../hooks/useLoadRoutes'
 import Drawer from '../../widgets/Drawer'
 import Modal from '../../widgets/Modal'
@@ -23,6 +27,29 @@ const HeaderChrome = () => (
   </>
 )
 
+/** Brand block pinned to the top of the Sider. The bundled logo is white, so
+ * it's swapped for the dark variant on the light (Enterprise) surface. */
+const Brand = () => {
+  const { mode } = useThemeMode()
+  return (
+    <div className={styles.brand}>
+      <img alt='Krateo' className={styles.brandLogo} src={mode === 'dark' ? logoDark : logoLight} />
+    </div>
+  )
+}
+
+/** User block pinned to the bottom of the Sider (avatar + name from the token). */
+const SiderFooter = () => {
+  const { user } = JSON.parse(localStorage.getItem('K_user') || '{}') as { user?: { avatarURL?: string; displayName?: string; username?: string } }
+  const name = user?.displayName || user?.username || ''
+  return (
+    <div className={styles.siderFooter}>
+      <Avatar size={30} src={user?.avatarURL}>{name.slice(0, 1).toUpperCase()}</Avatar>
+      <span className={styles.siderFooterName}>{name}</span>
+    </div>
+  )
+}
+
 /**
  * The persistent app shell, as a React Router layout route. The visible chrome is
  * the server-driven `Layout` widget loaded from config `INIT` (its Sider hosts the
@@ -43,7 +70,7 @@ export const ShellRoute = () => {
   }, [])
 
   return (
-    <ShellSlotsProvider value={{ content: <Outlet />, header: <HeaderChrome /> }}>
+    <ShellSlotsProvider value={{ brand: <Brand />, content: <Outlet />, header: <HeaderChrome />, siderFooter: <SiderFooter /> }}>
       <WidgetRenderer key='shell' widgetEndpoint={config!.api.INIT} />
       <Drawer />
       <Modal />

@@ -6,3 +6,34 @@
   text-align: right;
   white-space: nowrap;
 }
+
+/* Leading status dot (event/status feeds): small solid disc + soft halo. */
+.dot {
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  height: 10px;
+  margin-top: 6px;
+  width: 10px;
+}
+
+/* Leading icon tile (catalog rows): soft-tint rounded square + colored glyph. */
+.tile {
+  align-items: center;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 14px;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+/* Right-aligned category pill (soft-tint, borderless). */
+.tag {
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  padding: 2px 10px;
+}

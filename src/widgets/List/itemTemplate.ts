@@ -24,9 +24,18 @@ export interface ItemTemplate {
   subSecondaryText?: string
   /** Icon name (font awesome), or a `{path}`. */
   icon?: string
+  /**
+   * How the leading indicator is presented:
+   * - `avatar` (default): solid colored disc + white glyph;
+   * - `tile`: soft-tint rounded square + colored glyph (catalog/list rows);
+   * - `dot`: small solid status dot with a soft halo, no glyph (event/status feeds).
+   */
+  iconVariant?: 'avatar' | 'tile' | 'dot'
   color?: ColorSpec
   /** Per-slot value formatting; `datetime` runs the resolved value through formatISODate. */
   formats?: Partial<Record<RowSlot, 'text' | 'datetime'>>
+  /** Render `secondaryText` as a soft-tint Tag pill (e.g. a category) rather than plain text. */
+  secondaryTextAsTag?: boolean
 }
 
 export interface ResolvedRow {

@@ -33,6 +33,7 @@
   :global(.ant-menu-item-selected) {
     background-color: var(--menuitembg-color);
     border-radius: 0;
+    box-shadow: inset 2px 0 0 var(--primary-color);
     color: var(--primary-color);
     font-weight: var(--font-weight-bold);
 

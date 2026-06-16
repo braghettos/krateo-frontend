@@ -12,3 +12,37 @@
   flex-shrink: 0;
   gap: var(--spacing-md);
 }
+
+/* Brand block at the top of the Sider. */
+.brand {
+  align-items: center;
+  border-bottom: 1px solid var(--line-color);
+  display: flex;
+  flex-shrink: 0;
+  height: 64px;
+  padding: 0 var(--spacing-md);
+}
+
+.brandLogo {
+  height: 30px;
+  width: auto;
+}
+
+/* User block pinned to the bottom of the Sider. */
+.siderFooter {
+  align-items: center;
+  border-top: 1px solid var(--line-color);
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.siderFooterName {
+  color: var(--text-color);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

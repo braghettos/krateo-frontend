@@ -56,7 +56,11 @@ const Layout = ({ resourcesRefs, widgetData }: WidgetProps<LayoutWidgetData>) =>
         theme={sider.theme}
         width={sider.width}
       >
-        {slot(sider.resourceRefId, resourcesRefs)}
+        <div className={styles.sider}>
+          {shell.brand}
+          <div className={styles.siderBody}>{slot(sider.resourceRefId, resourcesRefs)}</div>
+          {shell.siderFooter}
+        </div>
       </Sider>
       <AntdLayout>{regions}</AntdLayout>
     </AntdLayout>

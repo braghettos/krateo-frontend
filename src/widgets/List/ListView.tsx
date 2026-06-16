@@ -1,6 +1,6 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Avatar, List as AntdList, Typography } from 'antd'
+import { Avatar, List as AntdList, Tag, Typography } from 'antd'
 import type { ListGridType } from 'antd/es/list'
 import type { ReactNode } from 'react'
 
@@ -59,6 +59,18 @@ export const ListView = ({
         if (!itemTemplate) { return null }
 
         const row = resolveRow(itemTemplate, item)
+        const colorCode = getColorCode(row.color)
+        const soft = `color-mix(in srgb, ${colorCode} 14%, var(--light-color))`
+
+        let avatar: ReactNode
+        if (itemTemplate.iconVariant === 'dot') {
+          avatar = <span className={styles.dot} style={{ backgroundColor: colorCode, boxShadow: `0 0 0 3px ${soft}` }} />
+        } else if (itemTemplate.iconVariant === 'tile' && row.icon) {
+          avatar = <span className={styles.tile} style={{ backgroundColor: soft, color: colorCode }}><FontAwesomeIcon icon={row.icon as IconProp} /></span>
+        } else if (row.icon) {
+          avatar = <Avatar icon={<FontAwesomeIcon icon={row.icon as IconProp} />} style={{ backgroundColor: colorCode }} />
+        }
+
         return (
           <AntdList.Item
             extra={
@@ -66,7 +78,11 @@ export const ListView = ({
                 ? (
                   <div className={styles.extra}>
                     {row.subSecondaryText && <Typography.Text type='secondary'>{row.subSecondaryText}</Typography.Text>}
-                    {row.secondaryText && <Typography.Text>{row.secondaryText}</Typography.Text>}
+                    {row.secondaryText && (
+                      itemTemplate.secondaryTextAsTag
+                        ? <Tag className={styles.tag} style={{ backgroundColor: soft, color: colorCode }}>{row.secondaryText}</Tag>
+                        : <Typography.Text>{row.secondaryText}</Typography.Text>
+                    )}
                   </div>
                 )
                 : undefined
@@ -74,7 +90,7 @@ export const ListView = ({
             key={`${rowKey}-${index}`}
           >
             <AntdList.Item.Meta
-              avatar={row.icon ? <Avatar icon={<FontAwesomeIcon icon={row.icon as IconProp} />} style={{ backgroundColor: getColorCode(row.color) }} /> : undefined}
+              avatar={avatar}
               description={row.subPrimaryText || undefined}
               title={row.primaryText}
             />

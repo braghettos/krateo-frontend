@@ -15,10 +15,10 @@ export type EventListWidgetData = WidgetType['spec']['widgetData']
 const EVENT_ITEM_TEMPLATE: ItemTemplate = {
   color: { default: 'gray', map: { Normal: 'blue', Warning: 'orange' }, value: '{type}' },
   formats: { secondaryText: 'datetime' },
-  icon: 'fa-ellipsis-h',
-  primaryText: 'name: {involvedObject.name}  ·  namespace: {involvedObject.namespace}  ·  kind: {involvedObject.kind}  ·  apiVersion: {involvedObject.apiVersion}',
+  iconVariant: 'dot',
+  primaryText: '{message}',
   secondaryText: '{lastTimestamp|firstTimestamp|eventTime}',
-  subPrimaryText: '{message}',
+  subPrimaryText: '{involvedObject.kind}  ·  {involvedObject.namespace}',
   subSecondaryText: '{reason}',
 }
 
