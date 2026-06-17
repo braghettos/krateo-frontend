@@ -244,6 +244,9 @@ export const useHandleAction = () => {
             let eventReceived = false
             if (onEventNavigateTo) {
               const eventsEndpoint = `${config!.api.EVENTS_PUSH_API_BASE_URL}/notifications`
+              // `timeout` is optional; without a default, `timeout! * 1000` is NaN and the
+              // setTimeout fires immediately → an instant false timeout. Default to 30s.
+              const eventTimeoutSeconds = onEventNavigateTo.timeout ?? 30
 
               const eventSource = new EventSource(eventsEndpoint, {
                 withCredentials: false,
@@ -271,13 +274,13 @@ export const useHandleAction = () => {
                   })
                 }
                 message.destroy()
-              }, onEventNavigateTo.timeout! * 1000)
+              }, eventTimeoutSeconds * 1000)
 
               const loadingMessage = onEventNavigateTo.loadingMessage
                 ? await resolveJq(onEventNavigateTo.loadingMessage, { json: payload, response: jsonResponse })
                 : 'Waiting for resource and redirecting...'
 
-              message.loading(loadingMessage, onEventNavigateTo.timeout)
+              message.loading(loadingMessage, eventTimeoutSeconds)
 
               // eslint-disable-next-line @typescript-eslint/no-misused-promises
               eventSource.addEventListener('krateo', async (event) => {
@@ -379,8 +382,12 @@ export const useHandleAction = () => {
               method: verb,
             })
 
+            // A successful DELETE (and other 204/empty responses) carries no body;
+            // res.json() would throw on empty input and surface a false "Unhandled error".
+            // Parse defensively: empty body → {} (a valid, all-optional RestApiResponse).
+            const responseText = await res.text()
             // eslint-disable-next-line require-atomic-updates
-            jsonResponse = (await res.json()) as RestApiResponse
+            jsonResponse = responseText ? (JSON.parse(responseText) as RestApiResponse) : ({} as RestApiResponse)
 
             setIsActionLoading(false)
 
@@ -428,7 +435,10 @@ export const useHandleAction = () => {
                 }
               })()
 
-              let description = `Successfully ${actionName} ${jsonResponse.metadata?.name} in ${jsonResponse.metadata?.namespace}`
+              // Empty responses (e.g. DELETE 204) carry no metadata — fall back to the request payload's.
+              const resourceName = jsonResponse.metadata?.name ?? payload?.metadata?.name
+              const resourceNamespace = jsonResponse.metadata?.namespace ?? payload?.metadata?.namespace
+              let description = `Successfully ${actionName} ${resourceName} in ${resourceNamespace}`
               // eslint-disable-next-line max-depth
               if (successMessage) {
                 description = successMessage.startsWith('${')
@@ -464,7 +474,7 @@ export const useHandleAction = () => {
     } catch (error) {
       message.destroy()
       notification.error({
-        description: `Unhandled error: ${JSON.stringify(error)}`,
+        description: `Unhandled error: ${error instanceof Error ? error.message : String(error)}`,
         message: 'Error while executing the action',
         placement: 'bottomLeft',
       })
