@@ -27,7 +27,7 @@ const Row = ({ resourcesRefs, uid, widgetData }: WidgetProps<RowWidgetData>) => 
     <div className={styles.row}>
       <AntdRow
         align={alignment ?? 'middle'}
-        gutter={{ lg: 32, md: 24, sm: 16, xs: 8 }}
+        gutter={[16, 16]}
         key={uid}
         wrap
       >

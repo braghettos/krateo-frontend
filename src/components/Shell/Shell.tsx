@@ -2,10 +2,7 @@ import { Avatar, Input } from 'antd'
 import { useEffect } from 'react'
 import { Outlet } from 'react-router'
 
-import logoDark from '../../assets/images/logo_big.svg'
-import logoLight from '../../assets/images/logo_black.png'
 import { useConfigContext } from '../../context/ConfigContext'
-import { useThemeMode } from '../../context/ThemeModeContext'
 import { useLoadRoutes } from '../../hooks/useLoadRoutes'
 import Drawer from '../../widgets/Drawer'
 import Modal from '../../widgets/Modal'
@@ -31,16 +28,15 @@ const HeaderChrome = () => (
   </>
 )
 
-/** Brand block pinned to the top of the Sider. The bundled logo is white, so
- * it's swapped for the dark variant on the light (Enterprise) surface. */
-const Brand = () => {
-  const { mode } = useThemeMode()
-  return (
-    <div className={styles.brand}>
-      <img alt='Krateo' className={styles.brandLogo} src={mode === 'dark' ? logoDark : logoLight} />
-    </div>
-  )
-}
+/** Compact brand lockup pinned to the top of the Sider — a gradient mark + the
+ * wordmark, matching the mockup (the bundled SVG is the full marketing logo, too
+ * large/heavy for the app sidebar). */
+const Brand = () => (
+  <div className={styles.brand}>
+    <span className={styles.brandMark}>K</span>
+    <span className={styles.brandName}>Krateo</span>
+  </div>
+)
 
 /** User block pinned to the bottom of the Sider (avatar + name from the token). */
 const SiderFooter = () => {

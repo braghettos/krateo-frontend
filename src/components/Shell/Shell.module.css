@@ -17,19 +17,36 @@
   gap: var(--spacing-md);
 }
 
-/* Brand block at the top of the Sider. */
+/* Compact brand lockup at the top of the Sider: gradient mark + wordmark. */
 .brand {
   align-items: center;
   border-bottom: 1px solid var(--line-color);
   display: flex;
   flex-shrink: 0;
-  height: 64px;
-  padding: 0 var(--spacing-md);
+  gap: 10px;
+  height: 60px;
+  padding: 0 18px;
 }
 
-.brandLogo {
-  height: 30px;
-  width: auto;
+.brandMark {
+  align-items: center;
+  background: linear-gradient(135deg, var(--menubgstart-color), var(--menubgend-color));
+  border-radius: var(--radius-md);
+  color: #fff;
+  display: flex;
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: var(--font-weight-bolder);
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.brandName {
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: var(--font-weight-bolder);
+  letter-spacing: -0.02em;
 }
 
 /* User block pinned to the bottom of the Sider. */

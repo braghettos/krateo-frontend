@@ -98,24 +98,16 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       classNames={{ body: styles.bodyWrapper, header: styles.header, title: styles.title }}
       cover={coverEndpoint ? <WidgetRenderer widgetEndpoint={coverEndpoint} /> : undefined}
       extra={
-        (icon || extra || tooltip)
+        (extra || tooltip)
           ? (
-            <div className={styles.extra}>
+            <>
               {extra}
               {tooltip && (
                 <Tooltip title={tooltip}>
                   <Button icon={<QuestionCircleOutlined />} type='text' />
                 </Tooltip>
               )}
-              {icon && (
-                <span
-                  className={styles.iconBox}
-                  style={{ backgroundColor: `color-mix(in srgb, ${getColorCode(icon.color)} 14%, var(--light-color))`, color: getColorCode(icon.color) }}
-                >
-                  <FontAwesomeIcon icon={icon.name as IconProp} />
-                </span>
-              )}
-            </div>
+            </>
           )
           : undefined
       }
@@ -138,6 +130,14 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       }
       variant={variant}
     >
+      {icon && (
+        <span
+          className={styles.iconFloat}
+          style={{ backgroundColor: `color-mix(in srgb, ${getColorCode(icon.color)} 14%, var(--light-color))`, color: getColorCode(icon.color) }}
+        >
+          <FontAwesomeIcon icon={icon.name as IconProp} />
+        </span>
+      )}
       <div className={styles.content}>
         {headerLeft && panelHeader}
         <div className={styles.body}>

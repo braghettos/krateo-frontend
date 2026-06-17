@@ -1,6 +1,7 @@
 .panel {
   display: flex;
   flex-direction: column;
+  position: relative;
 
   &.clickable {
     cursor: pointer;
@@ -16,13 +17,13 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     min-width: 0;
 
     .body {
       display: flex;
       flex-direction: column;
-      gap: var(--spacing-md);
+      gap: var(--spacing-sm);
       min-width: 0;
     }
 
@@ -106,23 +107,20 @@
     }
   }
 
-  /* Card header `extra` slot (top-right): optional tooltip button + stat icon. */
-  .extra {
-    align-items: center;
-    display: flex;
-    gap: var(--spacing-sm);
-  }
-
-  /* Small soft-tint rounded-square icon in the top-right of the card header
-     (enterprise stat-card treatment). Colors are set inline per icon. */
-  .iconBox {
+  /* Small soft-tint rounded-square icon floated into the card's top-right corner
+     (enterprise stat-card treatment) — shares the label's row without forcing a
+     separate Card header. Colors are set inline per icon. */
+  .iconFloat {
     align-items: center;
     border-radius: var(--radius-md);
     display: flex;
-    flex-shrink: 0;
     font-size: 15px;
     height: 34px;
     justify-content: center;
+    position: absolute;
+    right: 18px;
+    top: 18px;
     width: 34px;
+    z-index: 1;
   }
 }

@@ -2,11 +2,11 @@
   height: 100%;
 }
 
-/* Content: scrollable, padded body. */
+/* Content: scrollable, padded body (mockup .content { padding: 26px 30px }). */
 .content {
   box-sizing: border-box;
   overflow: auto;
-  padding: var(--spacing-lg) var(--spacing-md);
+  padding: 26px 30px;
 }
 
 /* Sider: a clean surface panel separated from content by a hairline border.
