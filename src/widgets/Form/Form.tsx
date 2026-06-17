@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Form as AntdForm, Result, Space, Spin } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import dayjs from 'dayjs'
+import type { JSONSchema4 } from 'json-schema'
 import { useEffect, useId, useRef } from 'react'
 
 import WidgetRenderer from '../../components/WidgetRenderer'
@@ -14,6 +15,8 @@ import { useDrawerContext } from '../Drawer/DrawerContext'
 
 import styles from './Form.module.css'
 import type { Form as WidgetType } from './Form.type'
+import { SchemaFields } from './SchemaFields'
+import { getDefaultsFromSchema } from './utils'
 
 export type FormWidgetData = WidgetType['spec']['widgetData']
 
@@ -71,7 +74,8 @@ const FormExtra = ({ buttonConfig, disabled = false, form, loading }: FormExtraP
  * in `widgetDataTemplate` that populates `items`.
  */
 const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>) => {
-  const { actions, buttonConfig, disabled, initialValues, items, layout, size, submitActionId } = widgetData
+  const { actions, buttonConfig, disabled, initialValues, items, layout, propertiesToHide, schema, size, submitActionId } = widgetData
+  const jsonSchema = schema as JSONSchema4 | undefined
   const { insideDrawer, setDrawerData } = useDrawerContext()
   const alreadySetDrawerData = useRef(false)
 
@@ -122,12 +126,12 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     await handleAction(action, resourcesRefs, values, widget)
   }
 
-  if (!items?.length) {
+  if (!jsonSchema?.properties && !items?.length) {
     return (
       <div className={styles.message}>
         <Result
           status='error'
-          subTitle={`The Form widget has no items (form-control widgets) to render`}
+          subTitle={`The Form widget has nothing to render — provide a \`schema\` (schema-driven) or \`items\` (composable form-control widgets)`}
           title='Error while rendering widget'
         />
       </div>
@@ -150,15 +154,17 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       <AntdForm
         disabled={disabled}
         id={formId}
-        initialValues={initialValues}
+        initialValues={jsonSchema ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues } : initialValues}
         layout={layout}
         onFinish={(formValues) => { void onSubmit(formValues as Record<string, unknown>) }}
         size={size}
       >
-        {items.map(({ resourceRefId }, index) => {
-          const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
-          return endpoint ? <WidgetRenderer key={`${formId}-${index}`} widgetEndpoint={endpoint} /> : null
-        })}
+        {jsonSchema?.properties
+          ? <SchemaFields hide={propertiesToHide} schema={jsonSchema} />
+          : items?.map(({ resourceRefId }, index) => {
+            const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
+            return endpoint ? <WidgetRenderer key={`${formId}-${index}`} widgetEndpoint={endpoint} /> : null
+          })}
       </AntdForm>
 
       <div className={styles.extra}>

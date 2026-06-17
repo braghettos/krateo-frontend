@@ -251,6 +251,14 @@ export interface Form {
         resourceRefId: string
       }[]
       /**
+       * JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields — the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema.
+       */
+      schema?: Record<string, unknown>
+      /**
+       * top-level schema property names to omit from the schema-driven form
+       */
+      propertiesToHide?: string[]
+      /**
        * the id of the action to be called when the form is submitted
        */
       submitActionId: string
