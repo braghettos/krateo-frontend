@@ -31,7 +31,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { MAX_WIDGET_FETCH_RETRIES, shouldRetryWidgetFetch, WidgetFetchError, widgetFetchRetryDelay } from './useWidgetQuery'
+import { buildExtrasParam, MAX_WIDGET_FETCH_RETRIES, shouldRetryWidgetFetch, WidgetFetchError, widgetFetchRetryDelay } from './useWidgetQuery'
 
 /**
  * Pure replica of ScrollPagination.tsx:25-29 — the intersection-observer
@@ -217,5 +217,35 @@ describe('initial-render retry — transient failures retry, permanent ones do n
     expect(widgetFetchRetryDelay(2)).toBe(2800)
     // capped
     expect(widgetFetchRetryDelay(10)).toBe(5000)
+  })
+})
+
+describe('buildExtrasParam — request/user values forwarded into the RA jq dict', () => {
+  const sp = (query: string) => new URLSearchParams(query)
+
+  it('returns empty string when there is no URL query and no identity', () => {
+    // Empty → '' (not '{}') so the param and the queryKey stay absent/stable.
+    expect(buildExtrasParam(sp(''))).toBe('')
+  })
+
+  it('forwards the browser URL query (server-side search term)', () => {
+    expect(buildExtrasParam(sp('q=foo'))).toBe('{"q":"foo"}')
+  })
+
+  it('forwards the login displayName when present (greeting)', () => {
+    expect(buildExtrasParam(sp(''), 'Diego')).toBe('{"displayName":"Diego"}')
+  })
+
+  it('merges URL query and identity', () => {
+    expect(buildExtrasParam(sp('q=foo'), 'Diego')).toBe('{"q":"foo","displayName":"Diego"}')
+  })
+
+  it('identity overrides a spoofed displayName URL param', () => {
+    // A URL like ?displayName=evil must NOT override the authenticated identity.
+    expect(buildExtrasParam(sp('displayName=evil'), 'Diego')).toBe('{"displayName":"Diego"}')
+  })
+
+  it('is stable for the same inputs (so the react-query key does not churn)', () => {
+    expect(buildExtrasParam(sp('q=foo'), 'Diego')).toBe(buildExtrasParam(sp('q=foo'), 'Diego'))
   })
 })

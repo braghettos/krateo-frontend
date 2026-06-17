@@ -2,10 +2,12 @@
 /* this rules conflicts with react-query ordering required for correct type inference */
 
 import { useInfiniteQuery, useIsFetching } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../context/ConfigContext'
 import type { Widget } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
+import { getUserInfo } from '../utils/getUserInfo'
 
 function parseNumberParam(param: string | null) {
   const parsed = param ? parseInt(param) : undefined
@@ -43,8 +45,28 @@ export const shouldRetryWidgetFetch = (failureCount: number, error: unknown): bo
 /** Exponential backoff (capped) between widget-fetch retries. */
 export const widgetFetchRetryDelay = (attemptIndex: number): number => Math.min(700 * 2 ** attemptIndex, 5000)
 
+/**
+ * Build the `?extras=` JSON envelope snowplow forwards into the RESTAction jq dict
+ * (its `ParseExtras` reads only this query param; the caller's identity is NOT
+ * otherwise exposed to RA jq). Sources: the current browser URL query
+ * (e.g. /search?q=… → `extras.q`, for server-side search) + the login-provided
+ * `displayName` (there is no runtime /me; for the greeting). Identity overrides any
+ * URL key of the same name. Returns '' when empty so the param — and the react-query
+ * key it feeds — stay stable (same inputs → same string, no spurious refetch).
+ */
+export const buildExtrasParam = (searchParams: URLSearchParams, displayName?: string): string => {
+  const extras: Record<string, unknown> = Object.fromEntries(searchParams.entries())
+  if (displayName) { extras.displayName = displayName }
+  return Object.keys(extras).length > 0 ? JSON.stringify(extras) : ''
+}
+
 export const useWidgetQuery = (widgetEndpoint: string) => {
   const { config } = useConfigContext()
+  const [searchParams] = useSearchParams()
+  // Extras envelope snowplow forwards into the RESTAction jq dict (`?extras=<json>`):
+  // browser URL query (search `q`) + login `displayName` (greeting). See buildExtrasParam.
+  const extrasParam = buildExtrasParam(searchParams, getUserInfo().displayName)
+
   const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${widgetEndpoint}`
   const requestUrl = new URL(widgetFullUrl)
 
@@ -64,6 +86,9 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
     }
     if (typeof perPage === 'number') {
       requestUrl.searchParams.set('perPage', perPage.toString())
+    }
+    if (extrasParam) {
+      requestUrl.searchParams.set('extras', extrasParam)
     }
 
     const urlString = requestUrl.toString()
@@ -90,7 +115,7 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   }
 
   const queryResult = useInfiniteQuery({
-    queryKey: ['widgets', widgetEndpoint],
+    queryKey: ['widgets', widgetEndpoint, extrasParam],
     queryFn: ({ pageParam }) => fetchWidget(pageParam),
     // Override the global `retry: false` for widget data: a backend that is not
     // ready yet should keep showing a loading state and retry, not flash the
