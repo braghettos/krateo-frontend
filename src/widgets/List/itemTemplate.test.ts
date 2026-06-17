@@ -87,4 +87,14 @@ describe('itemTemplate — resolveRow', () => {
     // secondaryText falls back to firstTimestamp and is datetime-formatted
     expect(row.secondaryText).toBe(formatISODate('2026-06-13T09:30:00Z', true))
   })
+
+  it('resolves navigateTo per-item (clickable-row / catalog binding)', () => {
+    const tpl: ItemTemplate = { navigateTo: '/marketplace/{namespace}/{name}/new', primaryText: '{title}' }
+    const row = resolveRow(tpl, { name: 'rancher', namespace: 'cattle-system', title: 'Rancher' })
+    expect(row.navigateTo).toBe('/marketplace/cattle-system/rancher/new')
+  })
+
+  it('leaves navigateTo empty when the template is absent (non-clickable row)', () => {
+    expect(resolveRow({ primaryText: '{x}' }, { x: 'a' }).navigateTo).toBe('')
+  })
 })

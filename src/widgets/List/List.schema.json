@@ -67,6 +67,7 @@
                 "icon": { "type": "string" },
                 "iconVariant": { "type": "string", "enum": ["avatar", "tile", "dot"], "description": "leading-indicator style: avatar (solid disc + glyph, default), tile (soft-tint rounded square + glyph), dot (small status dot + halo)" },
                 "secondaryTextAsTag": { "type": "boolean", "description": "render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text" },
+                "navigateTo": { "type": "string", "description": "per-item navigation target ({dot.path} template, e.g. {link}); when it resolves non-empty the row becomes clickable and navigates there (SPA route)" },
                 "color": {
                   "type": "object",
                   "additionalProperties": false,

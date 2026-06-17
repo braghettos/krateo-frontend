@@ -36,6 +36,14 @@ export interface ItemTemplate {
   formats?: Partial<Record<RowSlot, 'text' | 'datetime' | 'relative'>>
   /** Render `secondaryText` as a soft-tint Tag pill (e.g. a category) rather than plain text. */
   secondaryTextAsTag?: boolean
+  /**
+   * Per-item navigation target — a `{path}` template resolved against the item
+   * (e.g. `{link}` or `/compositions/{metadata.namespace}/{metadata.name}`). When it
+   * resolves non-empty the row becomes clickable and navigates there (SPA route).
+   * The per-row action slice of the action envelope — drives clickable catalogs
+   * (Marketplace tiles → create route) and search results.
+   */
+  navigateTo?: string
 }
 
 export interface ResolvedRow {
@@ -45,6 +53,8 @@ export interface ResolvedRow {
   subSecondaryText: string
   icon: string
   color: string
+  /** Resolved navigation target (empty string when the row is not clickable). */
+  navigateTo: string
 }
 
 export const resolvePath = (item: unknown, path: string): unknown =>
@@ -85,6 +95,7 @@ const resolveSlot = (template: ItemTemplate, slot: RowSlot, item: unknown): stri
 export const resolveRow = (template: ItemTemplate, item: unknown): ResolvedRow => ({
   color: resolveColor(template.color, item),
   icon: interpolate(template.icon, item),
+  navigateTo: interpolate(template.navigateTo, item),
   primaryText: resolveSlot(template, 'primaryText', item),
   secondaryText: resolveSlot(template, 'secondaryText', item),
   subPrimaryText: resolveSlot(template, 'subPrimaryText', item),

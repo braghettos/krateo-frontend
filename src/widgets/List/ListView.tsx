@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Avatar, List as AntdList, Tag, Typography } from 'antd'
 import type { ListGridType } from 'antd/es/list'
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router'
 
 import { WidgetEmpty } from '../../components/WidgetStates'
 import { getColorCode } from '../../theme/palette'
@@ -37,6 +38,8 @@ interface ListViewProps {
 export const ListView = ({
   bordered, footer, grid, header, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, rowKey, size, split,
 }: ListViewProps) => {
+  const navigate = useNavigate()
+
   if (!loading && !items.length) {
     return <WidgetEmpty />
   }
@@ -73,6 +76,7 @@ export const ListView = ({
 
         return (
           <AntdList.Item
+            className={row.navigateTo ? styles.clickable : undefined}
             extra={
               (row.secondaryText || row.subSecondaryText)
                 ? (
@@ -88,6 +92,7 @@ export const ListView = ({
                 : undefined
             }
             key={`${rowKey}-${index}`}
+            onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
           >
             <AntdList.Item.Meta
               avatar={avatar}

@@ -70,6 +70,10 @@ export interface List {
          * render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text
          */
         secondaryTextAsTag?: boolean
+        /**
+         * per-item navigation target ({dot.path} template, e.g. {link}); when it resolves non-empty the row becomes clickable and navigates there (SPA route)
+         */
+        navigateTo?: string
         color?: {
           value?: string
           map?: {
