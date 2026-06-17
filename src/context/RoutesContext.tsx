@@ -13,6 +13,10 @@ export interface AppRoute {
   path: string
   resourceRefId: string
   resourceRef?: ResourceRef
+  /** Resolved content endpoint — legacy resourceRef path or the convention
+   * `flexes/page-<slug>` (see navModel.resolveContentEndpoint). Drives the
+   * param-capable registered React-Router route. */
+  endpoint?: string
   /** Browser-tab title for this route (e.g. the nav label); set via useDocumentTitle. */
   title?: string
 }

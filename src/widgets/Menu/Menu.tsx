@@ -8,7 +8,7 @@ import { useLocation, useNavigate } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
 import type { AppRoute } from '../../context/RoutesContext'
-import { useRoutesContext } from '../../context/RoutesContext'
+import { createRoute, useRoutesContext } from '../../context/RoutesContext'
 import type { ResourceRef, WidgetProps } from '../../types/Widget'
 import { getAccessToken } from '../../utils/getAccessToken'
 import type { NavMenuItem } from '../NavMenuItem/NavMenuItem.type'
@@ -32,8 +32,9 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
   const { items: navItems = [], mode, theme } = widgetData
   const location = useLocation()
   const navigate = useNavigate()
-  const { menuRoutes, updateMenuRoutes } = useRoutesContext()
+  const { menuRoutes, registerRoutes, updateMenuRoutes } = useRoutesContext()
   const { config } = useConfigContext()
+  const namespace = config?.params.FRONTEND_NAMESPACE
 
   // Folded form: nav data is inline on widgetData.items. Otherwise the items are
   // NavMenuItem CR references (back-compat) resolved by fetching those CRs.
@@ -65,7 +66,7 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
   // Unified nav model — from inline items (folded) or from fetched NavMenuItem CRs.
   const { entries, routes } = useMemo<{ entries: NavEntry[]; routes: AppRoute[] }>(() => {
     if (inline) {
-      return buildNavModel(navItems as InlineNavItem[], resourcesRefs)
+      return buildNavModel(navItems as InlineNavItem[], resourcesRefs, namespace)
     }
 
     if (!loadedAllMenuItems) {
@@ -74,9 +75,11 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
 
     const valid = navMenuItems.filter((item): item is NavMenuItemResponse => !!item)
 
+    // Route-only (label-less) NavMenuItems register a route but render NO sidebar
+    // entry (e.g. /search) — keeping the INIT nav the single route source, no routes-loader.
     const entriesFromCrs: NavEntry[] = valid.flatMap((item) => {
       const data = item.status?.widgetData
-      return data ? [{ iconName: data.icon, key: data.path, label: data.label }] : []
+      return data?.label ? [{ iconName: data.icon, key: data.path, label: data.label }] : []
     })
 
     const routesFromCrs = valid
@@ -88,19 +91,22 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
         const routeResourceRef = refs.items.find(({ id }) => id === data.resourceRefId)
         if (!routeResourceRef) { return null }
 
-        return { path: data.path, resourceRef: { ...routeResourceRef, payload: {} }, resourceRefId: data.resourceRefId }
+        return { endpoint: routeResourceRef.path, path: data.path, resourceRef: { ...routeResourceRef, payload: {} }, resourceRefId: data.resourceRefId }
       })
       .filter(Boolean) as AppRoute[]
 
     return { entries: entriesFromCrs, routes: routesFromCrs }
-  }, [inline, navItems, resourcesRefs, loadedAllMenuItems, navMenuItems])
+  }, [inline, navItems, resourcesRefs, namespace, loadedAllMenuItems, navMenuItems])
 
   useEffect(() => {
     if (routes.length > 0) {
       localStorage.setItem('routes', JSON.stringify(routes))
       updateMenuRoutes(routes)
+      // Register param-capable React-Router routes from the nav — the INIT route
+      // source that replaces the routes-loader. registerRoutes dedups by path.
+      registerRoutes(routes.flatMap((route) => (route.endpoint ? [createRoute({ endpoint: route.endpoint, path: route.path })] : [])))
     }
-  }, [routes, updateMenuRoutes])
+  }, [routes, updateMenuRoutes, registerRoutes])
 
   useEffect(() => {
     if (location.pathname === '/' && menuRoutes.length > 0) {

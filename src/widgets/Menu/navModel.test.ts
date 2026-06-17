@@ -27,12 +27,34 @@ describe('Menu navModel', () => {
 
     expect(entries.map((entry) => entry.label)).toEqual(['Home', 'Settings'])
     expect(entries[0]).toEqual({ iconName: 'fa-home', key: '/home', label: 'Home' })
-    expect(routes[0]).toEqual({ path: '/home', resourceRef: resourcesRefs.items[0], resourceRefId: 'home-page', title: 'Home' })
+    expect(routes[0]).toEqual({ endpoint: '/call?resource=flexes&name=home', path: '/home', resourceRef: resourcesRefs.items[0], resourceRefId: 'home-page', title: 'Home' })
   })
 
-  it('skips items missing path or label', () => {
+  it('skips items missing a path (no path → neither route nor entry)', () => {
     const { entries, routes } = buildNavModel([{ label: 'Home', resourceRefId: 'home-page' }], resourcesRefs)
     expect(entries).toHaveLength(0)
     expect(routes).toHaveLength(0)
+  })
+
+  it('derives a flexes/page-<slug> endpoint when an item has no resourceRefId (convention)', () => {
+    const { entries, routes } = buildNavModel([{ label: 'Marketplace', path: '/marketplace' }], { items: [] }, 'krateo-system')
+    expect(entries.map((entry) => entry.label)).toEqual(['Marketplace'])
+    expect(routes[0].endpoint).toBe('/call?resource=flexes&apiVersion=widgets.templates.krateo.io/v1beta1&name=page-marketplace&namespace=krateo-system')
+  })
+
+  it('registers a route-only (label-less, templated) item with a page-<slug> endpoint and no sidebar entry', () => {
+    const { entries, routes } = buildNavModel([{ page: 'composition-detail', path: '/compositions/{namespace}/{name}' }], { items: [] }, 'krateo-system')
+    expect(entries).toHaveLength(0)
+    expect(routes).toHaveLength(1)
+    expect(routes[0]).toMatchObject({
+      endpoint: '/call?resource=flexes&apiVersion=widgets.templates.krateo.io/v1beta1&name=page-composition-detail&namespace=krateo-system',
+      path: '/compositions/{namespace}/{name}',
+      resourceRefId: '',
+    })
+  })
+
+  it('explicit endpoint overrides resourceRefId and convention', () => {
+    const { routes } = buildNavModel([{ endpoint: '/call?custom=1', label: 'X', path: '/x', resourceRefId: 'home-page' }], resourcesRefs, 'krateo-system')
+    expect(routes[0].endpoint).toBe('/call?custom=1')
   })
 })

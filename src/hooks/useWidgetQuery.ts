@@ -2,7 +2,7 @@
 /* this rules conflicts with react-query ordering required for correct type inference */
 
 import { useInfiniteQuery, useIsFetching } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../context/ConfigContext'
 import type { Widget } from '../types/Widget'
@@ -47,15 +47,23 @@ export const widgetFetchRetryDelay = (attemptIndex: number): number => Math.min(
 
 /**
  * Build the `?extras=` JSON envelope snowplow forwards into the RESTAction jq dict
- * (its `ParseExtras` reads only this query param; the caller's identity is NOT
- * otherwise exposed to RA jq). Sources: the current browser URL query
- * (e.g. /search?q=… → `extras.q`, for server-side search) + the login-provided
- * `displayName` (there is no runtime /me; for the greeting). Identity overrides any
- * URL key of the same name. Returns '' when empty so the param — and the react-query
- * key it feeds — stay stable (same inputs → same string, no spurious refetch).
+ * (its `ParseExtras` reads only this query param; the caller's identity/route are
+ * NOT otherwise exposed to RA jq). Sources, later-wins on key collision: the browser
+ * URL query (e.g. /search?q=… → `extras.q`), the active route params
+ * (e.g. /compositions/:namespace/:name → `extras.namespace`/`extras.name` — the
+ * convention's param channel), and the login-provided `displayName` (there is no
+ * runtime /me; for the greeting). Returns '' when empty so the param — and the
+ * react-query key it feeds — stay stable (same inputs → same string, no spurious refetch).
  */
-export const buildExtrasParam = (searchParams: URLSearchParams, displayName?: string): string => {
+export const buildExtrasParam = (
+  searchParams: URLSearchParams,
+  routeParams: Record<string, string | undefined> = {},
+  displayName?: string,
+): string => {
   const extras: Record<string, unknown> = Object.fromEntries(searchParams.entries())
+  for (const [key, value] of Object.entries(routeParams)) {
+    if (value !== undefined) { extras[key] = value }
+  }
   if (displayName) { extras.displayName = displayName }
   return Object.keys(extras).length > 0 ? JSON.stringify(extras) : ''
 }
@@ -63,9 +71,11 @@ export const buildExtrasParam = (searchParams: URLSearchParams, displayName?: st
 export const useWidgetQuery = (widgetEndpoint: string) => {
   const { config } = useConfigContext()
   const [searchParams] = useSearchParams()
+  const routeParams = useParams()
   // Extras envelope snowplow forwards into the RESTAction jq dict (`?extras=<json>`):
-  // browser URL query (search `q`) + login `displayName` (greeting). See buildExtrasParam.
-  const extrasParam = buildExtrasParam(searchParams, getUserInfo().displayName)
+  // route params (e.g. /compositions/:namespace/:name) + browser URL query (search `q`)
+  // + login `displayName` (greeting). See buildExtrasParam.
+  const extrasParam = buildExtrasParam(searchParams, routeParams, getUserInfo().displayName)
 
   const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${widgetEndpoint}`
   const requestUrl = new URL(widgetFullUrl)

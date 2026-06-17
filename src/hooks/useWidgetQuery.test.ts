@@ -223,7 +223,7 @@ describe('initial-render retry — transient failures retry, permanent ones do n
 describe('buildExtrasParam — request/user values forwarded into the RA jq dict', () => {
   const sp = (query: string) => new URLSearchParams(query)
 
-  it('returns empty string when there is no URL query and no identity', () => {
+  it('returns empty string when there is no query, no route params, no identity', () => {
     // Empty → '' (not '{}') so the param and the queryKey stay absent/stable.
     expect(buildExtrasParam(sp(''))).toBe('')
   })
@@ -232,20 +232,32 @@ describe('buildExtrasParam — request/user values forwarded into the RA jq dict
     expect(buildExtrasParam(sp('q=foo'))).toBe('{"q":"foo"}')
   })
 
-  it('forwards the login displayName when present (greeting)', () => {
-    expect(buildExtrasParam(sp(''), 'Diego')).toBe('{"displayName":"Diego"}')
+  it('forwards route params (e.g. /compositions/:namespace/:name → the convention param channel)', () => {
+    expect(buildExtrasParam(sp(''), { name: 'rancher', namespace: 'demo' })).toBe('{"name":"rancher","namespace":"demo"}')
   })
 
-  it('merges URL query and identity', () => {
-    expect(buildExtrasParam(sp('q=foo'), 'Diego')).toBe('{"q":"foo","displayName":"Diego"}')
+  it('route params win over a same-named URL query key', () => {
+    expect(buildExtrasParam(sp('name=fromquery'), { name: 'fromroute' })).toBe('{"name":"fromroute"}')
+  })
+
+  it('skips undefined route params', () => {
+    expect(buildExtrasParam(sp('q=foo'), { name: undefined })).toBe('{"q":"foo"}')
+  })
+
+  it('forwards the login displayName when present (greeting)', () => {
+    expect(buildExtrasParam(sp(''), {}, 'Diego')).toBe('{"displayName":"Diego"}')
+  })
+
+  it('merges query, route params, and identity', () => {
+    expect(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego')).toBe('{"q":"foo","namespace":"demo","displayName":"Diego"}')
   })
 
   it('identity overrides a spoofed displayName URL param', () => {
     // A URL like ?displayName=evil must NOT override the authenticated identity.
-    expect(buildExtrasParam(sp('displayName=evil'), 'Diego')).toBe('{"displayName":"Diego"}')
+    expect(buildExtrasParam(sp('displayName=evil'), {}, 'Diego')).toBe('{"displayName":"Diego"}')
   })
 
   it('is stable for the same inputs (so the react-query key does not churn)', () => {
-    expect(buildExtrasParam(sp('q=foo'), 'Diego')).toBe(buildExtrasParam(sp('q=foo'), 'Diego'))
+    expect(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego')).toBe(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego'))
   })
 })
