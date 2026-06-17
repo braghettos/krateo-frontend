@@ -9,6 +9,20 @@ import { formatISODate, formatRelativeTime } from '../../utils/utils'
 
 export type RowSlot = 'primaryText' | 'secondaryText' | 'subPrimaryText' | 'subSecondaryText'
 
+/**
+ * A per-row action menu entry (kebab `⋯`). `actionId` references an action defined in
+ * the List's `widgetData.actions` (the canonical action map); firing it passes the row's
+ * data as the action payload, so one shared action definition serves every row.
+ */
+export interface RowAction {
+  actionId: string
+  label: string
+  /** Optional Font Awesome icon name for the menu item. */
+  icon?: string
+  /** Render the menu item in a destructive (red) style. */
+  danger?: boolean
+}
+
 export interface ColorSpec {
   /** Literal palette color, or a `{path}` resolved against the item. */
   value?: string
@@ -44,6 +58,13 @@ export interface ItemTemplate {
    * (Marketplace tiles → create route) and search results.
    */
   navigateTo?: string
+  /**
+   * Per-row action menu (kebab `⋯`): side-effectful actions for the row, each referencing
+   * an action id in the List's `widgetData.actions`, fired with the row as payload. Static
+   * descriptors (same menu on every row); the row's data flows in at click time. Distinct
+   * from `navigateTo`, which is the whole-row click.
+   */
+  rowActions?: RowAction[]
 }
 
 export interface ResolvedRow {

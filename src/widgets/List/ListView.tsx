@@ -1,12 +1,15 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Avatar, List as AntdList, Tag, Typography } from 'antd'
+import { Avatar, List as AntdList, Button, Dropdown, Tag, Typography } from 'antd'
+import useApp from 'antd/es/app/useApp'
 import type { ListGridType } from 'antd/es/list'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
 import { WidgetEmpty } from '../../components/WidgetStates'
+import { useHandleAction } from '../../hooks/useHandleActions'
 import { getColorCode } from '../../theme/palette'
+import type { ResourcesRefs, Widget, WidgetAction, WidgetActions } from '../../types/Widget'
 
 import { resolveRow, type ItemTemplate } from './itemTemplate'
 import styles from './ListView.module.css'
@@ -27,6 +30,12 @@ interface ListViewProps {
   loading?: boolean
   header?: ReactNode
   footer?: ReactNode
+  /** The widget's action map (widgetData.actions); per-row `rowActions` reference ids in it. */
+  actions?: WidgetActions
+  /** The widget's resource refs, handed to useHandleAction when a row action fires. */
+  resourcesRefs?: ResourcesRefs
+  /** The full widget — jq context for action handling. */
+  widget?: Widget
 }
 
 /**
@@ -36,9 +45,27 @@ interface ListViewProps {
  * `EventList` preset and `Notifications`.
  */
 export const ListView = ({
-  bordered, footer, grid, header, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, rowKey, size, split,
+  actions, bordered, footer, grid, header, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, resourcesRefs, rowKey, size, split, widget,
 }: ListViewProps) => {
   const navigate = useNavigate()
+  const { notification } = useApp()
+  const { handleAction } = useHandleAction()
+
+  // Fire a per-row action: look it up by id in the shared action map and dispatch it with
+  // the row's data as customPayload (so one action definition serves every row).
+  const fireRowAction = async (actionId: string, item: unknown) => {
+    const allActions = (actions ? Object.values(actions).flat() : []) as WidgetAction[]
+    const action = allActions.find((candidate) => candidate.id === actionId)
+    if (!action) {
+      notification.error({
+        description: `The list does not define an action (ID: ${actionId})`,
+        message: 'Error while executing the action',
+        placement: 'bottomLeft',
+      })
+      return
+    }
+    await handleAction(action, resourcesRefs ?? { items: [] }, item as Record<string, unknown>, widget)
+  }
 
   if (!loading && !items.length) {
     return <WidgetEmpty />
@@ -74,8 +101,40 @@ export const ListView = ({
           avatar = <Avatar icon={<FontAwesomeIcon icon={row.icon as IconProp} />} style={{ backgroundColor: colorCode }} />
         }
 
+        const rowActions = itemTemplate.rowActions ?? []
+        const kebab = rowActions.length
+          ? (
+            <Dropdown
+              key='row-actions'
+              menu={{
+                items: rowActions.map((rowAction) => ({
+                  danger: rowAction.danger,
+                  icon: rowAction.icon ? <FontAwesomeIcon icon={rowAction.icon as IconProp} /> : undefined,
+                  key: rowAction.actionId,
+                  label: rowAction.label,
+                })),
+                onClick: ({ domEvent, key }) => {
+                  // Don't let the menu click bubble to the row's navigate onClick.
+                  domEvent.stopPropagation()
+                  void fireRowAction(key, item)
+                },
+              }}
+              trigger={['click']}
+            >
+              <Button
+                aria-label='Row actions'
+                icon={<FontAwesomeIcon icon={'fa-ellipsis-vertical' as IconProp} />}
+                onClick={(event) => { event.stopPropagation() }}
+                size='small'
+                type='text'
+              />
+            </Dropdown>
+          )
+          : null
+
         return (
           <AntdList.Item
+            actions={kebab ? [kebab] : undefined}
             className={row.navigateTo ? styles.clickable : undefined}
             extra={
               (row.secondaryText || row.subSecondaryText)
