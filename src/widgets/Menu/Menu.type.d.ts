@@ -1,7 +1,7 @@
 export interface Menu {
   version: string
   /**
-   * antd Menu — navigation. `items` are inline nav entries (folded NavMenuItem data) referencing the content widget by resourceRefId; entries without icon/label/path are NavMenuItem CR references (back-compat).
+   * antd Menu — navigation. `items` are inline nav entries: a `label`+`path` makes a visible sidebar entry and a route; a label-less item is a route-only (hidden) route. Content resolves by resourceRefId or the flexes/page-<slug> convention.
    */
   kind: string
   spec: {
@@ -19,7 +19,7 @@ export interface Menu {
        */
       allowedResources: ('navmenuitems' | 'pages')[]
       /**
-       * navigation entries; inline nav data (folded NavMenuItem) referencing the content widget by resourceRefId. Entries without icon/label/path are treated as NavMenuItem CR references (back-compat).
+       * navigation entries (inline nav data); each references its content widget by resourceRefId or resolves via the path → flexes/page-<slug> convention. A label-less item registers a route with no sidebar entry.
        */
       items: {
         /**

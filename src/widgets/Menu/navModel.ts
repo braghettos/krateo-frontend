@@ -2,7 +2,7 @@ import type { AppRoute } from '../../context/RoutesContext'
 import type { ResourcesRefs } from '../../types/Widget'
 import { getResourceEndpoint, getResourceRef } from '../../utils/utils'
 
-/** A folded nav entry on `Menu.widgetData.items` (the inline NavMenuItem form). */
+/** A folded nav entry on `Menu.widgetData.items` (inline nav data). */
 export interface InlineNavItem {
   resourceRefId?: string
   icon?: string
@@ -20,14 +20,6 @@ export interface NavEntry {
   key: string
   label: string
 }
-
-/**
- * True when the menu carries folded (inline) nav data — at least one item has a
- * `label` and `path`. Otherwise items are NavMenuItem CR references (back-compat),
- * resolved by fetching those CRs.
- */
-export const hasInlineNav = (items: readonly InlineNavItem[] | undefined): boolean =>
-  !!items?.some((item) => typeof item.label === 'string' && typeof item.path === 'string')
 
 const PAGE_RESOURCE = 'flexes'
 const PAGE_API_VERSION = 'widgets.templates.krateo.io/v1beta1'
