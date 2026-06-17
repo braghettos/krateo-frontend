@@ -1,5 +1,5 @@
 import { useIsFetching } from '@tanstack/react-query'
-import { useLocation, useSearchParams } from 'react-router'
+import { useLocation } from 'react-router'
 
 import { useRoutesContext } from '../../context/RoutesContext'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
@@ -16,12 +16,12 @@ import WidgetRenderer from '../WidgetRenderer'
 export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: string }) => {
   const location = useLocation()
   const { menuRoutes } = useRoutesContext()
-  const [searchParams] = useSearchParams()
-  const queryParamWidgetEndpoint = searchParams.get('widgetEndpoint')
   const currentRoute = menuRoutes.find(({ path }) => path === location.pathname)
   // Route-driven browser-tab title (relocated off the Page widget's <title>).
   useDocumentTitle(currentRoute?.title)
-  const widgetEndpoint = queryParamWidgetEndpoint || currentRoute?.resourceRef?.path || defaultWidgetEndpoint || ''
+  // Content resolves ONLY from the route (routes-as-data → snowplow). The legacy
+  // `?widgetEndpoint=` query-param override is intentionally not supported.
+  const widgetEndpoint = currentRoute?.resourceRef?.path || defaultWidgetEndpoint || ''
 
   const isFetchingRoutes = useIsFetching({
     predicate: (query) => {

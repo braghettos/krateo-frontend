@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import useApp from 'antd/es/app/useApp'
 import { merge, set } from 'lodash'
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 
 import { useConfigContext } from '../context/ConfigContext'
 import { useRoutesContext } from '../context/RoutesContext'
@@ -128,7 +128,6 @@ const buildPayload = async (
 
 export const useHandleAction = () => {
   const navigate = useNavigate()
-  const location = useLocation()
   const queryClient = useQueryClient()
   const { message, notification } = useApp()
   const { config } = useConfigContext()
@@ -163,6 +162,20 @@ export const useHandleAction = () => {
       return
     }
 
+    if (action.type === 'navigate') {
+      // Navigation must target a real route via `path`. The legacy
+      // resourceRefId → `?widgetEndpoint=` content-swap bypass is removed.
+      message.destroy()
+      notification.error({
+        description: 'A navigate action must specify a `path` (the route to navigate to).',
+        message: 'Error while executing the action',
+        placement: 'bottomLeft',
+      })
+      setIsActionLoading(false)
+
+      return
+    }
+
     const resourceRef = action.resourceRefId ? getResourceRef(action.resourceRefId, resourcesRefs) : undefined
 
     if (!resourceRef) {
@@ -178,21 +191,12 @@ export const useHandleAction = () => {
 
     const { path, payload: resourcePayload, verb } = resourceRef
 
-    let url: string
-    if (action.type === 'navigate') {
-      url = `${location.pathname}?widgetEndpoint=${encodeURIComponent(path)}`
-    } else {
-      url = config?.api.SNOWPLOW_API_BASE_URL + path
-    }
+    const url = config?.api.SNOWPLOW_API_BASE_URL + path
 
     try {
       const { requireConfirmation, type } = action
 
       switch (type) {
-        case 'navigate':
-          await handleNavigate(requireConfirmation, url)
-
-          break
         case 'openDrawer': {
           const { size, title } = action
 
