@@ -91,6 +91,18 @@
         }
       }
     },
+    "fetch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mcpServer": {
+          "type": "string"
+        }
+      }
+    },
     "resources": {
       "type": "object",
       "additionalProperties": true
