@@ -53,8 +53,8 @@ describe('Menu navModel', () => {
     })
   })
 
-  it('explicit endpoint overrides resourceRefId and convention', () => {
-    const { routes } = buildNavModel([{ endpoint: '/call?custom=1', label: 'X', path: '/x', resourceRefId: 'home-page' }], resourcesRefs, 'krateo-system')
-    expect(routes[0].endpoint).toBe('/call?custom=1')
+  it('prefers resourceRefId over the page-<slug> convention when both could apply', () => {
+    const { routes } = buildNavModel([{ label: 'Home', path: '/home', resourceRefId: 'home-page' }], resourcesRefs, 'krateo-system')
+    expect(routes[0].endpoint).toBe('/call?resource=flexes&name=home')
   })
 })

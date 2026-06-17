@@ -12,8 +12,6 @@ export interface InlineNavItem {
   /** Convention page-slug override (required for templated paths to avoid
    * list-vs-detail collisions); else derived from `path`. */
   page?: string
-  /** Explicit content endpoint (escape hatch); overrides resourceRefId + convention. */
-  endpoint?: string
 }
 
 /** Antd Menu entry data (icon resolved to JSX by the component). */
@@ -40,17 +38,17 @@ const routeSlug = (path: string): string =>
 
 /**
  * Resolve a nav item's content endpoint, by precedence:
- *  1. explicit `endpoint` (escape hatch);
- *  2. `resourceRefId` → the Menu's own `resourcesRefs` (legacy / existing nav);
- *  3. convention — a `flexes/page-<slug>` widget derived from `path` (`page:`
+ *  1. `resourceRefId` → the Menu's own `resourcesRefs` (structured + RBAC-resolved
+ *     by snowplow; the existing nav form);
+ *  2. convention — a `flexes/page-<slug>` widget derived from `path` (`page:`
  *     overrides the slug; required for templated paths to avoid list-vs-detail collisions).
+ * Both avoid hardcoding a raw /call URL (no `endpoint` escape hatch).
  */
 export const resolveContentEndpoint = (
   item: InlineNavItem,
   resourcesRefs: ResourcesRefs,
   namespace: string,
 ): string => {
-  if (item.endpoint) { return item.endpoint }
   if (item.resourceRefId) {
     const ref = resourcesRefs?.items?.find(({ id }) => id === item.resourceRefId)
     if (ref?.path) { return ref.path }

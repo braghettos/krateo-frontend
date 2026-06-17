@@ -23,25 +23,29 @@ export interface Menu {
        */
       items: {
         /**
-         * id of the content widget to navigate to (resolved via resourcesRefs); or a NavMenuItem CR in back-compat mode
+         * route path; '{param}' segments become :param and reach the content widget via ?extras. A label-less item registers a route with NO sidebar entry (hidden — e.g. detail/create/search).
          */
-        resourceRefId: string
+        path?: string
+        /**
+         * menu entry label; omit for a route-only (hidden) item
+         */
+        label?: string
         /**
          * FontAwesome icon name shown beside the label (e.g. 'fa-inbox')
          */
         icon?: string
         /**
-         * menu entry label
-         */
-        label?: string
-        /**
-         * route path to navigate to on click
-         */
-        path?: string
-        /**
          * sort weight for the entry
          */
         order?: number
+        /**
+         * id of the content widget (resolved via resourcesRefs, RBAC-aware). Optional — omit to use the path → flexes/page-<slug> convention.
+         */
+        resourceRefId?: string
+        /**
+         * convention page-slug override → content is flexes/page-<slug>; set this for templated paths to avoid list-vs-detail collisions.
+         */
+        page?: string
       }[]
     }
     apiRef?: {
