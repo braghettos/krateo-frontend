@@ -90,6 +90,21 @@ const updateNameNamespace = (path: string, name?: string, namespace?: string) =>
   return `${base}?${qsParameters ? `${qsParameters}&` : ''}name=${name}&namespace=${namespace}`
 }
 
+/**
+ * fetch with an abort-based timeout so an action request can't hang forever
+ * (no native fetch timeout). Aborts after `ms`; the AbortError propagates to the
+ * caller's catch. The timer is always cleared, including when fetch rejects.
+ */
+const fetchWithTimeout = async (input: string, init: RequestInit, ms = 30000): Promise<Response> => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 const buildPayload = async (
   action: WidgetAction & {type: 'rest'},
   resourcePayload: object,
@@ -129,14 +144,27 @@ const buildPayload = async (
 export const useHandleAction = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { message, notification } = useApp()
+  const { message, modal, notification } = useApp()
   const { config } = useConfigContext()
   const { reloadRoutes } = useRoutesContext()
   const [isActionLoading, setIsActionLoading] = useState<boolean>(false)
   const resolveJq = useResolveJqExpression()
 
+  // Non-blocking confirmation gate (antd Modal) replacing the native window.confirm,
+  // which blocks the event loop and looks out of place.
+  const confirm = (): Promise<boolean> =>
+    new Promise((resolve) => {
+      modal.confirm({
+        cancelText: 'Cancel',
+        okText: 'Confirm',
+        onCancel: () => resolve(false),
+        onOk: () => resolve(true),
+        title: 'Are you sure?',
+      })
+    })
+
   const handleNavigate = async (requireConfirmation: boolean | undefined, path: string) => {
-    if (!requireConfirmation || window.confirm('Are you sure?')) {
+    if (!requireConfirmation || await confirm()) {
       await navigate(path)
     }
   }
@@ -224,7 +252,7 @@ export const useHandleAction = () => {
 
           let jsonResponse: RestApiResponse | null = null
 
-          if (!requireConfirmation || window.confirm('Are you sure?')) {
+          if (!requireConfirmation || await confirm()) {
             if (onSuccessNavigateTo && onEventNavigateTo) {
               message.destroy()
               notification.error({
@@ -376,7 +404,7 @@ export const useHandleAction = () => {
 
             const shouldSendPayload = ['POST', 'PUT', 'PATCH'].includes(verb)
 
-            const res = await fetch(updatedUrl, {
+            const res = await fetchWithTimeout(updatedUrl, {
               body: shouldSendPayload ? JSON.stringify(payload) : undefined,
               headers: requestHeaders,
               method: verb,
