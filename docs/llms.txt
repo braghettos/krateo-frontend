@@ -1,0 +1,66 @@
+# krateo-frontend-chart (chart repo) — LLM doc index
+
+> krateo-frontend-chart is the **deployment unit** for the Krateo frontend — the Composable Portal
+> SPA: the Helm chart that runs the static SPA workload, the dedicated CRD subchart that publishes
+> the 24 widget CRDs (`Button`, `Page`, `NavMenu`, `Route`, `DataGrid`, …), and the federated agent
+> chart. This index is the agent entry point to the **deployment, CRD and wiring** view. The
+> **internals & runtime** view (the SPA build, routing, how it loads config) lives in the code repo
+> `braghettos/krateo-frontend` `docs/`.
+
+## How to use this index (agents)
+
+You are reading the docs for a SPECIFIC deployed version. This is the **chart-repo half** of the
+component docs — deployment, CRDs, and wiring. Fetch every file below **at the CHART tag that matches
+the running build**, not `main`:
+
+- chart version = `CompositionDefinition.spec.chart.version` for frontend → THIS repo's tag. Read
+  this repo's `docs/` at that tag.
+- The **internals view** (the SPA architecture, runtime config loading, routing) is the OTHER half:
+  read `braghettos/krateo-frontend` `docs/llms.txt` at the **image-version** tag = the frontend
+  Deployment's container image tag (= this chart's `appVersion`).
+
+If something isn't in the docs, read the chart/CRD source at that same tag — don't guess, and don't
+trust `main` for a deployed older version. The agent chart (`kagent/chart`, `0.1.x`) versions
+independently of the frontend component it speaks for — do not read its version as the component's.
+
+## Start here
+
+- [overview.md](overview.md): what the frontend is and **how it deploys** as a Krateo composition —
+  the three-chart layout (`chart/` app SPA, `crds-subchart/` the 24 widget CRDs, `kagent/chart` the
+  agent), the CompositionDefinition (owned by the installer umbrella), and what the app chart renders
+  (Deployment, single http/8080 port, the `config.json` ConfigMap mounted at `/app/config`, the env
+  ConfigMap, Service). Read first.
+
+## Deployment / CRD / wiring
+
+- [crds.md](crds.md): the CRDs this repo owns — the **24 widget CRDs**
+  (`widgets.templates.krateo.io/v1beta1`): purpose + the shared curated widget shape (`widgetData`
+  required, `widgetDataTemplate`, `resourcesRefs`, `resourcesRefsTemplate`, `apiRef`) + the widget
+  catalogue (layouts, visuals, charts, navigation, data/logic). Note: the widget **DATA** is composed
+  and served at RUNTIME by snowplow's content API — these CRDs are the declarative shape, not the data
+  source.
+- [wiring.md](wiring.md): the `chart/values.yaml` surface (exposure/`service.type` + port 8080, the
+  `config.json` `config.*` API base URLs `INIT`/`ROUTES_LOADER`, probes on `/`, resources), how the
+  installer pins+wires it, dependencies (a reachable snowplow + the widget CRDs), and the real
+  gotchas (`SNOWPLOW_API_BASE_URL` must resolve or the portal 404s, the config mounted at
+  `/app/config`, never bundle the CRD subchart, the secure-context UI requirement).
+
+## Cross-repo (the internals & runtime half)
+
+- [code-repo docs/llms.txt](https://github.com/braghettos/krateo-frontend/blob/main/docs/llms.txt):
+  the code repo's index → the SPA architecture, runtime config loading, routing/widget rendering.
+  Versioned at the **image** tag (= this chart's `appVersion`).
+
+## Reference
+
+- [README.md](../README.md): product overview, what each chart ships, how the installer consumes it.
+- `chart/` — the app Helm chart (templates + `values.yaml` + `values.schema.json`).
+- `crds-subchart/` — the `frontend-crd` chart (the 24 widget CRDs; source of truth for CRD fields).
+- `kagent/chart/` — the `krateo-frontend-agent` chart (the federated specialist agent; versions
+  independently).
+
+## Notes
+
+Each doc set is versioned in its own repo: THIS repo's `docs/` at the **chart** tag, the code repo's
+`docs/` at the **image** tag. The `README.md` table may lag the actual pinned `crds-subchart`
+version — the chart (`crds-subchart/Chart.yaml`) is authoritative.
