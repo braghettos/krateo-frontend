@@ -20,6 +20,8 @@ export const getWidgetModule = (kind: string): WidgetModule | undefined => regis
 export const getWidgetRegistry = (): Record<string, WidgetModule> =>
   Object.fromEntries([...registry].filter(([, module]) => !module.structural))
 
-/** The structural navigation kinds (Page) — not antd widgets. */
+/** Structural (non-antd) kinds — currently none (Page/Route/RoutesLoader/NavMenu
+ * removed: routing is data, the sidebar Menu's inline items are the route source).
+ * The hook is kept so a future non-antd kind can opt out of the antd registry. */
 export const getStructuralRegistry = (): Record<string, WidgetModule> =>
   Object.fromEntries([...registry].filter(([, module]) => module.structural))

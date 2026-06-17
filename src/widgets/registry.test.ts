@@ -36,11 +36,11 @@ const KNOWN_KINDS = [
 ]
 
 /**
- * Structural navigation kinds — resolved by WidgetRenderer but NOT antd widgets.
- * Route/RoutesLoader were removed once route-loading moved into RoutesProvider's
- * useLoadRoutes (routes-as-data); they are no longer rendered as widgets.
+ * Structural (non-antd) kinds resolved by WidgetRenderer. Route/RoutesLoader/NavMenu
+ * and finally Page have all been removed: routing is now data — the sidebar Menu's
+ * inline items are the single route source (no routes-loader, no Page wrapper).
  */
-const STRUCTURAL_KINDS = ['Page']
+const STRUCTURAL_KINDS: string[] = []
 
 describe('widgetRegistry', () => {
   it('registers all known registry kinds (regression gate for the switch removal)', () => {

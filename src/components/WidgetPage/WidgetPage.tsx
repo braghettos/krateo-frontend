@@ -23,10 +23,13 @@ export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: 
   // `?widgetEndpoint=` query-param override is intentionally not supported.
   const widgetEndpoint = currentRoute?.resourceRef?.path || defaultWidgetEndpoint || ''
 
+  // Routes now come from the sidebar Menu's inline items (registered once the INIT
+  // Layout → Menu resolves), so "routes still loading" = that fetch is in flight —
+  // show loading, not 404, until the route source has registered.
   const isFetchingRoutes = useIsFetching({
     predicate: (query) => {
       const key = query.queryKey[1] as string
-      return key.includes('resource=routes') || key.includes('resource=routesloaders') || key.includes('resource=navmenus')
+      return key.includes('resource=layouts') || key.includes('resource=menus')
     },
   })
 
