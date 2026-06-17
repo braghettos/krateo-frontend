@@ -1,0 +1,50 @@
+# krateo-frontend (code repo) — LLM doc index
+
+> The Krateo Composable Portal: a React 19 + Vite single-page app whose entire UI is
+> **server-driven**. The SPA renders no hardcoded pages — it fetches `Widget` custom resources
+> (resolved to JSON by snowplow) and maps each `kind` to a React component via an auto-discovered
+> widget registry. Routes, sidebar, and content all come from CRs at runtime. This index is the
+> agent entry point to the **internals & runtime** view. The **deployment, CRD-schema and wiring**
+> view lives in the chart repo `braghettos/krateo-frontend-chart` `docs/`.
+
+## How to use this index (agents)
+
+You are reading the docs for a SPECIFIC deployed version. Fetch every file below **at the tag that
+matches the running build**, not `main`:
+
+- **image version** = the frontend Deployment's container image tag → THIS repo's git tag
+  (== the chart's `appVersion`, stamped from this repo's latest semver tag). Read this repo's
+  `docs/` at the **image-version** tag.
+- **chart version** = `CompositionDefinition.spec.chart.version` for frontend → the
+  `braghettos/krateo-frontend-chart` repo tag. Read the deployment/CRD/wiring docs there at the
+  **chart-version** tag.
+
+If something isn't in the docs, read the source at that same tag — don't guess, and don't trust
+`main` for a deployed older version. Every claim in these docs is traced to `file:line`; if a doc
+and the code disagree, the code wins.
+
+## Start here (internals & runtime)
+
+- [architecture.md](architecture.md): how the SPA is built — entry point, the provider stack, the
+  server-driven widget registry, the data-fetch layer, and the routing model. Read first.
+- [behavior.md](behavior.md): runtime behavior — runtime config (`config.json`), the upstream
+  contracts (authn / snowplow / events), auth + token handling, the `/call` widget-fetch protocol,
+  pagination, and actions (rest/navigate/drawer/modal/SSE).
+- [gotchas.md](gotchas.md): real runtime pitfalls grounded in the code/config.
+
+## Widget-author & contributor reference (human-oriented, also useful to agents)
+
+- [widget-authoring.md](widget-authoring.md): how an antd component becomes a widget; the
+  `schema.json → types/CRD` pipeline; scaffolding; auto-registration.
+- [widgets-api-reference.md](widgets-api-reference.md): generated per-widget API reference.
+- [docs.md](docs.md): the widget concept (a widget is a CRD mapped to a UI element).
+- [form-values.md](form-values.md), [autocomplete-and-dependencies.md](autocomplete-and-dependencies.md),
+  [restactions.md](restactions.md): authoring topics.
+- [guides/](guides/): worked end-to-end guides (action-button, simple-page).
+
+## Source of truth
+
+- `src/widgets/<Kind>/` — each widget: `<Kind>.schema.json` (the CRD source of truth),
+  `<Kind>.tsx` (the component), `index.ts` (the `defineWidget` registration).
+- `src/types/Widget.d.ts` — the `Widget` / `ResourceRef` / `WidgetActions` shapes the SPA consumes.
+- `public/config/config.json` — the runtime config contract (API base URLs + INIT/ROUTES_LOADER).
