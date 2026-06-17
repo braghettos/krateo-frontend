@@ -11,6 +11,17 @@ const __dirname = path.dirname(__filename)
 
 const baseDir = path.resolve(__dirname, '../src/widgets')
 
+// Shared schema fragments compiled to a single canonical type. They live OUTSIDE
+// src/widgets so the CRD generator does not turn them into per-widget CRDs. The
+// actions fragment is the single source of truth for the WidgetActions shape —
+// every action-bearing widget copies it verbatim into widgetData.actions.
+const sharedSchemas = [
+  {
+    input: path.resolve(__dirname, '../src/schemas/actions.schema.json'),
+    output: path.resolve(__dirname, '../src/types/actions.generated.d.ts'),
+  },
+]
+
 async function walkDir(dir: string, callback: (filepath: string) => Promise<void>): Promise<void> {
   const files = await fs.readdir(dir)
   const tasks: Promise<void>[] = []
@@ -50,6 +61,22 @@ async function generateTypes() {
       }
     }
   })
+
+  await Promise.all(sharedSchemas.map(async ({ input, output }) => {
+    try {
+      const ts = await compileFromFile(input, {
+        bannerComment: '',
+        style: {
+          semi: false,
+          singleQuote: true,
+        },
+      })
+      await fs.writeFile(output, ts)
+      console.log(`Generated: ${output}`)
+    } catch (err) {
+      console.error(`Failed to compile ${input}:`, err)
+    }
+  }))
 }
 
 void generateTypes()

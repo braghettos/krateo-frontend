@@ -1,0 +1,306 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://krateo.io/schemas/actions.schema.json",
+  "title": "WidgetActions",
+  "description": "Canonical action-map shared by every action-bearing widget (Button, Form, List rows). Single source of truth: widget schemas copy this verbatim into widgetData.actions (validate-schemas enforces no drift) and the WidgetActions type is generated from it.",
+  "type": "object",
+  "properties": {
+    "rest": {
+      "type": "array",
+      "description": "rest api call actions triggered by the widget",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "unique identifier for the action"
+          },
+          "resourceRefId": {
+            "type": "string",
+            "description": "the identifier of the k8s custom resource that should be represented"
+          },
+          "requireConfirmation": {
+            "type": "boolean",
+            "description": "whether user confirmation is required before triggering the action"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "a message that will be displayed inside a toast in case of error"
+          },
+          "successMessage": {
+            "type": "string",
+            "description": "a message that will be displayed inside a toast in case of success"
+          },
+          "onSuccessNavigateTo": {
+            "type": "string",
+            "description": "url to navigate to after successful execution"
+          },
+          "onEventNavigateTo": {
+            "type": "object",
+            "required": [
+              "eventReason",
+              "url"
+            ],
+            "additionalProperties": false,
+            "description": "conditional navigation triggered by a specific event",
+            "properties": {
+              "eventReason": {
+                "type": "string",
+                "description": "identifier of the awaited event reason"
+              },
+              "url": {
+                "type": "string",
+                "description": "url to navigate to when the event is received"
+              },
+              "timeout": {
+                "type": "integer",
+                "description": "the timeout in seconds to wait for the event",
+                "default": 50
+              },
+              "reloadRoutes": {
+                "type": "boolean"
+              },
+              "loadingMessage": {
+                "type": "string",
+                "description": "message to display while waiting for the event"
+              }
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "rest"
+            ],
+            "description": "type of action to execute"
+          },
+          "headers": {
+            "description": "array of headers as strings, format 'key: value'",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "key and value as a single, example: 'x-custom-header: value'"
+            }
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "static payload sent with the request"
+          },
+          "payloadToOverride": {
+            "type": "array",
+            "description": "list of payload fields to override dynamically",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "value"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "name of the field to override"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "value to use for overriding the field"
+                }
+              }
+            }
+          },
+          "loading": {
+            "type": "object",
+            "properties": {
+              "display": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "display"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "headers",
+          "id",
+          "type",
+          "resourceRefId"
+        ]
+      }
+    },
+    "navigate": {
+      "type": "array",
+      "description": "client-side navigation actions",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "unique identifier for the action"
+          },
+          "loading": {
+            "type": "object",
+            "properties": {
+              "display": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "display"
+            ],
+            "additionalProperties": false
+          },
+          "path": {
+            "description": "the identifier of the route to navigate to",
+            "type": "string"
+          },
+          "resourceRefId": {
+            "type": "string",
+            "description": "the identifier of the k8s custom resource that should be represented"
+          },
+          "requireConfirmation": {
+            "type": "boolean",
+            "description": "whether user confirmation is required before navigating"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "navigate"
+            ],
+            "description": "type of navigation action"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ]
+      }
+    },
+    "openDrawer": {
+      "type": "array",
+      "description": "actions to open side drawer components",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "unique identifier for the drawer action"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "openDrawer"
+            ],
+            "description": "type of drawer action"
+          },
+          "resourceRefId": {
+            "type": "string",
+            "description": "the identifier of the k8s custom resource that should be represented"
+          },
+          "requireConfirmation": {
+            "type": "boolean",
+            "description": "whether user confirmation is required before opening"
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "default",
+              "large"
+            ],
+            "description": "drawer size to be displayed"
+          },
+          "title": {
+            "type": "string",
+            "description": "title shown in the drawer header"
+          },
+          "loading": {
+            "type": "object",
+            "properties": {
+              "display": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "display"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "resourceRefId"
+        ]
+      }
+    },
+    "openModal": {
+      "type": "array",
+      "description": "actions to open modal dialog components",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "unique identifier for the modal action"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "openModal"
+            ],
+            "description": "type of modal action"
+          },
+          "resourceRefId": {
+            "type": "string",
+            "description": "the identifier of the k8s custom resource that should be represented"
+          },
+          "requireConfirmation": {
+            "type": "boolean",
+            "description": "whether user confirmation is required before opening"
+          },
+          "title": {
+            "type": "string",
+            "description": "title shown in the modal header"
+          },
+          "loading": {
+            "type": "object",
+            "properties": {
+              "display": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "display"
+            ],
+            "additionalProperties": false
+          },
+          "customWidth": {
+            "description": "the custom width of the value, which should be used by setting the 'custom' value inside the 'size' property",
+            "type": "string"
+          },
+          "size": {
+            "description": "sets the Modal size, 'default' is 520px, 'large' is 80% of the screen width, 'fullscreen' is 100% of the screen width, 'custom' should be used with the 'customWidth' property",
+            "type": "string",
+            "enum": [
+              "default",
+              "large",
+              "fullscreen",
+              "custom"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "resourceRefId"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}
