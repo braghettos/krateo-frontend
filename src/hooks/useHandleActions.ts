@@ -565,7 +565,10 @@ export const useHandleAction = () => {
       }),
       eventsBaseUrl: config?.api.EVENTS_PUSH_API_BASE_URL ?? '',
       getAccessToken,
-      invalidateQueries: () => queryClient.invalidateQueries(),
+      // Scope post-action invalidation to widget queries (key ['widgets', ...]) instead of
+      // ALL queries — a blank invalidate also refetched the SSE-maintained `events` cache
+      // and everything else. Any widget may show the mutated resource, so refresh them all.
+      invalidateQueries: () => queryClient.invalidateQueries({ queryKey: ['widgets'] }),
       message,
       navigate: (path: string) => navigate(path),
       notification,
