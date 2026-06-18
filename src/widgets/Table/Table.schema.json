@@ -16,7 +16,11 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": ["allowedResources", "data", "columns"],
+          "required": [
+            "allowedResources",
+            "data",
+            "columns"
+          ],
           "properties": {
             "allowedResources": {
               "description": "the list of resources that are allowed to be children of this widget or referenced by it",
@@ -65,13 +69,16 @@
                     "type": "string"
                   }
                 },
-                "required": ["valueKey", "title"],
+                "required": [
+                  "valueKey",
+                  "title"
+                ],
                 "additionalProperties": false
               }
             },
             "dataSource": {
               "type": "array",
-              "description": "antd Table dataSource — the table rows (renamed from `data`; `data` still accepted for back-compat)",
+              "description": "antd Table dataSource \u2014 the table rows (renamed from `data`; `data` still accepted for back-compat)",
               "items": {
                 "type": "array",
                 "description": "Row represented as array of cells",
@@ -84,7 +91,11 @@
                     },
                     "kind": {
                       "type": "string",
-                      "enum": ["jsonSchemaType", "icon", "widget"],
+                      "enum": [
+                        "jsonSchemaType",
+                        "icon",
+                        "widget"
+                      ],
                       "description": "type of cell value"
                     },
                     "resourceRefId": {
@@ -128,7 +139,10 @@
                       "description": "value if type = array"
                     }
                   },
-                  "required": ["valueKey", "kind"],
+                  "required": [
+                    "valueKey",
+                    "kind"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -138,22 +152,85 @@
               "additionalProperties": false,
               "description": "antd Table pagination config (subproperties mirror antd).",
               "properties": {
-                "pageSize": { "type": "integer", "description": "number of rows per page" },
-                "defaultPageSize": { "type": "integer", "description": "default page size" },
-                "hideOnSinglePage": { "type": "boolean", "description": "hide the pager when there is a single page" },
-                "simple": { "type": "boolean", "description": "use the simple pager" },
+                "pageSize": {
+                  "type": "integer",
+                  "description": "number of rows per page"
+                },
+                "defaultPageSize": {
+                  "type": "integer",
+                  "description": "default page size"
+                },
+                "hideOnSinglePage": {
+                  "type": "boolean",
+                  "description": "hide the pager when there is a single page"
+                },
+                "simple": {
+                  "type": "boolean",
+                  "description": "use the simple pager"
+                },
                 "position": {
                   "type": "array",
                   "description": "pager position(s)",
-                  "items": { "type": "string", "enum": ["topLeft", "topCenter", "topRight", "bottomLeft", "bottomCenter", "bottomRight"] }
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "topLeft",
+                      "topCenter",
+                      "topRight",
+                      "bottomLeft",
+                      "bottomCenter",
+                      "bottomRight"
+                    ]
+                  }
                 }
               }
             },
-            "bordered": { "type": "boolean", "description": "antd Table bordered" },
-            "size": { "type": "string", "enum": ["large", "middle", "small"], "description": "antd Table size" },
+            "bordered": {
+              "type": "boolean",
+              "description": "antd Table bordered"
+            },
+            "size": {
+              "type": "string",
+              "enum": [
+                "large",
+                "middle",
+                "small"
+              ],
+              "description": "antd Table size"
+            },
             "prefix": {
               "description": "it's the filters prefix to get right values",
               "type": "string"
+            },
+            "watch": {
+              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "apiVersion",
+                  "kind"
+                ],
+                "properties": {
+                  "apiVersion": {
+                    "type": "string",
+                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "e.g. DemoClaim"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "scope to a namespace; omit to match any"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  }
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -189,7 +266,13 @@
                   },
                   "verb": {
                     "type": "string",
-                    "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
                   },
                   "slice": {
                     "type": "object",
@@ -207,14 +290,22 @@
                         "type": "boolean"
                       }
                     },
-                    "required": ["page", "perPage"]
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
                   }
                 },
-                "required": ["allowed", "id"]
+                "required": [
+                  "allowed",
+                  "id"
+                ]
               }
             }
           },
-          "required": ["items"]
+          "required": [
+            "items"
+          ]
         },
         "apiRef": {
           "type": "object",
@@ -227,7 +318,10 @@
             }
           },
           "additionalProperties": false,
-          "required": ["name", "namespace"]
+          "required": [
+            "name",
+            "namespace"
+          ]
         },
         "widgetDataTemplate": {
           "type": "array",
@@ -292,9 +386,15 @@
           }
         }
       },
-      "required": ["widgetData"],
+      "required": [
+        "widgetData"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["kind", "spec", "version"]
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
 }
