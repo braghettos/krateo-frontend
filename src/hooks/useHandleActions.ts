@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router'
 
 import { useConfigContext } from '../context/ConfigContext'
 import { useRoutesContext } from '../context/RoutesContext'
-import type { ResourcesRefs, Widget, WidgetAction } from '../types/Widget'
+import type { ResourceRef, ResourcesRefs, Widget, WidgetAction } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
 import { useResolveJqExpression } from '../utils/jq-expression'
 import type { Payload, RestApiResponse } from '../utils/types'
@@ -150,6 +150,352 @@ export const buildPayload = async (
   return finalPayload
 }
 
+/** Per-invocation data for an action (the widget instance it fires from). */
+export interface ActionRuntime {
+  resourcesRefs: ResourcesRefs
+  customPayload?: Record<string, unknown>
+  widget?: Widget
+}
+
+/**
+ * Everything the dispatcher needs from the outside, injected by the hook. Pulling
+ * dispatch out of the React hook makes it a plain async function that can be unit
+ * tested with a mocked context (no RTL/jsdom) and turns the per-type cases into a
+ * small registry.
+ */
+export interface ActionContext {
+  apiBaseUrl: string
+  eventsBaseUrl: string
+  navigate: (path: string) => void | Promise<void>
+  confirm: () => Promise<boolean>
+  resolveJq: (expression: string, values: Record<string, unknown>) => Promise<string>
+  setLoading: (loading: boolean) => void
+  invalidateQueries: () => Promise<unknown>
+  reloadRoutes: () => void | Promise<void>
+  getAccessToken: () => string
+  openDrawer: typeof openDrawer
+  openModal: typeof openModal
+  closeDrawer: typeof closeDrawer
+  message: ReturnType<typeof useApp>['message']
+  notification: ReturnType<typeof useApp>['notification']
+}
+
+const runNavigate = async (action: WidgetAction & { type: 'navigate' }, runtime: ActionRuntime, ctx: ActionContext): Promise<void> => {
+  if (!action.path) {
+    // Navigation must target a real route via `path`. The legacy resourceRefId →
+    // `?widgetEndpoint=` content-swap bypass is removed.
+    ctx.message.destroy()
+    ctx.notification.error({
+      description: 'A navigate action must specify a `path` (the route to navigate to).',
+      message: 'Error while executing the action',
+      placement: 'bottomLeft',
+    })
+
+    return
+  }
+
+  const updatedUrl = action.path.startsWith('${')
+    ? await ctx.resolveJq(action.path, { widget: runtime.widget })
+    : action.path
+
+  if (!action.requireConfirmation || await ctx.confirm()) {
+    await ctx.navigate(updatedUrl)
+  }
+}
+
+const runOpenDrawer = (action: WidgetAction & { type: 'openDrawer' }, resourceRef: ResourceRef, ctx: ActionContext): void => {
+  ctx.setLoading(false)
+  ctx.openDrawer({ size: action.size, title: action.title, widgetEndpoint: resourceRef.path })
+}
+
+const runOpenModal = (action: WidgetAction & { type: 'openModal' }, resourceRef: ResourceRef, ctx: ActionContext): void => {
+  ctx.setLoading(false)
+  ctx.openModal({ customWidth: action.customWidth, size: action.size, title: action.title, widgetEndpoint: resourceRef.path })
+}
+
+const runRest = async (
+  action: WidgetAction & { type: 'rest' },
+  resourceRef: ResourceRef,
+  url: string,
+  runtime: ActionRuntime,
+  ctx: ActionContext
+): Promise<void> => {
+  const { errorMessage, headers = [], onEventNavigateTo, onSuccessNavigateTo, successMessage } = action
+  const { customPayload } = runtime
+  const { verb } = resourceRef
+
+  let jsonResponse: RestApiResponse | null = null
+
+  // Confirmation gate (was: if (!requireConfirmation || confirm()) { ...whole body... }).
+  if (action.requireConfirmation && !(await ctx.confirm())) {
+    ctx.setLoading(false)
+
+    return
+  }
+
+  if (onSuccessNavigateTo && onEventNavigateTo) {
+    ctx.message.destroy()
+    ctx.notification.error({
+      description: 'Action has defined both the "onSuccessNavigateTo" and "onEventNavigateTo" properties',
+      message: 'Warning while executing the action',
+      placement: 'bottomLeft',
+    })
+    ctx.setLoading(false)
+
+    return
+  }
+
+  const payload = await buildPayload(action, resourceRef.payload, customPayload, ctx.resolveJq)
+
+  let resourceUid: string | null = null
+  let eventReceived = false
+  if (onEventNavigateTo) {
+    const eventsEndpoint = `${ctx.eventsBaseUrl}/notifications`
+    const eventTimeoutSeconds = onEventNavigateTo.timeout ?? 30
+
+    const eventSource = new EventSource(eventsEndpoint, { withCredentials: false })
+
+    let description = `Timeout waiting for event ${onEventNavigateTo.eventReason}`
+    if (errorMessage) {
+      description = errorMessage.startsWith('${')
+        ? await ctx.resolveJq(errorMessage, { json: payload, response: jsonResponse })
+        : errorMessage
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (!eventReceived) {
+        ctx.setLoading(false)
+        eventSource.close()
+        ctx.notification.error({ description, message: 'Error while executing the action', placement: 'bottomLeft' })
+      }
+      ctx.message.destroy()
+    }, eventTimeoutSeconds * 1000)
+
+    const loadingMessage = onEventNavigateTo.loadingMessage
+      ? await ctx.resolveJq(onEventNavigateTo.loadingMessage, { json: payload, response: jsonResponse })
+      : 'Waiting for resource and redirecting...'
+
+    ctx.message.loading(loadingMessage, eventTimeoutSeconds)
+
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    eventSource.addEventListener('krateo', async (event) => {
+      if (!resourceUid) {
+        return
+      }
+
+      const eventData = JSON.parse(event.data as string) as EventData
+      if (eventData.reason === onEventNavigateTo.eventReason && eventData.involvedObject.uid === resourceUid) {
+        eventReceived = true
+
+        if (onEventNavigateTo.reloadRoutes !== false) {
+          void ctx.reloadRoutes()
+        }
+
+        eventSource.close()
+        clearTimeout(timeoutId)
+
+        const redirectUrl = await (async () => {
+          // if it starts with ${ resolve via the JQ endpoint, otherwise use the legacy method
+          if (onEventNavigateTo.url.startsWith('${')) {
+            return ctx.resolveJq(onEventNavigateTo.url, {
+              event: eventData as unknown as Record<string, unknown>,
+              json: payload,
+              response: jsonResponse,
+            })
+          }
+
+          if (customPayload) {
+            return interpolateRedirectUrl(customPayload, onEventNavigateTo.url)
+          }
+
+          return onEventNavigateTo.url
+        })()
+
+        if (!redirectUrl) {
+          ctx.message.destroy()
+          ctx.notification.error({
+            description: 'Impossible to redirect, the route contains an undefined value',
+            message: 'Error while redirecting',
+            placement: 'bottomLeft',
+          })
+
+          return
+        }
+
+        let successDescription = 'The action has been executed successfully'
+        if (successMessage) {
+          successDescription = successMessage.startsWith('${')
+            ? await ctx.resolveJq(successMessage, {
+              event: eventData as unknown as Record<string, unknown>,
+              json: payload,
+              response: jsonResponse,
+            })
+            : successMessage
+        }
+
+        ctx.message.destroy()
+        ctx.notification.success({ description: successDescription, message: 'Successfully executed action', placement: 'bottomLeft' })
+
+        ctx.setLoading(false)
+        ctx.closeDrawer()
+        void ctx.navigate(redirectUrl)
+      }
+    })
+  }
+
+  const updatedUrl = customPayload
+    ? updateNameNamespace(url, payload?.metadata?.name, payload?.metadata?.namespace)
+    : url
+
+  const headersObject = getHeadersObject(headers)
+  if (!headersObject) {
+    ctx.message.destroy()
+    ctx.notification.error({ description: 'Headers are not in the key: value format', message: 'Error while executing the action', placement: 'bottomLeft' })
+
+    return
+  }
+
+  const requestHeaders = {
+    ...headersObject,
+    Accept: 'application/json',
+    Authorization: `Bearer ${ctx.getAccessToken()}`,
+  }
+
+  const shouldSendPayload = ['POST', 'PUT', 'PATCH'].includes(verb)
+
+  const res = await fetchWithTimeout(updatedUrl, {
+    body: shouldSendPayload ? JSON.stringify(payload) : undefined,
+    headers: requestHeaders,
+    method: verb,
+  })
+
+  // Empty/204 bodies (e.g. a successful DELETE) → {} via parseJsonResponse.
+  const responseText = await res.text()
+  // eslint-disable-next-line require-atomic-updates
+  jsonResponse = parseJsonResponse(responseText)
+
+  ctx.setLoading(false)
+
+  if (!res.ok) {
+    let description = jsonResponse.message
+    if (errorMessage) {
+      description = errorMessage.startsWith('${')
+        ? await ctx.resolveJq(errorMessage, { json: payload, response: jsonResponse })
+        : errorMessage
+    }
+
+    ctx.message.destroy()
+    ctx.notification.error({ description, message: `${jsonResponse.status} - ${jsonResponse.reason}`, placement: 'bottomLeft' })
+
+    return
+  }
+
+  if (jsonResponse.metadata?.uid) {
+    resourceUid = jsonResponse.metadata.uid
+  }
+
+  if (!onEventNavigateTo) {
+    ctx.closeDrawer()
+
+    const actionName = (() => {
+      switch (verb) {
+        case 'DELETE':
+          return 'deleted'
+        case 'POST':
+          return 'created'
+        case 'PUT':
+          return 'updated'
+        case 'PATCH':
+          return 'updated'
+        default:
+          return 'updated'
+      }
+    })()
+
+    // Empty responses (e.g. DELETE 204) carry no metadata — fall back to the request payload's.
+    const resourceName = jsonResponse.metadata?.name ?? payload?.metadata?.name
+    const resourceNamespace = jsonResponse.metadata?.namespace ?? payload?.metadata?.namespace
+    let description = `Successfully ${actionName} ${resourceName} in ${resourceNamespace}`
+    if (successMessage) {
+      description = successMessage.startsWith('${')
+        ? await ctx.resolveJq(successMessage, { json: payload, response: jsonResponse })
+        : successMessage
+    }
+
+    ctx.notification.success({ description, message: jsonResponse.message, placement: 'bottomLeft' })
+  }
+
+  await ctx.invalidateQueries()
+
+  if (onSuccessNavigateTo) {
+    ctx.closeDrawer()
+
+    const onSuccessUrl = onSuccessNavigateTo.startsWith('${')
+      ? await ctx.resolveJq(onSuccessNavigateTo, { json: payload, response: jsonResponse })
+      : onSuccessNavigateTo
+
+    window.location.replace(onSuccessUrl)
+  }
+}
+
+/**
+ * Pure action dispatcher: resolves the action's target then routes it to the
+ * per-type handler (the registry). Side effects come in through `ctx`, so this is
+ * unit-testable without React — the hook below is a thin wrapper that builds `ctx`.
+ */
+export const dispatchAction = async (action: WidgetAction, runtime: ActionRuntime, ctx: ActionContext): Promise<void> => {
+  if (action.loading?.display) {
+    ctx.setLoading(true)
+  }
+
+  if (action.type === 'navigate') {
+    await runNavigate(action, runtime, ctx)
+    ctx.setLoading(false)
+
+    return
+  }
+
+  const resourceRef = action.resourceRefId ? getResourceRef(action.resourceRefId, runtime.resourcesRefs) : undefined
+
+  if (!resourceRef) {
+    ctx.message.destroy()
+    ctx.notification.error({
+      description: `The widget definition does not include a resource reference for resource (ID: ${action.resourceRefId})`,
+      message: 'Error while executing the action',
+      placement: 'bottomLeft',
+    })
+
+    return
+  }
+
+  const url = ctx.apiBaseUrl + resourceRef.path
+
+  try {
+    switch (action.type) {
+      case 'openDrawer':
+        runOpenDrawer(action, resourceRef, ctx)
+        break
+      case 'openModal':
+        runOpenModal(action, resourceRef, ctx)
+        break
+      case 'rest':
+        await runRest(action, resourceRef, url, runtime, ctx)
+        break
+      default:
+        break
+    }
+  } catch (error) {
+    ctx.message.destroy()
+    ctx.notification.error({
+      description: `Unhandled error: ${error instanceof Error ? error.message : String(error)}`,
+      message: 'Error while executing the action',
+      placement: 'bottomLeft',
+    })
+  } finally {
+    ctx.setLoading(false)
+  }
+}
+
 export const useHandleAction = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -159,363 +505,39 @@ export const useHandleAction = () => {
   const [isActionLoading, setIsActionLoading] = useState<boolean>(false)
   const resolveJq = useResolveJqExpression()
 
-  // Non-blocking confirmation gate (antd Modal) replacing the native window.confirm,
-  // which blocks the event loop and looks out of place.
-  const confirm = (): Promise<boolean> =>
-    new Promise((resolve) => {
-      modal.confirm({
-        cancelText: 'Cancel',
-        okText: 'Confirm',
-        onCancel: () => resolve(false),
-        onOk: () => resolve(true),
-        title: 'Are you sure?',
-      })
-    })
-
-  const handleNavigate = async (requireConfirmation: boolean | undefined, path: string) => {
-    if (!requireConfirmation || await confirm()) {
-      await navigate(path)
-    }
-  }
-
   const handleAction = async (
     action: WidgetAction,
     resourcesRefs: ResourcesRefs,
     customPayload?: Record<string, unknown>,
     widget?: Widget
   ) => {
-    if (action.loading?.display) {
-      setIsActionLoading(true)
+    const ctx: ActionContext = {
+      apiBaseUrl: config?.api.SNOWPLOW_API_BASE_URL ?? '',
+      closeDrawer,
+      // Non-blocking confirmation (antd Modal) instead of the blocking window.confirm.
+      confirm: () => new Promise<boolean>((resolve) => {
+        modal.confirm({
+          cancelText: 'Cancel',
+          okText: 'Confirm',
+          onCancel: () => resolve(false),
+          onOk: () => resolve(true),
+          title: 'Are you sure?',
+        })
+      }),
+      eventsBaseUrl: config?.api.EVENTS_PUSH_API_BASE_URL ?? '',
+      getAccessToken,
+      invalidateQueries: () => queryClient.invalidateQueries(),
+      message,
+      navigate: (path: string) => navigate(path),
+      notification,
+      openDrawer,
+      openModal,
+      reloadRoutes,
+      resolveJq,
+      setLoading: setIsActionLoading,
     }
 
-    if (action.type === 'navigate' && action.path) {
-      const updatedUrl = action.path.startsWith('${')
-        ? await resolveJq(action.path, { widget })
-        : action.path
-
-      await handleNavigate(action.requireConfirmation, updatedUrl)
-      setIsActionLoading(false)
-
-      return
-    }
-
-    if (action.type === 'navigate') {
-      // Navigation must target a real route via `path`. The legacy
-      // resourceRefId → `?widgetEndpoint=` content-swap bypass is removed.
-      message.destroy()
-      notification.error({
-        description: 'A navigate action must specify a `path` (the route to navigate to).',
-        message: 'Error while executing the action',
-        placement: 'bottomLeft',
-      })
-      setIsActionLoading(false)
-
-      return
-    }
-
-    const resourceRef = action.resourceRefId ? getResourceRef(action.resourceRefId, resourcesRefs) : undefined
-
-    if (!resourceRef) {
-      message.destroy()
-      notification.error({
-        description: `The widget definition does not include a resource reference for resource (ID: ${action.resourceRefId})`,
-        message: 'Error while executing the action',
-        placement: 'bottomLeft',
-      })
-
-      return
-    }
-
-    const { path, payload: resourcePayload, verb } = resourceRef
-
-    const url = config?.api.SNOWPLOW_API_BASE_URL + path
-
-    try {
-      const { requireConfirmation, type } = action
-
-      switch (type) {
-        case 'openDrawer': {
-          const { size, title } = action
-
-          setIsActionLoading(false)
-          openDrawer({ size, title, widgetEndpoint: path })
-
-          break
-        }
-        case 'openModal': {
-          const { customWidth, size, title } = action
-
-          setIsActionLoading(false)
-          openModal({ customWidth, size, title, widgetEndpoint: path })
-
-          break
-        }
-        case 'rest': {
-          const {
-            errorMessage,
-            headers = [],
-            onEventNavigateTo,
-            onSuccessNavigateTo,
-            successMessage,
-          } = action
-
-          let jsonResponse: RestApiResponse | null = null
-
-          if (!requireConfirmation || await confirm()) {
-            if (onSuccessNavigateTo && onEventNavigateTo) {
-              message.destroy()
-              notification.error({
-                description: 'Action has defined both the "onSuccessNavigateTo" and "onEventNavigateTo" properties',
-                message: 'Warning while executing the action',
-                placement: 'bottomLeft',
-              })
-
-              setIsActionLoading(false)
-
-              return
-            }
-
-            const payload = await buildPayload(action, resourcePayload, customPayload, resolveJq)
-
-            let resourceUid: string | null = null
-            let eventReceived = false
-            if (onEventNavigateTo) {
-              const eventsEndpoint = `${config!.api.EVENTS_PUSH_API_BASE_URL}/notifications`
-              // `timeout` is optional; without a default, `timeout! * 1000` is NaN and the
-              // setTimeout fires immediately → an instant false timeout. Default to 30s.
-              const eventTimeoutSeconds = onEventNavigateTo.timeout ?? 30
-
-              const eventSource = new EventSource(eventsEndpoint, {
-                withCredentials: false,
-              })
-
-              let description = `Timeout waiting for event ${onEventNavigateTo.eventReason}`
-              // eslint-disable-next-line max-depth
-              if (errorMessage) {
-                description = errorMessage.startsWith('${')
-                  ? await resolveJq(errorMessage, {
-                    json: payload,
-                    response: jsonResponse,
-                  })
-                  : errorMessage
-              }
-
-              const timeoutId = setTimeout(() => {
-                if (!eventReceived) {
-                  setIsActionLoading(false)
-                  eventSource.close()
-                  notification.error({
-                    description,
-                    message: 'Error while executing the action',
-                    placement: 'bottomLeft',
-                  })
-                }
-                message.destroy()
-              }, eventTimeoutSeconds * 1000)
-
-              const loadingMessage = onEventNavigateTo.loadingMessage
-                ? await resolveJq(onEventNavigateTo.loadingMessage, { json: payload, response: jsonResponse })
-                : 'Waiting for resource and redirecting...'
-
-              message.loading(loadingMessage, eventTimeoutSeconds)
-
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
-              eventSource.addEventListener('krateo', async (event) => {
-                if (!resourceUid) {
-                  return
-                }
-
-                const eventData = JSON.parse(event.data as string) as EventData
-                if (eventData.reason === onEventNavigateTo.eventReason && eventData.involvedObject.uid === resourceUid) {
-                  eventReceived = true
-
-                  if (onEventNavigateTo.reloadRoutes !== false) {
-                    void reloadRoutes()
-                  }
-
-                  eventSource.close()
-                  clearTimeout(timeoutId)
-
-                  const redirectUrl = await (async () => {
-                    /* if it starts with ${ should be resolved by cassing JQ endpoint otherwise use legacy method */
-                    if (onEventNavigateTo.url.startsWith('${')) {
-                      return resolveJq(onEventNavigateTo.url, {
-                        event: eventData as unknown as Record<string, unknown>,
-                        json: payload,
-                        response: jsonResponse,
-                      })
-                    }
-
-                    if (customPayload) {
-                      const url = interpolateRedirectUrl(customPayload, onEventNavigateTo.url)
-                      return url
-                    }
-
-                    return onEventNavigateTo.url
-                  })()
-
-                  if (!redirectUrl) {
-                    message.destroy()
-                    notification.error({
-                      description: 'Impossible to redirect, the route contains an undefined value',
-                      message: 'Error while redirecting',
-                      placement: 'bottomLeft',
-                    })
-
-                    return
-                  }
-
-                  let description = 'The action has been executed successfully'
-                  if (successMessage) {
-                    description = successMessage.startsWith('${')
-                      ? await resolveJq(successMessage, {
-                        event: eventData as unknown as Record<string, unknown>,
-                        json: payload,
-                        response: jsonResponse,
-                      })
-                      : successMessage
-                  }
-
-                  message.destroy()
-                  notification.success({
-                    description,
-                    message: `Successfully executed action`,
-                    placement: 'bottomLeft',
-                  })
-
-                  setIsActionLoading(false)
-                  closeDrawer()
-                  void navigate(redirectUrl)
-                }
-              })
-            }
-
-            const updatedUrl = customPayload
-              ? updateNameNamespace(url, payload?.metadata?.name, payload?.metadata?.namespace)
-              : url
-
-            const headersObject = getHeadersObject(headers)
-            if (!headersObject) {
-              message.destroy()
-              notification.error({
-                description: 'Headers are not in the key: value format',
-                message: 'Error while executing the action',
-                placement: 'bottomLeft',
-              })
-              break
-            }
-
-            const requestHeaders = {
-              ...headersObject,
-              Accept: 'application/json',
-              Authorization: `Bearer ${getAccessToken()}`,
-            }
-
-            const shouldSendPayload = ['POST', 'PUT', 'PATCH'].includes(verb)
-
-            const res = await fetchWithTimeout(updatedUrl, {
-              body: shouldSendPayload ? JSON.stringify(payload) : undefined,
-              headers: requestHeaders,
-              method: verb,
-            })
-
-            // Empty/204 bodies (e.g. a successful DELETE) → {} via parseJsonResponse.
-            const responseText = await res.text()
-            // eslint-disable-next-line require-atomic-updates
-            jsonResponse = parseJsonResponse(responseText)
-
-            setIsActionLoading(false)
-
-            if (!res.ok) {
-              let description = jsonResponse.message
-
-              // eslint-disable-next-line max-depth
-              if (errorMessage) {
-                description = errorMessage.startsWith('${')
-                  ? await resolveJq(errorMessage, {
-                    json: payload,
-                    response: jsonResponse,
-                  })
-                  : errorMessage
-              }
-
-              message.destroy()
-              notification.error({
-                description,
-                message: `${jsonResponse.status} - ${jsonResponse.reason}`,
-                placement: 'bottomLeft',
-              })
-              break
-            }
-
-            if (jsonResponse.metadata?.uid) {
-              resourceUid = jsonResponse.metadata.uid
-            }
-
-            if (!onEventNavigateTo) {
-              closeDrawer()
-
-              const actionName = (() => {
-                switch (verb) {
-                  case 'DELETE':
-                    return 'deleted'
-                  case 'POST':
-                    return 'created'
-                  case 'PUT':
-                    return 'updated'
-                  case 'PATCH':
-                    return 'updated'
-                  default:
-                    return 'updated'
-                }
-              })()
-
-              // Empty responses (e.g. DELETE 204) carry no metadata — fall back to the request payload's.
-              const resourceName = jsonResponse.metadata?.name ?? payload?.metadata?.name
-              const resourceNamespace = jsonResponse.metadata?.namespace ?? payload?.metadata?.namespace
-              let description = `Successfully ${actionName} ${resourceName} in ${resourceNamespace}`
-              // eslint-disable-next-line max-depth
-              if (successMessage) {
-                description = successMessage.startsWith('${')
-                  ? await resolveJq(successMessage, { json: payload, response: jsonResponse })
-                  : successMessage
-              }
-
-              notification.success({
-                description,
-                message: jsonResponse.message,
-                placement: 'bottomLeft',
-              })
-            }
-
-            await queryClient.invalidateQueries()
-
-            if (onSuccessNavigateTo) {
-              closeDrawer()
-
-              const onSuccessUrl = onSuccessNavigateTo.startsWith('${')
-                ? await resolveJq(onSuccessNavigateTo, { json: payload, response: jsonResponse })
-                : onSuccessNavigateTo
-
-              window.location.replace(onSuccessUrl)
-            }
-          }
-
-          break
-        }
-        default:
-          break
-      }
-    } catch (error) {
-      message.destroy()
-      notification.error({
-        description: `Unhandled error: ${error instanceof Error ? error.message : String(error)}`,
-        message: 'Error while executing the action',
-        placement: 'bottomLeft',
-      })
-    } finally {
-      setIsActionLoading(false)
-    }
+    await dispatchAction(action, { customPayload, resourcesRefs, widget }, ctx)
   }
 
   return { handleAction, isActionLoading }

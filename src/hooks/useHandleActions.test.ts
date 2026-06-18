@@ -14,14 +14,16 @@
 /* eslint-disable no-template-curly-in-string -- these tests intentionally use literal ${...} (the jq-override / redirect DSL). */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { WidgetAction } from '../types/Widget'
+import type { ResourcesRefs, WidgetAction } from '../types/Widget'
 
 import {
   buildPayload,
+  dispatchAction,
   fetchWithTimeout,
   interpolateRedirectUrl,
   parseJsonResponse,
   updateNameNamespace,
+  type ActionContext,
 } from './useHandleActions'
 
 type RestAction = WidgetAction & { type: 'rest' }
@@ -187,5 +189,135 @@ describe('fetchWithTimeout', () => {
 
     await rejection
     expect(signal?.aborted).toBe(true)
+  })
+})
+
+// A fully-mocked ActionContext so the (formerly React-bound) dispatcher is unit-testable.
+const makeCtx = (over: Partial<ActionContext> = {}): ActionContext => ({
+  apiBaseUrl: 'http://sp',
+  closeDrawer: vi.fn(),
+  confirm: vi.fn(() => Promise.resolve(true)),
+  eventsBaseUrl: 'http://ev',
+  getAccessToken: vi.fn(() => 'tok'),
+  invalidateQueries: vi.fn(() => Promise.resolve()),
+  message: { destroy: vi.fn(), loading: vi.fn() } as unknown as ActionContext['message'],
+  navigate: vi.fn(),
+  notification: { error: vi.fn(), success: vi.fn() } as unknown as ActionContext['notification'],
+  openDrawer: vi.fn(),
+  openModal: vi.fn(),
+  reloadRoutes: vi.fn(),
+  resolveJq: vi.fn((expr: string) => Promise.resolve(`jq:${expr}`)),
+  setLoading: vi.fn(),
+  ...over,
+})
+
+const refs = (items: ResourcesRefs['items']): ResourcesRefs => ({ items })
+const postRef = { allowed: true, id: 'ref', path: '/api/x', payload: {}, verb: 'POST' as const }
+const fakeResponse = (ok: boolean, body: string): Response =>
+  ({ ok, text: () => Promise.resolve(body) } as unknown as Response)
+
+describe('dispatchAction — routing + non-SSE rest paths', () => {
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  it('navigate: navigates to the literal path', async () => {
+    const ctx = makeCtx()
+    await dispatchAction({ id: 'n', path: '/go', type: 'navigate' } as WidgetAction, { resourcesRefs: refs([]) }, ctx)
+    expect(ctx.navigate).toHaveBeenCalledWith('/go')
+  })
+
+  it('navigate: a ${...} path is resolved via jq before navigating', async () => {
+    const ctx = makeCtx({ resolveJq: vi.fn(() => Promise.resolve('/resolved')) })
+    await dispatchAction({ id: 'n', path: '${.widget}', type: 'navigate' } as WidgetAction, { resourcesRefs: refs([]) }, ctx)
+    expect(ctx.navigate).toHaveBeenCalledWith('/resolved')
+  })
+
+  it('navigate: errors when no path is given (no widgetEndpoint bypass)', async () => {
+    const ctx = makeCtx()
+    await dispatchAction({ id: 'n', type: 'navigate' } as WidgetAction, { resourcesRefs: refs([]) }, ctx)
+    expect(ctx.navigate).not.toHaveBeenCalled()
+    expect(ctx.notification.error).toHaveBeenCalledTimes(1)
+  })
+
+  it('navigate: declined confirmation does not navigate', async () => {
+    const ctx = makeCtx({ confirm: vi.fn(() => Promise.resolve(false)) })
+    await dispatchAction({ id: 'n', path: '/go', requireConfirmation: true, type: 'navigate' } as WidgetAction, { resourcesRefs: refs([]) }, ctx)
+    expect(ctx.navigate).not.toHaveBeenCalled()
+  })
+
+  it('errors when the action references a resourceRef that is not present', async () => {
+    const ctx = makeCtx()
+    await dispatchAction({ headers: [], id: 'a', resourceRefId: 'missing', type: 'rest' } as WidgetAction, { resourcesRefs: refs([]) }, ctx)
+    expect(ctx.notification.error).toHaveBeenCalledTimes(1)
+  })
+
+  it('openDrawer: opens with the resource ref path as the widget endpoint', async () => {
+    const ctx = makeCtx()
+    await dispatchAction(
+      { id: 'd', resourceRefId: 'ref', type: 'openDrawer' } as WidgetAction,
+      { resourcesRefs: refs([{ allowed: true, id: 'ref', path: '/api/drawer', payload: {}, verb: 'GET' }]) },
+      ctx
+    )
+    expect(ctx.openDrawer).toHaveBeenCalledWith(expect.objectContaining({ widgetEndpoint: '/api/drawer' }))
+  })
+
+  it('rest POST: success → success toast + query invalidation', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(fakeResponse(true, '{"metadata":{"name":"n","namespace":"ns"},"message":"ok"}'))))
+    const ctx = makeCtx()
+    await dispatchAction(
+      { headers: [], id: 'a', resourceRefId: 'ref', type: 'rest' } as WidgetAction,
+      { resourcesRefs: refs([postRef]) },
+      ctx
+    )
+    expect(ctx.notification.success).toHaveBeenCalledTimes(1)
+    expect(ctx.invalidateQueries).toHaveBeenCalledTimes(1)
+    expect(ctx.notification.error).not.toHaveBeenCalled()
+  })
+
+  it('rest DELETE: empty 204 body succeeds (no false error)', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(fakeResponse(true, ''))))
+    const ctx = makeCtx()
+    await dispatchAction(
+      { headers: [], id: 'a', resourceRefId: 'ref', type: 'rest' } as WidgetAction,
+      { resourcesRefs: refs([{ allowed: true, id: 'ref', path: '/api/x', payload: {}, verb: 'DELETE' }]) },
+      ctx
+    )
+    expect(ctx.notification.success).toHaveBeenCalledTimes(1)
+    expect(ctx.notification.error).not.toHaveBeenCalled()
+  })
+
+  it('rest: a non-ok response surfaces an error toast', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(fakeResponse(false, '{"status":404,"reason":"NotFound","message":"nope"}'))))
+    const ctx = makeCtx()
+    await dispatchAction(
+      { headers: [], id: 'a', resourceRefId: 'ref', type: 'rest' } as WidgetAction,
+      { resourcesRefs: refs([postRef]) },
+      ctx
+    )
+    expect(ctx.notification.error).toHaveBeenCalledTimes(1)
+    expect(ctx.invalidateQueries).not.toHaveBeenCalled()
+  })
+
+  it('rest: declined confirmation never issues the request', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(fakeResponse(true, '{}')))
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeCtx({ confirm: vi.fn(() => Promise.resolve(false)) })
+    await dispatchAction(
+      { headers: [], id: 'a', requireConfirmation: true, resourceRefId: 'ref', type: 'rest' } as WidgetAction,
+      { resourcesRefs: refs([postRef]) },
+      ctx
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(ctx.notification.success).not.toHaveBeenCalled()
+  })
+
+  it('routes unexpected handler errors to an error toast', async () => {
+    const ctx = makeCtx({ getAccessToken: vi.fn(() => { throw new Error('boom') }) })
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(fakeResponse(true, '{}'))))
+    await dispatchAction(
+      { headers: [], id: 'a', resourceRefId: 'ref', type: 'rest' } as WidgetAction,
+      { resourcesRefs: refs([postRef]) },
+      ctx
+    )
+    expect(ctx.notification.error).toHaveBeenCalledTimes(1)
   })
 })
