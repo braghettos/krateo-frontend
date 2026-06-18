@@ -16,7 +16,9 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": ["text"],
+          "required": [
+            "text"
+          ],
           "properties": {
             "text": {
               "description": "the content of the paragraph (the antd Typography children, as text)",
@@ -24,18 +26,80 @@
             },
             "type": {
               "type": "string",
-              "enum": ["secondary", "success", "warning", "danger"],
+              "enum": [
+                "secondary",
+                "success",
+                "warning",
+                "danger"
+              ],
               "description": "antd Typography type"
             },
-            "strong": { "type": "boolean", "description": "antd Typography strong" },
-            "italic": { "type": "boolean", "description": "antd Typography italic" },
-            "underline": { "type": "boolean", "description": "antd Typography underline" },
-            "delete": { "type": "boolean", "description": "antd Typography delete (strikethrough)" },
-            "code": { "type": "boolean", "description": "antd Typography code" },
-            "mark": { "type": "boolean", "description": "antd Typography mark (highlight)" },
-            "disabled": { "type": "boolean", "description": "antd Typography disabled" },
-            "copyable": { "type": "boolean", "description": "antd Typography copyable" },
-            "ellipsis": { "type": "boolean", "description": "antd Typography ellipsis" }
+            "strong": {
+              "type": "boolean",
+              "description": "antd Typography strong"
+            },
+            "italic": {
+              "type": "boolean",
+              "description": "antd Typography italic"
+            },
+            "underline": {
+              "type": "boolean",
+              "description": "antd Typography underline"
+            },
+            "delete": {
+              "type": "boolean",
+              "description": "antd Typography delete (strikethrough)"
+            },
+            "code": {
+              "type": "boolean",
+              "description": "antd Typography code"
+            },
+            "mark": {
+              "type": "boolean",
+              "description": "antd Typography mark (highlight)"
+            },
+            "disabled": {
+              "type": "boolean",
+              "description": "antd Typography disabled"
+            },
+            "copyable": {
+              "type": "boolean",
+              "description": "antd Typography copyable"
+            },
+            "ellipsis": {
+              "type": "boolean",
+              "description": "antd Typography ellipsis"
+            },
+            "watch": {
+              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "apiVersion",
+                  "kind"
+                ],
+                "properties": {
+                  "apiVersion": {
+                    "type": "string",
+                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "e.g. DemoClaim"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "scope to a namespace; omit to match any"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  }
+                }
+              }
+            }
           },
           "additionalProperties": false
         },
@@ -49,7 +113,10 @@
               "type": "string"
             }
           },
-          "required": ["name", "namespace"],
+          "required": [
+            "name",
+            "namespace"
+          ],
           "additionalProperties": false
         },
         "widgetDataTemplate": {
@@ -186,9 +253,15 @@
           }
         }
       },
-      "required": ["widgetData"],
+      "required": [
+        "widgetData"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["kind", "spec", "version"]
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
 }
