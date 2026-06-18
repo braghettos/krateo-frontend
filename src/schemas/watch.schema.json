@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://krateo.io/schemas/watch.schema.json",
+  "title": "WidgetWatch",
+  "description": "Live-refresh watch — the involvedObject(s) this widget is tied to. A k8s event whose involvedObject matches one of these refetches the widget (throttled per widget). The matching TS type is WatchMatcher in src/hooks/liveRefresh.ts; widgets copy this verbatim into widgetData.watch (validate-schemas enforces no drift).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["apiVersion", "kind"],
+    "properties": {
+      "apiVersion": { "type": "string", "description": "group/version, e.g. composition.krateo.io/v1alpha1" },
+      "kind": { "type": "string", "description": "e.g. DemoClaim" },
+      "namespace": { "type": "string", "description": "scope to a namespace; omit to match any" },
+      "name": { "type": "string", "description": "a specific object; omit to match any object of this kind (\"GVR-level\")" }
+    }
+  }
+}

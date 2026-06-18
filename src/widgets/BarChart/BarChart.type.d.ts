@@ -47,6 +47,27 @@ export interface BarChart {
        * fixed height in px (G2 `height`); omit to autofit
        */
       height?: number
+      /**
+       * live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.
+       */
+      watch?: {
+        /**
+         * group/version, e.g. composition.krateo.io/v1alpha1
+         */
+        apiVersion: string
+        /**
+         * e.g. DemoClaim
+         */
+        kind: string
+        /**
+         * scope to a namespace; omit to match any
+         */
+        namespace?: string
+        /**
+         * a specific object; omit to match any object of this kind ("GVR-level")
+         */
+        name?: string
+      }[]
     }
     apiRef?: {
       name: string

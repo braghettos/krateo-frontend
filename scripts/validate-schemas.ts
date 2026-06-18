@@ -57,6 +57,10 @@ const collectActionMaps = (node: unknown, acc: Record<string, unknown>[] = []): 
 const actionsFragment = JSON.parse(await readFile('src/schemas/actions.schema.json', 'utf-8')) as Record<string, unknown>
 const canonicalActionMap = actionMapCore(actionsFragment)
 
+// Single source of truth for the live-refresh watch shape; widgets copy it verbatim.
+const watchFragment = JSON.parse(await readFile('src/schemas/watch.schema.json', 'utf-8')) as Record<string, unknown>
+const canonicalWatch = stable({ items: watchFragment.items, type: watchFragment.type })
+
 // Validate all schemas in parallel
 await Promise.all(
   files.map(async (file) => {
@@ -79,6 +83,15 @@ await Promise.all(
               + '(src/schemas/actions.schema.json). Re-sync it to the fragment verbatim.'
             )
           }
+        }
+
+        // Drift guard: a widget's widgetData.watch must copy the canonical watch fragment verbatim.
+        const watchProp = (schema as JSONSchema).properties?.spec?.properties?.widgetData?.properties?.watch as Record<string, unknown> | undefined
+        if (watchProp && stable({ items: watchProp.items, type: watchProp.type }) !== canonicalWatch) {
+          throw new Error(
+            'widgetData.watch drifted from the canonical watch fragment '
+            + '(src/schemas/watch.schema.json). Re-sync it to the fragment verbatim.'
+          )
         }
       }
 

@@ -54,6 +54,36 @@
             "suffix": {
               "description": "text shown after the value",
               "type": "string"
+            },
+            "watch": {
+              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "apiVersion",
+                  "kind"
+                ],
+                "properties": {
+                  "apiVersion": {
+                    "type": "string",
+                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "e.g. DemoClaim"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "scope to a namespace; omit to match any"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  }
+                }
+              }
             }
           }
         },

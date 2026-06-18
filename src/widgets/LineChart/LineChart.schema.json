@@ -17,32 +17,103 @@
         "widgetData": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["data", "xField", "yField"],
+          "required": [
+            "data",
+            "xField",
+            "yField"
+          ],
           "description": "@ant-design/charts Line config (AntV G2)",
           "properties": {
             "data": {
               "type": "array",
               "description": "chart data records (G2 `data`)",
-              "items": { "type": "object", "additionalProperties": true }
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
             },
-            "xField": { "type": "string", "description": "field mapped to the x position (G2 `xField`)" },
-            "yField": { "type": "string", "description": "field mapped to the y position (G2 `yField`)" },
-            "colorField": { "type": "string", "description": "field mapped to color / series (G2 `colorField`)" },
-            "shapeField": { "type": "string", "description": "line shape, e.g. 'smooth' or 'line' (G2 `shapeField`)" },
-            "stack": { "type": "boolean", "description": "stack the series (G2 `stack`)" },
-            "area": { "type": "boolean", "description": "render a gradient area fill under the line (G2 `area`); defaults to false" },
-            "legend": { "type": "boolean", "description": "show the legend; false hides it (G2 `legend`)" },
-            "title": { "type": "string", "description": "chart title (G2 `title`)" },
-            "height": { "type": "integer", "description": "fixed height in px (G2 `height`); omit to autofit" }
+            "xField": {
+              "type": "string",
+              "description": "field mapped to the x position (G2 `xField`)"
+            },
+            "yField": {
+              "type": "string",
+              "description": "field mapped to the y position (G2 `yField`)"
+            },
+            "colorField": {
+              "type": "string",
+              "description": "field mapped to color / series (G2 `colorField`)"
+            },
+            "shapeField": {
+              "type": "string",
+              "description": "line shape, e.g. 'smooth' or 'line' (G2 `shapeField`)"
+            },
+            "stack": {
+              "type": "boolean",
+              "description": "stack the series (G2 `stack`)"
+            },
+            "area": {
+              "type": "boolean",
+              "description": "render a gradient area fill under the line (G2 `area`); defaults to false"
+            },
+            "legend": {
+              "type": "boolean",
+              "description": "show the legend; false hides it (G2 `legend`)"
+            },
+            "title": {
+              "type": "string",
+              "description": "chart title (G2 `title`)"
+            },
+            "height": {
+              "type": "integer",
+              "description": "fixed height in px (G2 `height`); omit to autofit"
+            },
+            "watch": {
+              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "apiVersion",
+                  "kind"
+                ],
+                "properties": {
+                  "apiVersion": {
+                    "type": "string",
+                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "e.g. DemoClaim"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "scope to a namespace; omit to match any"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  }
+                }
+              }
+            }
           }
         },
         "apiRef": {
           "type": "object",
           "properties": {
-            "name": { "type": "string" },
-            "namespace": { "type": "string" }
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
           },
-          "required": ["name", "namespace"],
+          "required": [
+            "name",
+            "namespace"
+          ],
           "additionalProperties": false
         },
         "widgetDataTemplate": {
@@ -50,8 +121,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "forPath": { "type": "string" },
-              "expression": { "type": "string" }
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
             },
             "additionalProperties": false
           }
@@ -175,9 +250,15 @@
           }
         }
       },
-      "required": ["widgetData"],
+      "required": [
+        "widgetData"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["kind", "spec", "version"]
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
 }
