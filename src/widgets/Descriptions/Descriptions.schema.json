@@ -7,8 +7,8 @@
       "default": "v1beta1"
     },
     "kind": {
-      "default": "Paragraph",
-      "description": "Paragraph is a simple component used to display a block of text",
+      "default": "Descriptions",
+      "description": "Descriptions displays multiple read-only label/value pairs in a definition list (antd Descriptions)",
       "type": "string"
     },
     "spec": {
@@ -16,103 +16,50 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": [
-            "text"
-          ],
+          "required": ["items"],
+          "additionalProperties": false,
           "properties": {
-            "text": {
-              "description": "the content of the paragraph (the antd Typography children, as text)",
-              "type": "string"
-            },
-            "level": {
-              "description": "when set, render as an antd Typography.Title heading of this level (h1-h5) instead of a body paragraph",
-              "type": "integer",
-              "enum": [
-                1,
-                2,
-                3,
-                4,
-                5
-              ]
-            },
-            "type": {
+            "title": {
               "type": "string",
-              "enum": [
-                "secondary",
-                "success",
-                "warning",
-                "danger"
-              ],
-              "description": "antd Typography type"
+              "description": "the title displayed above the description list"
             },
-            "strong": {
+            "column": {
+              "type": "integer",
+              "description": "the number of label/value pairs per row (antd Descriptions `column`)"
+            },
+            "bordered": {
               "type": "boolean",
-              "description": "antd Typography strong"
+              "description": "whether to render cell borders (antd Descriptions `bordered`)"
             },
-            "italic": {
-              "type": "boolean",
-              "description": "antd Typography italic"
+            "size": {
+              "type": "string",
+              "enum": ["default", "middle", "small"],
+              "description": "the size of the description list"
             },
-            "underline": {
-              "type": "boolean",
-              "description": "antd Typography underline"
-            },
-            "delete": {
-              "type": "boolean",
-              "description": "antd Typography delete (strikethrough)"
-            },
-            "code": {
-              "type": "boolean",
-              "description": "antd Typography code"
-            },
-            "mark": {
-              "type": "boolean",
-              "description": "antd Typography mark (highlight)"
-            },
-            "disabled": {
-              "type": "boolean",
-              "description": "antd Typography disabled"
-            },
-            "copyable": {
-              "type": "boolean",
-              "description": "antd Typography copyable"
-            },
-            "ellipsis": {
-              "type": "boolean",
-              "description": "antd Typography ellipsis"
-            },
-            "watch": {
-              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+            "items": {
               "type": "array",
+              "description": "the label/value pairs to display",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": [
-                  "apiVersion",
-                  "kind"
-                ],
+                "required": ["label", "value"],
                 "properties": {
-                  "apiVersion": {
+                  "label": {
                     "type": "string",
-                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                    "description": "the label of the item"
                   },
-                  "kind": {
+                  "value": {
                     "type": "string",
-                    "description": "e.g. DemoClaim"
+                    "description": "the value of the item (rendered as the antd Descriptions item children)"
                   },
-                  "namespace": {
-                    "type": "string",
-                    "description": "scope to a namespace; omit to match any"
-                  },
-                  "name": {
-                    "type": "string",
-                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  "span": {
+                    "type": "integer",
+                    "description": "how many columns this item spans (antd Descriptions item `span`)"
                   }
                 }
               }
             }
-          },
-          "additionalProperties": false
+          }
         },
         "apiRef": {
           "type": "object",
@@ -124,10 +71,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "name",
-            "namespace"
-          ],
+          "required": ["name", "namespace"],
           "additionalProperties": false
         },
         "widgetDataTemplate": {
@@ -264,15 +208,9 @@
           }
         }
       },
-      "required": [
-        "widgetData"
-      ],
+      "required": ["widgetData"],
       "additionalProperties": false
     }
   },
-  "required": [
-    "kind",
-    "spec",
-    "version"
-  ]
+  "required": ["kind", "spec", "version"]
 }

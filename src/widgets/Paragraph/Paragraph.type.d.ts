@@ -11,6 +11,10 @@ export interface Paragraph {
        */
       text: string
       /**
+       * when set, render as an antd Typography.Title heading of this level (h1-h5) instead of a body paragraph
+       */
+      level?: 1 | 2 | 3 | 4 | 5
+      /**
        * antd Typography type
        */
       type?: 'secondary' | 'success' | 'warning' | 'danger'
