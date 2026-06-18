@@ -48,7 +48,7 @@ export const LIVE_REFRESH_WINDOW_MS = 5000
 
 interface Registration {
   watch: readonly WatchMatcher[]
-  invalidate: () => void
+  invalidate: () => unknown
   timer: ReturnType<typeof setTimeout> | undefined
   pending: boolean
 }
@@ -67,7 +67,7 @@ export class LiveRefreshRegistry {
   constructor(private readonly windowMs: number = LIVE_REFRESH_WINDOW_MS) {}
 
   /** Register a widget's watch + its invalidate callback; returns an unregister fn. */
-  register(watch: readonly WatchMatcher[], invalidate: () => void): () => void {
+  register(watch: readonly WatchMatcher[], invalidate: () => unknown): () => void {
     const registration: Registration = { invalidate, pending: false, timer: undefined, watch }
     this.registrations.add(registration)
 
@@ -108,3 +108,6 @@ export class LiveRefreshRegistry {
     }, this.windowMs)
   }
 }
+
+/** App-wide registry instance; the firehose feeds it and widgets register against it. */
+export const liveRefreshRegistry = new LiveRefreshRegistry()

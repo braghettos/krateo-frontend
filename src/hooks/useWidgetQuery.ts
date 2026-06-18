@@ -9,6 +9,9 @@ import type { Widget } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
 import { getUserInfo } from '../utils/getUserInfo'
 
+import type { WatchMatcher } from './liveRefresh'
+import { useLiveWatch } from './useLiveRefresh'
+
 function parseNumberParam(param: string | null) {
   const parsed = param ? parseInt(param) : undefined
   return isNaN(parsed!) ? undefined : parsed
@@ -202,6 +205,14 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
       return resourcesRefsPaths.includes(resourceRefPath)
     },
   })
+
+  // Live-refresh: a widget can declare widgetData.watch — refetch this query when a
+  // matching k8s event arrives (precise, per-widget throttled by the registry).
+  const liveStatus = queryResult.data?.status
+  const watch = liveStatus && typeof liveStatus === 'object'
+    ? (liveStatus.widgetData as { watch?: WatchMatcher[] } | undefined)?.watch
+    : undefined
+  useLiveWatch(watch, queryResult.refetch)
 
   return {
     queryResult,

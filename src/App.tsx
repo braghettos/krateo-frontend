@@ -16,6 +16,7 @@ import styles from './App.module.css'
 import FiltersProvider from './components/FiltesProvider/FiltersProvider'
 import { ConfigProvider, useConfigContext } from './context/ConfigContext'
 import { RoutesProvider, useRoutesContext } from './context/RoutesContext'
+import { useLiveRefreshFirehose } from './hooks/useLiveRefresh'
 
 library.add(fab, fas, far)
 
@@ -32,6 +33,9 @@ const queryClient = new QueryClient({
 const AppInitializer: React.FC = () => {
   const { isLoading: isRoutesLoading, routerVersion, routes } = useRoutesContext()
   const { isLoading: isConfigLoading } = useConfigContext()
+
+  // Pipe the SSE event firehose into the live-refresh registry, once, for the app's lifetime.
+  useLiveRefreshFirehose()
 
   // Use useMemo to recreate router only when routes or routeVersion changes
   const router = useMemo(() => {
