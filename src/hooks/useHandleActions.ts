@@ -34,7 +34,7 @@ interface EventData {
  * @param route - The route string containing `${...}` placeholders to be replaced
  * @returns The interpolated route string or null if a placeholder could not be resolved
  */
-const interpolateRedirectUrl = (payload: Record<string, unknown>, route: string): string | null => {
+export const interpolateRedirectUrl = (payload: Record<string, unknown>, route: string): string | null => {
   let allReplacementsSuccessful = true
 
   const interpolatedRoute = route.replace(/\$\{([^}]+)\}/g, (_, key: string) => {
@@ -80,7 +80,7 @@ const interpolateRedirectUrl = (payload: Record<string, unknown>, route: string)
  * @param namespace - The new `namespace` parameter to set
  * @returns The updated URL with the new query parameters
  */
-const updateNameNamespace = (path: string, name?: string, namespace?: string) => {
+export const updateNameNamespace = (path: string, name?: string, namespace?: string) => {
   const [base, queryString = ''] = path.split('?')
   const qsParameters = queryString
     .split('&')
@@ -95,7 +95,7 @@ const updateNameNamespace = (path: string, name?: string, namespace?: string) =>
  * (no native fetch timeout). Aborts after `ms`; the AbortError propagates to the
  * caller's catch. The timer is always cleared, including when fetch rejects.
  */
-const fetchWithTimeout = async (input: string, init: RequestInit, ms = 30000): Promise<Response> => {
+export const fetchWithTimeout = async (input: string, init: RequestInit, ms = 30000): Promise<Response> => {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), ms)
   try {
@@ -105,7 +105,16 @@ const fetchWithTimeout = async (input: string, init: RequestInit, ms = 30000): P
   }
 }
 
-const buildPayload = async (
+/**
+ * Parse an action response body that may be empty. A successful DELETE (or any
+ * 204) carries no body, so res.json() would throw on empty input; treat an
+ * empty/whitespace body as {} (a valid, all-optional RestApiResponse).
+ */
+export const parseJsonResponse = (text: string): RestApiResponse => {
+  return text.trim() ? (JSON.parse(text) as RestApiResponse) : {}
+}
+
+export const buildPayload = async (
   action: WidgetAction & {type: 'rest'},
   resourcePayload: object,
   customPayload: Record<string, unknown> | undefined,
@@ -410,12 +419,10 @@ export const useHandleAction = () => {
               method: verb,
             })
 
-            // A successful DELETE (and other 204/empty responses) carries no body;
-            // res.json() would throw on empty input and surface a false "Unhandled error".
-            // Parse defensively: empty body → {} (a valid, all-optional RestApiResponse).
+            // Empty/204 bodies (e.g. a successful DELETE) → {} via parseJsonResponse.
             const responseText = await res.text()
             // eslint-disable-next-line require-atomic-updates
-            jsonResponse = responseText ? (JSON.parse(responseText) as RestApiResponse) : ({} as RestApiResponse)
+            jsonResponse = parseJsonResponse(responseText)
 
             setIsActionLoading(false)
 
