@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import useApp from 'antd/es/app/useApp'
 import { merge, set } from 'lodash'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { useConfigContext } from '../context/ConfigContext'
@@ -178,6 +178,8 @@ export interface ActionContext {
   closeDrawer: typeof closeDrawer
   message: ReturnType<typeof useApp>['message']
   notification: ReturnType<typeof useApp>['notification']
+  /** Register a teardown to run if the widget unmounts mid-action (e.g. close an SSE stream). */
+  registerCleanup: (cleanup: () => void) => void
 }
 
 const runNavigate = async (action: WidgetAction & { type: 'navigate' }, runtime: ActionRuntime, ctx: ActionContext): Promise<void> => {
@@ -249,6 +251,12 @@ const runRest = async (
 
   let resourceUid: string | null = null
   let eventReceived = false
+  // (3) The awaited event can arrive before the POST response sets resourceUid; buffer
+  // events received while resourceUid is unknown and replay them once it is set, instead
+  // of dropping them (which let the timeout fire a false error on a successful action).
+  const pendingEvents: EventData[] = []
+  let processEvent: (eventData: EventData) => void = () => undefined
+
   if (onEventNavigateTo) {
     const eventsEndpoint = `${ctx.eventsBaseUrl}/notifications`
     const eventTimeoutSeconds = onEventNavigateTo.timeout ?? 30
@@ -271,29 +279,36 @@ const runRest = async (
       ctx.message.destroy()
     }, eventTimeoutSeconds * 1000)
 
+    // (7) Close the stream + cancel the timeout if the widget unmounts before the event
+    // arrives, instead of leaking the connection (and firing toasts) until the timeout.
+    ctx.registerCleanup(() => {
+      eventSource.close()
+      clearTimeout(timeoutId)
+    })
+
     const loadingMessage = onEventNavigateTo.loadingMessage
       ? await ctx.resolveJq(onEventNavigateTo.loadingMessage, { json: payload, response: jsonResponse })
       : 'Waiting for resource and redirecting...'
 
     ctx.message.loading(loadingMessage, eventTimeoutSeconds)
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    eventSource.addEventListener('krateo', async (event) => {
-      if (!resourceUid) {
+    // Match + act on a (live or replayed) event. The eventReceived guard + close run
+    // synchronously, so it fires at most once; the redirect/notify tail is async.
+    processEvent = (eventData: EventData) => {
+      if (eventReceived || eventData.reason !== onEventNavigateTo.eventReason || eventData.involvedObject.uid !== resourceUid) {
         return
       }
 
-      const eventData = JSON.parse(event.data as string) as EventData
-      if (eventData.reason === onEventNavigateTo.eventReason && eventData.involvedObject.uid === resourceUid) {
-        eventReceived = true
+      eventReceived = true
 
-        if (onEventNavigateTo.reloadRoutes !== false) {
-          void ctx.reloadRoutes()
-        }
+      if (onEventNavigateTo.reloadRoutes !== false) {
+        void ctx.reloadRoutes()
+      }
 
-        eventSource.close()
-        clearTimeout(timeoutId)
+      eventSource.close()
+      clearTimeout(timeoutId)
 
+      void (async () => {
         const redirectUrl = await (async () => {
           // if it starts with ${ resolve via the JQ endpoint, otherwise use the legacy method
           if (onEventNavigateTo.url.startsWith('${')) {
@@ -339,7 +354,18 @@ const runRest = async (
         ctx.setLoading(false)
         ctx.closeDrawer()
         void ctx.navigate(redirectUrl)
+      })()
+    }
+
+    eventSource.addEventListener('krateo', (event) => {
+      const eventData = JSON.parse(event.data as string) as EventData
+      if (!resourceUid) {
+        pendingEvents.push(eventData)
+
+        return
       }
+
+      processEvent(eventData)
     })
   }
 
@@ -392,6 +418,11 @@ const runRest = async (
 
   if (jsonResponse.metadata?.uid) {
     resourceUid = jsonResponse.metadata.uid
+    // (3) replay any events that arrived before resourceUid was known
+    for (const eventData of pendingEvents) {
+      processEvent(eventData)
+    }
+    pendingEvents.length = 0
   }
 
   if (!onEventNavigateTo) {
@@ -505,6 +536,14 @@ export const useHandleAction = () => {
   const [isActionLoading, setIsActionLoading] = useState<boolean>(false)
   const resolveJq = useResolveJqExpression()
 
+  // Teardowns for in-flight actions (e.g. open SSE streams) — run on unmount so a
+  // pending action doesn't leak its connection past the component's lifetime.
+  const cleanupsRef = useRef<Set<() => void>>(new Set())
+  useEffect(() => () => {
+    cleanupsRef.current.forEach((cleanup) => { cleanup() })
+    cleanupsRef.current.clear()
+  }, [])
+
   const handleAction = async (
     action: WidgetAction,
     resourcesRefs: ResourcesRefs,
@@ -532,6 +571,7 @@ export const useHandleAction = () => {
       notification,
       openDrawer,
       openModal,
+      registerCleanup: (cleanup: () => void) => { cleanupsRef.current.add(cleanup) },
       reloadRoutes,
       resolveJq,
       setLoading: setIsActionLoading,

@@ -205,6 +205,7 @@ const makeCtx = (over: Partial<ActionContext> = {}): ActionContext => ({
   notification: { error: vi.fn(), success: vi.fn() } as unknown as ActionContext['notification'],
   openDrawer: vi.fn(),
   openModal: vi.fn(),
+  registerCleanup: vi.fn(),
   reloadRoutes: vi.fn(),
   resolveJq: vi.fn((expr: string) => Promise.resolve(`jq:${expr}`)),
   setLoading: vi.fn(),
@@ -319,5 +320,78 @@ describe('dispatchAction — routing + non-SSE rest paths', () => {
       ctx
     )
     expect(ctx.notification.error).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Controllable EventSource for the onEventNavigateTo (SSE) path.
+class FakeEventSource {
+  static instances: FakeEventSource[] = []
+  listeners: Record<string, ((event: { data: string }) => void)[]> = {}
+  closed = false
+  constructor(public url: string) { FakeEventSource.instances.push(this) }
+  addEventListener(type: string, listener: (event: { data: string }) => void) { (this.listeners[type] ??= []).push(listener) }
+  emit(type: string, data: unknown) { (this.listeners[type] ?? []).forEach((listener) => { listener({ data: JSON.stringify(data) }) }) }
+  close() { this.closed = true }
+}
+
+const flush = () => new Promise((resolve) => { setTimeout(resolve, 0) })
+
+const restOnEvent = (): WidgetAction => ({
+  headers: [],
+  id: 'a',
+  onEventNavigateTo: { eventReason: 'Ready', url: '/done' },
+  resourceRefId: 'ref',
+  type: 'rest',
+} as WidgetAction)
+
+describe('dispatchAction — onEventNavigateTo (SSE) race + cleanup', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    FakeEventSource.instances = []
+  })
+
+  it('(3) replays an event that arrived before the POST response set resourceUid', async () => {
+    vi.stubGlobal('EventSource', FakeEventSource)
+    let resolveFetch: (r: Response) => void = () => undefined
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { resolveFetch = resolve })))
+
+    const ctx = makeCtx()
+    const pending = dispatchAction(restOnEvent(), { resourcesRefs: refs([postRef]) }, ctx)
+
+    // let runRest reach the fetch await (EventSource created + listener registered)
+    await flush()
+    const es = FakeEventSource.instances.at(-1)
+    expect(es).toBeDefined()
+
+    // event arrives FIRST — it must be buffered, not dropped
+    es?.emit('krateo', { involvedObject: { uid: 'U123' }, reason: 'Ready' })
+    expect(ctx.navigate).not.toHaveBeenCalled()
+
+    // the response lands and sets resourceUid → the buffered event replays
+    resolveFetch(fakeResponse(true, '{"metadata":{"uid":"U123"}}'))
+    await pending
+    await flush()
+
+    expect(ctx.navigate).toHaveBeenCalledWith('/done')
+    expect(ctx.notification.error).not.toHaveBeenCalled()
+  })
+
+  it('(7) registers a cleanup that closes the EventSource (unmount safety)', async () => {
+    vi.stubGlobal('EventSource', FakeEventSource)
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(fakeResponse(true, '{"metadata":{"uid":"U"}}'))))
+
+    let captured: (() => void) | undefined
+    const ctx = makeCtx({ registerCleanup: (fn) => { captured = fn } })
+
+    await dispatchAction(restOnEvent(), { resourcesRefs: refs([postRef]) }, ctx)
+
+    const es = FakeEventSource.instances.at(-1)
+    // still open, awaiting the event
+    expect(es?.closed).toBe(false)
+    expect(captured).toBeDefined()
+
+    // simulate the hook's unmount teardown
+    captured?.()
+    expect(es?.closed).toBe(true)
   })
 })
