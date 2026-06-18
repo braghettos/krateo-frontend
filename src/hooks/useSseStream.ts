@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 
 import { useConfigContext } from '../context/ConfigContext'
 
+import { subscribeSse } from './sseClient'
+
 /**
  * Generic Server-Sent-Events stream: subscribes to `topic` at `endpoint`
  * (resolved under `EVENTS_PUSH_API_BASE_URL`) and prepends each parsed message
@@ -26,30 +28,24 @@ export const useSseStream = <T, >({ endpoint, initial, max = 200, topic }: {
 
     const url = `${config!.api.EVENTS_PUSH_API_BASE_URL}${endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint}`
     const timeout = setTimeout(() => setConnecting(false), 10000)
-    let source: EventSource | undefined
 
-    try {
-      source = new EventSource(url, { withCredentials: false })
-      source.addEventListener(topic, (event: MessageEvent<string>) => {
+    // Subscribe through the shared SSE client: one connection per url, shared with
+    // Notifications / other streams on the same endpoint instead of a socket each.
+    const unsubscribe = subscribeSse(url, topic, {
+      onError: () => { setConnecting(false) },
+      onMessage: (raw) => {
         try {
-          const data = JSON.parse(event.data) as T
+          const data = JSON.parse(raw) as T
           setItems((prev) => [data, ...prev].slice(0, max))
           setConnecting(false)
         } catch (error) {
           console.error('Error parsing SSE data:', error)
         }
-      })
-      source.onerror = () => {
-        setConnecting(false)
-        source?.close()
-      }
-    } catch (error) {
-      console.warn('Error initializing SSE connection:', error)
-      setConnecting(false)
-    }
+      },
+    })
 
     return () => {
-      source?.close()
+      unsubscribe()
       clearTimeout(timeout)
     }
   }, [config, endpoint, topic, max])

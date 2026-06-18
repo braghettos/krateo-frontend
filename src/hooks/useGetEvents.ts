@@ -1,9 +1,11 @@
 import type { QueryKey } from '@tanstack/react-query'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { useConfigContext } from '../context/ConfigContext'
 import type { SSEK8sEvent } from '../utils/types'
+
+import { subscribeSse } from './sseClient'
 
 const MAX_EVENTS = 200
 // 10 seconds
@@ -11,8 +13,6 @@ const CLEANUP_INTERVAL = 10000
 
 export function useGetEvents({ registerToSSE = true, topic = 'krateo' }: { topic?: string; registerToSSE?: boolean }) {
   const { config } = useConfigContext()
-  const refConnected = useRef(false)
-  const eventSourceRef = useRef<EventSource | null>(null)
 
   // list of events
   const eventsUrl = `${config!.api.EVENTS_API_BASE_URL}/events`
@@ -58,46 +58,19 @@ export function useGetEvents({ registerToSSE = true, topic = 'krateo' }: { topic
       return
     }
 
-    // Clean up any existing connection before creating a new one
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close()
-      eventSourceRef.current = null
-      refConnected.current = false
-    }
-
-    const eventSource = new EventSource(notificationsUrl, {
-      withCredentials: false,
+    // Subscribe through the shared SSE client so we don't open a second connection to
+    // /notifications when other widgets (List/EventList) listen to the same stream.
+    return subscribeSse(notificationsUrl, topic, {
+      onError: () => { console.error('[SSE] Connection error') },
+      onMessage: (raw) => {
+        try {
+          const data = JSON.parse(raw) as SSEK8sEvent
+          queryClient.setQueryData(queryKey, (prev: SSEK8sEvent[]) => [data, ...(prev || [])])
+        } catch (error) {
+          console.error('Error parsing event data:', error)
+        }
+      },
     })
-    eventSourceRef.current = eventSource
-
-    eventSource.onopen = () => {
-      refConnected.current = true
-    }
-
-    eventSource.onerror = (event) => {
-      console.error('[SSE] Connection error:', event)
-      refConnected.current = false
-      // Close the connection on error to prevent orphaned connections
-      eventSource.close()
-      eventSourceRef.current = null
-    }
-
-    const handler = (event: MessageEvent<string>) => {
-      try {
-        const data = JSON.parse(event.data) as SSEK8sEvent
-        queryClient.setQueryData(queryKey, (prev: SSEK8sEvent[]) => [data, ...(prev || [])])
-      } catch (error) {
-        console.error('Error parsing event data:', error)
-      }
-    }
-
-    eventSource.addEventListener(topic, handler)
-
-    return () => {
-      refConnected.current = false
-      eventSource.close()
-      eventSourceRef.current = null
-    }
   }, [notificationsUrl, topic, queryClient, queryKey, registerToSSE])
 
   return queryResult
