@@ -1,5 +1,7 @@
+import { faCircleCheck } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Card, Divider, Result, Skeleton } from 'antd'
+import { Divider, Result, Skeleton } from 'antd'
 import { useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 
@@ -11,6 +13,15 @@ import styles from './Login.module.css'
 import type { AuthModeType, FormType, LoginFormType } from './Login.types'
 import LoginForm from './LoginForm'
 import SocialLogin from './SocialLogin'
+
+// Branding-panel value props. Static marketing copy (NOT portal data) — the
+// mockup's "128 compositions across 6 clusters" stat is intentionally dropped
+// so the login page never implies a fabricated metric.
+const HIGHLIGHTS = [
+  'Compose cloud resources across your clusters',
+  'GitOps reconciliation in real time',
+  'Policy-guarded self-service catalog',
+]
 
 const Login = () => {
   const navigate = useNavigate()
@@ -105,7 +116,7 @@ const Login = () => {
                 method={method}
                 onSubmit={(values) => { void onFormSubmit(values, kind) }}
               />
-              {((index + 1) < methods?.length) && <Divider plain>OR</Divider> }
+              {((index + 1) < methods?.length) && <Divider plain>or continue with</Divider> }
             </div>
           )
         }
@@ -118,17 +129,28 @@ const Login = () => {
   return (
     <div className={styles.login}>
       <aside className={styles.aside}>
-        <img alt='Krateo | PlatformOps' className={styles.image} src={logo} />
+        <img alt='Krateo | PlatformOps' className={styles.logo} src={logo} />
+        <div className={styles.pitch}>
+          <h1 className={styles.headline}>Ship platform resources without the YAML toil.</h1>
+          <p className={styles.subtitle}>
+            Self-service infrastructure for your developers — compose, provision and observe cloud resources from a single control plane.
+          </p>
+          <ul className={styles.highlights}>
+            {HIGHLIGHTS.map((highlight) => (
+              <li key={highlight}>
+                <FontAwesomeIcon icon={faCircleCheck} /> {highlight}
+              </li>
+            ))}
+          </ul>
+        </div>
       </aside>
+
       <section className={styles.section}>
-        <Card
-          className={styles.card}
-          classNames={{ body: styles.body, header: styles.header, title: styles.title }}
-          title={<span className={styles.title}>Welcome back</span>}
-          variant={'borderless'}
-        >
+        <div className={styles.formPanel}>
+          <h2 className={styles.welcome}>Welcome back</h2>
+          <p className={styles.welcomeSub}>Sign in to your Krateo control plane.</p>
           {content}
-        </Card>
+        </div>
       </section>
     </div>
   )
