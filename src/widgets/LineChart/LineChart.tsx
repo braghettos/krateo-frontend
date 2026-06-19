@@ -1,6 +1,7 @@
 import { Line } from '@ant-design/plots'
 import { Empty } from 'antd'
 
+import { useMeasuredWidth } from '../../hooks/useMeasuredWidth'
 import type { WidgetProps } from '../../types/Widget'
 
 import styles from './LineChart.module.css'
@@ -22,25 +23,33 @@ const AREA_FILL = 'linear-gradient(180deg, rgba(99,102,241,0.22) 0%, rgba(99,102
  * palette via `colorField`, not a Krateo enum.
  */
 const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
+  // Explicit measured size (no autoFit first-paint race) — see useMeasuredWidth.
+  const { ref, width } = useMeasuredWidth<HTMLDivElement>()
+  const height = widgetData.height ?? 300
+
   if (!widgetData.data?.length) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
   return (
-    <div className={styles.lineChart} style={{ height: widgetData.height ?? 300 }}>
-      <Line
-        area={widgetData.area ? { style: { fill: AREA_FILL } } : undefined}
-        autoFit
-        colorField={widgetData.colorField}
-        data={widgetData.data}
-        key={uid}
-        legend={widgetData.legend === false ? false : undefined}
-        shapeField={widgetData.shapeField}
-        stack={widgetData.stack}
-        title={widgetData.title}
-        xField={widgetData.xField}
-        yField={widgetData.yField}
-      />
+    <div className={styles.lineChart} ref={ref} style={{ height }}>
+      {width > 0 ? (
+        <Line
+          area={widgetData.area ? { style: { fill: AREA_FILL } } : undefined}
+          autoFit={false}
+          colorField={widgetData.colorField}
+          data={widgetData.data}
+          height={height}
+          key={uid}
+          legend={widgetData.legend === false ? false : undefined}
+          shapeField={widgetData.shapeField}
+          stack={widgetData.stack}
+          title={widgetData.title}
+          width={width}
+          xField={widgetData.xField}
+          yField={widgetData.yField}
+        />
+      ) : null}
     </div>
   )
 }
