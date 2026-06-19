@@ -1,8 +1,11 @@
+import { Badge } from 'antd'
+
 import type { WidgetProps } from '../../types/Widget'
 import type { ItemTemplate } from '../List/itemTemplate'
 import List from '../List/List'
 import type { ListWidgetData } from '../List/List'
 
+import styles from './EventList.module.css'
 import type { EventList as WidgetType } from './EventList.type'
 
 export type EventListWidgetData = WidgetType['spec']['widgetData']
@@ -34,7 +37,18 @@ const EventList = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<Event
     sseTopic,
   } satisfies ListWidgetData
 
-  return <List resourcesRefs={resourcesRefs} uid={uid} widget={widget} widgetData={listWidgetData} />
+  return (
+    <div className={styles.eventList}>
+      {/* "Live" indicator when the list is SSE-backed (live-refresh) — mirrors the
+          mockup's Live badge on the events card. */}
+      {sseEndpoint ? (
+        <div className={styles.live}>
+          <Badge status='processing' text='Live' />
+        </div>
+      ) : null}
+      <List resourcesRefs={resourcesRefs} uid={uid} widget={widget} widgetData={listWidgetData} />
+    </div>
+  )
 }
 
 export default EventList
