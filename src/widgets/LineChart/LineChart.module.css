@@ -1,16 +1,10 @@
+/* @ant-design/plots (G2) renders a <canvas> into a plain div — NOT echarts.
+ * Definite container height inline (from widgetData.height) + autoFit, so the
+ * canvas matches the container (no layout/DPR mismatch). */
 .lineChart {
-  align-self: flex-start;
-  flex: 1 1 auto;
-  max-height: 400px;
-  min-height: 300px;
   width: 100%;
 }
 
-.lineChart :global(.echarts-for-react),
-.lineChart :global(.echarts-for-react canvas) {
+.lineChart canvas {
   display: block;
-  height: 100%;
-  max-height: 400px;
-  min-height: 300px;
-  width: 100%;
 }

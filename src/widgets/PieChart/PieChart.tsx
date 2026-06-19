@@ -25,13 +25,12 @@ const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
     : undefined
 
   return (
-    <div className={styles.pieChart}>
+    <div className={styles.pieChart} style={{ height: widgetData.height ?? 240 }}>
       <Pie
         angleField={widgetData.angleField}
         autoFit
         colorField={widgetData.colorField}
         data={widgetData.data}
-        height={widgetData.height}
         innerRadius={widgetData.innerRadius === null || widgetData.innerRadius === undefined ? undefined : widgetData.innerRadius / 100}
         key={uid}
         legend={widgetData.legend === false ? false : undefined}

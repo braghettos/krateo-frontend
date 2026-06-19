@@ -27,13 +27,12 @@ const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
   }
 
   return (
-    <div className={styles.lineChart}>
+    <div className={styles.lineChart} style={{ height: widgetData.height ?? 300 }}>
       <Line
         area={widgetData.area ? { style: { fill: AREA_FILL } } : undefined}
         autoFit
         colorField={widgetData.colorField}
         data={widgetData.data}
-        height={widgetData.height}
         key={uid}
         legend={widgetData.legend === false ? false : undefined}
         shapeField={widgetData.shapeField}

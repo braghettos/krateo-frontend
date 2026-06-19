@@ -1,16 +1,12 @@
+/* @ant-design/plots (G2) renders a <canvas> into a plain div — NOT echarts.
+ * The container gets a definite height inline (from widgetData.height) and the
+ * chart fills it via autoFit, so canvas size == container size — no layout/DPR
+ * mismatch (which previously pushed the pie centre below the visible canvas and
+ * left only disconnected wedge-tops showing). */
 .pieChart {
-  align-self: flex-start;
-  flex: 1 1 auto;
-  max-height: 400px;
-  min-height: 400px;
   width: 100%;
 }
 
-.pieChart :global(.echarts-for-react),
-.pieChart :global(.echarts-for-react canvas) {
+.pieChart canvas {
   display: block;
-  height: 100%;
-  max-height: 400px;
-  min-height: 400px;
-  width: 100%;
 }
