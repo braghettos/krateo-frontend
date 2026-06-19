@@ -1,0 +1,6 @@
+/* Centre the Progress within its container — a circle Progress is inline-block,
+ * so text-align centres it (the mockup's `.healthbig` centres the health donut);
+ * harmless for a full-width line Progress. */
+.progress {
+  text-align: center;
+}

@@ -41,6 +41,7 @@ const Login = () => {
   const headline = branding?.headline ?? DEFAULT_HEADLINE
   const subtitle = branding?.subtitle ?? DEFAULT_SUBTITLE
   const highlights = branding?.highlights?.length ? branding.highlights : DEFAULT_HIGHLIGHTS
+  const requestAccountUrl = branding?.requestAccountUrl
 
   const authUrl = `${config!.api.AUTHN_API_BASE_URL}/strategies`
 
@@ -162,6 +163,11 @@ const Login = () => {
           <h2 className={styles.welcome}>Welcome back</h2>
           <p className={styles.welcomeSub}>Sign in to your Krateo control plane.</p>
           {content}
+          {requestAccountUrl && (
+            <p className={styles.requestAccount}>
+              Need access? <a href={requestAccountUrl}>Request an account</a>
+            </p>
+          )}
         </div>
       </section>
     </div>

@@ -27,6 +27,10 @@ export interface Config {
     headline?: string
     subtitle?: string
     highlights?: string[]
+    /** Optional "Request an account" link target (e.g. an internal access-request
+     * form or mailto). Krateo has no self-signup, so the link only renders when an
+     * install sets this — no dead link by default. */
+    requestAccountUrl?: string
   }
 }
 

@@ -101,6 +101,13 @@
   margin: 0 0 var(--spacing-lg);
 }
 
+.requestAccount {
+  color: var(--gray-color);
+  font-size: var(--font-size-xs);
+  margin: var(--spacing-lg) 0 0;
+  text-align: center;
+}
+
 /* Mobile: drop the branding panel, form takes the full width. */
 @media (max-width: 768px) {
   .aside {
