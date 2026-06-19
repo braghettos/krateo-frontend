@@ -117,6 +117,10 @@ export interface Table {
        */
       prefix?: string
       /**
+       * optional route path to navigate to on row click; `{valueKey}` placeholders are filled from that row's cells (e.g. /compositions/{ns}/{name})
+       */
+      rowNavigateTo?: string
+      /**
        * live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.
        */
       watch?: {

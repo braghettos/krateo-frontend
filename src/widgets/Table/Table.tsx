@@ -1,6 +1,7 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Table as AntdTable, Result, Typography } from 'antd'
+import { useNavigate } from 'react-router'
 
 import { useFilter } from '../../components/FiltesProvider/FiltersProvider'
 import WidgetRenderer from '../../components/WidgetRenderer'
@@ -13,10 +14,27 @@ import type { Table as WidgetType } from './Table.type'
 export type TableWidgetData = WidgetType['spec']['widgetData']
 
 const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>) => {
-  const { bordered, columns, dataSource, pagination, prefix, size } = widgetData
+  const { bordered, columns, dataSource, pagination, prefix, rowNavigateTo, size } = widgetData
   const data = dataSource ?? []
   const pageSize = pagination?.pageSize ?? pagination?.defaultPageSize
   const { getFilteredData } = useFilter()
+  const navigate = useNavigate()
+
+  // Optional row → route navigation. `rowNavigateTo` is a path with `{valueKey}`
+  // placeholders filled from that row's cells (e.g. "/compositions/{ns}/{name}").
+  const buildRowPath = (row: NonNullable<TableWidgetData['dataSource']>[number]): string | undefined => {
+    if (!rowNavigateTo) { return undefined }
+    let missing = false
+    const path = rowNavigateTo.replace(/\{([^}]+)\}/g, (_match, key: string) => {
+      const value = row.find((cell) => cell.valueKey === key)?.stringValue
+      if (value === undefined || value === '') {
+        missing = true
+        return ''
+      }
+      return encodeURIComponent(value)
+    })
+    return missing ? undefined : path
+  }
 
   // TODO: check if this works with RESTAction, it should not be displayed
   if (!columns.length) {
@@ -110,6 +128,14 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
       }))}
       dataSource={dataTable}
       key={uid}
+      onRow={rowNavigateTo
+        ? (row) => {
+          const path = buildRowPath(row)
+          return path
+            ? { onClick: () => { void navigate(path) }, style: { cursor: 'pointer' } }
+            : {}
+        }
+        : undefined}
       pagination={pagination ?? (dataTable && pageSize && dataTable.length > pageSize ? { defaultPageSize: pageSize } : false)}
       scroll={{ x: 'max-content' }}
       size={size}
