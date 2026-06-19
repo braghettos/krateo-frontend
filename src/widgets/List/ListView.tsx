@@ -83,7 +83,19 @@ export const ListView = ({
       renderItem={(item, index) => {
         const child = renderChild?.(item, index)
         if (child) {
-          return <AntdList.Item key={`${rowKey}-${index}`}>{child}</AntdList.Item>
+          // Child-widget items (e.g. marketplace blueprint cards) become clickable
+          // when the data element carries a `navigateTo` (whole-card → SPA route).
+          const childNav = item && typeof item === 'object' ? (item as { navigateTo?: unknown }).navigateTo : undefined
+          const navPath = typeof childNav === 'string' && childNav ? childNav : undefined
+          return (
+            <AntdList.Item
+              className={navPath ? styles.clickable : undefined}
+              key={`${rowKey}-${index}`}
+              onClick={navPath ? () => { void navigate(navPath) } : undefined}
+            >
+              {child}
+            </AntdList.Item>
+          )
         }
 
         if (!itemTemplate) { return null }
