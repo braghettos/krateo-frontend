@@ -321,6 +321,10 @@
                     "icon": {
                       "type": "string",
                       "description": "icon name for secondary button"
+                    },
+                    "navigateTo": {
+                      "type": "string",
+                      "description": "when set, the secondary button is a Cancel that navigates to this route (SPA) instead of resetting the form"
                     }
                   },
                   "additionalProperties": false

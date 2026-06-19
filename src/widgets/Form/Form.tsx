@@ -6,6 +6,7 @@ import useApp from 'antd/es/app/useApp'
 import dayjs from 'dayjs'
 import type { JSONSchema4 } from 'json-schema'
 import { useEffect, useId, useRef } from 'react'
+import { useNavigate } from 'react-router'
 
 import WidgetRenderer from '../../components/WidgetRenderer'
 import { useHandleAction } from '../../hooks/useHandleActions'
@@ -42,13 +43,18 @@ interface FormExtraProps {
 }
 
 const FormExtra = ({ buttonConfig, disabled = false, form, loading }: FormExtraProps): React.ReactNode => {
+  const navigate = useNavigate()
+  // When `secondary.navigateTo` is set the secondary button is a Cancel that
+  // navigates (SPA) instead of resetting the form.
+  const secondaryNav = buttonConfig?.secondary?.navigateTo
   return (
     <Space>
       <Button
         disabled={disabled}
         form={form}
-        htmlType='reset'
+        htmlType={secondaryNav ? 'button' : 'reset'}
         icon={buttonConfig?.secondary?.icon ? <FontAwesomeIcon icon={buttonConfig?.secondary?.icon as IconProp} /> : undefined}
+        onClick={secondaryNav ? () => { void navigate(secondaryNav) } : undefined}
         type='default'
       >
         {buttonConfig?.secondary?.label || 'Reset'}

@@ -235,6 +235,10 @@ export interface Form {
            * icon name for secondary button
            */
           icon?: string
+          /**
+           * when set, the secondary button is a Cancel that navigates to this route (SPA) instead of resetting the form
+           */
+          navigateTo?: string
         }
       }
       /**
