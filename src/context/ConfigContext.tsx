@@ -14,6 +14,20 @@ export interface Config {
     FRONTEND_NAMESPACE: string
     DELAY_SAVE_NOTIFICATION: string
   }
+  /** Optional login-screen branding. Fetched pre-auth (before any backend
+   * identity), so it lives in the static config (ConfigMap-mountable per install)
+   * rather than a snowplow widget. Absent keys fall back to built-in defaults. */
+  login?: {
+    /** Branding logo for the login panel. A URL (absolute, or a path the
+     * frontend serves). Should be a light/white mark — it sits on the brand
+     * gradient. Falls back to the bundled Krateo logo when absent. */
+    logoUrl?: string
+    /** Accessible alt text for the logo. Falls back to 'Krateo | PlatformOps'. */
+    logoAlt?: string
+    headline?: string
+    subtitle?: string
+    highlights?: string[]
+  }
 }
 
 interface ConfigContextType {

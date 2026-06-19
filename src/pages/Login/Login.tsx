@@ -14,10 +14,16 @@ import type { AuthModeType, FormType, LoginFormType } from './Login.types'
 import LoginForm from './LoginForm'
 import SocialLogin from './SocialLogin'
 
-// Branding-panel value props. Static marketing copy (NOT portal data) — the
-// mockup's "128 compositions across 6 clusters" stat is intentionally dropped
-// so the login page never implies a fabricated metric.
-const HIGHLIGHTS = [
+// Branding-panel defaults. The login screen renders BEFORE any backend identity,
+// so its copy is config-driven (`config.login`, ConfigMap-mountable per install)
+// rather than a snowplow widget — a login/auth widget would be bespoke behavior,
+// which the antd-only widget registry deliberately excludes. These constants are
+// the fallback when a config omits the keys. (Marketing copy, not portal data —
+// the mockup's fabricated "128 compositions" stat stays dropped.)
+const DEFAULT_LOGO_ALT = 'Krateo | PlatformOps'
+const DEFAULT_HEADLINE = 'Ship platform resources without the YAML toil.'
+const DEFAULT_SUBTITLE = 'Self-service infrastructure for your developers — compose, provision and observe cloud resources from a single control plane.'
+const DEFAULT_HIGHLIGHTS = [
   'Compose cloud resources across your clusters',
   'GitOps reconciliation in real time',
   'Policy-guarded self-service catalog',
@@ -27,6 +33,14 @@ const Login = () => {
   const navigate = useNavigate()
   const { catchError } = useCatchError()
   const { config } = useConfigContext()
+
+  // Config-driven branding (falls back to the built-in defaults when absent).
+  const branding = config?.login
+  const logoSrc = branding?.logoUrl || logo
+  const logoAlt = branding?.logoAlt ?? DEFAULT_LOGO_ALT
+  const headline = branding?.headline ?? DEFAULT_HEADLINE
+  const subtitle = branding?.subtitle ?? DEFAULT_SUBTITLE
+  const highlights = branding?.highlights?.length ? branding.highlights : DEFAULT_HIGHLIGHTS
 
   const authUrl = `${config!.api.AUTHN_API_BASE_URL}/strategies`
 
@@ -129,14 +143,12 @@ const Login = () => {
   return (
     <div className={styles.login}>
       <aside className={styles.aside}>
-        <img alt='Krateo | PlatformOps' className={styles.logo} src={logo} />
+        <img alt={logoAlt} className={styles.logo} src={logoSrc} />
         <div className={styles.pitch}>
-          <h1 className={styles.headline}>Ship platform resources without the YAML toil.</h1>
-          <p className={styles.subtitle}>
-            Self-service infrastructure for your developers — compose, provision and observe cloud resources from a single control plane.
-          </p>
+          <h1 className={styles.headline}>{headline}</h1>
+          <p className={styles.subtitle}>{subtitle}</p>
           <ul className={styles.highlights}>
-            {HIGHLIGHTS.map((highlight) => (
+            {highlights.map((highlight) => (
               <li key={highlight}>
                 <FontAwesomeIcon icon={faCircleCheck} /> {highlight}
               </li>
