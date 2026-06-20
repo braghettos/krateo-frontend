@@ -33,6 +33,7 @@ export interface Flex {
         | 'piecharts'
         | 'rows'
         | 'statistics'
+        | 'steps'
         | 'tables'
         | 'tabs'
         | 'tags'
