@@ -5,7 +5,8 @@
 .statistic {
   :global(.ant-statistic-title) {
     color: var(--text-color);
-    font-weight: var(--font-weight-medium);
+    font-size: 15px;
+    font-weight: var(--font-weight-bold);
     margin-bottom: 0;
   }
 
