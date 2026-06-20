@@ -54,9 +54,9 @@ export interface Flex {
        */
       align?: 'flex-start' | 'flex-end' | 'center' | 'stretch' | 'baseline'
       /**
-       * antd Flex gap (SizeType)
+       * antd Flex gap: a SizeType preset string (small/middle/large) or a numeric pixel value
        */
-      gap?: 'small' | 'middle' | 'large'
+      gap?: string | number
       /**
        * antd Flex wrap
        */

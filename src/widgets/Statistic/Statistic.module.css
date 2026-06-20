@@ -1,0 +1,19 @@
+/* Scoped to the Statistic widget root (className on the antd Statistic). Makes the
+   stat-card title readable (antd's default is the low-contrast muted gray) and
+   tightens the title→value rhythm so the card isn't airy. Only stat cards render a
+   Statistic today, so nothing else is affected. */
+.statistic {
+  :global(.ant-statistic-title) {
+    color: var(--text-color);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: 0;
+  }
+
+  :global(.ant-statistic-header) {
+    padding-bottom: 2px;
+  }
+
+  :global(.ant-statistic-content) {
+    line-height: 1.1;
+  }
+}

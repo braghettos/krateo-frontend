@@ -68,9 +68,8 @@
               "type": "string"
             },
             "gap": {
-              "description": "antd Flex gap (SizeType)",
-              "enum": ["small", "middle", "large"],
-              "type": "string"
+              "description": "antd Flex gap: a SizeType preset string (small/middle/large) or a numeric pixel value",
+              "type": ["string", "integer"]
             },
             "wrap": {
               "description": "antd Flex wrap",

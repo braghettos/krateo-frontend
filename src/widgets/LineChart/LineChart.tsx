@@ -29,7 +29,11 @@ const CENTERED_LEGEND = { color: { layout: { justifyContent: 'center' }, positio
  * palette via `colorField`, not a Krateo enum.
  */
 const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
-  // Explicit measured size (no autoFit first-paint race) — see useMeasuredWidth.
+  // Gate the chart on a measured (>0) container width so autoFit's FIRST paint runs against a real
+  // size (no 0/transient-width layout race, e.g. a donut centre off-canvas). After that, autoFit owns
+  // sizing: G2's own ResizeObserver re-renders on container resize AND browser zoom (DPR change) at the
+  // current pixel ratio — passing a fixed width instead left the canvas locked to its initial size, so
+  // a page-zoom shrank the container while the canvas stayed wide and the plot got cropped.
   const { ref, width } = useMeasuredWidth<HTMLDivElement>()
   const height = widgetData.height ?? 300
 
@@ -42,11 +46,10 @@ const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
       {width > 0 ? (
         <Line
           area={widgetData.area ? { style: { fill: AREA_FILL } } : undefined}
-          autoFit={false}
+          autoFit
           axis={widgetData.axis}
           colorField={widgetData.colorField}
           data={widgetData.data}
-          height={height}
           key={uid}
           legend={widgetData.legend === false ? false : CENTERED_LEGEND}
           point={widgetData.point}
@@ -54,7 +57,6 @@ const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
           shapeField={widgetData.shapeField}
           stack={widgetData.stack}
           title={widgetData.title}
-          width={width}
           xField={widgetData.xField}
           yField={widgetData.yField}
         />

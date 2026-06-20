@@ -110,7 +110,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
 
   return (
     <AntdCard
-      className={`${styles.panel} ${action ? styles.clickable : ''}`}
+      className={`${styles.panel} ${action ? styles.clickable : ''} ${icon && !footer ? styles.statCard : ''}`}
       classNames={{ body: styles.bodyWrapper, header: styles.header, title: styles.title }}
       cover={coverEndpoint ? <WidgetRenderer widgetEndpoint={coverEndpoint} /> : undefined}
       extra={

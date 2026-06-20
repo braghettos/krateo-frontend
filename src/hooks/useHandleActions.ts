@@ -22,6 +22,15 @@ interface EventData {
 }
 
 /**
+ * Background re-invalidation delays (ms) after a successful mutating rest action.
+ * snowplow can read the just-written object through an informer/watch-cache that
+ * lags the write, so the single immediate refetch can land on pre-write state.
+ * These staggered background refetches converge the UI without a manual refresh;
+ * the spread covers both fast and slow (loaded-node) propagation.
+ */
+export const POST_WRITE_REVALIDATE_DELAYS_MS = [800, 2200]
+
+/**
  * Interpolates a route template using values from a nested payload object.
  * Placeholders in the route must follow the format `${path.to.value}`.
  * If any placeholder cannot be resolved or is not a primitive, the function returns null.
@@ -466,6 +475,22 @@ const runRest = async (
       : onSuccessNavigateTo
 
     window.location.replace(onSuccessUrl)
+    return
+  }
+
+  // Read-after-write coherence: snowplow may read the just-written object through an
+  // informer/watch-cache that lags the write by a few hundred ms, so the immediate
+  // invalidate above can refetch PRE-write state and the UI looks unchanged until a
+  // manual refresh (e.g. a range chip that PATCHes its ConfigMap but doesn't flip to
+  // selected). Schedule a couple of background re-invalidations to converge the UI
+  // once the write has propagated — no skeleton flash (data already exists, so these
+  // refetch in the background). Cleared if the widget unmounts first. Skipped for
+  // event-driven actions: they navigate on their awaited event, not on a refetch.
+  if (!onEventNavigateTo) {
+    for (const ms of POST_WRITE_REVALIDATE_DELAYS_MS) {
+      const timer = setTimeout(() => { void ctx.invalidateQueries() }, ms)
+      ctx.registerCleanup(() => clearTimeout(timer))
+    }
   }
 }
 

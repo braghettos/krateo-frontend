@@ -85,6 +85,15 @@
     height: 100%;
   }
 
+  /* Stat cards only (icon + no footer): trim the vertical body padding so the
+     title→value→delta stack isn't airy and there's no dead space under the delta.
+     Horizontal padding is left at antd's default; other Card consumers (marketplace,
+     detail, chart, activity cards) don't get .statCard so they're unchanged. */
+  &.statCard :global(.ant-card-body) {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
   .header {
     border-bottom: none;
     padding: var(--spacing-md) var(--spacing-md) var(--spacing-xs);
