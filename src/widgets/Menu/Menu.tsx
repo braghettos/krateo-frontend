@@ -54,6 +54,19 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
     [entries]
   )
 
+  // Highlight the nav item whose path is the longest prefix of the current route, so
+  // child routes (e.g. /compositions/:namespace, /compositions/:namespace/:name, the
+  // marketplace create flow) keep their section selected. An exact match is naturally
+  // the longest prefix; the trailing-slash guard stops /blueprints matching a sibling
+  // like /blueprintsfoo.
+  const selectedKey = useMemo(() => {
+    const path = location.pathname
+    return menuItems
+      .map((item) => item.key as string)
+      .filter((key) => path === key || path.startsWith(`${key}/`))
+      .sort((left, right) => right.length - left.length)[0]
+  }, [menuItems, location.pathname])
+
   return (
     <AntdMenu
       className={styles.menu}
@@ -62,7 +75,7 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
       key={uid}
       mode={mode ?? 'inline'}
       onClick={(item) => { void navigate(item.key) }}
-      selectedKeys={[location.pathname]}
+      selectedKeys={selectedKey ? [selectedKey] : []}
       theme={theme}
     />
   )
