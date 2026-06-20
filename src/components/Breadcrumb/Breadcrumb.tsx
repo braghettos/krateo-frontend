@@ -19,18 +19,24 @@ const Breadcrumb = () => {
       splitPath.forEach((pathElement, index) => {
         const isLast = index === splitPath.length - 1
         const className = `${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`
-        // The first crumb (the section) links to its list route; intermediate segments
-        // (e.g. the namespace) are shown for context but aren't list routes, so they're
-        // plain text rather than broken links. No antd `ellipsis` (its JS measurement
-        // over-truncates even with room) — the CSS truncates only past the cap; `title`
-        // is the tooltip.
-        const linkable = index === 0 && !isLast
+        // The first crumb (the section) links to its list route. On a composition
+        // detail route (/compositions/:namespace/:name) the namespace crumb links to
+        // the per-namespace list /compositions/:namespace. Other intermediate segments
+        // have no list route, so they stay plain text rather than become broken links.
+        // No antd `ellipsis` (its JS measurement over-truncates even with room) — the
+        // CSS truncates only past the cap; `title` is the tooltip.
+        let to: string | undefined
+        if (index === 0 && !isLast) {
+          to = `/${splitPath[0]}`
+        } else if (index === 1 && !isLast && splitPath[0] === 'compositions') {
+          to = `/${splitPath[0]}/${splitPath[1]}`
+        }
 
         items.push({
           title: (
             <Typography.Text className={className} title={pathElement}>
-              {linkable
-                ? <Link className={styles.link} to={`/${splitPath[0]}`}>{pathElement}</Link>
+              {to
+                ? <Link className={styles.link} to={to}>{pathElement}</Link>
                 : pathElement}
             </Typography.Text>
           ),
