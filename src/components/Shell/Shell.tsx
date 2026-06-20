@@ -24,16 +24,6 @@ const HeaderChrome = () => (
   </>
 )
 
-/** Compact brand lockup pinned to the top of the Sider — a gradient mark + the
- * wordmark, matching the mockup (the bundled SVG is the full marketing logo, too
- * large/heavy for the app sidebar). */
-const Brand = () => (
-  <div className={styles.brand}>
-    <span className={styles.brandMark}>K</span>
-    <span className={styles.brandName}>Krateo</span>
-  </div>
-)
-
 /** User block pinned to the bottom of the Sider (avatar + name from the token). */
 const SiderFooter = () => {
   const { user } = JSON.parse(localStorage.getItem('K_user') || '{}') as { user?: { avatarURL?: string; displayName?: string; username?: string } }
@@ -65,7 +55,7 @@ export const ShellRoute = () => {
   }, [])
 
   return (
-    <ShellSlotsProvider value={{ brand: <Brand />, content: <Outlet />, header: <HeaderChrome />, siderFooter: <SiderFooter /> }}>
+    <ShellSlotsProvider value={{ content: <Outlet />, header: <HeaderChrome />, siderFooter: <SiderFooter /> }}>
       <WidgetRenderer key='shell' widgetEndpoint={config!.api.INIT} />
       <Drawer />
       <Modal />

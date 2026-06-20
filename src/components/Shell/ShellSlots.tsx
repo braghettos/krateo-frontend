@@ -16,8 +16,6 @@ import { createContext, useContext, type ReactNode } from 'react'
 export interface ShellSlots {
   content?: ReactNode
   header?: ReactNode
-  /** Brand block pinned to the top of the Sider (logo + product name). */
-  brand?: ReactNode
   /** User block pinned to the bottom of the Sider (avatar + name). */
   siderFooter?: ReactNode
 }

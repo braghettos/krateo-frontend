@@ -17,17 +17,23 @@
   border-right: 1px solid var(--border-color);
 }
 
-/* Sider body column: a fixed brand on top, a scrollable nav, a pinned footer. */
+/* Sider column: a scrollable body (the declarative brand logo + nav, both from
+   the chart) above a pinned footer. */
 .sider {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
+/* The sider region's content padding — engine chrome, same layer as .content /
+   .header. Widgets fill the padded region; region padding isn't a widget concern
+   (antd Flex has no padding prop, and the set deliberately omits `style`). */
 .siderBody {
+  box-sizing: border-box;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  padding: 16px 16px 0;
 }
 
 /* Header: the light top bar with left (breadcrumb) / right (controls) slots. */
