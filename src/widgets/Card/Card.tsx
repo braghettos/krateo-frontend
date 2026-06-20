@@ -1,5 +1,6 @@
 import { QuestionCircleOutlined } from '@ant-design/icons'
-import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { findIconDefinition } from '@fortawesome/fontawesome-svg-core'
+import type { IconName, IconPrefix, IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Card as AntdCard, Button, Tag, Tooltip } from 'antd'
 import useApp from 'antd/es/app/useApp'
@@ -15,6 +16,21 @@ import styles from './Card.module.css'
 import type { Card as WidgetType } from './Card.type'
 
 export type CardWidgetData = WidgetType['spec']['widgetData']
+
+/**
+ * Resolve a FontAwesome icon name (e.g. "fa-aws", "fa-gauge") to a definition,
+ * trying solid → brands → regular. The bare name defaults to the solid prefix,
+ * where BRAND names (aws, google, …) don't exist — so without this they render as
+ * a blank square. Falls back to a generic cube for unknown names.
+ */
+const resolveFaIcon = (name?: string): IconProp => {
+  const iconName = (name ?? '').replace(/^fa-/, '') as IconName
+  for (const prefix of ['fas', 'fab', 'far'] as IconPrefix[]) {
+    const def = findIconDefinition({ iconName, prefix })
+    if (def) { return def }
+  }
+  return ['fas', 'cube']
+}
 
 const FooterItem = ({ resourceRefId, resourcesRefs }: { resourceRefId: string; resourcesRefs: ResourcesRefs }) => {
   const [isLoading, setIsLoading] = useState(true)
@@ -135,7 +151,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
           className={styles.iconFloat}
           style={{ backgroundColor: `color-mix(in srgb, ${getColorCode(icon.color)} 14%, var(--light-color))`, color: getColorCode(icon.color) }}
         >
-          <FontAwesomeIcon icon={icon.name as IconProp} />
+          <FontAwesomeIcon icon={resolveFaIcon(icon.name)} />
         </span>
       )}
       <div className={styles.content}>
