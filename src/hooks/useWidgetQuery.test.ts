@@ -257,6 +257,18 @@ describe('buildExtrasParam — request/user values forwarded into the RA jq dict
     expect(buildExtrasParam(sp('displayName=evil'), {}, 'Diego')).toBe('{"displayName":"Diego"}')
   })
 
+  it('forwards the login username when present (per-user server state, e.g. drafts)', () => {
+    expect(buildExtrasParam(sp(''), {}, 'Diego', 'diego.braga')).toBe('{"displayName":"Diego","username":"diego.braga"}')
+  })
+
+  it('identity overrides a spoofed username URL param', () => {
+    // A URL like ?username=evil must NOT override the authenticated identity — drafts
+    // are keyed by username, so a spoof must not let one user write another's state.
+    // (The `username` key keeps the position of its first sighting in the query, but
+    // its value is overwritten by the authenticated identity — value wins, not order.)
+    expect(buildExtrasParam(sp('username=evil'), {}, 'Diego', 'diego.braga')).toBe('{"username":"diego.braga","displayName":"Diego"}')
+  })
+
   it('is stable for the same inputs (so the react-query key does not churn)', () => {
     expect(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego')).toBe(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego'))
   })

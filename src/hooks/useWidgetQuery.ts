@@ -54,20 +54,25 @@ export const widgetFetchRetryDelay = (attemptIndex: number): number => Math.min(
  * NOT otherwise exposed to RA jq). Sources, later-wins on key collision: the browser
  * URL query (e.g. /search?q=… → `extras.q`), the active route params
  * (e.g. /compositions/:namespace/:name → `extras.namespace`/`extras.name` — the
- * convention's param channel), and the login-provided `displayName` (there is no
- * runtime /me; for the greeting). Returns '' when empty so the param — and the
- * react-query key it feeds — stay stable (same inputs → same string, no spurious refetch).
+ * convention's param channel), and the login-provided identity `displayName` +
+ * `username` (there is no runtime /me; displayName feeds the greeting, username
+ * scopes per-user server state e.g. blueprint drafts). Identity is applied LAST so
+ * a spoofed `?displayName=`/`?username=` URL param can never override the
+ * authenticated value. Returns '' when empty so the param — and the react-query key
+ * it feeds — stay stable (same inputs → same string, no spurious refetch).
  */
 export const buildExtrasParam = (
   searchParams: URLSearchParams,
   routeParams: Record<string, string | undefined> = {},
   displayName?: string,
+  username?: string,
 ): string => {
   const extras: Record<string, unknown> = Object.fromEntries(searchParams.entries())
   for (const [key, value] of Object.entries(routeParams)) {
     if (value !== undefined) { extras[key] = value }
   }
   if (displayName) { extras.displayName = displayName }
+  if (username) { extras.username = username }
   return Object.keys(extras).length > 0 ? JSON.stringify(extras) : ''
 }
 
@@ -77,8 +82,10 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   const routeParams = useParams()
   // Extras envelope snowplow forwards into the RESTAction jq dict (`?extras=<json>`):
   // route params (e.g. /compositions/:namespace/:name) + browser URL query (search `q`)
-  // + login `displayName` (greeting). See buildExtrasParam.
-  const extrasParam = buildExtrasParam(searchParams, routeParams, getUserInfo().displayName)
+  // + login identity `displayName` (greeting) + `username` (per-user server state, e.g.
+  // blueprint drafts). See buildExtrasParam.
+  const { displayName, username } = getUserInfo()
+  const extrasParam = buildExtrasParam(searchParams, routeParams, displayName, username)
 
   const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${widgetEndpoint}`
   const requestUrl = new URL(widgetFullUrl)

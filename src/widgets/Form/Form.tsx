@@ -40,9 +40,14 @@ interface FormExtraProps {
   disabled?: boolean | undefined
   form?: string | undefined
   loading?: boolean
+  // When set, a "Save draft" button is shown between Cancel and the primary; it is a
+  // plain (htmlType='button') button so it does NOT trigger form validation — clicking
+  // it persists the current field values as-is. Only wired for the inline (non-drawer)
+  // render; the drawer omits it.
+  onDraft?: (() => void | Promise<void>) | undefined
 }
 
-const FormExtra = ({ buttonConfig, disabled = false, form, loading }: FormExtraProps): React.ReactNode => {
+const FormExtra = ({ buttonConfig, disabled = false, form, loading, onDraft }: FormExtraProps): React.ReactNode => {
   const navigate = useNavigate()
   // When `secondary.navigateTo` is set the secondary button is a Cancel that
   // navigates (SPA) instead of resetting the form.
@@ -59,6 +64,19 @@ const FormExtra = ({ buttonConfig, disabled = false, form, loading }: FormExtraP
       >
         {buttonConfig?.secondary?.label || 'Reset'}
       </Button>
+      {onDraft
+        ? (
+          <Button
+            disabled={disabled}
+            htmlType='button'
+            icon={buttonConfig?.draft?.icon ? <FontAwesomeIcon icon={buttonConfig?.draft?.icon as IconProp} /> : undefined}
+            onClick={() => { void onDraft() }}
+            type='default'
+          >
+            {buttonConfig?.draft?.label || 'Save draft'}
+          </Button>
+        )
+        : null}
       <Button
         form={form}
         htmlType='submit'
@@ -80,13 +98,18 @@ const FormExtra = ({ buttonConfig, disabled = false, form, loading }: FormExtraP
  * in `widgetDataTemplate` that populates `items`.
  */
 const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>) => {
-  const { actions, buttonConfig, disabled, initialValues, items, layout, propertiesToHide, schema, size, submitActionId } = widgetData
+  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, schema, size, submitActionId } = widgetData
   const jsonSchema = schema as JSONSchema4 | undefined
   const { insideDrawer, setDrawerData } = useDrawerContext()
   const alreadySetDrawerData = useRef(false)
 
   const { notification } = useApp()
   const { handleAction, isActionLoading } = useHandleAction()
+
+  // A controlled instance so the draft handler can read the live store (incl. values
+  // seeded via initialValues but not rendered, e.g. the per-user draft key) — onFinish
+  // only yields validated, registered fields.
+  const [form] = AntdForm.useForm()
 
   /* https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button#form */
   const formId = useId()
@@ -101,6 +124,32 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   const action = Object.values(actions)
     .flat()
     .find(({ id }) => id === submitActionId)
+
+  const draftAction = draftActionId
+    ? Object.values(actions).flat().find(({ id }) => id === draftActionId)
+    : undefined
+
+  // "Save draft" — persist the current field values WITHOUT validation. getFieldsValue(true)
+  // returns the entire form store (including values seeded via initialValues that have no
+  // rendered field, e.g. the per-user `__owner` draft key), unlike onFinish which only
+  // delivers validated registered fields. Only offered when the CR defines draftActionId.
+  const onDraft = draftAction
+    ? async () => {
+      if (draftAction.type !== 'rest') {
+        notification.error({
+          description: 'Draft action type is not "rest"',
+          message: 'Error while executing the action',
+          placement: 'bottomLeft',
+        })
+
+        return
+      }
+
+      const values = convertDayjsToISOString(form.getFieldsValue(true) as Record<string, unknown>)
+
+      await handleAction(draftAction, resourcesRefs, values, widget)
+    }
+    : undefined
 
   const onSubmit = async (formValues: Record<string, unknown>) => {
     if (!action) {
@@ -159,6 +208,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     <div className={styles.form} data-inside-drawer={insideDrawer}>
       <AntdForm
         disabled={disabled}
+        form={form}
         id={formId}
         initialValues={jsonSchema ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues } : initialValues}
         layout={layout}
@@ -174,7 +224,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       </AntdForm>
 
       <div className={styles.extra}>
-        {shouldRenderButtonsInsideForm ? <FormExtra buttonConfig={buttonConfig} form={formId} loading={isActionLoading} /> : null}
+        {shouldRenderButtonsInsideForm ? <FormExtra buttonConfig={buttonConfig} form={formId} loading={isActionLoading} onDraft={onDraft} /> : null}
       </div>
     </div>
   )

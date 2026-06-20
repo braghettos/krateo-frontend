@@ -328,6 +328,21 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                "draft": {
+                  "type": "object",
+                  "description": "draft button configuration — only rendered when widgetData.draftActionId is also set; clicking it persists the current (un-validated) field values via that action",
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "description": "text label for draft button"
+                    },
+                    "icon": {
+                      "type": "string",
+                      "description": "icon name for draft button"
+                    }
+                  },
+                  "additionalProperties": false
                 }
               },
               "additionalProperties": false
@@ -363,6 +378,10 @@
             },
             "submitActionId": {
               "description": "the id of the action to be called when the form is submitted",
+              "type": "string"
+            },
+            "draftActionId": {
+              "description": "optional id of an action fired by a 'Save draft' button that captures the CURRENT field values WITHOUT running form validation (so an incomplete form can be persisted). Pair with buttonConfig.draft to show the button.",
               "type": "string"
             }
           },

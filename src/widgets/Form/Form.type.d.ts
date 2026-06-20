@@ -240,6 +240,19 @@ export interface Form {
            */
           navigateTo?: string
         }
+        /**
+         * draft button configuration — only rendered when widgetData.draftActionId is also set; clicking it persists the current (un-validated) field values via that action
+         */
+        draft?: {
+          /**
+           * text label for draft button
+           */
+          label?: string
+          /**
+           * icon name for draft button
+           */
+          icon?: string
+        }
       }
       /**
        * optional object with initial values for form fields. Keys should match form field names (supports nested objects). These values override schema defaults.
@@ -266,6 +279,10 @@ export interface Form {
        * the id of the action to be called when the form is submitted
        */
       submitActionId: string
+      /**
+       * optional id of an action fired by a 'Save draft' button that captures the CURRENT field values WITHOUT running form validation (so an incomplete form can be persisted). Pair with buttonConfig.draft to show the button.
+       */
+      draftActionId?: string
     }
     apiRef?: {
       name: string
