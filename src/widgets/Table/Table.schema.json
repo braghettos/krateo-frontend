@@ -94,9 +94,23 @@
                       "enum": [
                         "jsonSchemaType",
                         "icon",
-                        "widget"
+                        "widget",
+                        "tag"
                       ],
-                      "description": "type of cell value"
+                      "description": "type of cell value. `tag` renders the stringValue as a colored antd Tag (use the cell `color`)."
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "per-cell color — for a `tag` cell, an antd Tag color (e.g. green / red / gold / blue); for a jsonSchemaType cell it overrides the column color. Lets each row carry its own color (e.g. status)."
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "relative",
+                        "date",
+                        "datetime"
+                      ],
+                      "description": "optional display format for a string value — `relative` (e.g. \"14d ago\"), `date`, or `datetime`. The raw value stays in the data; only the rendering changes."
                     },
                     "resourceRefId": {
                       "type": "string",

@@ -47,9 +47,17 @@ export interface Table {
          */
         valueKey: string
         /**
-         * type of cell value
+         * type of cell value. `tag` renders the stringValue as a colored antd Tag (use the cell `color`).
          */
-        kind: 'jsonSchemaType' | 'icon' | 'widget'
+        kind: 'jsonSchemaType' | 'icon' | 'widget' | 'tag'
+        /**
+         * per-cell color — for a `tag` cell, an antd Tag color (e.g. green / red / gold / blue); for a jsonSchemaType cell it overrides the column color. Lets each row carry its own color (e.g. status).
+         */
+        color?: string
+        /**
+         * optional display format for a string value — `relative` (e.g. "14d ago"), `date`, or `datetime`. The raw value stays in the data; only the rendering changes.
+         */
+        format?: 'relative' | 'date' | 'datetime'
         /**
          * used if kind = widget
          */

@@ -1,12 +1,12 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Table as AntdTable, Result, Typography } from 'antd'
+import { Table as AntdTable, Result, Tag, Typography } from 'antd'
 import { useNavigate } from 'react-router'
 
 import { useFilter } from '../../components/FiltesProvider/FiltersProvider'
 import WidgetRenderer from '../../components/WidgetRenderer'
 import type { WidgetProps } from '../../types/Widget'
-import { getEndpointUrl } from '../../utils/utils'
+import { formatISODate, formatRelativeTime, getEndpointUrl } from '../../utils/utils'
 
 import styles from './Table.module.css'
 import type { Table as WidgetType } from './Table.type'
@@ -66,10 +66,15 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
             return <span>-</span>
           }
 
-          const { arrayValue, booleanValue, decimalValue, kind, numberValue, resourceRefId, stringValue, type } = cell
+          const { arrayValue, booleanValue, color: cellColor, decimalValue, format, kind, numberValue, resourceRefId, stringValue, type } = cell
           const endpoint = kind === 'widget' && resourceRefId && getEndpointUrl(resourceRefId, resourcesRefs)
 
           switch (kind) {
+            case 'tag':
+              // Per-row colored Tag (e.g. status Healthy/Failed/Pending). The color
+              // rides on the cell so each row can differ — unlike the per-column color.
+              return <Tag color={cellColor ?? color}>{stringValue ?? '-'}</Tag>
+
             case 'icon':
               if (stringValue) { return <FontAwesomeIcon color={color} icon={stringValue as IconProp} /> }
               console.error('Table rendering error: icon value has incorrect format')
@@ -95,8 +100,17 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
               }
 
               switch (type) {
-                case 'string':
-                  return <span style={{ color }}>{stringValue ?? '-'}</span>
+                case 'string': {
+                  // Optional display format (relative age / formatted date) — the raw
+                  // value stays in the data; only the rendering changes.
+                  const formatted = (() => {
+                    if (!stringValue) { return '-' }
+                    if (format === 'relative') { return formatRelativeTime(stringValue) }
+                    if (format === 'date' || format === 'datetime') { return formatISODate(stringValue, format === 'datetime') }
+                    return stringValue
+                  })()
+                  return <span style={{ color: cellColor ?? color }}>{formatted}</span>
+                }
                 case 'number':
                 case 'integer':
                   return <span style={{ color }}>{numberValue ?? '-'}</span>
