@@ -19,11 +19,8 @@ import { ShellSlotsProvider } from './ShellSlots'
  * controls (not server data), so they live in the engine, not as widgets. */
 const HeaderChrome = () => (
   <>
-    <div className={styles.headerLeft}>
-      <Breadcrumb />
-      <CommandPalette />
-    </div>
-    <div className={styles.headerRight}><Notifications /><ThemeToggle /><UserMenu /></div>
+    <div className={styles.headerLeft}><Breadcrumb /></div>
+    <div className={styles.headerRight}><CommandPalette /><Notifications /><ThemeToggle /><UserMenu /></div>
   </>
 )
 

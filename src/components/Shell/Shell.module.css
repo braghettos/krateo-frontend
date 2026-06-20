@@ -1,3 +1,5 @@
+/* Two-zone header: breadcrumb (left, grows and truncates) · search + utilities
+   (right, natural width pinned to the edge). */
 .headerLeft {
   align-items: center;
   display: flex;
