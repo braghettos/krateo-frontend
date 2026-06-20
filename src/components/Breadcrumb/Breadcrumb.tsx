@@ -15,35 +15,27 @@ const Breadcrumb = () => {
     if (path) {
       const items: Partial<BreadcrumbItemType & BreadcrumbSeparatorType>[] = []
       const splitPath = path.split('/')
+      // Collapse deep paths to section (first) + current (last) so the crumb stays short and
+      // readable instead of squeezing/cutting mid-word in the narrow header — e.g.
+      // /compositions/<ns>/<name> → "Compositions / <name>" (matches the mockup). Intermediate
+      // levels (a bare namespace path) aren't real list routes, so nothing useful is lost.
+      const shown = splitPath.length > 2 ? [splitPath[0], splitPath[splitPath.length - 1]] : splitPath
 
-      splitPath.forEach((pathElement, index) => {
-        if (index === splitPath.length - 1) {
-          items.push({
-            title: (
-              <Typography.Text
-                className={`${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`}
-                ellipsis={{ tooltip: true }}
-              >
-                {pathElement}
-              </Typography.Text>
-            ),
-          })
-        } else {
-          const fullPath = `/${splitPath.slice(0, index + 1).join('/')}`
+      shown.forEach((pathElement, index) => {
+        const isLast = index === shown.length - 1
+        const className = `${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`
 
-          items.push({
-            title: (
-              <Typography.Text
-                className={`${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`}
-                ellipsis={{ tooltip: true }}
-              >
-                <Link className={styles.link} to={fullPath}>
-                  {pathElement}
-                </Link>
-              </Typography.Text>
-            ),
-          })
-        }
+        items.push({
+          // No antd `ellipsis` (its JS measurement over-truncates here even with room);
+          // the CSS `.breadcrumbItem` truncates only past the 30ch cap, `title` is the tooltip.
+          title: (
+            <Typography.Text className={className} title={pathElement}>
+              {isLast
+                ? pathElement
+                : <Link className={styles.link} to={`/${splitPath[0]}`}>{pathElement}</Link>}
+            </Typography.Text>
+          ),
+        })
       })
 
       setItems(items)
