@@ -39,9 +39,9 @@ export interface Row {
         | 'yamlviewers'
       )[]
       /**
-       * vertical alignment of items in the row (antd Row `align`). Default is 'middle'
+       * vertical alignment of items in the row (antd Row `align`). Default is 'middle'; 'stretch' makes columns equal-height
        */
-      alignment?: 'top' | 'middle' | 'bottom'
+      alignment?: 'top' | 'middle' | 'bottom' | 'stretch'
       /**
        * the items of the row
        */

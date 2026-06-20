@@ -1,5 +1,3 @@
-import { Badge } from 'antd'
-
 import type { WidgetProps } from '../../types/Widget'
 import type { ItemTemplate } from '../List/itemTemplate'
 import List from '../List/List'
@@ -37,15 +35,11 @@ const EventList = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<Event
     sseTopic,
   } satisfies ListWidgetData
 
+  // The "Live" indicator now lives on the enclosing Card title (Card `live` flag),
+  // so the SSE-backed feed shows "Live" inline with the card heading instead of a
+  // separate row above the list.
   return (
     <div className={styles.eventList}>
-      {/* "Live" indicator when the list is SSE-backed (live-refresh) — mirrors the
-          mockup's Live badge on the events card. */}
-      {sseEndpoint ? (
-        <div className={styles.live}>
-          <Badge status='processing' text='Live' />
-        </div>
-      ) : null}
       <List resourcesRefs={resourcesRefs} uid={uid} widget={widget} widgetData={listWidgetData} />
     </div>
   )

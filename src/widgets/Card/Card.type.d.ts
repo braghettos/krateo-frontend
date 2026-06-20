@@ -210,6 +210,10 @@ export interface Card {
        */
       extra?: string
       /**
+       * show a pulsing "Live" badge next to the card title (for cards backed by a live/SSE feed)
+       */
+      live?: boolean
+      /**
        * antd Card variant
        */
       variant?: 'outlined' | 'borderless'

@@ -349,6 +349,10 @@
               "type": "string",
               "description": "antd Card extra \u2014 content shown top-right of the card header (renamed from `headerRight`)"
             },
+            "live": {
+              "type": "boolean",
+              "description": "show a pulsing \"Live\" badge next to the card title (for cards backed by a live/SSE feed)"
+            },
             "variant": {
               "type": "string",
               "enum": [

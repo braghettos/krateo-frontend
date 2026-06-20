@@ -205,8 +205,16 @@ describe('initial-render retry — transient failures retry, permanent ones do n
     expect(shouldRetryWidgetFetch(0, new WidgetFetchError('boom', 500))).toBe(true)
   })
 
-  it('never retries 4xx (auth / forbidden / not-found / bad-request)', () => {
-    for (const status of [400, 401, 403, 404]) {
+  it('retries 404 (transient cold-cache miss right after load), up to the cap', () => {
+    // snowplow can 404 a widget whose CR exists while its informer cache is cold;
+    // this recovers on a retry, so 404 keeps the skeleton up rather than flashing
+    // the error. Still bounded by the retry cap so a real 404 eventually surfaces.
+    expect(shouldRetryWidgetFetch(0, new WidgetFetchError('nope', 404))).toBe(true)
+    expect(shouldRetryWidgetFetch(MAX_WIDGET_FETCH_RETRIES, new WidgetFetchError('nope', 404))).toBe(false)
+  })
+
+  it('never retries permanent 4xx (auth / forbidden / bad-request)', () => {
+    for (const status of [400, 401, 403]) {
       expect(shouldRetryWidgetFetch(0, new WidgetFetchError('nope', status))).toBe(false)
     }
   })

@@ -21,6 +21,12 @@ export interface Tag {
        * antd Tag variant
        */
       variant?: 'filled' | 'solid' | 'outlined'
+      /**
+       * inline CSS style object passed through to the antd Tag (e.g. {"fontSize":"15px"})
+       */
+      style?: {
+        [k: string]: unknown
+      }
     }
     widgetDataTemplate?: {
       expression?: string

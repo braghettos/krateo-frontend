@@ -33,13 +33,20 @@ export const MAX_WIDGET_FETCH_RETRIES = 3
  * Whether a failed widget fetch should be retried. The global QueryClient sets
  * `retry: false`, so without this a backend that has not answered yet (network
  * error / 5xx during startup) lands immediately in the error state — the
- * "red cross on initial render". We retry transient failures (network errors,
- * which carry no status, and 5xx) but never permanent ones (4xx: auth /
- * forbidden / not-found / bad-request).
+ * "red cross on initial render". We retry transient failures and never permanent
+ * client errors.
+ *
+ * 404 is treated as TRANSIENT here: right after a page load/refresh snowplow can
+ * answer 404 for a widget endpoint while its informer cache is still cold (the CR
+ * exists but isn't listed yet) — that produced an "Error while rendering widget"
+ * flash on first paint that recovered on the next fetch. Retrying 404 a few times
+ * keeps the skeleton up until the cache warms; a genuinely-missing widget still
+ * surfaces the error once the retries are exhausted. The other 4xx (400 bad
+ * request, 401 auth, 403 forbidden) stay permanent — retrying them never helps.
  */
 export const shouldRetryWidgetFetch = (failureCount: number, error: unknown): boolean => {
   const status = (error as { status?: number } | null)?.status
-  if (typeof status === 'number' && status >= 400 && status < 500) {
+  if (typeof status === 'number' && status >= 400 && status < 500 && status !== 404) {
     return false
   }
   return failureCount < MAX_WIDGET_FETCH_RETRIES

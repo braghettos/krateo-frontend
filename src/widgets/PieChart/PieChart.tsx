@@ -11,8 +11,17 @@ import type { PieChart as WidgetType } from './PieChart.type'
 export type PieChartWidgetData = WidgetType['spec']['widgetData']
 
 /**
+ * Centered legend below the chart — G2's legend is keyed by the `color` channel
+ * (driven by `colorField`). `position: 'bottom'` + centered layout keeps the
+ * legend visually aligned under the (centered) donut.
+ */
+const CENTERED_LEGEND = { color: { layout: { justifyContent: 'center' }, position: 'bottom' } }
+
+/**
  * Faithful wrapper of the @ant-design/plots `Pie` (AntV G2): data + angle/color
  * field mappings. Colors come from G2's palette via `colorField`, not a Krateo enum.
+ * `label` (per-slice value labels) and `annotations` (e.g. a donut center total)
+ * are passed straight through to the library.
  */
 const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
   // Measure the container width and render the Pie at an explicit size (no autoFit
@@ -35,13 +44,15 @@ const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
       {width > 0 ? (
         <Pie
           angleField={widgetData.angleField}
+          annotations={widgetData.annotations}
           autoFit={false}
           colorField={widgetData.colorField}
           data={widgetData.data}
           height={height}
           innerRadius={widgetData.innerRadius === null || widgetData.innerRadius === undefined ? undefined : widgetData.innerRadius / 100}
           key={uid}
-          legend={widgetData.legend === false ? false : undefined}
+          label={widgetData.label}
+          legend={widgetData.legend === false ? false : CENTERED_LEGEND}
           scale={scale}
           title={widgetData.title}
           width={width}

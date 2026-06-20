@@ -52,6 +52,22 @@ export interface LineChart {
        */
       height?: number
       /**
+       * render a default circle marker at each data point (G2 composed `point` mark). Improves legibility of sparse series.
+       */
+      point?: boolean
+      /**
+       * G2 per-channel scale config (G2 `scale`), e.g. {"y":{"zero":true,"nice":true,"domainMin":0,"domainMax":3,"tickCount":4}}. domainMax is a floor — data larger than it still wins, so dense data is never clipped.
+       */
+      scale?: {
+        [k: string]: unknown
+      }
+      /**
+       * G2 per-channel axis config (G2 `axis`), e.g. {"x":{"tickCount":6},"y":{"tickCount":4}}
+       */
+      axis?: {
+        [k: string]: unknown
+      }
+      /**
        * live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.
        */
       watch?: {

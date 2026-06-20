@@ -95,15 +95,24 @@
     display: flex;
     font-size: 15px;
     font-weight: var(--font-weight-bold);
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     min-width: 0;
 
+    /* Content-width (not flex:1) so a trailing "Live" badge hugs the title text
+       instead of being pushed to the far edge of the header. Still ellipsizes
+       long titles — the antd title slot bounds the width and flex-shrink applies. */
     .text {
-      flex: 1;
+      flex: 0 1 auto;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    /* "Live" badge sits right after the title text (the events card's live feed). */
+    .liveBadge {
+      flex: 0 0 auto;
+      font-weight: var(--font-weight-regular);
     }
   }
 

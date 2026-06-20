@@ -2,7 +2,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons'
 import { findIconDefinition } from '@fortawesome/fontawesome-svg-core'
 import type { IconName, IconPrefix, IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Card as AntdCard, Button, Tag, Tooltip } from 'antd'
+import { Card as AntdCard, Badge, Button, Tag, Tooltip } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import { useState } from 'react'
 
@@ -50,7 +50,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   const { handleAction, isActionLoading } = useHandleAction()
 
   // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions`.
-  const { clickActionId, cover, extra, footer, headerLeft, icon, items, size, tags, title, tooltip, variant, widgetActions } = widgetData
+  const { clickActionId, cover, extra, footer, headerLeft, icon, items, live, size, tags, title, tooltip, variant, widgetActions } = widgetData
   const coverEndpoint = cover ? getEndpointUrl(cover, resourcesRefs) : undefined
 
   const action: WidgetAction | undefined = Object.values(widgetActions ?? {})
@@ -140,6 +140,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
                   {title}
                 </Tooltip>
               </div>
+              {live && <Badge className={styles.liveBadge} status='processing' text='Live' />}
             </div>
           )
           : undefined

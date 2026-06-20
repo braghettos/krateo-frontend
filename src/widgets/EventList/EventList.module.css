@@ -1,10 +1,3 @@
 .eventList {
   width: 100%;
 }
-
-/* "Live" badge, top-right above the feed (the events card's live indicator). */
-.live {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--spacing-sm);
-}

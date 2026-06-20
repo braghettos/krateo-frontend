@@ -68,6 +68,20 @@
               "type": "integer",
               "description": "fixed height in px (G2 `height`); omit to autofit"
             },
+            "point": {
+              "description": "render a default circle marker at each data point (G2 composed `point` mark). Improves legibility of sparse series.",
+              "type": "boolean"
+            },
+            "scale": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "G2 per-channel scale config (G2 `scale`), e.g. {\"y\":{\"zero\":true,\"nice\":true,\"domainMin\":0,\"domainMax\":3,\"tickCount\":4}}. domainMax is a floor — data larger than it still wins, so dense data is never clipped."
+            },
+            "axis": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "G2 per-channel axis config (G2 `axis`), e.g. {\"x\":{\"tickCount\":6},\"y\":{\"tickCount\":4}}"
+            },
             "watch": {
               "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
               "type": "array",
