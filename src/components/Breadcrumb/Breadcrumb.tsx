@@ -15,24 +15,23 @@ const Breadcrumb = () => {
     if (path) {
       const items: Partial<BreadcrumbItemType & BreadcrumbSeparatorType>[] = []
       const splitPath = path.split('/')
-      // Collapse deep paths to section (first) + current (last) so the crumb stays short and
-      // readable instead of squeezing/cutting mid-word in the narrow header — e.g.
-      // /compositions/<ns>/<name> → "Compositions / <name>" (matches the mockup). Intermediate
-      // levels (a bare namespace path) aren't real list routes, so nothing useful is lost.
-      const shown = splitPath.length > 2 ? [splitPath[0], splitPath[splitPath.length - 1]] : splitPath
 
-      shown.forEach((pathElement, index) => {
-        const isLast = index === shown.length - 1
+      splitPath.forEach((pathElement, index) => {
+        const isLast = index === splitPath.length - 1
         const className = `${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`
+        // The first crumb (the section) links to its list route; intermediate segments
+        // (e.g. the namespace) are shown for context but aren't list routes, so they're
+        // plain text rather than broken links. No antd `ellipsis` (its JS measurement
+        // over-truncates even with room) — the CSS truncates only past the cap; `title`
+        // is the tooltip.
+        const linkable = index === 0 && !isLast
 
         items.push({
-          // No antd `ellipsis` (its JS measurement over-truncates here even with room);
-          // the CSS `.breadcrumbItem` truncates only past the 30ch cap, `title` is the tooltip.
           title: (
             <Typography.Text className={className} title={pathElement}>
-              {isLast
-                ? pathElement
-                : <Link className={styles.link} to={`/${splitPath[0]}`}>{pathElement}</Link>}
+              {linkable
+                ? <Link className={styles.link} to={`/${splitPath[0]}`}>{pathElement}</Link>
+                : pathElement}
             </Typography.Text>
           ),
         })
