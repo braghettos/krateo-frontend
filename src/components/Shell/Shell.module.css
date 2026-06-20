@@ -6,10 +6,6 @@
   min-width: 0;
 }
 
-.search {
-  max-width: 280px;
-}
-
 .headerRight {
   align-items: center;
   display: flex;
