@@ -253,6 +253,24 @@ export interface Form {
            */
           icon?: string
         }
+        /**
+         * Configure-step button label when reviewBeforeSubmit is set (the button that opens the in-place Review; default 'Review →')
+         */
+        review?: {
+          /**
+           * text label for the Review button
+           */
+          label?: string
+        }
+        /**
+         * Review-step back button label when reviewBeforeSubmit is set (returns to editing; default '← Back to edit')
+         */
+        reviewBack?: {
+          /**
+           * text label for the back-to-edit button
+           */
+          label?: string
+        }
       }
       /**
        * optional object with initial values for form fields. Keys should match form field names (supports nested objects). These values override schema defaults.
@@ -275,6 +293,10 @@ export interface Form {
        * top-level schema property names to omit from the schema-driven form
        */
       propertiesToHide?: string[]
+      /**
+       * when true (inline render only), the primary button validates and reveals an in-place read-only Review of the entered values before the real submit — the form stays mounted so 'Back to edit' preserves every value. Pair with buttonConfig.review / buttonConfig.reviewBack for custom labels.
+       */
+      reviewBeforeSubmit?: boolean
       /**
        * the id of the action to be called when the form is submitted
        */

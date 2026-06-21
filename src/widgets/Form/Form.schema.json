@@ -343,6 +343,22 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                "review": {
+                  "type": "object",
+                  "description": "Configure-step button label when reviewBeforeSubmit is set (the button that opens the in-place Review; default 'Review →')",
+                  "properties": {
+                    "label": { "type": "string", "description": "text label for the Review button" }
+                  },
+                  "additionalProperties": false
+                },
+                "reviewBack": {
+                  "type": "object",
+                  "description": "Review-step back button label when reviewBeforeSubmit is set (returns to editing; default '← Back to edit')",
+                  "properties": {
+                    "label": { "type": "string", "description": "text label for the back-to-edit button" }
+                  },
+                  "additionalProperties": false
                 }
               },
               "additionalProperties": false
@@ -375,6 +391,10 @@
               "description": "top-level schema property names to omit from the schema-driven form",
               "type": "array",
               "items": { "type": "string" }
+            },
+            "reviewBeforeSubmit": {
+              "description": "when true (inline render only), the primary button validates and reveals an in-place read-only Review of the entered values before the real submit — the form stays mounted so 'Back to edit' preserves every value. Pair with buttonConfig.review / buttonConfig.reviewBack for custom labels.",
+              "type": "boolean"
             },
             "submitActionId": {
               "description": "the id of the action to be called when the form is submitted",
