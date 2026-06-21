@@ -1,13 +1,56 @@
 import { Form as AntdForm, Input, InputNumber, Select, Switch } from 'antd'
 import type { JSONSchema4 } from 'json-schema'
+import { useState } from 'react'
 
 import styles from './Form.module.css'
 import { getOptionsFromEnum } from './utils'
 
 /**
- * Renders an antd form control for a single (scalar) schema node. The schema-driven
- * alternative to composing control widgets — used when a Form is fed a JSON schema
- * (e.g. a blueprint CRD's `openAPIV3Schema` spec) instead of `items`.
+ * Editor for a free-form object/array node (a `type: object` map without `properties`,
+ * e.g. `x-kubernetes-preserve-unknown-fields` like a `tags`/`labels` map, or a non-string
+ * array). antd injects `value`/`onChange`: the value stays a real object/array — edited as
+ * JSON — so it is submitted correctly and never rendered as the string "[object Object]".
+ * Invalid JSON shows an error and holds the last valid value; empty clears it.
+ */
+const JsonValueInput = ({ onChange, value }: { onChange?: (next: unknown) => void; value?: unknown }): React.ReactNode => {
+  const [text, setText] = useState<string>(() => (value === undefined || value === null ? '' : JSON.stringify(value, null, 2)))
+  const [invalid, setInvalid] = useState(false)
+
+  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const next = event.target.value
+    setText(next)
+    if (next.trim() === '') {
+      setInvalid(false)
+      onChange?.(undefined)
+      return
+    }
+    try {
+      const parsed: unknown = JSON.parse(next)
+      setInvalid(false)
+      onChange?.(parsed)
+    } catch {
+      setInvalid(true)
+    }
+  }
+
+  return (
+    <Input.TextArea
+      autoSize={{ maxRows: 10, minRows: 2 }}
+      onChange={handleChange}
+      placeholder='{ } — JSON (key/value map)'
+      status={invalid ? 'error' : undefined}
+      style={{ fontFamily: 'var(--font-mono, monospace)' }}
+      value={text}
+    />
+  )
+}
+
+/**
+ * Renders an antd form control for a single schema node. The schema-driven alternative to
+ * composing control widgets — used when a Form is fed a JSON schema (e.g. a blueprint CRD's
+ * `openAPIV3Schema` spec) instead of `items`. Objects WITH `properties` are handled by the
+ * caller (a recursive fieldset); a property-less object/array reaching here is a free-form
+ * map, edited as JSON.
  */
 const controlFor = (node: JSONSchema4): React.ReactNode => {
   if (Array.isArray(node.enum)) {
@@ -18,6 +61,7 @@ const controlFor = (node: JSONSchema4): React.ReactNode => {
   if (node.type === 'array' && !Array.isArray(node.items) && node.items?.type === 'string') {
     return <Select allowClear mode='tags' placeholder='Add values…' />
   }
+  if (node.type === 'object' || node.type === 'array') { return <JsonValueInput /> }
   return <Input />
 }
 

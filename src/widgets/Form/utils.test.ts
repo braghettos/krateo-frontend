@@ -35,6 +35,28 @@ describe('getDefaultsFromSchema', () => {
   it('returns an empty object for a schema without properties', () => {
     expect(getDefaultsFromSchema({ type: 'object' })).toEqual({})
   })
+
+  it('omits a property-less object (free-form map) with no default', () => {
+    const schema: JSONSchema4 = {
+      properties: {
+        name: { type: 'string' },
+        // x-kubernetes-preserve-unknown-fields map → no `properties`, no `default`
+        tags: { type: 'object' },
+        ttl: { default: 30, type: 'integer' },
+      },
+      type: 'object',
+    }
+    // `tags` must NOT become `{}` (which a text input renders as "[object Object]")
+    expect(getDefaultsFromSchema(schema)).toEqual({ ttl: 30 })
+  })
+
+  it('keeps a default on a property-less object map', () => {
+    const schema: JSONSchema4 = {
+      properties: { labels: { default: { env: 'prod' }, type: 'object' } },
+      type: 'object',
+    }
+    expect(getDefaultsFromSchema(schema)).toEqual({ labels: { env: 'prod' } })
+  })
 })
 
 describe('getOptionsFromEnum', () => {
