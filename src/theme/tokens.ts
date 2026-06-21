@@ -7,109 +7,126 @@ import { theme as antdAlgorithms, type ThemeConfig } from 'antd'
  * here: the antd `ThemeConfig` (`lightTheme` / `darkTheme`) and the `:root` CSS
  * custom properties (`cssVariables`) consumed by `*.module.css`.
  *
- * Light colors/spacing/typography reproduce the previously-scattered values
- * exactly (no visual drift); radius / elevation / motion / control sizing
- * modernize the look uniformly. The dark palette mirrors every key of `color`
- * so CSS variables and the antd theme switch coherently with the mode toggle.
+ * BRAND = "Petrol & Phosphor (Flight Deck)" — a dark-first instrument console.
+ * The bold move: AMBER is the brand (primary/focus/your-attention), demoted from
+ * "warning" to identity; status is a four-colour SEMANTIC language — cyan
+ * (healthy/nominal/actual-matches-desired), magenta (drift), crimson (failed),
+ * amber (pending/target). Dark = matte petrol-void→bezel depth (NO frosted glass);
+ * light ("Paper") is a fully-supported equal with luminance retuned for AA.
+ * The key NAMES are unchanged so the toggle, CSS vars, antd ConfigProvider and
+ * `getColorCode()` keep working — only the values changed.
  */
 
 export type ThemeMode = 'light' | 'dark'
 
-// Light = "Refined enterprise" mockup (theme-enterprise.css): antd blue #1677ff,
-// tight 8px radius, soft-tint + bordered status colors, antd-neutral grays.
+// Light "Paper" — cool paper sheet, ferro-graphite ink, AA-darkened amber brand.
+// Status keys reused: green=healthy(teal), orange/warning=pending(amber),
+// red/error=failed(crimson), violet=drift(magenta), blue/primary/info=brand(amber).
 export const color = {
-  accent2: '#11b2e2',
-  accentSoft: '#e8f1ff',
-  background: '#f5f7fa',
-  blue: '#1677ff',
-  border: '#e4e8ef',
-  dark: '#1f2733',
-  darkBlue: '#0958d9',
-  error: '#d4380d',
-  errorSoft: '#fcebe6',
-  faint: '#98a2b3',
-  gray: '#5b6675',
-  green: '#15924c',
-  info: '#1677ff',
-  light: '#ffffff',
-  lightgray: '#f3f5f8',
-  line: '#eef1f5',
-  menubgend: '#11b2e2',
-  menubgstart: '#1677ff',
-  menuitem: '#5b6675',
-  menuitembg: '#e8f1ff',
-  orange: '#ca8504',
-  panelbg: '#ffffff',
-  primary: '#1677ff',
-  red: '#d4380d',
-  success: '#15924c',
-  successSoft: '#e7f5ec',
-  text: '#1f2733',
-  violet: '#722ed1',
-  warning: '#ca8504',
-  warningSoft: '#fbf2dd',
+  accent2: '#0E8F86',
+  accentSoft: 'rgba(192,118,11,0.10)',
+  background: '#F6F8FA',
+  blue: '#C0760B',
+  border: '#E2E6EC',
+  dark: '#131A22',
+  darkBlue: '#9A5A08',
+  error: '#C5333A',
+  errorSoft: 'rgba(197,51,58,0.10)',
+  faint: '#8A95A2',
+  gray: '#5C6976',
+  green: '#0E8F86',
+  info: '#C0760B',
+  light: '#FFFFFF',
+  lightgray: '#EEF1F4',
+  line: '#E8EBEF',
+  menubgend: '#C0760B',
+  menubgstart: '#C0760B',
+  menuitem: '#5C6976',
+  menuitembg: 'rgba(192,118,11,0.10)',
+  orange: '#C0760B',
+  panelbg: '#FFFFFF',
+  primary: '#C0760B',
+  red: '#C5333A',
+  success: '#0E8F86',
+  successSoft: 'rgba(14,143,134,0.10)',
+  text: '#131A22',
+  violet: '#A6358F',
+  warning: '#C0760B',
+  warningSoft: 'rgba(192,118,11,0.12)',
+  // Petrol status language (explicit aliases for widget CR `color:` refs).
+  cyan: '#0E8F86',
+  magenta: '#A6358F',
+  amber: '#C0760B',
 } as const
 
 /**
- * Dark palette — same keys as `color`, retuned for a dark "glass" canvas:
- * deep slate backgrounds, elevated surfaces, brightened brand accents for
- * contrast. `background` = app canvas, `panelbg` = card surface, `light` =
- * elevated/hover surface, `lightgray` = subtle fill / table header, `dark` =
- * strongest foreground (white).
+ * Dark "Petrol" — the canonical dark-first canvas. `background` = petrol-void
+ * (app), `panelbg` = bezel (OPAQUE matte card — no translucency/blur), `light` =
+ * bezel-2 (elevated/hover/active-nav), `lightgray` = bezel-2 (table header fill),
+ * `dark` = ink (strongest foreground). Brand = amber; status = cyan/magenta/crimson.
  */
 export const colorDark: Record<keyof typeof color, string> = {
-  accent2: '#22d3ee',
-  accentSoft: 'rgba(94,139,255,0.16)',
-  background: '#0a0e1a',
-  blue: '#5e8bff',
-  border: 'rgba(255,255,255,0.10)',
-  dark: '#ffffff',
-  darkBlue: '#7cc6ec',
-  error: '#fb7185',
-  errorSoft: 'rgba(251,113,133,0.16)',
-  faint: '#6b7796',
-  gray: '#9aa6c0',
-  green: '#34d399',
-  info: '#5e8bff',
-  light: 'rgba(255,255,255,0.08)',
-  lightgray: 'rgba(255,255,255,0.08)',
-  line: 'rgba(255,255,255,0.07)',
-  menubgend: '#5e8bff',
-  menubgstart: '#22d3ee',
-  menuitem: '#9aa6c0',
-  menuitembg: 'rgba(94,139,255,0.16)',
-  orange: '#fbbf24',
-  panelbg: 'rgba(255,255,255,0.055)',
-  primary: '#5e8bff',
-  red: '#fb7185',
-  success: '#34d399',
-  successSoft: 'rgba(52,211,153,0.15)',
-  text: '#eaf0fb',
-  violet: '#8b5cf6',
-  warning: '#fbbf24',
-  warningSoft: 'rgba(251,191,36,0.15)',
+  accent2: '#34D6C8',
+  accentSoft: 'rgba(242,163,60,0.16)',
+  background: '#070C12',
+  blue: '#F2A33C',
+  border: 'rgba(230,237,243,0.10)',
+  dark: '#E6EDF3',
+  darkBlue: '#F5B86A',
+  error: '#F2545B',
+  errorSoft: 'rgba(242,84,91,0.16)',
+  faint: '#6A7682',
+  gray: '#8A97A6',
+  green: '#34D6C8',
+  info: '#F2A33C',
+  light: '#111E2A',
+  lightgray: '#111E2A',
+  line: 'rgba(230,237,243,0.07)',
+  menubgend: '#F2A33C',
+  menubgstart: '#F2A33C',
+  menuitem: '#8A97A6',
+  menuitembg: '#111E2A',
+  orange: '#F2A33C',
+  panelbg: '#0E1620',
+  primary: '#F2A33C',
+  red: '#F2545B',
+  success: '#34D6C8',
+  successSoft: 'rgba(52,214,200,0.15)',
+  text: '#E6EDF3',
+  violet: '#D86BC4',
+  warning: '#F2A33C',
+  warningSoft: 'rgba(242,163,60,0.15)',
+  cyan: '#34D6C8',
+  magenta: '#D86BC4',
+  amber: '#F2A33C',
 }
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const
 
-export const radius = { sm: 4, md: 8, lg: 10, xl: 16 } as const
+// Instrument radii: 6 on cards/controls, 4 on tags/chips, 2 on rails/gauges (per-CR).
+export const radius = { sm: 4, md: 6, lg: 6, xl: 10 } as const
 
-/** Clean (light) elevation — soft, low-contrast shadows on a light canvas. */
+/** Paper (light) elevation — soft, low-contrast shadows on a light canvas. */
 export const elevation = {
   sm: '0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06)',
   md: '0 4px 10px rgba(16,24,40,0.08)',
   lg: '0 12px 28px rgba(16,24,40,0.10)',
 } as const
 
-/** Glass (dark) elevation — deeper, more diffuse shadows for the dark canvas. */
+/** Petrol (dark) elevation — near-flat: depth comes from the void→bezel tint
+ * step, not drop shadows (an instrument bezel doesn't float). */
 export const elevationDark = {
-  sm: '0 2px 10px rgba(0,0,0,0.35)',
-  md: '0 8px 24px rgba(0,0,0,0.45)',
-  lg: '0 22px 50px rgba(0,0,0,0.55)',
+  sm: '0 1px 2px rgba(0,0,0,0.45)',
+  md: '0 2px 6px rgba(0,0,0,0.5)',
+  lg: '0 10px 28px rgba(0,0,0,0.55)',
 } as const
 
 export const typography = {
   family: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  // Display = Space Grotesk (H1 + big numerals); mono = IBM Plex Mono (all data:
+  // ids/counts/durations/versions/namespaces). Loaded via the index.css @import.
+  display: '"Space Grotesk", Inter, system-ui, sans-serif',
+  mono: '"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
   size: { xxs: 12, xs: 14, sm: 16, md: 18, lg: 24, xl: 30 },
   weight: { lighter: 300, light: 400, medium: 500, bold: 600, bolder: 700 },
 } as const
@@ -118,33 +135,32 @@ export const motion = { fast: '0.1s', mid: '0.2s', slow: '0.3s' } as const
 
 export const tokens = { color, elevation, motion, radius, spacing, typography } as const
 
-/** Per-component overrides. Radii / sizing are mode-independent; the
- * palette-derived bits (Progress color, Table header fill) and the Card
- * surface treatment (shadow + radius) vary by mode — Clean keeps tight,
- * low-elevation cards; Glass uses deeper shadows and a larger radius. */
+/** Per-component overrides. Tight instrument density (32px controls), 6px radii,
+ * near-flat cards; the palette-derived bits (Progress=cyan, Table header fill)
+ * follow the active mode. */
 const buildComponents = (palette: Record<keyof typeof color, string>, mode: ThemeMode): ThemeConfig['components'] => ({
-  Button: { borderRadius: radius.md, controlHeight: 36, fontWeight: typography.weight.bold, primaryShadow: 'none' },
+  Button: { borderRadius: radius.md, controlHeight: 32, fontWeight: typography.weight.bold, primaryShadow: 'none' },
   Card: {
-    borderRadiusLG: mode === 'dark' ? radius.xl : radius.lg,
+    borderRadiusLG: radius.lg,
     boxShadowTertiary: mode === 'dark' ? elevationDark.sm : elevation.sm,
-    paddingLG: 18,
+    paddingLG: 14,
   },
-  DatePicker: { borderRadius: radius.md, controlHeight: 36 },
+  DatePicker: { borderRadius: radius.md, controlHeight: 32 },
   Drawer: { paddingLG: spacing.lg },
-  Input: { borderRadius: radius.md, controlHeight: 36 },
+  Input: { borderRadius: radius.md, controlHeight: 32 },
   List: { borderRadiusLG: radius.lg },
-  Menu: { itemBorderRadius: radius.md, itemHeight: 40, subMenuItemBorderRadius: radius.md },
-  Modal: { borderRadiusLG: radius.lg },
-  Progress: { defaultColor: palette.primary },
-  Select: { borderRadius: radius.md, controlHeight: 36 },
+  Menu: { itemBorderRadius: radius.md, itemHeight: 36, subMenuItemBorderRadius: radius.md },
+  Modal: { borderRadiusLG: radius.xl },
+  Progress: { defaultColor: palette.green },
+  Select: { borderRadius: radius.md, controlHeight: 32 },
   Statistic: { contentFontSize: 31, titleFontSize: 13 },
   Steps: { iconSize: 28 },
-  Table: { borderRadiusLG: radius.lg, headerBg: palette.lightgray, headerBorderRadius: radius.lg },
+  Table: { borderRadiusLG: radius.lg, cellPaddingBlock: 9, headerBg: palette.lightgray, headerBorderRadius: radius.lg },
   Tabs: { horizontalItemGutter: 24 },
   Tag: { borderRadiusSM: radius.sm },
 })
 
-/** Light antd theme — reproduces the previous `antdTheme` token block exactly. */
+/** Light "Paper" antd theme. */
 export const lightTheme: ThemeConfig = {
   algorithm: antdAlgorithms.defaultAlgorithm,
   token: {
@@ -161,7 +177,7 @@ export const lightTheme: ThemeConfig = {
     colorTextBase: color.text,
     colorWarning: color.warning,
     colorWhite: color.light,
-    controlHeight: 36,
+    controlHeight: 32,
     fontFamily: typography.family,
     motionDurationMid: motion.mid,
     motionDurationSlow: motion.slow,
@@ -169,13 +185,13 @@ export const lightTheme: ThemeConfig = {
   components: buildComponents(color, 'light'),
 }
 
-/** Dark antd theme — antd dark algorithm + brand/neutral overrides from `colorDark`. */
+/** Dark "Petrol" antd theme — antd dark algorithm + amber-brand / cyan-status overrides. */
 export const darkTheme: ThemeConfig = {
   algorithm: antdAlgorithms.darkAlgorithm,
   token: {
     borderRadius: radius.md,
-    boxShadow: elevation.md,
-    boxShadowSecondary: elevation.lg,
+    boxShadow: elevationDark.md,
+    boxShadowSecondary: elevationDark.lg,
     colorBgBase: colorDark.background,
     colorBorder: colorDark.border,
     colorError: colorDark.error,
@@ -185,7 +201,7 @@ export const darkTheme: ThemeConfig = {
     colorSuccess: colorDark.success,
     colorTextBase: colorDark.text,
     colorWarning: colorDark.warning,
-    controlHeight: 36,
+    controlHeight: 32,
     fontFamily: typography.family,
     motionDurationMid: motion.mid,
     motionDurationSlow: motion.slow,
@@ -212,4 +228,7 @@ export const cssVariables = (mode: ThemeMode = 'light') => {
   Object.entries(motion).forEach(([key, value]) => root.style.setProperty(`--motion-${key}`, value))
   Object.entries(typography.size).forEach(([key, value]) => root.style.setProperty(`--font-size-${key}`, `${value}px`))
   Object.entries(typography.weight).forEach(([key, value]) => root.style.setProperty(`--font-weight-${key}`, `${value}`))
+  root.style.setProperty('--font-family', typography.family)
+  root.style.setProperty('--font-display', typography.display)
+  root.style.setProperty('--font-mono', typography.mono)
 }
