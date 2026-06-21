@@ -2,6 +2,7 @@ import { Line } from '@ant-design/plots'
 import { Empty } from 'antd'
 
 import { useMeasuredWidth } from '../../hooks/useMeasuredWidth'
+import { getColorCode } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 
 import styles from './LineChart.module.css'
@@ -10,12 +11,17 @@ import type { LineChart as WidgetType } from './LineChart.type'
 export type LineChartWidgetData = WidgetType['spec']['widgetData']
 
 /**
- * Gradient area fill rendered beneath the line when `widgetData.area` is true:
- * brand primary at ~0.22 alpha at the top, fading to transparent at the bottom.
- * Passed to G2's `area` option (a composed area mark under the line); the line's
- * own stroke is preserved.
+ * Gradient area fill beneath the line when `widgetData.area` is true: Petrol cyan
+ * (healthy/throughput) at ~0.22 alpha, fading to transparent. Theme-aware — resolved
+ * from getColorCode('cyan') at render so it follows the light/dark toggle. (G2 parses
+ * the CSS linear-gradient; rgba keeps its colour parser happy — color-mix is not.)
  */
-const AREA_FILL = 'linear-gradient(180deg, rgba(99,102,241,0.22) 0%, rgba(99,102,241,0) 100%)'
+const cyanAreaFill = (): { style: { fill: string } } => {
+  const hex = getColorCode('cyan')
+  const channel = (start: number) => parseInt(hex.slice(start, start + 2), 16)
+  const rgb = `${channel(1)},${channel(3)},${channel(5)}`
+  return { style: { fill: `linear-gradient(180deg, rgba(${rgb},0.22) 0%, rgba(${rgb},0) 100%)` } }
+}
 
 /**
  * Centered legend below the chart — G2's legend is keyed by the `color` channel
@@ -45,7 +51,7 @@ const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
     <div className={styles.lineChart} ref={ref} style={{ height }}>
       {width > 0 ? (
         <Line
-          area={widgetData.area ? { style: { fill: AREA_FILL } } : undefined}
+          area={widgetData.area ? cyanAreaFill() : undefined}
           autoFit
           axis={widgetData.axis}
           colorField={widgetData.colorField}

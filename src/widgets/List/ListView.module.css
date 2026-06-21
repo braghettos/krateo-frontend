@@ -47,3 +47,51 @@
 .clickable:hover {
   background-color: color-mix(in srgb, currentColor 6%, transparent);
 }
+
+/* Reconciliation-rail row: a per-item Progress line (flex) + a mono % label. The
+   List.Item flexes the Meta (composition name/ns) and this bar side by side. */
+.bar {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.bar :global(.ant-progress) {
+  flex: 1;
+  margin: 0;
+}
+
+.barLabel {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+  min-width: 38px;
+  text-align: right;
+}
+
+/* Petrol `rail` variant: tight-radius track (instrument gauge). */
+.railBar :global(.ant-progress-bg) {
+  border-radius: 2px;
+}
+
+/* The amber "desired / target" goalpost — a 2px glowing tick at the 100% edge of
+   every rail bar (the reconciliation rail's signature marker). On the per-resource
+   detail rail the trail also carries the hatched diff between actual and target. */
+.railBar :global(.ant-progress-inner) {
+  border-radius: 2px;
+  position: relative;
+}
+
+.railBar :global(.ant-progress-inner)::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  right: 0;
+  width: 2px;
+  background: var(--amber-color);
+  box-shadow: 0 0 5px 1px var(--amber-color);
+}

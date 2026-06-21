@@ -49,19 +49,23 @@ export const formatISODate = (value: string, showTime: boolean = false) => {
     : new Date(value).toLocaleDateString('en', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-/** Compact relative time ("just now", "5m ago", "3h ago", "2d ago"); falls back
- * to the absolute date beyond a week. Used by feed/list rows (e.g. EventList). */
+/** Compact relative time ("now", "12s", "5m", "3h", "2d", "2w") — flight-deck
+ * telemetry style, no " ago" suffix, with a weeks tier; falls back to the absolute
+ * date beyond ~8 weeks. Used by feed/list rows + table cells (e.g. EventList). */
 export const formatRelativeTime = (value: string): string => {
   const then = new Date(value).getTime()
   if (Number.isNaN(then)) { return value }
   const seconds = Math.round((Date.now() - then) / 1000)
-  if (seconds < 45) { return 'just now' }
+  if (seconds < 10) { return 'now' }
+  if (seconds < 60) { return `${seconds}s` }
   const minutes = Math.round(seconds / 60)
-  if (minutes < 60) { return `${minutes}m ago` }
+  if (minutes < 60) { return `${minutes}m` }
   const hours = Math.round(minutes / 60)
-  if (hours < 24) { return `${hours}h ago` }
+  if (hours < 24) { return `${hours}h` }
   const days = Math.round(hours / 24)
-  if (days < 7) { return `${days}d ago` }
+  if (days < 7) { return `${days}d` }
+  const weeks = Math.round(days / 7)
+  if (days < 60) { return `${weeks}w` }
   return formatISODate(value)
 }
 

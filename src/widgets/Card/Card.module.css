@@ -118,10 +118,37 @@
       white-space: nowrap;
     }
 
-    /* "Live" badge sits right after the title text (the events card's live feed). */
+    /* "Live"/"Converged" badge → Petrol cyan outline pill with a glowing dot
+       (replaces antd's processing-blue ripple). Sits right after the title text. */
     .liveBadge {
+      align-items: center;
+      background: rgba(52, 214, 200, 0.08);
+      border: 1px solid rgba(52, 214, 200, 0.3);
+      border-radius: var(--radius-sm);
+      display: inline-flex;
       flex: 0 0 auto;
-      font-weight: var(--font-weight-regular);
+      gap: 5px;
+      padding: 1px 8px;
+
+      :global(.ant-badge-status-dot) {
+        background: var(--cyan-color);
+        box-shadow: 0 0 5px 1px var(--cyan-color);
+        height: 6px;
+        width: 6px;
+      }
+
+      :global(.ant-badge-status-dot)::after {
+        border: 1px solid var(--cyan-color);
+      }
+
+      :global(.ant-badge-status-text) {
+        color: var(--cyan-color);
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        letter-spacing: 0.06em;
+        margin-inline-start: 5px;
+        text-transform: uppercase;
+      }
     }
   }
 

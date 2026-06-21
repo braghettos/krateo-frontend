@@ -3,4 +3,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Petrol: mono UPPERCASE column headers (instrument-panel telemetry labels). */
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }

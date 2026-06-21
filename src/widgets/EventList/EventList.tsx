@@ -14,7 +14,9 @@ export type EventListWidgetData = WidgetType['spec']['widgetData']
  * event shape. New widgets should prefer `List` directly with their own template.
  */
 const EVENT_ITEM_TEMPLATE: ItemTemplate = {
-  color: { default: 'gray', map: { Normal: 'blue', Warning: 'orange' }, value: '{type}' },
+  // Petrol status grammar: Normal=cyan (healthy), Warning=amber (attention). Was
+  // Normal:blue/Warning:orange, which both resolve to amber in Petrol — indistinct.
+  color: { default: 'gray', map: { Normal: 'green', Warning: 'orange' }, value: '{type}' },
   formats: { secondaryText: 'relative' },
   iconVariant: 'dot',
   primaryText: '{message}',

@@ -81,6 +81,27 @@ export interface List {
           }
           default?: string
         }
+        /**
+         * per-row horizontal Progress bar (the reconciliation-rail row): an antd Progress line whose percent + stroke colour are resolved per item
+         */
+        bar?: {
+          /**
+           * {dot.path} to a 0-100 number (e.g. {healthPercent})
+           */
+          percent?: string
+          color?: {
+            value?: string
+            map?: {
+              [k: string]: string
+            }
+            default?: string
+          }
+          /**
+           * optional trailing {dot.path} label (e.g. the % text or 7/7)
+           */
+          label?: string
+          variant?: 'line' | 'rail'
+        }
         formats?: {
           primaryText?: 'text' | 'datetime' | 'relative'
           secondaryText?: 'text' | 'datetime' | 'relative'

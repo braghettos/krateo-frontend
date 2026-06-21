@@ -31,6 +31,22 @@ export interface ColorSpec {
   default?: string
 }
 
+/**
+ * A per-row horizontal bar — the reconciliation-rail row. An antd Progress line whose
+ * percent + stroke colour are resolved per item (colour routes through getColorCode),
+ * optionally in the Petrol `rail` variant (CSS hatch + amber target-tick).
+ */
+export interface BarSpec {
+  /** `{path}` to a 0–100 number (e.g. `{healthPercent}`). */
+  percent?: string
+  /** Stroke colour — palette name, `{path}`, or `map` (e.g. state → cyan/magenta/amber). */
+  color?: ColorSpec
+  /** Optional trailing `{path}` label (e.g. the % text or `7/7`). */
+  label?: string
+  /** `line` (plain) or `rail` (hatched diff + amber target-tick variant). */
+  variant?: 'line' | 'rail'
+}
+
 export interface ItemTemplate {
   primaryText?: string
   secondaryText?: string
@@ -65,6 +81,15 @@ export interface ItemTemplate {
    * from `navigateTo`, which is the whole-row click.
    */
   rowActions?: RowAction[]
+  /** Per-row horizontal Progress bar — the reconciliation-rail row. */
+  bar?: BarSpec
+}
+
+export interface ResolvedBar {
+  percent: number
+  color: string
+  label: string
+  variant: 'line' | 'rail'
 }
 
 export interface ResolvedRow {
@@ -76,6 +101,8 @@ export interface ResolvedRow {
   color: string
   /** Resolved navigation target (empty string when the row is not clickable). */
   navigateTo: string
+  /** Resolved per-row bar (absent when the template has no `bar`). */
+  bar?: ResolvedBar
 }
 
 export const resolvePath = (item: unknown, path: string): unknown =>
@@ -114,6 +141,14 @@ const resolveSlot = (template: ItemTemplate, slot: RowSlot, item: unknown): stri
 }
 
 export const resolveRow = (template: ItemTemplate, item: unknown): ResolvedRow => ({
+  bar: template.bar
+    ? {
+      color: resolveColor(template.bar.color, item),
+      label: interpolate(template.bar.label, item),
+      percent: Math.max(0, Math.min(100, Number(interpolate(template.bar.percent, item)) || 0)),
+      variant: template.bar.variant ?? 'line',
+    }
+    : undefined,
   color: resolveColor(template.color, item),
   icon: interpolate(template.icon, item),
   navigateTo: interpolate(template.navigateTo, item),

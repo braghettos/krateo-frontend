@@ -155,7 +155,7 @@ const buildComponents = (palette: Record<keyof typeof color, string>, mode: Them
   Select: { borderRadius: radius.md, controlHeight: 32 },
   Statistic: { contentFontSize: 31, titleFontSize: 13 },
   Steps: { iconSize: 28 },
-  Table: { borderRadiusLG: radius.lg, cellPaddingBlock: 9, headerBg: palette.lightgray, headerBorderRadius: radius.lg },
+  Table: { borderColor: palette.border, borderRadiusLG: radius.lg, cellPaddingBlock: 9, headerBg: palette.lightgray, headerBorderRadius: radius.lg, headerColor: palette.gray, rowHoverBg: palette.light },
   Tabs: { horizontalItemGutter: 24 },
   Tag: { borderRadiusSM: radius.sm },
 })

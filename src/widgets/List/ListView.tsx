@@ -1,6 +1,6 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Avatar, List as AntdList, Button, Dropdown, Tag, Typography } from 'antd'
+import { Avatar, List as AntdList, Button, Dropdown, Progress, Tag, Typography } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import type { ListGridType } from 'antd/es/list'
 import type { ReactNode } from 'react'
@@ -144,6 +144,22 @@ export const ListView = ({
           )
           : null
 
+        // Reconciliation-rail row: a per-item antd Progress line (colour via getColorCode),
+        // optionally in the Petrol `rail` variant (CSS hatch + amber target-tick).
+        const barEl = row.bar
+          ? (
+            <div className={`${styles.bar} ${row.bar.variant === 'rail' ? styles.railBar : ''}`}>
+              <Progress
+                percent={row.bar.percent}
+                showInfo={false}
+                size='small'
+                strokeColor={getColorCode(row.bar.color)}
+              />
+              {row.bar.label && <span className={styles.barLabel} style={{ color: getColorCode(row.bar.color) }}>{row.bar.label}</span>}
+            </div>
+          )
+          : null
+
         return (
           <AntdList.Item
             actions={kebab ? [kebab] : undefined}
@@ -170,6 +186,7 @@ export const ListView = ({
               description={row.subPrimaryText || undefined}
               title={row.primaryText}
             />
+            {barEl}
           </AntdList.Item>
         )
       }}

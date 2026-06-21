@@ -153,6 +153,34 @@
                     }
                   }
                 },
+                "bar": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "per-row horizontal Progress bar (the reconciliation-rail row): an antd Progress line whose percent + stroke colour are resolved per item",
+                  "properties": {
+                    "percent": {
+                      "type": "string",
+                      "description": "{dot.path} to a 0-100 number (e.g. {healthPercent})"
+                    },
+                    "color": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "value": { "type": "string" },
+                        "map": { "type": "object", "additionalProperties": { "type": "string" } },
+                        "default": { "type": "string" }
+                      }
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "optional trailing {dot.path} label (e.g. the % text or 7/7)"
+                    },
+                    "variant": {
+                      "type": "string",
+                      "enum": ["line", "rail"]
+                    }
+                  }
+                },
                 "formats": {
                   "type": "object",
                   "additionalProperties": false,
