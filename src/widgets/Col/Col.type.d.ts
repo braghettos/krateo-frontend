@@ -28,6 +28,7 @@ export interface Col {
         | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'rows'
         | 'statistics'
         | 'tables'

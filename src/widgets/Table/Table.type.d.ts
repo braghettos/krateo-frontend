@@ -19,6 +19,7 @@ export interface Table {
         | 'markdowns'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'yamlviewers'
       )[]
       /**

@@ -33,6 +33,7 @@ export interface Flex {
         | 'menus'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'rows'
         | 'statistics'
         | 'steps'

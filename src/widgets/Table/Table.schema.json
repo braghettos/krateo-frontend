@@ -37,6 +37,7 @@
                   "markdowns",
                   "paragraphs",
                   "piecharts",
+                  "rangepickers",
                   "yamlviewers"
                 ]
               }

@@ -31,6 +31,7 @@ export interface ButtonGroup {
         | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'tables'
         | 'tabs'
         | 'yamlviewers'

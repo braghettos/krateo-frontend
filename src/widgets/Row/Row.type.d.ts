@@ -31,6 +31,7 @@ export interface Row {
         | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'rows'
         | 'statistics'
         | 'tables'

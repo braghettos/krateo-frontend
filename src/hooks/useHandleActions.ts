@@ -100,6 +100,28 @@ export const updateNameNamespace = (path: string, name?: string, namespace?: str
 }
 
 /**
+ * Resolve a navigate target, MERGING query parameters when it shares the current
+ * pathname. Independent filter controls (the compositions status / time-range chips)
+ * each navigate with only their own param — e.g. `/compositions?status=failed` and
+ * `/compositions?range=7d`. Without merging, every click would clobber the others'
+ * params; with it, `status` and `range` accumulate on the same URL and compose. Targets
+ * to a DIFFERENT pathname replace the query as before (a filter must not leak across
+ * pages). `window.location` is read at call time so the merge always sees the latest URL.
+ */
+export const resolveNavigationTarget = (path: string): string => {
+  const [targetPath, targetQuery = ''] = path.split('?')
+  if (typeof window === 'undefined' || targetPath !== window.location.pathname || !targetQuery) {
+    return path
+  }
+
+  const merged = new URLSearchParams(window.location.search)
+  new URLSearchParams(targetQuery).forEach((value, key) => { merged.set(key, value) })
+  const queryString = merged.toString()
+
+  return queryString ? `${targetPath}?${queryString}` : targetPath
+}
+
+/**
  * fetch with an abort-based timeout so an action request can't hang forever
  * (no native fetch timeout). Aborts after `ms`; the AbortError propagates to the
  * caller's catch. The timer is always cleared, including when fetch rejects.
@@ -595,7 +617,7 @@ export const useHandleAction = () => {
       // and everything else. Any widget may show the mutated resource, so refresh them all.
       invalidateQueries: () => queryClient.invalidateQueries({ queryKey: ['widgets'] }),
       message,
-      navigate: (path: string) => navigate(path),
+      navigate: (path: string) => navigate(resolveNavigationTarget(path)),
       notification,
       openDrawer,
       openModal,

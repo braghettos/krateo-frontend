@@ -46,6 +46,7 @@ export interface Tabs {
         | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'rows'
         | 'tables'
         | 'tabs'
