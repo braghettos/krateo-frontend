@@ -59,6 +59,10 @@ export interface Select {
        * antd Select `allowClear`
        */
       allowClear?: boolean
+      /**
+       * when set, the Select is STANDALONE and URL-query-bound (not a Form.Item control): its value reads from / writes to this URL search param (e.g. 'project'), flowing to server-side `extras` like RangePicker. Omit for the default Form control behavior.
+       */
+      queryParam?: string
     }
     apiRef?: {
       name: string

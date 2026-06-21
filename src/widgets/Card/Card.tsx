@@ -50,7 +50,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   const { handleAction, isActionLoading } = useHandleAction()
 
   // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions`.
-  const { clickActionId, cover, extra, footer, headerLeft, icon, items, live, size, tags, title, tooltip, variant, widgetActions } = widgetData
+  const { clickActionId, cover, extra, footer, headerLeft, icon, items, live, size, tags, title, titleVariant, tooltip, variant, widgetActions } = widgetData
   const coverEndpoint = cover ? getEndpointUrl(cover, resourcesRefs) : undefined
 
   const action: WidgetAction | undefined = Object.values(widgetActions ?? {})
@@ -134,7 +134,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       title={
         title
           ? (
-            <div className={styles.title}>
+            <div className={`${styles.title} ${titleVariant === 'eyebrow' ? styles.eyebrow : ''}`}>
               <div className={styles.text}>
                 <Tooltip title={title}>
                   {title}

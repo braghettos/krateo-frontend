@@ -256,6 +256,10 @@ export interface Card {
        */
       title?: string
       /**
+       * how the panel title is rendered. 'heading' (default) = readable card heading (marketplace tiles, detail headers). 'eyebrow' = small mono uppercase letter-spaced muted caption (flight-deck section/panel labels).
+       */
+      titleVariant?: 'heading' | 'eyebrow'
+      /**
        * optional tooltip text shown on the top right side of the card to provide additional context
        */
       tooltip?: string

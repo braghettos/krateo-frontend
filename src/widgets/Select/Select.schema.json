@@ -40,7 +40,8 @@
             "placeholder": { "type": "string", "description": "antd Select `placeholder`" },
             "size": { "type": "string", "enum": ["small", "middle", "large"], "description": "antd Select `size`" },
             "disabled": { "type": "boolean", "description": "antd Select `disabled`" },
-            "allowClear": { "type": "boolean", "description": "antd Select `allowClear`" }
+            "allowClear": { "type": "boolean", "description": "antd Select `allowClear`" },
+            "queryParam": { "type": "string", "description": "when set, the Select is STANDALONE and URL-query-bound (not a Form.Item control): its value reads from / writes to this URL search param (e.g. 'project'), flowing to server-side `extras` like RangePicker. Omit for the default Form control behavior." }
           }
         },
         "apiRef": {

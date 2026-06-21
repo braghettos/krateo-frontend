@@ -419,6 +419,14 @@
               "type": "string",
               "description": "text to be displayed as the panel title"
             },
+            "titleVariant": {
+              "type": "string",
+              "enum": [
+                "heading",
+                "eyebrow"
+              ],
+              "description": "how the panel title is rendered. 'heading' (default) = readable card heading (marketplace tiles, detail headers). 'eyebrow' = small mono uppercase letter-spaced muted caption (flight-deck section/panel labels)."
+            },
             "tooltip": {
               "type": "string",
               "description": "optional tooltip text shown on the top right side of the card to provide additional context"

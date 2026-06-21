@@ -107,6 +107,23 @@
     gap: var(--spacing-sm);
     min-width: 0;
 
+    /* Flight-deck EYEBROW title (titleVariant: eyebrow) — small IBM Plex Mono,
+       uppercase, letter-spaced, muted: the instrument-panel section caption
+       (RECONCILIATION RAIL, STATUS, COMPOSITIONS CREATED …). The default
+       'heading' variant keeps the 15px bold readable title (marketplace tiles,
+       detail headers). The Live badge keeps its own sizing. */
+    &.eyebrow {
+      font-size: 11px;
+
+      .text {
+        color: var(--gray-color);
+        font-family: var(--font-mono);
+        font-weight: var(--font-weight-medium);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+    }
+
     /* Content-width (not flex:1) so a trailing "Live" badge hugs the title text
        instead of being pushed to the far edge of the header. Still ellipsizes
        long titles — the antd title slot bounds the width and flex-shrink applies. */

@@ -32,6 +32,49 @@ body {
 }
 
 /*
+ * Brand-logo theme-adherence. The Krateo lockup (brand-logo Image widget) ships
+ * dark — readable on the light "Paper" canvas, but near-invisible on the Petrol
+ * dark void. On dark we flatten-then-invert it to a crisp monochrome-WHITE lockup
+ * (matches the flight-deck wordmark language); light keeps the original mark. The
+ * filter preserves the SVG's alpha, so only the glyph lightens, not a box. Scoped
+ * to the Sider's only image so no other Image widget is touched. Swapping in a
+ * real white asset later is a drop-in `src` change — this is the no-asset fix.
+ */
+[data-theme="dark"] .ant-layout-sider .ant-image-img {
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+}
+
+/*
+ * Petrol primary CTA = amber WASH, not a solid block. The mockup's primary action
+ * (New composition / Apply / Deploy) is a translucent-amber instrument key: a faint
+ * amber fill, an amber hairline border and an amber label — it reads as "your move"
+ * without antd's heavy solid fill, matching the flight-deck render. Overrides the
+ * antd v6 solid-primary variant (type="primary" → color-primary + variant-solid) at
+ * the cascade level so EVERY Button widget converts at once; color-mix off
+ * --amber-color keeps it theme-adaptive (Paper #C0760B / Petrol #F2A33C). `danger`
+ * primaries map to color-dangerous, so destructive buttons stay crimson untouched.
+ */
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid {
+  background: color-mix(in srgb, var(--amber-color) 14%, transparent);
+  border-color: color-mix(in srgb, var(--amber-color) 40%, transparent);
+  box-shadow: none;
+  color: var(--amber-color);
+}
+
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):hover,
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):focus-visible {
+  background: color-mix(in srgb, var(--amber-color) 22%, transparent);
+  border-color: color-mix(in srgb, var(--amber-color) 62%, transparent);
+  color: var(--amber-color);
+}
+
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):active {
+  background: color-mix(in srgb, var(--amber-color) 28%, transparent);
+  border-color: color-mix(in srgb, var(--amber-color) 72%, transparent);
+}
+
+/*
  * Petrol (dark) — matte instrument bezels, NOT frosted glass. The previous "Glass"
  * treatment (translucent panels + backdrop-filter blur + blue radial canvas
  * gradients) is retired: translucency softens contrast at telemetry density and a
