@@ -11,11 +11,14 @@ import type { PieChart as WidgetType } from './PieChart.type'
 export type PieChartWidgetData = WidgetType['spec']['widgetData']
 
 /**
- * Centered legend below the chart — G2's legend is keyed by the `color` channel
- * (driven by `colorField`). `position: 'bottom'` + centered layout keeps the
- * legend visually aligned under the (centered) donut.
+ * Legend keyed by the `color` channel (driven by `colorField`). Default `bottom`
+ * (centered under the donut); `legendPosition: 'right'` stacks it to the right of the
+ * donut (the Petrol status-breakdown layout). `justifyContent: center` keeps it aligned
+ * with the centered donut on whichever axis the legend runs.
  */
-const CENTERED_LEGEND = { color: { layout: { justifyContent: 'center' }, position: 'bottom' } }
+const legendFor = (position: 'bottom' | 'right' | 'top' | 'left' = 'bottom') => ({
+  color: { layout: { justifyContent: 'center' }, position },
+})
 
 /**
  * Faithful wrapper of the @ant-design/plots `Pie` (AntV G2): data + angle/color
@@ -52,7 +55,7 @@ const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
           innerRadius={widgetData.innerRadius === null || widgetData.innerRadius === undefined ? undefined : widgetData.innerRadius / 100}
           key={uid}
           label={widgetData.label}
-          legend={widgetData.legend === false ? false : CENTERED_LEGEND}
+          legend={widgetData.legend === false ? false : legendFor(widgetData.legendPosition)}
           scale={scale}
           title={widgetData.title}
           width={width}

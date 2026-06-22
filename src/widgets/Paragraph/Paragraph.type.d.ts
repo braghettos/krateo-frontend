@@ -19,6 +19,10 @@ export interface Paragraph {
        */
       type?: 'secondary' | 'success' | 'warning' | 'danger'
       /**
+       * render style variant. eyebrow renders a small uppercase mono section caption (IBM Plex Mono letter-spaced muted) for page-header / panel eyebrows
+       */
+      variant?: 'eyebrow'
+      /**
        * antd Typography strong
        */
       strong?: boolean

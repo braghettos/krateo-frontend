@@ -67,6 +67,10 @@ export interface List {
          */
         iconVariant?: 'avatar' | 'tile' | 'dot'
         /**
+         * row layout: default (antd List.Item.Meta) or tree (tight single-line mono row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText — the detail Relations composed-children tree)
+         */
+        rowVariant?: 'default' | 'tree'
+        /**
          * render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text
          */
         secondaryTextAsTag?: boolean

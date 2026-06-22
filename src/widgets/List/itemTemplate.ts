@@ -66,6 +66,8 @@ export interface ItemTemplate {
   formats?: Partial<Record<RowSlot, 'text' | 'datetime' | 'relative'>>
   /** Render `secondaryText` as a soft-tint Tag pill (e.g. a category) rather than plain text. */
   secondaryTextAsTag?: boolean
+  /** Render `subPrimaryText` as a small mono bordered pill (e.g. an event's involvedObject `Kind/name` ref). */
+  subPrimaryTextMono?: boolean
   /**
    * Per-item navigation target — a `{path}` template resolved against the item
    * (e.g. `{link}` or `/compositions/{metadata.namespace}/{metadata.name}`). When it
@@ -83,6 +85,13 @@ export interface ItemTemplate {
   rowActions?: RowAction[]
   /** Per-row horizontal Progress bar — the reconciliation-rail row. */
   bar?: BarSpec
+  /**
+   * Row layout: `default` (antd List.Item.Meta — avatar + stacked title/description),
+   * or `tree` (a tight single-line mono row: `└─` connector + status dot + primaryText
+   * + muted inline subPrimaryText + right-aligned colored secondaryText — the detail
+   * Relations "composed children" tree).
+   */
+  rowVariant?: 'default' | 'tree'
 }
 
 export interface ResolvedBar {

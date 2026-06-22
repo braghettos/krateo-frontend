@@ -127,9 +127,21 @@
                   ],
                   "description": "leading-indicator style: avatar (solid disc + glyph, default), tile (soft-tint rounded square + glyph), dot (small status dot + halo)"
                 },
+                "rowVariant": {
+                  "type": "string",
+                  "enum": [
+                    "default",
+                    "tree"
+                  ],
+                  "description": "row layout: default (antd List.Item.Meta — avatar + stacked title/description) or tree (tight single-line mono row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText — the detail Relations composed-children tree)"
+                },
                 "secondaryTextAsTag": {
                   "type": "boolean",
                   "description": "render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text"
+                },
+                "subPrimaryTextMono": {
+                  "type": "boolean",
+                  "description": "render subPrimaryText as a small mono bordered pill (e.g. an event involvedObject Kind/name ref) instead of plain sub-text"
                 },
                 "navigateTo": {
                   "type": "string",

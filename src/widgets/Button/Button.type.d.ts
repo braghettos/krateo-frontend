@@ -240,6 +240,10 @@ export interface Button {
        */
       icon?: string
       /**
+       * palette color name (e.g. green / orange / red / cyan) applied to the icon independently of the button color — e.g. a leading `fa-circle` status dot on a filter chip
+       */
+      iconColor?: string
+      /**
        * the shape of the button
        */
       shape?: 'default' | 'circle' | 'round'

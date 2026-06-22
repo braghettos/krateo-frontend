@@ -34,9 +34,13 @@ export interface PieChart {
        */
       innerRadius?: number
       /**
-       * show the legend; false hides it (G2 `legend`). When shown it is rendered centered below the chart.
+       * show the legend; false hides it (G2 `legend`). When shown it is rendered centered, positioned per legendPosition (default below the chart).
        */
       legend?: boolean
+      /**
+       * where the legend sits relative to the chart (G2 legend position). Default bottom; right stacks it beside the donut (status-breakdown layout)
+       */
+      legendPosition?: 'bottom' | 'right' | 'top' | 'left'
       /**
        * per-slice label config passed through to G2 (e.g. {"text":"count","position":"inside"}); omit for no slice labels
        */

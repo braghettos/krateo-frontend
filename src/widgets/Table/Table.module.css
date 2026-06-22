@@ -10,3 +10,40 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* `bar` cell — the reconciliation-rail gauge (Progress fill in the state colour + an
+   amber "desired/target" target-tick at the 100% edge). Ports the List railBar marker. */
+.railBar {
+  max-width: 160px;
+  min-width: 90px;
+}
+
+/* The rail (full-width trail) carries the hatch + the target-tick. antd 6 renamed the
+   Progress internals (.ant-progress-inner → .ant-progress-rail, .ant-progress-bg →
+   .ant-progress-track); both names are listed so this renders on antd 5 and antd 6. */
+.railBar :global(.ant-progress-rail),
+.railBar :global(.ant-progress-inner) {
+  border-radius: 2px;
+  position: relative;
+  /* Desired-vs-actual: the trail (remainder, right of the cyan converged fill) carries a
+     state-coloured diagonal HATCH (--rail-rem, set inline per row). At 100% the fill covers it. */
+  background-color: color-mix(in srgb, var(--rail-rem, transparent) 20%, transparent);
+  background-image: repeating-linear-gradient(-45deg, var(--rail-rem, transparent) 0 2px, transparent 2px 5px);
+}
+
+.railBar :global(.ant-progress-track),
+.railBar :global(.ant-progress-bg) {
+  border-radius: 2px;
+}
+
+.railBar :global(.ant-progress-rail)::after,
+.railBar :global(.ant-progress-inner)::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  right: 0;
+  width: 2px;
+  background: var(--amber-color);
+  box-shadow: 0 0 5px 1px var(--amber-color);
+}

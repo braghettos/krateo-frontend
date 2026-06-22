@@ -45,6 +45,13 @@
               ],
               "description": "antd Typography type"
             },
+            "variant": {
+              "type": "string",
+              "enum": [
+                "eyebrow"
+              ],
+              "description": "render style variant. eyebrow renders a small uppercase mono section caption (IBM Plex Mono letter-spaced muted) for page-header / panel eyebrows"
+            },
             "strong": {
               "type": "boolean",
               "description": "antd Typography strong"

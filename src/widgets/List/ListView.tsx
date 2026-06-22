@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Avatar, List as AntdList, Button, Dropdown, Progress, Tag, Typography } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import type { ListGridType } from 'antd/es/list'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
 import { WidgetEmpty } from '../../components/WidgetStates'
@@ -113,6 +113,24 @@ export const ListView = ({
           avatar = <Avatar icon={<FontAwesomeIcon icon={row.icon as IconProp} />} style={{ backgroundColor: colorCode }} />
         }
 
+        // Tree row (detail Relations): a tight single-line mono row — `└─` connector
+        // + status dot + Kind + muted inline name + right-aligned colored state.
+        if (itemTemplate.rowVariant === 'tree') {
+          return (
+            <AntdList.Item
+              className={`${styles.treeRow} ${row.navigateTo ? styles.clickable : ''}`}
+              key={`${rowKey}-${index}`}
+              onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+            >
+              <span className={styles.treeConnector}>└─</span>
+              <span className={styles.treeDot} style={{ backgroundColor: colorCode, boxShadow: `0 0 5px 1px ${colorCode}` }} />
+              <span className={styles.treeKind}>{row.primaryText}</span>
+              {row.subPrimaryText && <span className={styles.treeName}>{row.subPrimaryText}</span>}
+              {row.secondaryText && <span className={styles.treeState} style={{ color: colorCode }}>{row.secondaryText}</span>}
+            </AntdList.Item>
+          )
+        }
+
         const rowActions = itemTemplate.rowActions ?? []
         const kebab = rowActions.length
           ? (
@@ -144,18 +162,27 @@ export const ListView = ({
           )
           : null
 
-        // Reconciliation-rail row: a per-item antd Progress line (colour via getColorCode),
-        // optionally in the Petrol `rail` variant (CSS hatch + amber target-tick).
+        // Reconciliation-rail row: the mockup's desired-vs-actual gauge. The FILL is cyan
+        // (the CONVERGED %), and the un-filled remainder carries a state-coloured diagonal
+        // HATCH (drift magenta / pending amber / fail crimson) via the --rail-rem CSS var —
+        // honest now that healthPercent counts BOTH Ready+Synced (drift = 50%, so the gap is
+        // real). The `line` variant keeps the plain state-coloured fill; the % label stays
+        // state-coloured on both.
+        const isRail = row.bar?.variant === 'rail'
+        const barStateColor = getColorCode(row.bar?.color)
         const barEl = row.bar
           ? (
-            <div className={`${styles.bar} ${row.bar.variant === 'rail' ? styles.railBar : ''}`}>
+            <div
+              className={`${styles.bar} ${isRail ? styles.railBar : ''}`}
+              style={isRail ? ({ '--rail-rem': barStateColor } as CSSProperties) : undefined}
+            >
               <Progress
                 percent={row.bar.percent}
                 showInfo={false}
                 size='small'
-                strokeColor={getColorCode(row.bar.color)}
+                strokeColor={isRail ? getColorCode('cyan') : barStateColor}
               />
-              {row.bar.label && <span className={styles.barLabel} style={{ color: getColorCode(row.bar.color) }}>{row.bar.label}</span>}
+              {row.bar.label && <span className={styles.barLabel} style={{ color: barStateColor }}>{row.bar.label}</span>}
             </div>
           )
           : null
@@ -172,7 +199,7 @@ export const ListView = ({
                     {row.secondaryText && (
                       itemTemplate.secondaryTextAsTag
                         ? <Tag className={styles.tag} style={{ backgroundColor: soft, color: colorCode }}>{row.secondaryText}</Tag>
-                        : <Typography.Text>{row.secondaryText}</Typography.Text>
+                        : <span className={styles.stateText} style={{ color: colorCode }}>{row.secondaryText}</span>
                     )}
                   </div>
                 )
@@ -181,11 +208,17 @@ export const ListView = ({
             key={`${rowKey}-${index}`}
             onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
           >
-            <AntdList.Item.Meta
-              avatar={avatar}
-              description={row.subPrimaryText || undefined}
-              title={row.primaryText}
-            />
+            {/* Reconciliation-rail aggregate band: no avatar/label → let the bar span full width
+                (a List.Item.Meta with empty title still claims ~half the row otherwise). */}
+            {(avatar || row.primaryText || row.subPrimaryText) && (
+              <AntdList.Item.Meta
+                avatar={avatar}
+                description={row.subPrimaryText && itemTemplate.subPrimaryTextMono
+                  ? <span className={styles.refPill}>{row.subPrimaryText}</span>
+                  : (row.subPrimaryText || undefined)}
+                title={row.primaryText}
+              />
+            )}
             {barEl}
           </AntdList.Item>
         )

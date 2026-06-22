@@ -349,6 +349,25 @@
               "type": "string",
               "description": "antd Card extra \u2014 content shown top-right of the card header (renamed from `headerRight`)"
             },
+            "extraVariant": {
+              "type": "string",
+              "enum": [
+                "text",
+                "badge"
+              ],
+              "description": "how `extra` renders top-right: `text` (default, plain) or `badge` (a status pill \u2014 glow dot + uppercase mono, e.g. a CONVERGED/DRIFT/DEGRADED reconcile chip)"
+            },
+            "extraStatus": {
+              "type": "string",
+              "enum": [
+                "success",
+                "processing",
+                "warning",
+                "error",
+                "default"
+              ],
+              "description": "antd Badge status driving the `extraVariant: badge` colour (processing=cyan/healthy, warning=amber/drift, error=crimson/failed)"
+            },
             "live": {
               "type": "boolean",
               "description": "show a pulsing \"Live\" badge next to the card title (for cards backed by a live/SSE feed)"

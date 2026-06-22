@@ -9,7 +9,7 @@ import type { Paragraph as WidgetType } from './Paragraph.type'
 export type ParagraphWidgetData = WidgetType['spec']['widgetData']
 
 const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
-  const { code, copyable, delete: del, disabled, ellipsis, italic, level, mark, strong, text, type, underline } = widgetData
+  const { code, copyable, delete: del, disabled, ellipsis, italic, level, mark, strong, text, type, underline, variant } = widgetData
 
   const content = (
     <Linkify
@@ -21,6 +21,18 @@ const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
       {text}
     </Linkify>
   )
+
+  // `variant: eyebrow` renders the small uppercase mono section caption (the Flight-deck
+  // page-header / panel eyebrow). Rendered as a plain element rather than antd
+  // Typography.Paragraph — antd Typography collapses a multi-class className to its first
+  // token, which would drop the `.eyebrow` modifier class.
+  if (variant === 'eyebrow') {
+    return (
+      <div className={`${styles.paragraph} ${styles.eyebrow}`} key={uid}>
+        {content}
+      </div>
+    )
+  }
 
   // A `level` promotes the text to a Typography.Title (h1-h5); otherwise it
   // renders as a body Paragraph. Both share the same inline-style props.

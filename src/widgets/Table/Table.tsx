@@ -1,10 +1,12 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Table as AntdTable, Result, Tag, Typography } from 'antd'
+import { Table as AntdTable, Progress, Result, Tag, Typography } from 'antd'
+import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router'
 
 import { useFilter } from '../../components/FiltesProvider/FiltersProvider'
 import WidgetRenderer from '../../components/WidgetRenderer'
+import { getColorCode } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 import { formatISODate, formatRelativeTime, getEndpointUrl } from '../../utils/utils'
 
@@ -74,6 +76,19 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
               // Per-row colored Tag (e.g. status Healthy/Failed/Pending). The color
               // rides on the cell so each row can differ — unlike the per-column color.
               return <Tag color={cellColor ?? color}>{stringValue ?? '-'}</Tag>
+
+            case 'bar': {
+              // Reconciliation-rail gauge cell (desired-vs-actual): cyan CONVERGED fill to
+              // `stringValue`%, + a state-coloured diagonal HATCH remainder (--rail-rem) + an
+              // amber target-tick at 100% (`.railBar`). Mirrors the List `rail` variant.
+              const pct = Number(stringValue)
+              const barColor = getColorCode(cellColor ?? color)
+              return (
+                <div className={styles.railBar} style={{ '--rail-rem': barColor } as CSSProperties}>
+                  <Progress percent={Number.isFinite(pct) ? pct : 0} showInfo={false} size='small' strokeColor={getColorCode('cyan')} />
+                </div>
+              )
+            }
 
             case 'icon':
               if (stringValue) { return <FontAwesomeIcon color={color} icon={stringValue as IconProp} /> }

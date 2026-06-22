@@ -53,7 +53,17 @@
             },
             "legend": {
               "type": "boolean",
-              "description": "show the legend; false hides it (G2 `legend`). When shown it is rendered centered below the chart."
+              "description": "show the legend; false hides it (G2 `legend`). When shown it is rendered centered, positioned per legendPosition (default below the chart)."
+            },
+            "legendPosition": {
+              "type": "string",
+              "enum": [
+                "bottom",
+                "right",
+                "top",
+                "left"
+              ],
+              "description": "where the legend sits relative to the chart (G2 legend position). Default bottom; right stacks it beside the donut (status-breakdown layout)"
             },
             "label": {
               "type": "object",
