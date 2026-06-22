@@ -5,7 +5,7 @@ import { Button, Descriptions, Form as AntdForm, Result, Space, Spin } from 'ant
 import useApp from 'antd/es/app/useApp'
 import dayjs from 'dayjs'
 import type { JSONSchema4 } from 'json-schema'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import WidgetRenderer from '../../components/WidgetRenderer'
@@ -16,7 +16,7 @@ import { useDrawerContext } from '../Drawer/DrawerContext'
 
 import styles from './Form.module.css'
 import type { Form as WidgetType } from './Form.type'
-import { SchemaFields } from './SchemaFields'
+import { SchemaForm } from './SchemaFields'
 import { getDefaultsFromSchema } from './utils'
 
 export type FormWidgetData = WidgetType['spec']['widgetData']
@@ -56,18 +56,11 @@ const FormExtra = ({ buttonConfig, disabled = false, form, loading, onDraft, sub
   // When `secondary.navigateTo` is set the secondary button is a Cancel that
   // navigates (SPA) instead of resetting the form.
   const secondaryNav = buttonConfig?.secondary?.navigateTo
+  // Action bar: Save draft pinned LEFT, Cancel + primary grouped RIGHT (mockup `.actionbar`
+  // split). With no draft action (e.g. the drawer render) the left slot is an empty spacer,
+  // so the right group stays right-aligned — unchanged from the previous single-Space layout.
   return (
-    <Space>
-      <Button
-        disabled={disabled}
-        form={form}
-        htmlType={secondaryNav ? 'button' : 'reset'}
-        icon={buttonConfig?.secondary?.icon ? <FontAwesomeIcon icon={buttonConfig?.secondary?.icon as IconProp} /> : undefined}
-        onClick={secondaryNav ? () => { void navigate(secondaryNav) } : undefined}
-        type='default'
-      >
-        {buttonConfig?.secondary?.label || 'Reset'}
-      </Button>
+    <div className={styles.actionRow}>
       {onDraft
         ? (
           <Button
@@ -80,17 +73,29 @@ const FormExtra = ({ buttonConfig, disabled = false, form, loading, onDraft, sub
             {buttonConfig?.draft?.label || 'Save draft'}
           </Button>
         )
-        : null}
-      <Button
-        form={form}
-        htmlType='submit'
-        icon={buttonConfig?.primary?.icon ? <FontAwesomeIcon icon={buttonConfig?.primary?.icon as IconProp} /> : undefined}
-        loading={loading}
-        type='primary'
-      >
-        {submitLabel ?? (buttonConfig?.primary?.label || 'Submit')}
-      </Button>
-    </Space>
+        : <span />}
+      <Space>
+        <Button
+          disabled={disabled}
+          form={form}
+          htmlType={secondaryNav ? 'button' : 'reset'}
+          icon={buttonConfig?.secondary?.icon ? <FontAwesomeIcon icon={buttonConfig?.secondary?.icon as IconProp} /> : undefined}
+          onClick={secondaryNav ? () => { void navigate(secondaryNav) } : undefined}
+          type='default'
+        >
+          {buttonConfig?.secondary?.label || 'Reset'}
+        </Button>
+        <Button
+          form={form}
+          htmlType='submit'
+          icon={buttonConfig?.primary?.icon ? <FontAwesomeIcon icon={buttonConfig?.primary?.icon as IconProp} /> : undefined}
+          loading={loading}
+          type='primary'
+        >
+          {submitLabel ?? (buttonConfig?.primary?.label || 'Submit')}
+        </Button>
+      </Space>
+    </div>
   )
 }
 
@@ -151,8 +156,25 @@ const ReviewSummary = ({ schema, values }: { schema?: JSONSchema4; values: Recor
  * button runs the same submit action. Default (flag off) is unchanged.
  */
 const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>) => {
-  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, submitActionId } = widgetData
-  const jsonSchema = schema as JSONSchema4 | undefined
+  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, stringSchema, submitActionId } = widgetData
+  // Prefer `stringSchema` (the schema as a raw JSON STRING) when present: `JSON.parse`
+  // preserves the object's key insertion order, so a server that hands us the blueprint's
+  // values.schema.json verbatim (e.g. from the per-blueprint jsonschema ConfigMap, which
+  // keeps authoring order) renders fields in that order — unlike the `schema` object sourced
+  // from the CRD's openAPIV3Schema, whose properties map is serialized alphabetically. Falls
+  // back to the `schema` object when stringSchema is absent or not valid JSON. Memoized so
+  // the (potentially large) parse doesn't run on every controlled-form keystroke.
+  const jsonSchema = useMemo<JSONSchema4 | undefined>(() => {
+    if (typeof stringSchema === 'string' && stringSchema.trim() !== '') {
+      try {
+        return JSON.parse(stringSchema) as JSONSchema4
+      } catch {
+        // malformed string schema — fall back to the object schema below
+      }
+    }
+
+    return schema as JSONSchema4 | undefined
+  }, [schema, stringSchema])
   const { insideDrawer, setDrawerData } = useDrawerContext()
   const alreadySetDrawerData = useRef(false)
 
@@ -318,7 +340,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
           size={size}
         >
           {jsonSchema?.properties
-            ? <SchemaFields hide={propertiesToHide} schema={jsonSchema} />
+            ? <SchemaForm hide={propertiesToHide} schema={jsonSchema} />
             : items?.map(({ resourceRefId }, index) => {
               const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
               return endpoint ? <WidgetRenderer key={`${formId}-${index}`} widgetEndpoint={endpoint} /> : null

@@ -10,7 +10,6 @@ import { getOptionsFromEnum } from './utils'
  * e.g. `x-kubernetes-preserve-unknown-fields` like a `tags`/`labels` map, or a non-string
  * array). antd injects `value`/`onChange`: the value stays a real object/array — edited as
  * JSON — so it is submitted correctly and never rendered as the string "[object Object]".
- * Invalid JSON shows an error and holds the last valid value; empty clears it.
  */
 const JsonValueInput = ({ onChange, value }: { onChange?: (next: unknown) => void; value?: unknown }): React.ReactNode => {
   const [text, setText] = useState<string>(() => (value === undefined || value === null ? '' : JSON.stringify(value, null, 2)))
@@ -35,7 +34,7 @@ const JsonValueInput = ({ onChange, value }: { onChange?: (next: unknown) => voi
 
   return (
     <Input.TextArea
-      autoSize={{ maxRows: 10, minRows: 2 }}
+      autoSize={{ maxRows: 12, minRows: 2 }}
       onChange={handleChange}
       placeholder='{ } — JSON (key/value map)'
       status={invalid ? 'error' : undefined}
@@ -45,13 +44,7 @@ const JsonValueInput = ({ onChange, value }: { onChange?: (next: unknown) => voi
   )
 }
 
-/**
- * Renders an antd form control for a single schema node. The schema-driven alternative to
- * composing control widgets — used when a Form is fed a JSON schema (e.g. a blueprint CRD's
- * `openAPIV3Schema` spec) instead of `items`. Objects WITH `properties` are handled by the
- * caller (a recursive fieldset); a property-less object/array reaching here is a free-form
- * map, edited as JSON.
- */
+/** Renders an antd form control for a single schema node (the schema-driven control). */
 const controlFor = (node: JSONSchema4): React.ReactNode => {
   if (Array.isArray(node.enum)) {
     return <Select allowClear options={getOptionsFromEnum(node.enum)} placeholder='Select…' />
@@ -65,6 +58,26 @@ const controlFor = (node: JSONSchema4): React.ReactNode => {
   return <Input />
 }
 
+const isGroup = (node: JSONSchema4): boolean => node.type === 'object' && !!node.properties
+
+/**
+ * One COHERENT header for every property — the property `name` (the schema key) and its
+ * `description` (muted, if present). Used identically for scalars, toggles, maps and
+ * nested-object groups so the whole form reads as one system.
+ */
+const fieldHeader = (key: string, node: JSONSchema4, isRequired: boolean): React.ReactNode => {
+  const description = typeof node.description === 'string' ? node.description : ''
+  return (
+    <span className={styles.fieldLabel}>
+      <span className={styles.fieldName}>
+        {key}
+        {isRequired ? <span className={styles.req}> *</span> : null}
+      </span>
+      {description ? <span className={styles.fieldDesc}>{description}</span> : null}
+    </span>
+  )
+}
+
 interface SchemaFieldsProps {
   /** the (sub)schema whose `properties` become form fields */
   schema: JSONSchema4
@@ -75,11 +88,12 @@ interface SchemaFieldsProps {
 }
 
 /**
- * Recursively renders antd `Form.Item`s from a JSON schema's `properties`. Objects
- * recurse into a nested fieldset (carrying the dotted `name` path); enums → Select,
- * boolean → Switch, number/integer → InputNumber, string-array → tag Select, else
- * Input. `required` and `description` come from the schema; defaults are applied by
- * the parent Form via `getDefaultsFromSchema`.
+ * Schema-driven fields, rendered in EXACT `values.schema.json` order (each property in
+ * sequence — never reordered). Every property uses one coherent shape: the `name`+
+ * `description` header (see `fieldHeader`) above its control. The control is the only thing
+ * that varies by type — Input / Switch / Select / InputNumber / JSON editor — and a nested
+ * object is the same header above its child fields, indented. The `Form.Item` `name` (and
+ * `required`/`valuePropName`) is preserved verbatim, so submission is unchanged.
  */
 export const SchemaFields = ({ hide = [], namePath = [], schema }: SchemaFieldsProps): React.ReactNode => {
   if (!schema?.properties) { return null }
@@ -90,24 +104,27 @@ export const SchemaFields = ({ hide = [], namePath = [], schema }: SchemaFieldsP
       {Object.entries(schema.properties).map(([key, node]) => {
         if (hide.includes(key)) { return null }
         const path = [...namePath, key]
-        const label = (typeof node.title === 'string' && node.title) || key
 
-        if (node.type === 'object' && node.properties) {
+        if (isGroup(node)) {
           return (
-            <fieldset className={styles.fieldset} key={path.join('.')}>
-              <legend className={styles.legend}>{label}</legend>
-              <SchemaFields hide={hide} namePath={path} schema={node} />
-            </fieldset>
+            <div className={styles.group} key={path.join('.')}>
+              {fieldHeader(key, node, false)}
+              <div className={styles.groupBody}>
+                <SchemaFields hide={hide} namePath={path} schema={node} />
+              </div>
+            </div>
           )
         }
 
         return (
           <AntdForm.Item
+            className={styles.field}
+            colon={false}
+            hasFeedback={required.has(key) && node.type !== 'boolean'}
             key={path.join('.')}
-            label={label}
+            label={fieldHeader(key, node, required.has(key))}
             name={path}
-            rules={required.has(key) ? [{ message: `${label} is required`, required: true }] : undefined}
-            tooltip={typeof node.description === 'string' ? node.description : undefined}
+            rules={required.has(key) ? [{ message: `${key} is required`, required: true }] : undefined}
             valuePropName={node.type === 'boolean' ? 'checked' : undefined}
           >
             {controlFor(node)}
@@ -115,6 +132,63 @@ export const SchemaFields = ({ hide = [], namePath = [], schema }: SchemaFieldsP
         )
       })}
     </>
+  )
+}
+
+interface Section { id: string; label: string }
+
+/**
+ * Section-navigated schema form for COMPLEX blueprints (e.g. the installer's ~680 fields):
+ * a left rail of sections — "Top-level values" (the root's ungrouped, non-object properties)
+ * plus one per top-level object group — and a body showing only the active section. Every
+ * section stays mounted (hidden, not unmounted) so all values + validation persist for
+ * submission; only the active one is shown. Falls back to a flat render when there's <2
+ * sections. The "Top-level values" entry is the ONE synthetic label (no matching schema key)
+ * — it is styled distinctly in the rail so it reads as a category, not a real property.
+ */
+export const SchemaForm = ({ hide = [], schema }: { schema: JSONSchema4; hide?: string[] }): React.ReactNode => {
+  const properties = (schema.properties ?? {}) as Record<string, JSONSchema4>
+  const groupKeys = Object.keys(properties).filter((key) => !hide.includes(key) && isGroup(properties[key]))
+  const hasLoose = Object.keys(properties).some((key) => !hide.includes(key) && !isGroup(properties[key]))
+
+  const sections: Section[] = []
+  if (hasLoose) { sections.push({ id: '__general__', label: 'Top-level values' }) }
+  groupKeys.forEach((key) => sections.push({ id: key, label: key }))
+
+  const [active, setActive] = useState<string>(sections[0]?.id ?? '__general__')
+
+  if (sections.length < 2) {
+    return <SchemaFields hide={hide} schema={schema} />
+  }
+
+  return (
+    <div className={styles.sectioned}>
+      <nav className={styles.secNav}>
+        {sections.map((section) => (
+          <button
+            className={[
+              styles.secItem,
+              active === section.id ? styles.secActive : '',
+              section.id === '__general__' ? styles.secSynthetic : '',
+            ].filter(Boolean).join(' ')}
+            key={section.id}
+            onClick={() => { setActive(section.id) }}
+            type='button'
+          >
+            {section.label}
+          </button>
+        ))}
+      </nav>
+      <div className={styles.secBody}>
+        {sections.map((section) => (
+          <div key={section.id} style={active === section.id ? undefined : { display: 'none' }}>
+            {section.id === '__general__'
+              ? <SchemaFields hide={[...hide, ...groupKeys]} schema={schema} />
+              : <SchemaFields hide={hide} namePath={[section.id]} schema={properties[section.id]} />}
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

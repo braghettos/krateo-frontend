@@ -60,6 +60,10 @@
                     "type": "string",
                     "description": "the title of the step"
                   },
+                  "eyebrow": {
+                    "type": "string",
+                    "description": "a short eyebrow label shown ABOVE the title (e.g. `Step 1`) — rendered mono/uppercase"
+                  },
                   "description": {
                     "type": "string",
                     "description": "the description of the step"
