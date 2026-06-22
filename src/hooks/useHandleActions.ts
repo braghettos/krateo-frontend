@@ -227,9 +227,16 @@ const runNavigate = async (action: WidgetAction & { type: 'navigate' }, runtime:
     return
   }
 
-  const updatedUrl = action.path.startsWith('${')
-    ? await ctx.resolveJq(action.path, { widget: runtime.widget })
-    : action.path
+  // A full `${…}` jq path resolves against the widget; otherwise, for a per-row action
+  // (List rowAction) the row rides in as customPayload — interpolate `${field}` placeholders
+  // from it (e.g. /marketplace/${name}/install), so one action serves every row. Static
+  // paths (no placeholders / no customPayload) pass through unchanged.
+  let updatedUrl = action.path
+  if (action.path.startsWith('${')) {
+    updatedUrl = await ctx.resolveJq(action.path, { widget: runtime.widget })
+  } else if (runtime.customPayload) {
+    updatedUrl = interpolateRedirectUrl(runtime.customPayload, action.path) ?? action.path
+  }
 
   if (!action.requireConfirmation || await ctx.confirm()) {
     await ctx.navigate(updatedUrl)
