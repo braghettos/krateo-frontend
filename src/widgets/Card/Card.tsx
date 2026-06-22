@@ -50,7 +50,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   const { handleAction, isActionLoading } = useHandleAction()
 
   // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions`.
-  const { clickActionId, cover, extra, extraStatus, extraVariant, footer, headerLeft, icon, items, live, size, tags, title, titleVariant, tooltip, variant, widgetActions } = widgetData
+  const { clickActionId, cover, extra, extraStatus, extraVariant, footer, headerLeft, icon, items, legend, live, size, tags, title, titleVariant, tooltip, variant, widgetActions } = widgetData
   const coverEndpoint = cover ? getEndpointUrl(cover, resourcesRefs) : undefined
 
   const action: WidgetAction | undefined = Object.values(widgetActions ?? {})
@@ -114,9 +114,19 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       classNames={{ body: styles.bodyWrapper, header: styles.header, title: styles.title }}
       cover={coverEndpoint ? <WidgetRenderer widgetEndpoint={coverEndpoint} /> : undefined}
       extra={
-        (extra || tooltip)
+        (extra || tooltip || (legend && legend.length > 0))
           ? (
             <>
+              {legend && legend.length > 0 && (
+                <div className={styles.legend}>
+                  {legend.map((entry, index) => (
+                    <span className={styles.legendItem} key={`${uid}-legend-${index}`}>
+                      <span className={styles.legendSwatch} style={{ background: getColorCode(entry.color) }} />
+                      {entry.label}
+                    </span>
+                  ))}
+                </div>
+              )}
               {extra && (extraVariant === 'badge'
                 ? <Badge className={styles.statusBadge} status={extraStatus ?? 'processing'} text={extra} />
                 : extra)}

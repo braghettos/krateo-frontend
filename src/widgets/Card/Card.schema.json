@@ -372,6 +372,28 @@
               "type": "boolean",
               "description": "show a pulsing \"Live\" badge next to the card title (for cards backed by a live/SSE feed)"
             },
+            "legend": {
+              "type": "array",
+              "description": "optional legend key shown top-right of the card header (e.g. the reconciliation-rail actual/drift/target swatches): each item is a small colour swatch + label",
+              "items": {
+                "type": "object",
+                "required": [
+                  "color",
+                  "label"
+                ],
+                "properties": {
+                  "color": {
+                    "type": "string",
+                    "description": "swatch colour (palette name, e.g. cyan / magenta / amber)"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "swatch label (e.g. actual / drift / target)"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
             "variant": {
               "type": "string",
               "enum": [

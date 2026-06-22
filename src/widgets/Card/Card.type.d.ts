@@ -222,6 +222,19 @@ export interface Card {
        */
       live?: boolean
       /**
+       * optional legend key shown top-right of the card header (e.g. the reconciliation-rail actual/drift/target swatches): each item is a small colour swatch + label
+       */
+      legend?: {
+        /**
+         * swatch colour (palette name, e.g. cyan / magenta / amber)
+         */
+        color: string
+        /**
+         * swatch label (e.g. actual / drift / target)
+         */
+        label: string
+      }[]
+      /**
        * antd Card variant
        */
       variant?: 'outlined' | 'borderless'

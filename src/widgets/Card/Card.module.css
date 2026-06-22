@@ -187,6 +187,34 @@
   }
 }
 
+/* Legend key in the card `extra` slot (widgetData.legend) — the reconciliation-rail
+   actual/drift/target key. A horizontal row of small colour swatches + mono graphite
+   labels; sits top-right of the panel header, opposite the eyebrow title. */
+.legend {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.legendItem {
+  align-items: center;
+  color: var(--gray-color);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  gap: 6px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.legendSwatch {
+  border-radius: 2px;
+  display: inline-block;
+  height: 9px;
+  width: 9px;
+}
+
 /* Status badge-pill in the card `extra` slot (extraVariant: badge) — the mockup
    CONVERGED/DRIFT/DEGRADED chip. Pill shape + glow dot + mono uppercase; tint +
    colour follow the antd status (processing=cyan / warning=amber / error=crimson). */

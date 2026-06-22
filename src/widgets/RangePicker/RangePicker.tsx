@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router'
 
 import type { WidgetProps } from '../../types/Widget'
 
+import styles from './RangePicker.module.css'
 import type { RangePicker as WidgetType } from './RangePicker.type'
 
 const { RangePicker: AntdRangePicker } = DatePicker
@@ -52,6 +53,7 @@ const RangePicker = ({ uid, widgetData }: WidgetProps<RangePickerWidgetData>) =>
   return (
     <AntdRangePicker
       allowClear={allowClear}
+      className={styles.pill}
       disabled={disabled}
       format={format}
       key={uid}

@@ -44,7 +44,7 @@ const Tabs = ({ resourcesRefs, uid, widgetData }: WidgetProps<TabsWidgetData>) =
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
-  return <AntdTabs centered={centered} items={tabItems} key={uid} size={size} tabPlacement={tabPlacement} type={type} />
+  return <AntdTabs centered={centered} className={styles.tabs} items={tabItems} key={uid} size={size} tabPlacement={tabPlacement} type={type} />
 }
 
 export default Tabs
