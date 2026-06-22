@@ -1,6 +1,8 @@
 apiVersion: v2
 name: krateo-frontend
 description: Krateo Frontend
+annotations:
+  krateo.io/display-name: Frontend
 
 # A chart can be either an 'application' or a 'library' chart.
 #
