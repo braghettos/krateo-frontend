@@ -171,3 +171,94 @@
   margin-left: auto;
   white-space: nowrap;
 }
+
+/* Card tile (itemTemplate.rowVariant: card) — Marketplace catalog grid. Each grid cell is
+   a full antd Card: icon-tile + name + version badge + category tag + 2-line description +
+   a footer of visible action buttons. Mirrors the mockup `.card`. Full height so cards in a
+   grid row align and the footer pins to the bottom. */
+.tileCard {
+  height: 100%;
+}
+
+.tileCard :global(.ant-card-body) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 8px);
+  height: 100%;
+}
+
+.cardTop {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+}
+
+.cardTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cardNameRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cardName {
+  color: var(--text-color);
+  font-weight: var(--font-weight-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Version badge — bordered mono pill (mockup `.ver-badge`). */
+.verBadge {
+  border: 1px solid var(--border-color, rgba(230, 237, 243, 0.16));
+  border-radius: var(--radius-sm);
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+/* 2-line clamped description body — grows to push the footer to the card bottom. */
+.cardDesc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--gray-color);
+  display: -webkit-box;
+  flex: 1;
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* Top-bordered footer: provider (left) + action buttons (right) — mockup `.card-foot`. */
+.cardFoot {
+  align-items: center;
+  border-top: 1px solid var(--border-color, rgba(230, 237, 243, 0.1));
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+  margin-top: auto;
+  padding-top: var(--spacing-sm, 8px);
+}
+
+.cardProvider {
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardFootActions {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-left: auto;
+}

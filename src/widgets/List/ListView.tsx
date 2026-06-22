@@ -1,6 +1,6 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Avatar, List as AntdList, Button, Dropdown, Progress, Tag, Typography } from 'antd'
+import { Avatar, Card, List as AntdList, Button, Dropdown, Progress, Tag, Typography } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import type { ListGridType } from 'antd/es/list'
 import type { CSSProperties, ReactNode } from 'react'
@@ -127,6 +127,55 @@ export const ListView = ({
               <span className={styles.treeKind}>{row.primaryText}</span>
               {row.subPrimaryText && <span className={styles.treeName}>{row.subPrimaryText}</span>}
               {row.secondaryText && <span className={styles.treeState} style={{ color: colorCode }}>{row.secondaryText}</span>}
+            </AntdList.Item>
+          )
+        }
+
+        // Card tile (Marketplace catalog grid): render the row as a full antd Card —
+        // icon-tile + name + version badge + category tag + 2-line description + a footer
+        // of `rowActions` as VISIBLE buttons (first = primary), instead of a List.Item row
+        // with a kebab. Whole-card click still navigates when the row carries `navigateTo`.
+        if (itemTemplate.rowVariant === 'card') {
+          const cardActions = (itemTemplate.rowActions ?? []).map((rowAction, actionIndex) => (
+            <Button
+              danger={rowAction.danger}
+              icon={rowAction.icon ? <FontAwesomeIcon icon={rowAction.icon as IconProp} /> : undefined}
+              key={rowAction.actionId}
+              onClick={(event) => { event.stopPropagation(); void fireRowAction(rowAction.actionId, item) }}
+              size='small'
+              type={actionIndex === 0 ? 'primary' : 'default'}
+            >
+              {rowAction.label}
+            </Button>
+          ))
+          return (
+            <AntdList.Item key={`${rowKey}-${index}`}>
+              <Card
+                className={`${styles.tileCard} ${row.navigateTo ? styles.clickable : ''}`}
+                hoverable={Boolean(row.navigateTo)}
+                onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+                size='small'
+              >
+                <div className={styles.cardTop}>
+                  {avatar}
+                  <div className={styles.cardTitles}>
+                    <div className={styles.cardNameRow}>
+                      <span className={styles.cardName}>{row.primaryText}</span>
+                      {row.subPrimaryText && <span className={styles.verBadge}>{row.subPrimaryText}</span>}
+                    </div>
+                    {row.secondaryText && (
+                      <Tag className={styles.tag} style={{ backgroundColor: soft, color: colorCode }}>{row.secondaryText}</Tag>
+                    )}
+                  </div>
+                </div>
+                {row.description && <div className={styles.cardDesc}>{row.description}</div>}
+                {(cardActions.length > 0 || row.subSecondaryText) && (
+                  <div className={styles.cardFoot}>
+                    {row.subSecondaryText && <span className={styles.cardProvider}>{row.subSecondaryText}</span>}
+                    <div className={styles.cardFootActions}>{cardActions}</div>
+                  </div>
+                )}
+              </Card>
             </AntdList.Item>
           )
         }

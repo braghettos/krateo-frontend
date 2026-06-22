@@ -52,6 +52,8 @@ export interface ItemTemplate {
   secondaryText?: string
   subPrimaryText?: string
   subSecondaryText?: string
+  /** Longer body line (2-line clamp) — only rendered by the `card` rowVariant (e.g. a catalog tile description). */
+  description?: string
   /** Icon name (font awesome), or a `{path}`. */
   icon?: string
   /**
@@ -87,11 +89,13 @@ export interface ItemTemplate {
   bar?: BarSpec
   /**
    * Row layout: `default` (antd List.Item.Meta — avatar + stacked title/description),
-   * or `tree` (a tight single-line mono row: `└─` connector + status dot + primaryText
+   * `tree` (a tight single-line mono row: `└─` connector + status dot + primaryText
    * + muted inline subPrimaryText + right-aligned colored secondaryText — the detail
-   * Relations "composed children" tree).
+   * Relations "composed children" tree), or `card` (a full antd Card tile — icon-tile +
+   * name + version badge (subPrimaryText) + category tag (secondaryText) + description +
+   * a footer of `rowActions` rendered as visible buttons — the Marketplace catalog grid).
    */
-  rowVariant?: 'default' | 'tree'
+  rowVariant?: 'default' | 'tree' | 'card'
 }
 
 export interface ResolvedBar {
@@ -106,6 +110,7 @@ export interface ResolvedRow {
   secondaryText: string
   subPrimaryText: string
   subSecondaryText: string
+  description: string
   icon: string
   color: string
   /** Resolved navigation target (empty string when the row is not clickable). */
@@ -159,6 +164,7 @@ export const resolveRow = (template: ItemTemplate, item: unknown): ResolvedRow =
     }
     : undefined,
   color: resolveColor(template.color, item),
+  description: interpolate(template.description, item),
   icon: interpolate(template.icon, item),
   navigateTo: interpolate(template.navigateTo, item),
   primaryText: resolveSlot(template, 'primaryText', item),

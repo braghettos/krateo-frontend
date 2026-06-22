@@ -61,15 +61,19 @@ export interface List {
         secondaryText?: string
         subPrimaryText?: string
         subSecondaryText?: string
+        /**
+         * longer body line (2-line clamp); only rendered by the card rowVariant (e.g. a catalog tile description)
+         */
+        description?: string
         icon?: string
         /**
          * leading-indicator style: avatar (solid disc + glyph, default), tile (soft-tint rounded square + glyph), dot (small status dot + halo)
          */
         iconVariant?: 'avatar' | 'tile' | 'dot'
         /**
-         * row layout: default (antd List.Item.Meta) or tree (tight single-line mono row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText — the detail Relations composed-children tree)
+         * row layout: default (antd List.Item.Meta) | tree (tight single-line mono Relations row) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid)
          */
-        rowVariant?: 'default' | 'tree'
+        rowVariant?: 'default' | 'tree' | 'card'
         /**
          * render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text
          */

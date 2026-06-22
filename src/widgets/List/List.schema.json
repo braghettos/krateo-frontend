@@ -115,6 +115,10 @@
                 "subSecondaryText": {
                   "type": "string"
                 },
+                "description": {
+                  "type": "string",
+                  "description": "longer body line (2-line clamp); only rendered by the card rowVariant (e.g. a catalog tile description)"
+                },
                 "icon": {
                   "type": "string"
                 },
@@ -131,9 +135,10 @@
                   "type": "string",
                   "enum": [
                     "default",
-                    "tree"
+                    "tree",
+                    "card"
                   ],
-                  "description": "row layout: default (antd List.Item.Meta — avatar + stacked title/description) or tree (tight single-line mono row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText — the detail Relations composed-children tree)"
+                  "description": "row layout: default (antd List.Item.Meta — avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid)"
                 },
                 "secondaryTextAsTag": {
                   "type": "boolean",
