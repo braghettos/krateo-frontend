@@ -203,13 +203,16 @@
 .cardNameRow {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  min-width: 0;
 }
 
 .cardName {
   color: var(--text-color);
+  flex: 1;
   font-weight: var(--font-weight-bold);
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -220,10 +223,18 @@
   border: 1px solid var(--border-color, rgba(230, 237, 243, 0.16));
   border-radius: var(--radius-sm);
   color: var(--gray-color);
+  flex: none;
   font-family: var(--font-mono);
   font-size: 11px;
   padding: 0 6px;
   white-space: nowrap;
+}
+
+/* Category tag in a card: hug its content + left-align (a flex-column child would otherwise
+   stretch to the full column width under the default align-items: stretch). */
+.cardCatTag {
+  align-self: flex-start;
+  max-width: 100%;
 }
 
 /* 2-line clamped description body — grows to push the footer to the card bottom. */
@@ -235,6 +246,7 @@
   flex: 1;
   font-size: 12.5px;
   line-height: 1.5;
+  min-height: 3em;
   overflow: hidden;
 }
 

@@ -164,11 +164,12 @@ export const ListView = ({
                       {row.subPrimaryText && <span className={styles.verBadge}>{row.subPrimaryText}</span>}
                     </div>
                     {row.secondaryText && (
-                      <Tag className={styles.tag} style={{ backgroundColor: soft, color: colorCode }}>{row.secondaryText}</Tag>
+                      <Tag className={`${styles.tag} ${styles.cardCatTag}`} style={{ backgroundColor: soft, color: colorCode }}>{row.secondaryText}</Tag>
                     )}
                   </div>
                 </div>
-                {row.description && <div className={styles.cardDesc}>{row.description}</div>}
+                {/* Always render (even when empty) so the 2-line min-height reserves space → equal-height tiles. */}
+                <div className={styles.cardDesc}>{row.description}</div>
                 {(cardActions.length > 0 || row.subSecondaryText) && (
                   <div className={styles.cardFoot}>
                     {row.subSecondaryText && <span className={styles.cardProvider}>{row.subSecondaryText}</span>}
