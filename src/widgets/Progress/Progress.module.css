@@ -4,3 +4,19 @@
 .progress {
   text-align: center;
 }
+
+/* Gauge readout under the indicator (mockup `.ring-label` / `.ring-sub`). The label
+   colour is set inline to the strokeColor (state: cyan healthy / magenta drift); the
+   description is muted graphite. Both mono, matching the flight-deck telemetry voice. */
+.label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.description {
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  margin-top: 2px;
+}

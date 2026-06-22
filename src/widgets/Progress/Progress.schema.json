@@ -50,6 +50,14 @@
             "steps": {
               "type": "integer",
               "description": "render the progress as a discrete number of steps"
+            },
+            "label": {
+              "type": "string",
+              "description": "optional primary readout rendered below the indicator, tinted in the strokeColor (e.g. a circle gauge's \"Healthy · 100% converged\" headline)"
+            },
+            "description": {
+              "type": "string",
+              "description": "optional secondary readout (muted graphite) rendered under `label` (e.g. \"all conditions True\")"
             }
           }
         },

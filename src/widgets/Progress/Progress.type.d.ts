@@ -34,6 +34,14 @@ export interface Progress {
        * render the progress as a discrete number of steps
        */
       steps?: number
+      /**
+       * optional primary readout rendered below the indicator, tinted in the strokeColor
+       */
+      label?: string
+      /**
+       * optional secondary readout (muted graphite) rendered under `label`
+       */
+      description?: string
     }
     apiRef?: {
       name: string
