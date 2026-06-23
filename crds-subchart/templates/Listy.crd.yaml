@@ -4,17 +4,17 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: lists.widgets.templates.krateo.io
+  name: listies.widgets.templates.krateo.io
 spec:
   group: widgets.templates.krateo.io
   names:
     categories:
     - widgets
     - krateo
-    kind: List
-    listKind: ListList
-    plural: lists
-    singular: list
+    kind: Listy
+    listKind: ListyList
+    plural: listies
+    singular: listy
   scope: Namespaced
   versions:
   - additionalPrinterColumns:

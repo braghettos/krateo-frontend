@@ -172,7 +172,7 @@ spec:
                       - buttons
                       - buttongroups
                       - cols
-                      - lists
+                      - listies
                       - eventlists
                       - filters
                       - flowcharts
