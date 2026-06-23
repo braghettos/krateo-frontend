@@ -102,6 +102,9 @@ export const colorDark: Record<keyof typeof color, string> = {
   cyan: '#34D6C8',
   magenta: '#D86BC4',
   amber: '#F2A33C',
+  // antd preset alias for "pending" status cells — the dark amber brand (mirrors
+  // the light `gold` → amber aliasing). Required by Record<keyof typeof color>.
+  gold: '#F2A33C',
 }
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const
