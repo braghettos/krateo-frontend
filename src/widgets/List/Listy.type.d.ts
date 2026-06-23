@@ -1,7 +1,7 @@
-export interface List {
+export interface Listy {
   version: string
   /**
-   * List renders an array of items, following the Ant Design List API (grid, itemLayout, size, bordered, split, header, footer). Each dataSource element is rendered via itemTemplate, or as a child widget when it carries a resourceRefId. Supersedes DataGrid.
+   * Listy renders an array of items, following the Ant Design List API (grid, itemLayout, size, bordered, split, header, footer). Each dataSource element is rendered via itemTemplate, or as a child widget when it carries a resourceRefId. Named 'Listy' (antd's successor to the deprecated List) because k8s reserves the 'List' kind. Supersedes DataGrid.
    */
   kind: string
   spec: {
@@ -75,13 +75,17 @@ export interface List {
          */
         iconVariant?: 'avatar' | 'tile' | 'dot'
         /**
-         * row layout: default (antd List.Item.Meta) | tree (tight single-line mono Relations row) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid)
+         * row layout: default (antd List.Item.Meta — avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid)
          */
         rowVariant?: 'default' | 'tree' | 'card'
         /**
          * render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text
          */
         secondaryTextAsTag?: boolean
+        /**
+         * render subPrimaryText as a small mono bordered pill (e.g. an event involvedObject Kind/name ref) instead of plain sub-text
+         */
+        subPrimaryTextMono?: boolean
         /**
          * per-item navigation target ({dot.path} template, e.g. {link}); when it resolves non-empty the row becomes clickable and navigates there (SPA route)
          */

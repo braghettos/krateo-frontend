@@ -8,8 +8,8 @@ import type { WidgetProps } from '../../types/Widget'
 import { getEndpointUrl } from '../../utils/utils'
 
 import type { ItemTemplate } from './itemTemplate'
-import type { List as WidgetType } from './List.type'
 import { ListView } from './ListView'
+import type { Listy as WidgetType } from './Listy.type'
 
 export type ListWidgetData = WidgetType['spec']['widgetData']
 
