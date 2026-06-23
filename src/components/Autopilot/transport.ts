@@ -228,6 +228,9 @@ const ECHO_REPLY = [
   '```portal-action',
   '{"verb":"navigate","route":"/compositions/krateo-system/portal","label":"open portal composition"}',
   '```',
+  '```portal-suggest',
+  '["Show its conditions", "Why is it not synced?", "Back to compositions"]',
+  '```',
 ].join('\n')
 
 const ECHO_CHUNK = 6

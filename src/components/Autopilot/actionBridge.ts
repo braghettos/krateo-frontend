@@ -73,19 +73,36 @@ export const PORTAL_CAPABILITIES_PROMPT = [
   '```',
   'Read-only verbs: navigate (route, e.g. /compositions/<ns>/<name>, /blueprints, /marketplace, /dashboard, /settings); setExtras (an extras object with status/range/q to scope the current list).',
   'This drives the real UI (read-only) — it is NOT a platform change. Emit at most one block per reply and still explain briefly in prose. Only propose routes/entities present in the page context.',
+  'You MAY also suggest up to 3 short, specific follow-up actions the user might take next (referencing on-screen entities) by emitting:',
+  '```portal-suggest',
+  '["Show the reconcile error", "Open the failed composition", "Why is X drifting?"]',
+  '```',
+  'These render as one-tap chips. Keep each under ~6 words and relevant to the current page.',
   '</portal_capabilities>',
 ].join('\n')
 
 const PROPOSAL_FENCE = /```portal-action\s*\n([\s\S]*?)```/g
+const SUGGEST_FENCE = /```portal-suggest\s*\n([\s\S]*?)```/g
+
+export interface AutopilotDirectives {
+  /** Assistant prose with all directive fences stripped out. */
+  cleanedText: string
+  /** Read-only actions to auto-apply. */
+  proposals: PortalActionProposal[]
+  /** Context-derived follow-up prompts to render as one-tap chips. */
+  suggestions: string[]
+}
 
 /**
- * Extract + STRIP `portal-action` fenced blocks from assistant text. Returns the
- * cleaned prose (the JSON never shows to the user — it becomes an action chip) and
- * the parsed proposals. Malformed blocks are dropped.
+ * Extract + STRIP the directive fences (`portal-action`, `portal-suggest`) from
+ * assistant text. The JSON never shows to the user — actions become chips,
+ * suggestions become quick-prompt chips. Malformed blocks are dropped.
  */
-export const parseProposals = (text: string): { cleanedText: string; proposals: PortalActionProposal[] } => {
+export const parseAutopilotDirectives = (text: string): AutopilotDirectives => {
   const proposals: PortalActionProposal[] = []
-  const cleanedText = text.replace(PROPOSAL_FENCE, (_match, body: string) => {
+  const suggestions: string[] = []
+
+  let cleaned = text.replace(PROPOSAL_FENCE, (_match, body: string) => {
     try {
       const parsed = JSON.parse(body.trim()) as PortalActionProposal
       if (parsed && typeof parsed.verb === 'string') {
@@ -95,8 +112,21 @@ export const parseProposals = (text: string): { cleanedText: string; proposals: 
       // Malformed proposal block — drop it.
     }
     return ''
-  }).trim()
-  return { cleanedText, proposals }
+  })
+
+  cleaned = cleaned.replace(SUGGEST_FENCE, (_match, body: string) => {
+    try {
+      const parsed = JSON.parse(body.trim()) as unknown
+      if (Array.isArray(parsed)) {
+        suggestions.push(...parsed.filter((entry): entry is string => typeof entry === 'string'))
+      }
+    } catch {
+      // Malformed suggest block — drop it.
+    }
+    return ''
+  })
+
+  return { cleanedText: cleaned.trim(), proposals, suggestions }
 }
 
 /**

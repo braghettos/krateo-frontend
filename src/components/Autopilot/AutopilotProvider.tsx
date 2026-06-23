@@ -15,7 +15,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useConfigContext } from '../../context/ConfigContext'
 
 import type { PortalActionProposal } from './actionBridge'
-import { PORTAL_CAPABILITIES_PROMPT, parseProposals, useAutopilotActionBridge } from './actionBridge'
+import { PORTAL_CAPABILITIES_PROMPT, parseAutopilotDirectives, useAutopilotActionBridge } from './actionBridge'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
@@ -84,13 +84,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // non-read-only verb, so this never mutates.
   const finalize = useCallback(async (assistantId: string) => {
     const rawText = assistantTextRef.current.get(assistantId) ?? ''
-    const { cleanedText, proposals: textProposals } = parseProposals(rawText)
+    const { cleanedText, proposals: textProposals, suggestions } = parseAutopilotDirectives(rawText)
     const toolProposals = proposalsRef.current.get(assistantId) ?? []
     assistantTextRef.current.delete(assistantId)
     proposalsRef.current.delete(assistantId)
 
     setMessages((prev) => prev.map((message) => (
-      message.id === assistantId ? { ...message, streaming: false, text: cleanedText } : message
+      message.id === assistantId
+        ? { ...message, streaming: false, suggestions: suggestions.length ? suggestions : undefined, text: cleanedText }
+        : message
     )))
     setStreaming(false)
 
