@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -153,48 +151,67 @@ spec:
                   type: object
                 type: array
               widgetData:
+                description: '@ant-design/charts Column config (AntV G2)'
                 properties:
+                  colorField:
+                    description: field mapped to color / series (G2 `colorField`)
+                    type: string
                   data:
-                    description: Array of grouped data entries for the bar chart
+                    description: chart data records (G2 `data`)
+                    items:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    type: array
+                  group:
+                    description: group series side-by-side at each x value (G2 `group`)
+                    type: boolean
+                  height:
+                    description: fixed height in px (G2 `height`); omit to autofit
+                    format: int32
+                    type: integer
+                  legend:
+                    description: show the legend; false hides it (G2 `legend`)
+                    type: boolean
+                  stack:
+                    description: stack series sharing an x value (G2 `stack`)
+                    type: boolean
+                  title:
+                    description: chart title (G2 `title`)
+                    type: string
+                  watch:
+                    description: 'live-refresh watch: involvedObject(s) this widget
+                      is tied to (see src/schemas/watch.schema.json). A matching k8s
+                      event refetches the widget.'
                     items:
                       properties:
-                        bars:
-                          description: Bars within the group, each representing a
-                            value
-                          items:
-                            properties:
-                              color:
-                                description: Color of the bar
-                                enum:
-                                - blue
-                                - darkBlue
-                                - orange
-                                - gray
-                                - red
-                                - green
-                                - violet
-                                type: string
-                              percentage:
-                                description: Height of the bar as a percentage (0–100)
-                                format: int32
-                                type: integer
-                              value:
-                                description: Label or identifier for the bar
-                                type: string
-                            required:
-                            - percentage
-                            - value
-                            type: object
-                          type: array
-                        label:
-                          description: Label for the group/category
+                        apiVersion:
+                          description: group/version, e.g. composition.krateo.io/v1alpha1
+                          type: string
+                        kind:
+                          description: e.g. DemoClaim
+                          type: string
+                        name:
+                          description: a specific object; omit to match any object
+                            of this kind ("GVR-level")
+                          type: string
+                        namespace:
+                          description: scope to a namespace; omit to match any
                           type: string
                       required:
-                      - bars
+                      - apiVersion
+                      - kind
                       type: object
                     type: array
+                  xField:
+                    description: field mapped to the category axis (G2 `xField`)
+                    type: string
+                  yField:
+                    description: field mapped to the value axis (G2 `yField`)
+                    type: string
                 required:
                 - data
+                - xField
+                - yField
                 type: object
               widgetDataTemplate:
                 items:

@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -154,50 +152,27 @@ spec:
                 type: array
               widgetData:
                 properties:
-                  fields:
-                    description: it defines the filters as fields of a Form
+                  items:
+                    description: resourceRefIds of form-control widgets (Input/Select/Switch/DatePicker/…)
+                      composed as filter fields. Each control's `name` is the dotted
+                      data path it filters; the match strategy is inferred from the
+                      value type.
                     items:
                       properties:
-                        description:
-                          description: text to show as tooltip
-                          type: string
-                        label:
-                          description: the label of the field
-                          type: string
-                        name:
-                          description: the name of the filter field, it must to be
-                            identical to the widget prop name to filter or data in
-                            dataset
-                          items:
-                            type: string
-                          type: array
-                        options:
-                          description: they're the options for select or radio, the
-                            type must be 'string'
-                          items:
-                            type: string
-                          type: array
-                        type:
-                          description: it's the filter field type, to render input,
-                            select, radio buttons, date picker or daterange picker
-                          enum:
-                          - string
-                          - boolean
-                          - number
-                          - date
-                          - daterange
+                        resourceRefId:
+                          description: the identifier of the form-control widget to
+                            render as a filter field
                           type: string
                       required:
-                      - label
-                      - name
-                      - type
+                      - resourceRefId
                       type: object
                     type: array
                   prefix:
-                    description: the prefix to share filters values to other widgets
+                    description: the prefix used to share filter values with the widgets
+                      being filtered
                     type: string
                 required:
-                - fields
+                - items
                 - prefix
                 type: object
               widgetDataTemplate:

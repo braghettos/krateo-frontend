@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -156,12 +154,13 @@ spec:
                 description: the data that will be passed to the widget on the frontend
                 properties:
                   alignment:
-                    description: the alignment of the element inside the row. Default
-                      is 'center'
+                    description: vertical alignment of items in the row (antd Row
+                      `align`). Default is 'middle'; 'stretch' makes columns equal-height
                     enum:
-                    - bottom
-                    - center
                     - top
+                    - middle
+                    - bottom
+                    - stretch
                     type: string
                   allowedResources:
                     description: the list of resources that are allowed to be children
@@ -169,22 +168,26 @@ spec:
                     items:
                       enum:
                       - barcharts
+                      - flexes
                       - buttons
                       - buttongroups
-                      - columns
-                      - datagrids
+                      - cols
+                      - lists
                       - eventlists
                       - filters
                       - flowcharts
                       - forms
                       - linecharts
                       - markdowns
-                      - panels
+                      - cards
                       - paragraphs
                       - piecharts
+                      - rangepickers
                       - rows
+                      - statistics
                       - tables
-                      - tablists
+                      - tabs
+                      - tags
                       - yamlviewers
                       type: string
                     type: array
@@ -193,8 +196,9 @@ spec:
                     items:
                       properties:
                         alignment:
-                          description: the alignment of the element inside the cell.
-                            Default is 'left'
+                          description: 'Krateo-only: horizontal alignment of the widget
+                            inside its cell (no antd Col equivalent; applied via flex
+                            justify-content). Default is ''left'''
                           enum:
                           - center
                           - left

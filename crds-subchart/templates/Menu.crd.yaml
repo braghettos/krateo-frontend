@@ -4,17 +4,17 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: datagrids.widgets.templates.krateo.io
+  name: menus.widgets.templates.krateo.io
 spec:
   group: widgets.templates.krateo.io
   names:
     categories:
     - widgets
     - krateo
-    kind: DataGrid
-    listKind: DataGridList
-    plural: datagrids
-    singular: datagrid
+    kind: Menu
+    listKind: MenuList
+    plural: menus
+    singular: menu
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -159,76 +157,60 @@ spec:
                       of this widget or referenced by it
                     items:
                       enum:
-                      - barcharts
-                      - buttons
-                      - buttongroups
-                      - datagrids
-                      - eventlists
-                      - filters
-                      - flowcharts
-                      - forms
-                      - linecharts
-                      - markdowns
-                      - panels
-                      - paragraphs
-                      - piecharts
-                      - tables
-                      - tablists
-                      - yamlviewers
+                      - navmenuitems
+                      - pages
                       type: string
                     type: array
-                  asGrid:
-                    description: to show children as list or grid
-                    type: boolean
-                  grid:
-                    description: 'The grid type of list. You can set grid to something
-                      like {gutter: 16, column: 4} or specify the integer for columns
-                      based on their size, e.g. sm, md, etc. to make it responsive.'
-                    properties:
-                      column:
-                        description: The column of grid
-                        format: int32
-                        type: integer
-                      gutter:
-                        description: The spacing between grid
-                        format: int32
-                        type: integer
-                      lg:
-                        description: ≥992px column of grid
-                        format: int32
-                        type: integer
-                      md:
-                        description: ≥768px column of grid
-                        format: int32
-                        type: integer
-                      sm:
-                        description: ≥576px column of grid
-                        format: int32
-                        type: integer
-                      xl:
-                        description: ≥1200px column of grid
-                        format: int32
-                        type: integer
-                      xs:
-                        description: <576px column of grid
-                        format: int32
-                        type: integer
-                      xxl:
-                        description: ≥1600px column of grid
-                        format: int32
-                        type: integer
-                    type: object
                   items:
+                    description: navigation entries (inline nav data); each references
+                      its content widget by resourceRefId or resolves via the path
+                      → flexes/page-<slug> convention. A label-less item registers
+                      a route with no sidebar entry.
                     items:
                       properties:
-                        resourceRefId:
+                        icon:
+                          description: FontAwesome icon name shown beside the label
+                            (e.g. 'fa-inbox')
                           type: string
-                      required:
-                      - resourceRefId
+                        label:
+                          description: menu entry label; omit for a route-only (hidden)
+                            item
+                          type: string
+                        order:
+                          default: 100
+                          description: sort weight for the entry
+                          format: int32
+                          type: integer
+                        page:
+                          description: convention page-slug override → content is
+                            flexes/page-<slug>; set this for templated paths to avoid
+                            list-vs-detail collisions.
+                          type: string
+                        path:
+                          description: route path; '{param}' segments become :param
+                            and reach the content widget via ?extras. A label-less
+                            item registers a route with NO sidebar entry (hidden —
+                            e.g. detail/create/search).
+                          type: string
+                        resourceRefId:
+                          description: id of the content widget (resolved via resourcesRefs,
+                            RBAC-aware). Optional — omit to use the path → flexes/page-<slug>
+                            convention.
+                          type: string
                       type: object
                     type: array
-                  prefix:
-                    description: it's the filters prefix to get right values
+                  mode:
+                    description: antd Menu mode (default inline)
+                    enum:
+                    - vertical
+                    - horizontal
+                    - inline
+                    type: string
+                  theme:
+                    description: antd Menu theme
+                    enum:
+                    - light
+                    - dark
                     type: string
                 required:
                 - allowedResources

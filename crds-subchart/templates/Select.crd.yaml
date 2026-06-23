@@ -4,17 +4,17 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: buttongroups.widgets.templates.krateo.io
+  name: selects.widgets.templates.krateo.io
 spec:
   group: widgets.templates.krateo.io
   names:
     categories:
     - widgets
     - krateo
-    kind: ButtonGroup
-    listKind: ButtonGroupList
-    plural: buttongroups
-    singular: buttongroup
+    kind: Select
+    listKind: SelectList
+    plural: selects
+    singular: select
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -151,67 +151,68 @@ spec:
                   type: object
                 type: array
               widgetData:
-                description: the data that will be passed to the widget on the frontend
                 properties:
-                  alignment:
-                    description: the alignment of the element inside the ButtonGroup.
-                      Default is 'left'
-                    enum:
-                    - center
-                    - left
-                    - right
+                  allowClear:
+                    description: antd Select `allowClear`
+                    type: boolean
+                  defaultValue:
+                    description: antd Form.Item `initialValue`
                     type: string
-                  allowedResources:
-                    description: the list of resources that are allowed to be children
-                      of this widget or referenced by it
-                    items:
-                      enum:
-                      - barcharts
-                      - buttons
-                      - eventlists
-                      - filters
-                      - flowcharts
-                      - forms
-                      - linecharts
-                      - markdowns
-                      - cards
-                      - paragraphs
-                      - piecharts
-                      - rangepickers
-                      - tables
-                      - tabs
-                      - yamlviewers
-                      type: string
-                    type: array
-                  items:
-                    description: the items of the ButtonGroup
+                  disabled:
+                    description: antd Select `disabled`
+                    type: boolean
+                  label:
+                    description: antd Form.Item `label`
+                    type: string
+                  mode:
+                    description: antd Select `mode`
+                    enum:
+                    - multiple
+                    - tags
+                    type: string
+                  name:
+                    description: form field key — antd Form.Item `name`
+                    type: string
+                  options:
+                    description: antd Select `options`
                     items:
                       properties:
-                        resourceRefId:
+                        disabled:
+                          description: antd option `disabled`
+                          type: boolean
+                        label:
+                          description: option label (defaults to value)
+                          type: string
+                        value:
+                          description: option value
                           type: string
                       required:
-                      - resourceRefId
+                      - value
                       type: object
                     type: array
-                  orientation:
-                    description: antd Space orientation
-                    enum:
-                    - horizontal
-                    - vertical
+                  placeholder:
+                    description: antd Select `placeholder`
                     type: string
+                  queryParam:
+                    description: 'when set, the Select is STANDALONE and URL-query-bound
+                      (not a Form.Item control): its value reads from / writes to
+                      this URL search param (e.g. ''project''), flowing to server-side
+                      `extras` like RangePicker. Omit for the default Form control
+                      behavior.'
+                    type: string
+                  required:
+                    description: add a required validation rule
+                    type: boolean
                   size:
-                    description: antd Space size — spacing between items
+                    description: antd Select `size`
                     enum:
                     - small
                     - middle
                     - large
                     type: string
-                  wrap:
-                    description: antd Space wrap
-                    type: boolean
                 required:
-                - allowedResources
-                - items
+                - name
+                - options
                 type: object
               widgetDataTemplate:
                 items:
@@ -223,7 +224,6 @@ spec:
                   type: object
                 type: array
             required:
-            - resourcesRefs
             - widgetData
             type: object
           status:

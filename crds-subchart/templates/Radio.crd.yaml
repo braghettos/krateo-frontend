@@ -4,17 +4,17 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: routes.widgets.templates.krateo.io
+  name: radios.widgets.templates.krateo.io
 spec:
   group: widgets.templates.krateo.io
   names:
     categories:
     - widgets
     - krateo
-    kind: Route
-    listKind: RouteList
-    plural: routes
-    singular: route
+    kind: Radio
+    listKind: RadioList
+    plural: radios
+    singular: radio
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -154,16 +152,60 @@ spec:
                 type: array
               widgetData:
                 properties:
-                  path:
-                    description: the url path to that loads the resource
+                  buttonStyle:
+                    description: antd Radio.Group `buttonStyle`
+                    enum:
+                    - outline
+                    - solid
                     type: string
-                  resourceRefId:
-                    description: the id matching the resource in the resourcesRefs
-                      array, must of kind page
+                  defaultValue:
+                    description: antd Form.Item `initialValue`
+                    type: string
+                  disabled:
+                    description: antd Radio.Group `disabled`
+                    type: boolean
+                  label:
+                    description: antd Form.Item `label`
+                    type: string
+                  name:
+                    description: form field key — antd Form.Item `name`
+                    type: string
+                  optionType:
+                    description: antd Radio.Group `optionType`
+                    enum:
+                    - default
+                    - button
+                    type: string
+                  options:
+                    description: antd Radio.Group `options`
+                    items:
+                      properties:
+                        disabled:
+                          description: antd option `disabled`
+                          type: boolean
+                        label:
+                          description: option label (defaults to value)
+                          type: string
+                        value:
+                          description: option value
+                          type: string
+                      required:
+                      - value
+                      type: object
+                    type: array
+                  required:
+                    description: add a required validation rule
+                    type: boolean
+                  size:
+                    description: antd Radio.Group `size`
+                    enum:
+                    - small
+                    - middle
+                    - large
                     type: string
                 required:
-                - path
-                - resourceRefId
+                - name
+                - options
                 type: object
               widgetDataTemplate:
                 items:

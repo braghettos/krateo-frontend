@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -168,9 +166,13 @@ spec:
                       - markdowns
                       - paragraphs
                       - piecharts
+                      - rangepickers
                       - yamlviewers
                       type: string
                     type: array
+                  bordered:
+                    description: antd Table bordered
+                    type: boolean
                   columns:
                     description: configuration of the table's columns
                     items:
@@ -198,8 +200,9 @@ spec:
                       - valueKey
                       type: object
                     type: array
-                  data:
-                    description: Array of table rows
+                  dataSource:
+                    description: antd Table dataSource — the table rows (renamed from
+                      `data`; `data` still accepted for back-compat)
                     items:
                       items:
                         properties:
@@ -211,15 +214,40 @@ spec:
                           booleanValue:
                             description: value if type = boolean
                             type: boolean
+                          color:
+                            description: per-cell color — for a `tag` cell, an antd
+                              Tag color (e.g. green / red / gold / blue); for a jsonSchemaType
+                              cell it overrides the column color. Lets each row carry
+                              its own color (e.g. status).
+                            type: string
                           decimalValue:
                             description: value if type = number or decimal
                             type: string
+                          format:
+                            description: optional display format for a string value
+                              — `relative` (e.g. "14d ago"), `date`, or `datetime`.
+                              The raw value stays in the data; only the rendering
+                              changes.
+                            enum:
+                            - relative
+                            - date
+                            - datetime
+                            type: string
                           kind:
-                            description: type of cell value
+                            description: type of cell value. `tag` renders the stringValue
+                              as a colored antd Tag (use the cell `color`). `bar`
+                              renders a reconciliation-rail Progress gauge (stringValue
+                              = percent 0-100, `color` = bar/state color, amber target-tick
+                              at 100%). `conditions` renders `arrayValue` (an array
+                              of {type,status}) as small status pills, each coloured
+                              cyan (True) / crimson (False).
                             enum:
                             - jsonSchemaType
                             - icon
                             - widget
+                            - tag
+                            - bar
+                            - conditions
                             type: string
                           numberValue:
                             description: value if type = number or integer
@@ -251,17 +279,79 @@ spec:
                         type: object
                       type: array
                     type: array
-                  pageSize:
-                    description: number of rows displayed per page
-                    format: int32
-                    type: integer
+                  pagination:
+                    description: antd Table pagination config (subproperties mirror
+                      antd).
+                    properties:
+                      defaultPageSize:
+                        description: default page size
+                        format: int32
+                        type: integer
+                      hideOnSinglePage:
+                        description: hide the pager when there is a single page
+                        type: boolean
+                      pageSize:
+                        description: number of rows per page
+                        format: int32
+                        type: integer
+                      position:
+                        description: pager position(s)
+                        items:
+                          enum:
+                          - topLeft
+                          - topCenter
+                          - topRight
+                          - bottomLeft
+                          - bottomCenter
+                          - bottomRight
+                          type: string
+                        type: array
+                      simple:
+                        description: use the simple pager
+                        type: boolean
+                    type: object
                   prefix:
                     description: it's the filters prefix to get right values
                     type: string
+                  rowNavigateTo:
+                    description: optional route path to navigate to on row click;
+                      `{valueKey}` placeholders are filled from that row's cells (e.g.
+                      /compositions/{ns}/{name})
+                    type: string
+                  size:
+                    description: antd Table size
+                    enum:
+                    - large
+                    - middle
+                    - small
+                    type: string
+                  watch:
+                    description: 'live-refresh watch: involvedObject(s) this widget
+                      is tied to (see src/schemas/watch.schema.json). A matching k8s
+                      event refetches the widget.'
+                    items:
+                      properties:
+                        apiVersion:
+                          description: group/version, e.g. composition.krateo.io/v1alpha1
+                          type: string
+                        kind:
+                          description: e.g. DemoClaim
+                          type: string
+                        name:
+                          description: a specific object; omit to match any object
+                            of this kind ("GVR-level")
+                          type: string
+                        namespace:
+                          description: scope to a namespace; omit to match any
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      type: object
+                    type: array
                 required:
                 - allowedResources
                 - columns
-                - data
                 type: object
               widgetDataTemplate:
                 items:

@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -154,9 +152,86 @@ spec:
                 type: array
               widgetData:
                 properties:
+                  code:
+                    description: antd Typography code
+                    type: boolean
+                  copyable:
+                    description: antd Typography copyable
+                    type: boolean
+                  delete:
+                    description: antd Typography delete (strikethrough)
+                    type: boolean
+                  disabled:
+                    description: antd Typography disabled
+                    type: boolean
+                  ellipsis:
+                    description: antd Typography ellipsis
+                    type: boolean
+                  italic:
+                    description: antd Typography italic
+                    type: boolean
+                  level:
+                    description: when set, render as an antd Typography.Title heading
+                      of this level (h1-h5) instead of a body paragraph
+                    enum:
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                    - 5
+                    type: integer
+                  mark:
+                    description: antd Typography mark (highlight)
+                    type: boolean
+                  strong:
+                    description: antd Typography strong
+                    type: boolean
                   text:
-                    description: the content of the paragraph to be displayed
+                    description: the content of the paragraph (the antd Typography
+                      children, as text)
                     type: string
+                  type:
+                    description: antd Typography type
+                    enum:
+                    - secondary
+                    - success
+                    - warning
+                    - danger
+                    type: string
+                  underline:
+                    description: antd Typography underline
+                    type: boolean
+                  variant:
+                    description: render style variant. eyebrow renders a small uppercase
+                      mono section caption (IBM Plex Mono letter-spaced muted) for
+                      page-header / panel eyebrows
+                    enum:
+                    - eyebrow
+                    type: string
+                  watch:
+                    description: 'live-refresh watch: involvedObject(s) this widget
+                      is tied to (see src/schemas/watch.schema.json). A matching k8s
+                      event refetches the widget.'
+                    items:
+                      properties:
+                        apiVersion:
+                          description: group/version, e.g. composition.krateo.io/v1alpha1
+                          type: string
+                        kind:
+                          description: e.g. DemoClaim
+                          type: string
+                        name:
+                          description: a specific object; omit to match any object
+                            of this kind ("GVR-level")
+                          type: string
+                        namespace:
+                          description: scope to a namespace; omit to match any
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      type: object
+                    type: array
                 required:
                 - text
                 type: object
