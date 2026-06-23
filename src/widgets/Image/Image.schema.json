@@ -1,0 +1,286 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "default": "Image",
+      "description": "Image renders the antd Image component (a single image with optional preview/zoom and a fallback)",
+      "type": "string"
+    },
+    "spec": {
+      "additionalProperties": false,
+      "properties": {
+        "apiRef": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "namespace"
+          ],
+          "type": "object"
+        },
+        "widgetData": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "src"
+          ],
+          "properties": {
+            "src": {
+              "description": "the image source URL (antd Image `src`)",
+              "type": "string"
+            },
+            "alt": {
+              "description": "alternative text (antd Image `alt`)",
+              "type": "string"
+            },
+            "width": {
+              "description": "image width in px (number) or any CSS length (string) — antd Image `width`",
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
+            "height": {
+              "description": "image height in px (number) or any CSS length (string) — antd Image `height`",
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
+            "preview": {
+              "description": "whether clicking the image opens the zoom/preview overlay (antd Image `preview`); set false for decorative images such as logos",
+              "type": "boolean"
+            },
+            "fallback": {
+              "description": "image src to show if `src` fails to load (antd Image `fallback`)",
+              "type": "string"
+            },
+            "placeholder": {
+              "description": "show the default blurred placeholder while loading (antd Image `placeholder`)",
+              "type": "boolean"
+            },
+            "rootClassName": {
+              "description": "class name on the image wrapper (antd Image `rootClassName`)",
+              "type": "string"
+            },
+            "loading": {
+              "description": "native lazy/eager loading hint (antd Image `loading`)",
+              "type": "string",
+              "enum": [
+                "eager",
+                "lazy"
+              ]
+            },
+            "crossOrigin": {
+              "description": "CORS setting for the request (native img `crossOrigin`)",
+              "type": "string",
+              "enum": [
+                "anonymous",
+                "use-credentials",
+                ""
+              ]
+            },
+            "decoding": {
+              "description": "image decoding hint (native img `decoding`)",
+              "type": "string",
+              "enum": [
+                "async",
+                "auto",
+                "sync"
+              ]
+            },
+            "referrerPolicy": {
+              "description": "referrer policy for the request (native img `referrerPolicy`)",
+              "type": "string",
+              "enum": [
+                "",
+                "no-referrer",
+                "no-referrer-when-downgrade",
+                "origin",
+                "origin-when-cross-origin",
+                "same-origin",
+                "strict-origin",
+                "strict-origin-when-cross-origin",
+                "unsafe-url"
+              ]
+            },
+            "sizes": {
+              "description": "responsive sizes hint (native img `sizes`)",
+              "type": "string"
+            },
+            "srcSet": {
+              "description": "responsive source set (native img `srcSet`)",
+              "type": "string"
+            },
+            "useMap": {
+              "description": "name of an image map (native img `useMap`)",
+              "type": "string"
+            },
+            "draggable": {
+              "description": "whether the image is draggable (native img `draggable`)",
+              "type": "boolean"
+            },
+            "title": {
+              "description": "native title tooltip (native img `title`)",
+              "type": "string"
+            }
+          }
+        },
+        "widgetDataTemplate": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expression": {
+                "type": "string"
+              },
+              "forPath": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "allowed",
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "widgetData"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "default": "v1beta1",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ],
+  "type": "object"
+}

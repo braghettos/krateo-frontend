@@ -1,5 +1,7 @@
+import { faCircleCheck } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Card, Divider, Result, Skeleton } from 'antd'
+import { Divider, Result, Skeleton } from 'antd'
 import { useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 
@@ -12,10 +14,34 @@ import type { AuthModeType, FormType, LoginFormType } from './Login.types'
 import LoginForm from './LoginForm'
 import SocialLogin from './SocialLogin'
 
+// Branding-panel defaults. The login screen renders BEFORE any backend identity,
+// so its copy is config-driven (`config.login`, ConfigMap-mountable per install)
+// rather than a snowplow widget — a login/auth widget would be bespoke behavior,
+// which the antd-only widget registry deliberately excludes. These constants are
+// the fallback when a config omits the keys. (Marketing copy, not portal data —
+// the mockup's fabricated "128 compositions" stat stays dropped.)
+const DEFAULT_LOGO_ALT = 'Krateo | PlatformOps'
+const DEFAULT_HEADLINE = 'Ship platform resources without the YAML toil.'
+const DEFAULT_SUBTITLE = 'Self-service infrastructure for your developers — compose, provision and observe cloud resources from a single control plane.'
+const DEFAULT_HIGHLIGHTS = [
+  'Compose cloud resources across your clusters',
+  'GitOps reconciliation in real time',
+  'Policy-guarded self-service catalog',
+]
+
 const Login = () => {
   const navigate = useNavigate()
   const { catchError } = useCatchError()
   const { config } = useConfigContext()
+
+  // Config-driven branding (falls back to the built-in defaults when absent).
+  const branding = config?.login
+  const logoSrc = branding?.logoUrl || logo
+  const logoAlt = branding?.logoAlt ?? DEFAULT_LOGO_ALT
+  const headline = branding?.headline ?? DEFAULT_HEADLINE
+  const subtitle = branding?.subtitle ?? DEFAULT_SUBTITLE
+  const highlights = branding?.highlights?.length ? branding.highlights : DEFAULT_HIGHLIGHTS
+  const requestAccountUrl = branding?.requestAccountUrl
 
   const authUrl = `${config!.api.AUTHN_API_BASE_URL}/strategies`
 
@@ -105,7 +131,7 @@ const Login = () => {
                 method={method}
                 onSubmit={(values) => { void onFormSubmit(values, kind) }}
               />
-              {((index + 1) < methods?.length) && <Divider plain>OR</Divider> }
+              {((index + 1) < methods?.length) && <Divider plain>or continue with</Divider> }
             </div>
           )
         }
@@ -118,17 +144,31 @@ const Login = () => {
   return (
     <div className={styles.login}>
       <aside className={styles.aside}>
-        <img alt='Krateo | PlatformOps' className={styles.image} src={logo} />
+        <img alt={logoAlt} className={styles.logo} src={logoSrc} />
+        <div className={styles.pitch}>
+          <h1 className={styles.headline}>{headline}</h1>
+          <p className={styles.subtitle}>{subtitle}</p>
+          <ul className={styles.highlights}>
+            {highlights.map((highlight) => (
+              <li key={highlight}>
+                <FontAwesomeIcon icon={faCircleCheck} /> {highlight}
+              </li>
+            ))}
+          </ul>
+        </div>
       </aside>
+
       <section className={styles.section}>
-        <Card
-          className={styles.card}
-          classNames={{ body: styles.body, header: styles.header, title: styles.title }}
-          title={<span className={styles.title}>Welcome back</span>}
-          variant={'borderless'}
-        >
+        <div className={styles.formPanel}>
+          <h2 className={styles.welcome}>Welcome back</h2>
+          <p className={styles.welcomeSub}>Sign in to your Krateo control plane.</p>
           {content}
-        </Card>
+          {requestAccountUrl && (
+            <p className={styles.requestAccount}>
+              Need access? <a href={requestAccountUrl}>Request an account</a>
+            </p>
+          )}
+        </div>
       </section>
     </div>
   )

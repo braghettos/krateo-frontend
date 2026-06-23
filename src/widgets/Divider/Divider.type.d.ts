@@ -14,9 +14,9 @@ export interface Divider {
        */
       label?: string
       /**
-       * where the label sits
+       * where the label sits (antd Divider `titlePlacement`; antd 6 renamed from `orientation`)
        */
-      orientation?: 'left' | 'right' | 'center'
+      titlePlacement?: 'left' | 'right' | 'center'
       /**
        * render a dashed line
        */
@@ -29,6 +29,43 @@ export interface Divider {
     widgetDataTemplate?: {
       expression?: string
       forPath?: string
+    }[]
+    resourcesRefs?: {
+      items: {
+        allowed: boolean
+        apiVersion?: string
+        id: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+        slice?: {
+          offset?: number
+          page: number
+          perPage: number
+          continue?: boolean
+          [k: string]: unknown
+        }
+        [k: string]: unknown
+      }[]
+      [k: string]: unknown
+    }
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
   version: string

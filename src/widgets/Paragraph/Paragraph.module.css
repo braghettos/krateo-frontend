@@ -2,3 +2,41 @@
   font-size: var(--font-size-sm);
   white-space: pre-line;
 }
+
+/* Flight-deck page-header / panel EYEBROW (variant: eyebrow) — small IBM Plex
+   Mono, uppercase, letter-spaced, muted graphite: the instrument-panel context
+   caption above an H1 ("PLATFORM · TENANT <t>"). Compound selector .paragraph.eyebrow
+   out-specifies antd's .ant-typography color. Mirrors the Card titleVariant:eyebrow. */
+.paragraph.eyebrow {
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+/* Page H1 → Petrol DISPLAY ramp (Space Grotesk via --font-display). Two render paths
+   reach a page title: `strong: true` (most pages → antd wraps content in a <strong>
+   child) and `level: N` (detail header → antd Typography.Title hN). Both take the
+   display face + tight tracking; the strong titles also take the mockup's display size
+   (mockup `h1 .disp` = 26px / 600 / 1.1). Subtitles aren't strong and the eyebrow is the
+   mono variant, so neither is touched. The class can't live on the element itself — antd
+   Typography collapses a multi-class className to its first token ([[antd-typography-classname-collapse]]),
+   so this keys off the rendered DOM structure instead. */
+.paragraph:has(strong),
+h1.paragraph,
+h2.paragraph,
+h3.paragraph,
+h4.paragraph,
+h5.paragraph {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.paragraph:has(strong) {
+  font-size: 26px;
+  font-weight: var(--font-weight-bold, 600);
+  line-height: 1.1;
+}

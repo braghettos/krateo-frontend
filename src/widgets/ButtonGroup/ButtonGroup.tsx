@@ -17,12 +17,12 @@ const justifyContentMap: Record<NonNullable<ButtonGroupWidgetData['alignment']>,
 }
 
 const ButtonGroup = ({ resourcesRefs, uid, widgetData }: WidgetProps<ButtonGroupWidgetData>) => {
-  const { alignment, direction, items, size, wrap } = widgetData
+  const { alignment, items, orientation, size, wrap } = widgetData
   const spaceSize = size ?? 'small'
 
   return (
     <div className={styles.inlineGroup} key={uid} style={{ justifyContent: justifyContentMap[alignment ?? 'left'] }}>
-      <Space direction={direction} size={spaceSize} wrap={wrap}>
+      <Space orientation={orientation} size={spaceSize} wrap={wrap}>
         {items
           .map(({ resourceRefId }, index) => {
             const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)

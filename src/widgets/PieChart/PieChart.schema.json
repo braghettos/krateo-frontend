@@ -17,29 +17,121 @@
         "widgetData": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["data", "angleField", "colorField"],
+          "required": [
+            "data",
+            "angleField",
+            "colorField"
+          ],
           "description": "@ant-design/charts Pie config (AntV G2)",
           "properties": {
             "data": {
               "type": "array",
               "description": "chart data records (G2 `data`)",
-              "items": { "type": "object", "additionalProperties": true }
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
             },
-            "angleField": { "type": "string", "description": "field mapped to the slice value / angle (G2 `angleField`)" },
-            "colorField": { "type": "string", "description": "field mapped to color / category (G2 `colorField`)" },
-            "innerRadius": { "type": "integer", "description": "donut hole as a percentage of the radius, 0-100 (maps to antd Pie `innerRadius` ÷ 100); omit for a full pie" },
-            "legend": { "type": "boolean", "description": "show the legend; false hides it (G2 `legend`)" },
-            "title": { "type": "string", "description": "chart title (G2 `title`)" },
-            "height": { "type": "integer", "description": "fixed height in px (G2 `height`); omit to autofit" }
+            "angleField": {
+              "type": "string",
+              "description": "field mapped to the slice value / angle (G2 `angleField`)"
+            },
+            "colorField": {
+              "type": "string",
+              "description": "field mapped to color / category (G2 `colorField`)"
+            },
+            "colorMap": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "map each colorField category to a Krateo palette color name (e.g. {\"Healthy\":\"green\",\"Failed\":\"red\"}); sets the G2 color scale domain/range for semantic slice colors"
+            },
+            "innerRadius": {
+              "type": "integer",
+              "description": "donut hole as a percentage of the radius, 0-100 (maps to antd Pie `innerRadius` \u00f7 100); omit for a full pie"
+            },
+            "legend": {
+              "type": "boolean",
+              "description": "show the legend; false hides it (G2 `legend`). When shown it is rendered centered, positioned per legendPosition (default below the chart)."
+            },
+            "legendPosition": {
+              "type": "string",
+              "enum": [
+                "bottom",
+                "right",
+                "top",
+                "left"
+              ],
+              "description": "where the legend sits relative to the chart (G2 legend position). Default bottom; right stacks it beside the donut (status-breakdown layout)"
+            },
+            "label": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "per-slice label config passed through to G2 (e.g. {\"text\":\"count\",\"position\":\"inside\"}); omit for no slice labels"
+            },
+            "annotations": {
+              "type": "array",
+              "description": "G2 annotations passed through (e.g. a donut center `text` annotation positioned at x/y 50%)",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "title": {
+              "type": "string",
+              "description": "chart title (G2 `title`)"
+            },
+            "height": {
+              "type": "integer",
+              "description": "fixed height in px (G2 `height`); omit to autofit"
+            },
+            "watch": {
+              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "apiVersion",
+                  "kind"
+                ],
+                "properties": {
+                  "apiVersion": {
+                    "type": "string",
+                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "e.g. DemoClaim"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "scope to a namespace; omit to match any"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  }
+                }
+              }
+            }
           }
         },
         "apiRef": {
           "type": "object",
           "properties": {
-            "name": { "type": "string" },
-            "namespace": { "type": "string" }
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
           },
-          "required": ["name", "namespace"],
+          "required": [
+            "name",
+            "namespace"
+          ],
           "additionalProperties": false
         },
         "widgetDataTemplate": {
@@ -47,16 +139,144 @@
           "items": {
             "type": "object",
             "properties": {
-              "forPath": { "type": "string" },
-              "expression": { "type": "string" }
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "allowed",
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
             },
             "additionalProperties": false
           }
         }
       },
-      "required": ["widgetData"],
+      "required": [
+        "widgetData"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["kind", "spec", "version"]
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
 }

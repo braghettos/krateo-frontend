@@ -13,18 +13,23 @@
   }
 
   :global(.ant-menu-item) {
+    /* Match the mockup `.nav-item` density (~30px tall: 6px vertical padding + a 17px glyph
+       on a tight 1.2 line-height), not the prior 10px-padding/22px-icon rows that read
+       "larger than the render". The tight line-height stops the 13px label from inflating the
+       `height: auto` box past the padding. */
     color: var(--menuitem-color);
     height: auto;
+    line-height: 1.2;
     margin: 0;
-    padding-bottom: 10px;
+    padding-bottom: 6px;
     padding-left: 0;
-    padding-top: 10px;
+    padding-top: 6px;
     text-transform: capitalize;
     width: 100%;
 
     svg {
-      min-height: 22px;
-      min-width: 22px;
+      min-height: 17px;
+      min-width: 17px;
       opacity: .5;
       transition: all 300ms;
     }
@@ -33,13 +38,15 @@
   :global(.ant-menu-item-selected) {
     background-color: var(--menuitembg-color);
     border-radius: 0;
-    color: var(--light-color);
+    box-shadow: inset 2px 0 0 var(--primary-color);
+    color: var(--primary-color);
+    font-weight: var(--font-weight-bold);
 
     svg {
       opacity: 1;
       
       path {
-        fill: var(--light-color);
+        fill: var(--primary-color);
       }  
     }
   }
@@ -47,7 +54,7 @@
   :global(.ant-menu-item.ant-menu-item-active),
   :global(.ant-menu-item.ant-menu-item-active:hover) {
     background-color: transparent;
-    color: var(--light-color) !important;
+    color: var(--text-color) !important;
 
     svg {
       opacity: 1;

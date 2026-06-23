@@ -1,100 +1,43 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useQueries } from '@tanstack/react-query'
 import { Menu as AntdMenu } from 'antd'
 import type { MenuItemType } from 'antd/es/menu/interface'
 import { useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
-import WidgetRenderer from '../../components/WidgetRenderer'
 import { useConfigContext } from '../../context/ConfigContext'
-import type { AppRoute } from '../../context/RoutesContext'
-import { useRoutesContext } from '../../context/RoutesContext'
-import type { ResourceRef, WidgetProps } from '../../types/Widget'
-import { getAccessToken } from '../../utils/getAccessToken'
-import type { NavMenuItem } from '../NavMenuItem/NavMenuItem.type'
+import { createRoute, useRoutesContext } from '../../context/RoutesContext'
+import type { WidgetProps } from '../../types/Widget'
 
 import styles from './Menu.module.css'
 import type { Menu as WidgetType } from './Menu.type'
+import { buildNavModel, type InlineNavItem } from './navModel'
 
 export type MenuWidgetData = WidgetType['spec']['widgetData']
 
-type NavMenuItemResponse = Omit<NavMenuItem, 'status'> & {
-  status: {
-    widgetData: NavMenuItem['spec']['widgetData']
-    resourcesRefs?: {
-      items: Omit<ResourceRef, 'payload'>[]
-    }
-  }
-}
-
 export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetData>) {
-  const { mode, theme } = widgetData
+  const { items: navItems = [], mode, theme } = widgetData
   const location = useLocation()
   const navigate = useNavigate()
-  const { menuRoutes, updateMenuRoutes } = useRoutesContext()
+  const { menuRoutes, registerRoutes, updateMenuRoutes } = useRoutesContext()
   const { config } = useConfigContext()
+  const namespace = config?.params.FRONTEND_NAMESPACE
 
-  /* HACK: waiting for the widgetData to return items from the backend via a restaction that sets items from resourcesRefsTemplate */
-  const { items = [] } = resourcesRefs || {}
-
-  const { loadedAllMenuItems, navMenuItems } = useQueries({
-    combine: (results) => {
-      return {
-        isError: results.some(({ isError }) => isError),
-        isLoading: results.some(({ isLoading }) => isLoading),
-        loadedAllMenuItems: results.every(({ status }) => status === 'success'),
-        navMenuItems: results.map(({ data }) => data),
-      }
-    },
-    queries: (items ?? []).map(({ id, path }) => {
-      const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${path}`
-      return {
-        queryFn: async (): Promise<NavMenuItemResponse> => {
-          const res = await fetch(widgetFullUrl, {
-            headers: {
-              Authorization: `Bearer ${getAccessToken()}`,
-            },
-          })
-          if (!res.ok) {
-            throw new Error(`NavMenuItem fetch failed: ${res.status} ${res.statusText}`)
-          }
-          const widget = (await res.json()) as NavMenuItemResponse
-          return widget
-        },
-        queryKey: ['navmenuitems', id, widgetFullUrl],
-      }
-    }),
-  })
+  // Nav data is inline on widgetData.items (the folded form) — the single route source.
+  const { entries, routes } = useMemo(
+    () => buildNavModel(navItems as InlineNavItem[], resourcesRefs, namespace),
+    [navItems, resourcesRefs, namespace]
+  )
 
   useEffect(() => {
-    if (loadedAllMenuItems && navMenuItems.length > 0) {
-      const validMenuItems = navMenuItems.filter((item): item is NavMenuItemResponse => !!item)
-
-      const routesToSave = validMenuItems
-        .map(item => {
-          const { status } = item
-          const widgetData = status?.widgetData
-          const resourcesRefs = status?.resourcesRefs
-
-          if (!widgetData || !resourcesRefs) { return null }
-
-          const { path, resourceRefId } = widgetData
-          const routeResourceRef = resourcesRefs.items.find(({ id }) => id === resourceRefId)
-          if (!routeResourceRef) { return null }
-
-          return {
-            path,
-            resourceRef: { ...routeResourceRef, payload: {} },
-            resourceRefId,
-          }
-        })
-        .filter(Boolean) as AppRoute[]
-
-      localStorage.setItem('routes', JSON.stringify(routesToSave))
-      updateMenuRoutes(routesToSave)
+    if (routes.length > 0) {
+      localStorage.setItem('routes', JSON.stringify(routes))
+      updateMenuRoutes(routes)
+      // Register param-capable React-Router routes from the nav — the INIT route
+      // source that replaces the routes-loader. registerRoutes dedups by path.
+      registerRoutes(routes.flatMap((route) => (route.endpoint ? [createRoute({ endpoint: route.endpoint, path: route.path })] : [])))
     }
-  }, [loadedAllMenuItems, navMenuItems, updateMenuRoutes])
+  }, [routes, updateMenuRoutes, registerRoutes])
 
   useEffect(() => {
     if (location.pathname === '/' && menuRoutes.length > 0) {
@@ -102,43 +45,38 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
     }
   }, [location.pathname, menuRoutes, navigate])
 
-  const menuItems: MenuItemType[] = useMemo(() => {
-    if (!loadedAllMenuItems) {
-      return []
-    }
+  const menuItems: MenuItemType[] = useMemo(
+    () => entries.map((entry) => ({
+      icon: entry.iconName ? <FontAwesomeIcon icon={entry.iconName as IconProp} /> : undefined,
+      key: entry.key,
+      label: entry.label,
+    })),
+    [entries]
+  )
 
-    const validMenuItems = navMenuItems.filter((item): item is NavMenuItemResponse => !!item)
-
-    return validMenuItems.flatMap(item => {
-      const widgetData = item.status?.widgetData
-      if (!widgetData) { return [] }
-      const { icon, label, path } = widgetData
-      return {
-        icon: <FontAwesomeIcon icon={icon as IconProp} />,
-        key: path,
-        label,
-      }
-    })
-  }, [navMenuItems, loadedAllMenuItems])
-
-  const handleClick = (key: string) => {
-    void navigate(key)
-  }
+  // Highlight the nav item whose path is the longest prefix of the current route, so
+  // child routes (e.g. /compositions/:namespace, /compositions/:namespace/:name, the
+  // marketplace create flow) keep their section selected. An exact match is naturally
+  // the longest prefix; the trailing-slash guard stops /blueprints matching a sibling
+  // like /blueprintsfoo.
+  const selectedKey = useMemo(() => {
+    const path = location.pathname
+    return menuItems
+      .map((item) => item.key as string)
+      .filter((key) => path === key || path.startsWith(`${key}/`))
+      .sort((left, right) => right.length - left.length)[0]
+  }, [menuItems, location.pathname])
 
   return (
-    <>
-      <AntdMenu
-        className={styles.menu}
-        defaultSelectedKeys={loadedAllMenuItems && menuItems.length > 0 ? [menuItems[0].key as string] : []}
-        items={menuItems}
-        key={uid}
-        mode={mode ?? 'inline'}
-        onClick={(item) => handleClick(item.key)}
-        selectedKeys={[location.pathname]}
-        theme={theme}
-      />
-
-      <WidgetRenderer invisible={true} widgetEndpoint={config!.api.ROUTES_LOADER} />
-    </>
+    <AntdMenu
+      className={styles.menu}
+      defaultSelectedKeys={menuItems.length > 0 ? [menuItems[0].key as string] : []}
+      items={menuItems}
+      key={uid}
+      mode={mode ?? 'inline'}
+      onClick={(item) => { void navigate(item.key) }}
+      selectedKeys={selectedKey ? [selectedKey] : []}
+      theme={theme}
+    />
   )
 }

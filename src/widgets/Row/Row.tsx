@@ -1,4 +1,3 @@
-import type { RowProps } from 'antd'
 import { Col as AntdColumn, Row as AntdRow } from 'antd'
 
 import WidgetRenderer from '../../components/WidgetRenderer'
@@ -9,15 +8,6 @@ import styles from './Row.module.css'
 import type { Row as WidgetType } from './Row.type'
 
 export type RowWidgetData = WidgetType['spec']['widgetData']
-
-const alignmentMap: Record<
-  NonNullable<RowWidgetData['alignment']>,
-  RowProps['align']
-> = {
-  bottom: 'bottom',
-  center: 'middle',
-  top: 'top',
-}
 
 const justifyContentMap: Record<
   NonNullable<RowWidgetData['items'][number]['alignment']>,
@@ -36,8 +26,8 @@ const Row = ({ resourcesRefs, uid, widgetData }: WidgetProps<RowWidgetData>) => 
   return (
     <div className={styles.row}>
       <AntdRow
-        align={alignment ? alignmentMap[alignment] : 'middle'}
-        gutter={{ lg: 32, md: 24, sm: 16, xs: 8 }}
+        align={alignment ?? 'middle'}
+        gutter={[16, 16]}
         key={uid}
         wrap
       >

@@ -14,5 +14,14 @@
     max-height: 600px;
     overflow-y: auto;
     position: relative;
+
+    /* react-syntax-highlighter's atomOneDark theme paints `pre` its own grey #282c34, clashing
+       with the petrol bezel. Re-base it to the void + a hairline so the code block reads as a
+       coherent inset surface (not a pasted-in widget). */
+    :global(pre) {
+      background: var(--background-color) !important;
+      border: 1px solid var(--border-color, rgba(230, 237, 243, 0.1));
+      border-radius: var(--radius-md);
+    }
   }
 }

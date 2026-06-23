@@ -1,7 +1,8 @@
 import { QuestionCircleOutlined } from '@ant-design/icons'
-import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { findIconDefinition } from '@fortawesome/fontawesome-svg-core'
+import type { IconName, IconPrefix, IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Card as AntdCard, Avatar, Button, Tag, Tooltip } from 'antd'
+import { Card as AntdCard, Badge, Button, Tag, Tooltip } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import { useState } from 'react'
 
@@ -15,6 +16,21 @@ import styles from './Card.module.css'
 import type { Card as WidgetType } from './Card.type'
 
 export type CardWidgetData = WidgetType['spec']['widgetData']
+
+/**
+ * Resolve a FontAwesome icon name (e.g. "fa-aws", "fa-gauge") to a definition,
+ * trying solid → brands → regular. The bare name defaults to the solid prefix,
+ * where BRAND names (aws, google, …) don't exist — so without this they render as
+ * a blank square. Falls back to a generic cube for unknown names.
+ */
+const resolveFaIcon = (name?: string): IconProp => {
+  const iconName = (name ?? '').replace(/^fa-/, '') as IconName
+  for (const prefix of ['fas', 'fab', 'far'] as IconPrefix[]) {
+    const def = findIconDefinition({ iconName, prefix })
+    if (def) { return def }
+  }
+  return ['fas', 'cube']
+}
 
 const FooterItem = ({ resourceRefId, resourcesRefs }: { resourceRefId: string; resourcesRefs: ResourcesRefs }) => {
   const [isLoading, setIsLoading] = useState(true)
@@ -34,7 +50,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   const { handleAction, isActionLoading } = useHandleAction()
 
   // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions`.
-  const { bordered, clickActionId, cover, extra, footer, headerLeft, icon, items, size, tags, title, tooltip, widgetActions } = widgetData
+  const { clickActionId, cover, extra, extraStatus, extraVariant, footer, headerLeft, icon, items, legend, live, size, tags, title, titleVariant, tooltip, variant, widgetActions } = widgetData
   const coverEndpoint = cover ? getEndpointUrl(cover, resourcesRefs) : undefined
 
   const action: WidgetAction | undefined = Object.values(widgetActions ?? {})
@@ -94,14 +110,26 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
 
   return (
     <AntdCard
-      className={`${styles.panel} ${action ? styles.clickable : ''}`}
+      className={`${styles.panel} ${action ? styles.clickable : ''} ${!title && !cover && !footer && !!items?.length ? styles.statCard : ''}`}
       classNames={{ body: styles.bodyWrapper, header: styles.header, title: styles.title }}
       cover={coverEndpoint ? <WidgetRenderer widgetEndpoint={coverEndpoint} /> : undefined}
       extra={
-        (extra || tooltip)
+        (extra || tooltip || (legend && legend.length > 0))
           ? (
             <>
-              {extra}
+              {legend && legend.length > 0 && (
+                <div className={styles.legend}>
+                  {legend.map((entry, index) => (
+                    <span className={styles.legendItem} key={`${uid}-legend-${index}`}>
+                      <span className={styles.legendSwatch} style={{ background: getColorCode(entry.color) }} />
+                      {entry.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {extra && (extraVariant === 'badge'
+                ? <Badge className={styles.statusBadge} status={extraStatus ?? 'processing'} text={extra} />
+                : extra)}
               {tooltip && (
                 <Tooltip title={tooltip}>
                   <Button icon={<QuestionCircleOutlined />} type='text' />
@@ -116,25 +144,29 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       onClick={handleClick}
       size={size}
       title={
-        (title || icon) && (
-          <div className={styles.title}>
-            {icon && (
-              <Avatar
-                icon={<FontAwesomeIcon icon={icon.name as IconProp} />}
-                size={64}
-                style={{ backgroundColor: getColorCode(icon.color) }}
-              />
-            )}
-            <div className={styles.text}>
-              <Tooltip title={title}>
-                {title}
-              </Tooltip>
+        title
+          ? (
+            <div className={`${styles.title} ${titleVariant === 'eyebrow' ? styles.eyebrow : ''}`}>
+              <div className={styles.text}>
+                <Tooltip title={title}>
+                  {title}
+                </Tooltip>
+              </div>
+              {live && <Badge className={styles.liveBadge} status='processing' text='Live' />}
             </div>
-          </div>
-        )
+          )
+          : undefined
       }
-      variant={bordered ? 'outlined' : 'borderless'}
+      variant={variant}
     >
+      {icon && (
+        <span
+          className={styles.iconFloat}
+          style={{ backgroundColor: `color-mix(in srgb, ${getColorCode(icon.color)} 14%, var(--light-color))`, color: getColorCode(icon.color) }}
+        >
+          <FontAwesomeIcon icon={resolveFaIcon(icon.name)} />
+        </span>
+      )}
       <div className={styles.content}>
         {headerLeft && panelHeader}
         <div className={styles.body}>

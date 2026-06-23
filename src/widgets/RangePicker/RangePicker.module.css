@@ -1,0 +1,29 @@
+/* Petrol "concrete-range" date pill — restyles the antd RangePicker container to the
+   mockup `.daterange`: a compact DASHED hairline pill, IBM Plex Mono, graphite, 11px.
+   antd RangePicker stays a 2-input control internally; this gives it the dashed-pill
+   skin (the mockup affordance). `!important` on the border beats antd's CSS-in-JS solid
+   border (equal specificity, injection order otherwise wins). */
+.pill {
+  border-style: dashed !important;
+  border-color: var(--border-color, rgba(230, 237, 243, 0.18)) !important;
+  border-radius: var(--radius-sm);
+  box-shadow: none !important;
+}
+
+.pill :global(.ant-picker-input) input {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gray-color);
+}
+
+.pill :global(.ant-picker-range-separator),
+.pill :global(.ant-picker-suffix) {
+  color: var(--gray-color);
+}
+
+/* Keep the dashed treatment on hover/focus (don't snap to antd's solid focus ring). */
+.pill:hover,
+.pill:global(.ant-picker-focused) {
+  border-style: dashed !important;
+  border-color: color-mix(in srgb, var(--amber-color) 50%, transparent) !important;
+}

@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import React, { createContext, useCallback, useContext, useState } from 'react'
-import { useParams, type RouteObject } from 'react-router'
+import { useParams, type NonIndexRouteObject, type RouteObject } from 'react-router'
 
+import ShellRoute from '../components/Shell'
 import WidgetPage from '../components/WidgetPage'
 import Auth from '../pages/Auth/Auth'
 import Login from '../pages/Login'
@@ -12,6 +13,12 @@ export interface AppRoute {
   path: string
   resourceRefId: string
   resourceRef?: ResourceRef
+  /** Resolved content endpoint — legacy resourceRef path or the convention
+   * `flexes/page-<slug>` (see navModel.resolveContentEndpoint). Drives the
+   * param-capable registered React-Router route. */
+  endpoint?: string
+  /** Browser-tab title for this route (e.g. the nav label); set via useDocumentTitle. */
+  title?: string
 }
 
 interface RoutesContextType {
@@ -26,11 +33,23 @@ interface RoutesContextType {
 
 const RoutesContext = createContext<RoutesContextType | undefined>(undefined)
 
+// The authenticated area is a single persistent shell (the `Layout` widget from
+// config INIT) rendered as a pathless layout route; every content route is a
+// CHILD that renders into the shell's <Outlet/>. Login/Auth sit outside it (no
+// chrome). Dynamic routes are inserted into the shell's children by registerRoutes.
+const SHELL_ROUTE_ID = 'shell'
+
 const defaultRoutes: RouteObject[] = [
   { element: <Login />, path: '/login' },
   { element: <Auth />, path: '/auth' },
-  { element: <Profile />, path: '/profile' },
-  { element: <WidgetPage />, path: '*' },
+  {
+    children: [
+      { element: <Profile />, path: '/profile' },
+      { element: <WidgetPage />, path: '*' },
+    ],
+    element: <ShellRoute />,
+    id: SHELL_ROUTE_ID,
+  },
 ]
 
 const normalizeRouteParameters = (route: string) => {
@@ -91,14 +110,22 @@ export const RoutesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [routerVersion, setRouterVersion] = useState(0)
   const [routes, setRoutes] = useState<RouteObject[]>(defaultRoutes)
   const [menuRoutes, setMenuRoutes] = useState<AppRoute[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading] = useState(false)
 
   const queryClient = useQueryClient()
 
+  // The Menu re-derives its `routes` array on every render (its buildNavModel
+  // memo depends on a useQueries.combine output whose reference changes each
+  // render), so this is called repeatedly with content-equal routes. Returning
+  // the previous array reference when nothing actually changed prevents an
+  // infinite render loop (setState → re-render → effect → setState → …).
   const updateMenuRoutes = useCallback((newRoutes: AppRoute[]) => {
-    setIsLoading(true)
-    setMenuRoutes(newRoutes)
-    setIsLoading(false)
+    setMenuRoutes((prev) => {
+      const unchanged = prev.length === newRoutes.length
+        && prev.every((route, index) =>
+          route.path === newRoutes[index].path && route.resourceRefId === newRoutes[index].resourceRefId)
+      return unchanged ? prev : newRoutes
+    })
   }, [])
 
   const reloadRoutes = async () => {
@@ -113,13 +140,24 @@ export const RoutesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const registerRoutes = useCallback((newRoutes: RouteObject[]) => {
     setRoutes((prevRoutes) => {
-      const filteredNewRoutes = newRoutes.filter((newRoute) => !prevRoutes.find((existingRoute) => existingRoute.path === newRoute.path))
+      const shellIndex = prevRoutes.findIndex((route) => route.id === SHELL_ROUTE_ID)
+      if (shellIndex === -1) { return prevRoutes }
 
-      if (filteredNewRoutes.length === 0) {
-        return prevRoutes
-      }
+      // The shell is the pathless layout route (non-index: it has children).
+      const shell = prevRoutes[shellIndex] as NonIndexRouteObject
+      const children = shell.children ?? []
+      const existingPaths = new Set(children.map((child) => child.path))
+      const freshRoutes = newRoutes.filter((route) => !existingPaths.has(route.path))
+      if (freshRoutes.length === 0) { return prevRoutes }
 
-      const updatedRoutes = [...prevRoutes, ...filteredNewRoutes]
+      // Keep the '*' catch-all last among the shell's children.
+      const splatIndex = children.findIndex((child) => child.path === '*')
+      const mergedChildren = splatIndex === -1
+        ? [...children, ...freshRoutes]
+        : [...children.slice(0, splatIndex), ...freshRoutes, ...children.slice(splatIndex)]
+
+      const updatedRoutes = [...prevRoutes]
+      updatedRoutes[shellIndex] = { ...shell, children: mergedChildren }
       setRouterVersion((prev) => prev + 1)
       return updatedRoutes
     })

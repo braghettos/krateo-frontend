@@ -1,0 +1,25 @@
+/* Scoped to the Statistic widget root (className on the antd Statistic). The stat
+   label is the flight-deck EYEBROW: IBM Plex Mono, uppercase, letter-spaced, small
+   and muted — the instrument-panel caption above a big display numeral (matches the
+   Petrol render's COMPOSITIONS / HEALTHY / RECONCILES·H / FAILED labels). The
+   title→value rhythm stays tight so the card isn't airy. Stat labels are always
+   short captions (never headings), so uppercasing is always correct. */
+.statistic {
+  :global(.ant-statistic-title) {
+    color: var(--gray-color);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.08em;
+    margin-bottom: 0;
+    text-transform: uppercase;
+  }
+
+  :global(.ant-statistic-header) {
+    padding-bottom: 2px;
+  }
+
+  :global(.ant-statistic-content) {
+    line-height: 1.1;
+  }
+}

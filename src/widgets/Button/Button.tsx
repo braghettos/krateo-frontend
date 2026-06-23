@@ -4,6 +4,7 @@ import { Button as AntdButton } from 'antd'
 import useApp from 'antd/es/app/useApp'
 
 import { useHandleAction } from '../../hooks/useHandleActions'
+import { getColorCode } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 
 import type { Button as WidgetType } from './Button.type'
@@ -11,7 +12,7 @@ import type { Button as WidgetType } from './Button.type'
 export type ButtonWidgetData = WidgetType['spec']['widgetData']
 
 const Button = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ButtonWidgetData>) => {
-  const { actions, block, clickActionId, color, danger, disabled, ghost, icon, label, shape, size, type, variant } = widgetData
+  const { actions, block, clickActionId, color, danger, disabled, ghost, icon, iconColor, label, shape, size, type, variant } = widgetData
 
   const { notification } = useApp()
   const { handleAction, isActionLoading } = useHandleAction()
@@ -50,7 +51,7 @@ const Button = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ButtonWi
         danger={danger}
         disabled={disabled}
         ghost={ghost}
-        icon={icon ? <FontAwesomeIcon icon={icon as IconProp} /> : undefined}
+        icon={icon ? <FontAwesomeIcon icon={icon as IconProp} style={iconColor ? { color: getColorCode(iconColor) } : undefined} /> : undefined}
         key={uid}
         loading={isActionLoading}
         onClick={(event) => handleClick(event)}

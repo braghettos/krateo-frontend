@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import './load'
 
-import { getWidgetRegistry } from './registry'
+import { getWidgetModule, getWidgetRegistry } from './registry'
 
 const widgetRegistry = getWidgetRegistry()
 
@@ -27,13 +27,20 @@ for (const raw of Object.values(exampleFiles)) {
   }
 }
 
-/** Every registry kind (antd-named; legacy aliases removed in the hard-break). */
+/** Every antd-mapped widget kind (legacy aliases removed; structural kinds excluded). */
 const KNOWN_KINDS = [
   'BarChart', 'Button', 'ButtonGroup', 'Card', 'Col',
-  'EventList', 'Filters', 'FlowChart', 'Form', 'LineChart', 'List', 'Markdown',
-  'Menu', 'Page', 'Paragraph', 'PieChart', 'Route', 'RoutesLoader', 'Row',
+  'EventList', 'Filters', 'Flex', 'FlowChart', 'Form', 'LineChart', 'List', 'Markdown',
+  'Menu', 'Paragraph', 'PieChart', 'Row',
   'Table', 'Tabs', 'YamlViewer',
 ]
+
+/**
+ * Structural (non-antd) kinds resolved by WidgetRenderer. Route/RoutesLoader/NavMenu
+ * and finally Page have all been removed: routing is now data — the sidebar Menu's
+ * inline items are the single route source (no routes-loader, no Page wrapper).
+ */
+const STRUCTURAL_KINDS: string[] = []
 
 describe('widgetRegistry', () => {
   it('registers all known registry kinds (regression gate for the switch removal)', () => {
@@ -45,10 +52,18 @@ describe('widgetRegistry', () => {
     }
   })
 
-  it('registers a module for every kind used in example fixtures', () => {
+  it('resolves a module for every kind used in example fixtures', () => {
     expect(exampleKinds.size).toBeGreaterThan(0)
     for (const kind of exampleKinds) {
-      expect(widgetRegistry[kind], `example kind "${kind}" should be registered`).toBeDefined()
+      // resolve-all: antd widgets AND structural kinds
+      expect(getWidgetModule(kind), `example kind "${kind}" should resolve`).toBeDefined()
+    }
+  })
+
+  it('segregates structural kinds: excluded from the antd registry, still resolvable', () => {
+    for (const kind of STRUCTURAL_KINDS) {
+      expect(widgetRegistry[kind], `structural "${kind}" must NOT be an antd widget`).toBeUndefined()
+      expect(getWidgetModule(kind), `structural "${kind}" must still resolve for rendering`).toBeDefined()
     }
   })
 

@@ -1,0 +1,225 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "Descriptions",
+      "description": "Descriptions displays multiple read-only label/value pairs in a definition list (antd Descriptions)",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["items"],
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "the title displayed above the description list"
+            },
+            "column": {
+              "type": "integer",
+              "description": "the number of label/value pairs per row (antd Descriptions `column`)"
+            },
+            "bordered": {
+              "type": "boolean",
+              "description": "whether to render cell borders (antd Descriptions `bordered`)"
+            },
+            "size": {
+              "type": "string",
+              "enum": ["default", "middle", "small"],
+              "description": "the size of the description list"
+            },
+            "variant": {
+              "type": "string",
+              "enum": ["default", "form"],
+              "description": "rendering style. 'default' = antd Descriptions definition list; 'form' = read-only mirror of the create Form's property layout — each item a connector-rail field (bold label above a mono value), grouped into sections by the item's `section` (nested objects each become a labelled section)"
+            },
+            "items": {
+              "type": "array",
+              "description": "the label/value pairs to display",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["label", "value"],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "the label of the item"
+                  },
+                  "section": {
+                    "type": "string",
+                    "description": "(variant:form only) the section this property is grouped under — e.g. a nested object's top-level key; empty/absent = the ungrouped top section"
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "the value of the item (rendered as the antd Descriptions item children)"
+                  },
+                  "span": {
+                    "type": "integer",
+                    "description": "how many columns this item spans (antd Descriptions item `span`)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "allowed",
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

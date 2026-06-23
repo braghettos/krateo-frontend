@@ -1,5 +1,5 @@
 {
-  "$comment": "Hard-break migration map for Krateo Widget CRs (Ant Design fidelity, Phase 0). Apply to live Widget CRs in lockstep with the frontend deploy that removes the back-compat aliases/props. The frontend no longer resolves any of the legacy keys/props below.",
+  "$comment": "Hard-break migration map for Krateo Widget CRs (Ant Design fidelity: Phase 0 alias/prop purge + antd 6 deprecation renames). Apply to live Widget CRs in lockstep with the frontend deploy. The frontend no longer resolves any of the legacy keys/props below.",
   "kinds": {
     "Panel": "Card",
     "Column": "Col",
@@ -21,14 +21,35 @@
     },
     "ButtonGroup": {
       "gap": "size",
-      "gapValueMap": { "extra-small": "small", "small": "small", "medium": "middle", "large": "large" }
+      "gapValueMap": { "extra-small": "small", "small": "small", "medium": "middle", "large": "large" },
+      "direction": "orientation (antd 6 Space rename; values unchanged)"
     },
     "Card": {
       "actions": "widgetActions",
-      "headerRight": "extra"
+      "headerRight": "extra",
+      "bordered": "variant (antd 6; true→outlined, false→borderless)"
     },
     "Button": {
       "backgroundColor": "color (pair with variant; map brand name -> antd color)"
+    },
+    "Divider": {
+      "orientation": "titlePlacement (antd 6 rename; values left/right/center unchanged)"
+    },
+    "Row": {
+      "alignment": "value center→middle (antd Row `align`)"
+    },
+    "Alert": {
+      "message": "title (antd 6 rename)"
+    },
+    "Tag": {
+      "bordered": "variant (antd 6; false→filled, true→outlined)"
+    },
+    "Steps": {
+      "direction": "orientation (antd 6 rename; values unchanged)",
+      "labelPlacement": "titlePlacement (antd 6 rename; values unchanged)"
+    },
+    "Tabs": {
+      "tabPosition": "tabPlacement (antd 6 rename; values right→end, left→start; top/bottom unchanged)"
     }
   },
   "actions": {

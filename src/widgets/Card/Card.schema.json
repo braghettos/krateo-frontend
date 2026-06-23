@@ -62,7 +62,10 @@
                       },
                       "onEventNavigateTo": {
                         "type": "object",
-                        "required": ["eventReason", "url"],
+                        "required": [
+                          "eventReason",
+                          "url"
+                        ],
                         "additionalProperties": false,
                         "description": "conditional navigation triggered by a specific event",
                         "properties": {
@@ -90,7 +93,9 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["rest"],
+                        "enum": [
+                          "rest"
+                        ],
                         "description": "type of action to execute"
                       },
                       "payload": {
@@ -104,7 +109,10 @@
                         "items": {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["name", "value"],
+                          "required": [
+                            "name",
+                            "value"
+                          ],
                           "properties": {
                             "name": {
                               "type": "string",
@@ -124,11 +132,18 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       }
                     },
-                    "required": ["headers", "id", "type", "resourceRefId"]
+                    "required": [
+                      "headers",
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 },
                 "navigate": {
@@ -149,7 +164,9 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       },
                       "path": {
@@ -166,11 +183,16 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["navigate"],
+                        "enum": [
+                          "navigate"
+                        ],
                         "description": "type of navigation action"
                       }
                     },
-                    "required": ["id", "type"]
+                    "required": [
+                      "id",
+                      "type"
+                    ]
                   }
                 },
                 "openDrawer": {
@@ -186,7 +208,9 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["openDrawer"],
+                        "enum": [
+                          "openDrawer"
+                        ],
                         "description": "type of drawer action"
                       },
                       "resourceRefId": {
@@ -199,7 +223,10 @@
                       },
                       "size": {
                         "type": "string",
-                        "enum": ["default", "large"],
+                        "enum": [
+                          "default",
+                          "large"
+                        ],
                         "description": "drawer size to be displayed"
                       },
                       "title": {
@@ -213,11 +240,17 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       }
                     },
-                    "required": ["id", "type", "resourceRefId"]
+                    "required": [
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 },
                 "openModal": {
@@ -233,7 +266,9 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["openModal"],
+                        "enum": [
+                          "openModal"
+                        ],
                         "description": "type of modal action"
                       },
                       "resourceRefId": {
@@ -255,7 +290,9 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       },
                       "customWidth": {
@@ -265,10 +302,19 @@
                       "size": {
                         "description": "sets the Modal size, 'default' is 520px, 'large' is 80% of the screen width, 'fullscreen' is 100% of the screen width, 'custom' should be used with the 'customWidth' property",
                         "type": "string",
-                        "enum": ["default", "large", "fullscreen", "custom"]
+                        "enum": [
+                          "default",
+                          "large",
+                          "fullscreen",
+                          "custom"
+                        ]
                       }
                     },
-                    "required": ["id", "type", "resourceRefId"]
+                    "required": [
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 }
               },
@@ -283,7 +329,9 @@
               "type": "array",
               "items": {
                 "type": "object",
-                "required": ["resourceRefId"],
+                "required": [
+                  "resourceRefId"
+                ],
                 "properties": {
                   "resourceRefId": {
                     "type": "string",
@@ -299,15 +347,79 @@
             },
             "extra": {
               "type": "string",
-              "description": "antd Card extra — content shown top-right of the card header (renamed from `headerRight`)"
+              "description": "antd Card extra \u2014 content shown top-right of the card header (renamed from `headerRight`)"
             },
-            "bordered": { "type": "boolean", "description": "antd Card bordered (outlined vs borderless)" },
-            "size": { "type": "string", "enum": ["default", "small"], "description": "antd Card size" },
-            "cover": { "type": "string", "description": "resourceRefId of a widget rendered as the antd Card cover" },
+            "extraVariant": {
+              "type": "string",
+              "enum": [
+                "text",
+                "badge"
+              ],
+              "description": "how `extra` renders top-right: `text` (default, plain) or `badge` (a status pill \u2014 glow dot + uppercase mono, e.g. a CONVERGED/DRIFT/DEGRADED reconcile chip)"
+            },
+            "extraStatus": {
+              "type": "string",
+              "enum": [
+                "success",
+                "processing",
+                "warning",
+                "error",
+                "default"
+              ],
+              "description": "antd Badge status driving the `extraVariant: badge` colour (processing=cyan/healthy, warning=amber/drift, error=crimson/failed)"
+            },
+            "live": {
+              "type": "boolean",
+              "description": "show a pulsing \"Live\" badge next to the card title (for cards backed by a live/SSE feed)"
+            },
+            "legend": {
+              "type": "array",
+              "description": "optional legend key shown top-right of the card header (e.g. the reconciliation-rail actual/drift/target swatches): each item is a small colour swatch + label",
+              "items": {
+                "type": "object",
+                "required": [
+                  "color",
+                  "label"
+                ],
+                "properties": {
+                  "color": {
+                    "type": "string",
+                    "description": "swatch colour (palette name, e.g. cyan / magenta / amber)"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "swatch label (e.g. actual / drift / target)"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "variant": {
+              "type": "string",
+              "enum": [
+                "outlined",
+                "borderless"
+              ],
+              "description": "antd Card variant"
+            },
+            "size": {
+              "type": "string",
+              "enum": [
+                "default",
+                "small"
+              ],
+              "description": "antd Card size"
+            },
+            "cover": {
+              "type": "string",
+              "description": "resourceRefId of a widget rendered as the antd Card cover"
+            },
             "icon": {
               "type": "object",
               "description": "icon displayed in the panel header",
-              "required": ["name"],
+              "required": [
+                "name"
+              ],
               "properties": {
                 "name": {
                   "type": "string",
@@ -325,7 +437,9 @@
               "description": "list of resource references to display as main content in the panel",
               "items": {
                 "type": "object",
-                "required": ["resourceRefId"],
+                "required": [
+                  "resourceRefId"
+                ],
                 "properties": {
                   "resourceRefId": {
                     "type": "string",
@@ -346,12 +460,52 @@
               "type": "string",
               "description": "text to be displayed as the panel title"
             },
+            "titleVariant": {
+              "type": "string",
+              "enum": [
+                "heading",
+                "eyebrow"
+              ],
+              "description": "how the panel title is rendered. 'heading' (default) = readable card heading (marketplace tiles, detail headers). 'eyebrow' = small mono uppercase letter-spaced muted caption (flight-deck section/panel labels)."
+            },
             "tooltip": {
               "type": "string",
               "description": "optional tooltip text shown on the top right side of the card to provide additional context"
+            },
+            "watch": {
+              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "apiVersion",
+                  "kind"
+                ],
+                "properties": {
+                  "apiVersion": {
+                    "type": "string",
+                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "e.g. DemoClaim"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "scope to a namespace; omit to match any"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  }
+                }
+              }
             }
           },
-          "required": ["items"],
+          "required": [
+            "items"
+          ],
           "additionalProperties": false
         },
         "resourcesRefs": {
@@ -385,7 +539,13 @@
                   },
                   "verb": {
                     "type": "string",
-                    "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
                   },
                   "slice": {
                     "type": "object",
@@ -403,14 +563,22 @@
                         "type": "boolean"
                       }
                     },
-                    "required": ["page", "perPage"]
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
                   }
                 },
-                "required": ["allowed", "id"]
+                "required": [
+                  "allowed",
+                  "id"
+                ]
               }
             }
           },
-          "required": ["items"]
+          "required": [
+            "items"
+          ]
         },
         "apiRef": {
           "type": "object",
@@ -422,7 +590,10 @@
               "type": "string"
             }
           },
-          "required": ["name", "namespace"],
+          "required": [
+            "name",
+            "namespace"
+          ],
           "additionalProperties": false
         },
         "widgetDataTemplate": {
@@ -439,11 +610,64 @@
             },
             "additionalProperties": false
           }
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
-      "required": ["widgetData", "resourcesRefs"],
+      "required": [
+        "widgetData",
+        "resourcesRefs"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["kind", "spec", "version"]
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
 }

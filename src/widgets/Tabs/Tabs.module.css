@@ -10,3 +10,17 @@
     text-overflow: ellipsis;
   }
 }
+
+/* Petrol active-tab underline: an amber GLOW on the ink-bar — the mockup
+   `.tab.active::after { box-shadow: 0 0 6px rgba(242,163,60,.5) }`. antd already
+   tints the active label + ink-bar with colorPrimary (amber); this adds the
+   flight-deck glow. Label sized to the mockup tab (12.5px / medium). Scoped to the
+   Tabs widget, so every Tabs instance inherits the treatment. */
+.tabs :global(.ant-tabs-ink-bar) {
+  box-shadow: 0 0 6px 0 color-mix(in srgb, var(--amber-color) 55%, transparent);
+}
+
+.tabs :global(.ant-tabs-tab-btn) {
+  font-size: 12.5px;
+  font-weight: var(--font-weight-medium);
+}

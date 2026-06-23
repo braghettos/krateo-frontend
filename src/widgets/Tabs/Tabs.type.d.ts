@@ -21,9 +21,9 @@ export interface Tabs {
        */
       size?: 'small' | 'middle' | 'large'
       /**
-       * antd Tabs tabPosition
+       * antd Tabs tabPlacement
        */
-      tabPosition?: 'top' | 'right' | 'bottom' | 'left'
+      tabPlacement?: 'top' | 'end' | 'bottom' | 'start'
       /**
        * antd Tabs centered
        */
@@ -46,6 +46,7 @@ export interface Tabs {
         | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'rows'
         | 'tables'
         | 'tabs'
@@ -99,6 +100,20 @@ export interface Tabs {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

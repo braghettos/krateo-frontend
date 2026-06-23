@@ -1,11 +1,14 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Table as AntdTable, Result, Typography } from 'antd'
+import { Table as AntdTable, Progress, Result, Tag, Typography } from 'antd'
+import type { CSSProperties } from 'react'
+import { useNavigate } from 'react-router'
 
 import { useFilter } from '../../components/FiltesProvider/FiltersProvider'
 import WidgetRenderer from '../../components/WidgetRenderer'
+import { getColorCode, getTagStyle } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
-import { getEndpointUrl } from '../../utils/utils'
+import { formatISODate, formatRelativeTime, getEndpointUrl } from '../../utils/utils'
 
 import styles from './Table.module.css'
 import type { Table as WidgetType } from './Table.type'
@@ -13,10 +16,27 @@ import type { Table as WidgetType } from './Table.type'
 export type TableWidgetData = WidgetType['spec']['widgetData']
 
 const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>) => {
-  const { bordered, columns, dataSource, pagination, prefix, size } = widgetData
+  const { bordered, columns, dataSource, pagination, prefix, rowNavigateTo, size } = widgetData
   const data = dataSource ?? []
   const pageSize = pagination?.pageSize ?? pagination?.defaultPageSize
   const { getFilteredData } = useFilter()
+  const navigate = useNavigate()
+
+  // Optional row → route navigation. `rowNavigateTo` is a path with `{valueKey}`
+  // placeholders filled from that row's cells (e.g. "/compositions/{ns}/{name}").
+  const buildRowPath = (row: NonNullable<TableWidgetData['dataSource']>[number]): string | undefined => {
+    if (!rowNavigateTo) { return undefined }
+    let missing = false
+    const path = rowNavigateTo.replace(/\{([^}]+)\}/g, (_match, key: string) => {
+      const value = row.find((cell) => cell.valueKey === key)?.stringValue
+      if (value === undefined || value === '') {
+        missing = true
+        return ''
+      }
+      return encodeURIComponent(value)
+    })
+    return missing ? undefined : path
+  }
 
   // TODO: check if this works with RESTAction, it should not be displayed
   if (!columns.length) {
@@ -48,10 +68,49 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
             return <span>-</span>
           }
 
-          const { arrayValue, booleanValue, decimalValue, kind, numberValue, resourceRefId, stringValue, type } = cell
+          const { arrayValue, booleanValue, color: cellColor, decimalValue, format, kind, numberValue, resourceRefId, stringValue, type } = cell
           const endpoint = kind === 'widget' && resourceRefId && getEndpointUrl(resourceRefId, resourcesRefs)
 
           switch (kind) {
+            case 'tag':
+              // Per-row colored Tag (e.g. status Healthy/Failed/Pending). The color rides on
+              // the cell so each row can differ. Resolved to the EXACT Petrol hex soft-tint
+              // (not antd's preset palette) so the status pill is cyan/crimson/magenta/amber.
+              return <Tag style={getTagStyle(cellColor ?? color)}>{stringValue ?? '-'}</Tag>
+
+            case 'bar': {
+              // Reconciliation-rail gauge cell (desired-vs-actual): cyan CONVERGED fill to
+              // `stringValue`%, + a state-coloured diagonal HATCH remainder (--rail-rem) + an
+              // amber target-tick at 100% (`.railBar`). Mirrors the List `rail` variant.
+              const pct = Number(stringValue)
+              const barColor = getColorCode(cellColor ?? color)
+              return (
+                <div className={styles.railBar} style={{ '--rail-rem': barColor } as CSSProperties}>
+                  <Progress percent={Number.isFinite(pct) ? pct : 0} showInfo={false} size='small' strokeColor={getColorCode('cyan')} />
+                </div>
+              )
+            }
+
+            case 'conditions': {
+              // The row's REAL status.conditions as small pills, each coloured by its own status
+              // (True=cyan / False=crimson) — replaces a single derived "Healthy/Drift" Tag, so
+              // every condition shows honestly. Passed as a JSON string ([{type,status}]) in
+              // `stringValue` (avoids widening the `arrayValue: string[]` cell type).
+              let conds: { status?: string; type?: string }[] = []
+              try {
+                conds = stringValue ? (JSON.parse(stringValue) as { status?: string; type?: string }[]) : []
+              } catch {
+                conds = []
+              }
+              if (!Array.isArray(conds) || !conds.length) { return <span>-</span> }
+              const tone: Record<string, string> = { False: 'red', True: 'cyan' }
+              return (
+                <div className={styles.conditions}>
+                  {conds.map((cond) => <Tag key={cond.type} style={getTagStyle(tone[cond.status ?? ''] ?? 'gray')}>{cond.type}</Tag>)}
+                </div>
+              )
+            }
+
             case 'icon':
               if (stringValue) { return <FontAwesomeIcon color={color} icon={stringValue as IconProp} /> }
               console.error('Table rendering error: icon value has incorrect format')
@@ -77,8 +136,17 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
               }
 
               switch (type) {
-                case 'string':
-                  return <span style={{ color }}>{stringValue ?? '-'}</span>
+                case 'string': {
+                  // Optional display format (relative age / formatted date) — the raw
+                  // value stays in the data; only the rendering changes.
+                  const formatted = (() => {
+                    if (!stringValue) { return '-' }
+                    if (format === 'relative') { return formatRelativeTime(stringValue) }
+                    if (format === 'date' || format === 'datetime') { return formatISODate(stringValue, format === 'datetime') }
+                    return stringValue
+                  })()
+                  return <span style={{ color: cellColor ?? color }}>{formatted}</span>
+                }
                 case 'number':
                 case 'integer':
                   return <span style={{ color }}>{numberValue ?? '-'}</span>
@@ -110,6 +178,14 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
       }))}
       dataSource={dataTable}
       key={uid}
+      onRow={rowNavigateTo
+        ? (row) => {
+          const path = buildRowPath(row)
+          return path
+            ? { onClick: () => { void navigate(path) }, style: { cursor: 'pointer' } }
+            : {}
+        }
+        : undefined}
       pagination={pagination ?? (dataTable && pageSize && dataTable.length > pageSize ? { defaultPageSize: pageSize } : false)}
       scroll={{ x: 'max-content' }}
       size={size}

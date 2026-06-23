@@ -1,0 +1,359 @@
+/* Autopilot rail — docked, collapsible, side-by-side (NOT an overlay).
+   Mirrors /tmp/petrol/autopilot.html `.ap-*`. Uses the app's theme CSS vars (not
+   hard-coded petrol hex) so the rail is legible in BOTH dark (petrol) and light
+   (paper) themes: panelbg=bezel, background=void, light=bezel-2, dark=ink,
+   gray=graphite, border=hair, amber=brand, cyan/magenta/red=status. */
+
+/* Reflow seam: the shell + rail share a flex row; opening the rail shrinks main. */
+.shellViewport {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.shellMain {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The rail itself: flex:none, width animates 0 → 384 so main reflows smoothly. */
+.apRail {
+  flex: none;
+  width: 0;
+  overflow: hidden;
+  transition: width var(--motion-mid, 0.2s) ease;
+}
+
+.apRail.open {
+  width: 384px;
+}
+
+.apRailInner {
+  display: flex;
+  flex-direction: column;
+  width: 384px;
+  height: 100%;
+  min-height: 0;
+  background: var(--panelbg-color);
+  border-left: 1px solid var(--border-color);
+}
+
+/* ── head ── */
+.apHead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 64px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-color);
+  flex: none;
+}
+
+.apTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--dark-color);
+}
+
+.apSpark {
+  color: var(--amber-color);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--amber-color) 55%, transparent));
+}
+
+.apLive {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cyan-color);
+  background: color-mix(in srgb, var(--cyan-color) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cyan-color) 30%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+}
+
+.apLiveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cyan-color);
+  box-shadow: 0 0 5px 1px var(--cyan-color);
+}
+
+.apLive.idle {
+  color: var(--gray-color);
+  background: transparent;
+  border-color: var(--border-color);
+}
+
+.apLive.idle .apLiveDot {
+  background: var(--gray-color);
+  box-shadow: none;
+}
+
+.apSpacer {
+  flex: 1;
+}
+
+.apIc {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--gray-color);
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}
+
+.apIc:hover {
+  color: var(--dark-color);
+  border-color: var(--border-color);
+}
+
+/* ── body ── */
+.apBody {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 12px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  min-height: 0;
+}
+
+/* context strip — what Autopilot can SEE (redacted page-context). */
+.apCtx {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border-radius: var(--radius-md);
+  background: var(--light-color);
+  border: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-color);
+}
+
+.apCtx b {
+  color: var(--cyan-color);
+  font-weight: 500;
+}
+
+.apCtxIcon {
+  flex: none;
+  color: var(--cyan-color);
+}
+
+/* messages */
+.apMsg {
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.apMsgUser {
+  align-self: flex-end;
+  max-width: 88%;
+  background: var(--light-color);
+  border: 1px solid var(--border-color);
+  border-radius: 9px 9px 3px 9px;
+  padding: 8px 11px;
+  color: var(--dark-color);
+}
+
+.apMsgBot {
+  align-self: flex-start;
+  max-width: 96%;
+  color: var(--dark-color);
+}
+
+.apMsgBot code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--light-color);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--cyan-color);
+}
+
+/* streaming caret */
+.apCaret {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--amber-color);
+  animation: apBlink 1s steps(2, start) infinite;
+}
+
+@keyframes apBlink {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* read-only action chip (Phase 2 surface; rendered when a message carries one) */
+.apAct {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--background-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gray-color);
+}
+
+.apActCheck {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--cyan-color);
+}
+
+.apAct b {
+  color: var(--dark-color);
+  font-weight: 500;
+}
+
+.apActRo {
+  margin-left: auto;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cyan-color);
+}
+
+/* suggested next steps */
+.apSuggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.apSg {
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed color-mix(in srgb, var(--gray-color) 45%, transparent);
+  background: transparent;
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.apSg:hover {
+  color: var(--dark-color);
+  border-color: var(--gray-color);
+}
+
+/* empty / greeting state */
+.apEmpty {
+  margin: auto 0;
+  text-align: center;
+  color: var(--gray-color);
+  font-size: 12.5px;
+  line-height: 1.6;
+  padding: 16px 8px;
+}
+
+.apEmpty .apEmptyTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--dark-color);
+  margin-bottom: 6px;
+}
+
+/* ── composer ── */
+.apComposer {
+  border-top: 1px solid var(--border-color);
+  padding: 10px 12px 12px;
+  flex: none;
+}
+
+.apInput {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  padding: 8px 10px;
+}
+
+.apInput:focus-within {
+  border-color: color-mix(in srgb, var(--amber-color) 45%, transparent);
+}
+
+.apTextarea {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--dark-color);
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  line-height: 1.5;
+  max-height: 120px;
+}
+
+.apTextarea::placeholder {
+  color: var(--gray-color);
+}
+
+.apSend {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--amber-color) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber-color) 45%, transparent);
+  color: var(--amber-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.apSend:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.apNote {
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--gray-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.apNoteIcon {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  color: var(--cyan-color);
+}

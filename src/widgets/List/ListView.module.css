@@ -6,3 +6,310 @@
   text-align: right;
   white-space: nowrap;
 }
+
+/* Leading status dot (event/status feeds): small solid disc + soft halo. */
+.dot {
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  height: 10px;
+  margin-top: 6px;
+  width: 10px;
+}
+
+/* Leading icon tile (catalog rows): soft-tint rounded square + colored glyph. */
+.tile {
+  align-items: center;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 14px;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+/* Right-aligned reconcile-state text (relations rows): mono, color = row state
+   color — mirrors the mockup `.rstate` (cyan plain text, not a heavy pill). */
+.stateText {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Right-aligned category pill (soft-tint, borderless). */
+.tag {
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  padding: 2px 10px;
+}
+
+/* itemTemplate.subPrimaryTextMono — render the sub-line (e.g. an event's involvedObject
+   `Kind/name` ref) as a small mono bordered pill, per the mockup `.event` ref chip. */
+.refPill {
+  border: 1px solid var(--border-color, rgba(230, 237, 243, 0.16));
+  border-radius: var(--radius-sm);
+  color: var(--gray-color);
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 6px;
+}
+
+/* Clickable row (itemTemplate.navigateTo resolved): pointer + subtle hover highlight. */
+.clickable {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickable:hover {
+  background-color: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+/* Reconciliation-rail row: a per-item Progress line (flex) + a mono % label. The
+   List.Item flexes the Meta (composition name/ns) and this bar side by side. */
+.bar {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.bar :global(.ant-progress) {
+  flex: 1;
+  margin: 0;
+}
+
+.barLabel {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+  min-width: 38px;
+  text-align: right;
+}
+
+/* Petrol `rail` variant: tight-radius fill (instrument gauge). antd 6 renamed the
+   Progress fill .ant-progress-bg → .ant-progress-track; both listed for cross-version safety. */
+.railBar :global(.ant-progress-track),
+.railBar :global(.ant-progress-bg) {
+  border-radius: 2px;
+}
+
+/* The amber "desired / target" goalpost — a 2px glowing tick at the 100% edge of
+   every rail bar (the reconciliation rail's signature marker). On the per-resource
+   detail rail the trail also carries the hatched diff between actual and target.
+   antd 6 renamed the full-width trail .ant-progress-inner → .ant-progress-rail; both
+   names are listed so the hatch + tick render on antd 5 and antd 6. */
+.railBar :global(.ant-progress-rail),
+.railBar :global(.ant-progress-inner) {
+  border-radius: 2px;
+  position: relative;
+  /* Desired-vs-actual: the trail (un-filled remainder, right of the cyan converged fill)
+     carries a state-coloured diagonal HATCH (--rail-rem = drift magenta / pending amber /
+     fail crimson, set inline per row). At 100% the fill covers it → no hatch on healthy rows. */
+  background-color: color-mix(in srgb, var(--rail-rem, transparent) 20%, transparent);
+  background-image: repeating-linear-gradient(-45deg, var(--rail-rem, transparent) 0 2px, transparent 2px 5px);
+}
+
+.railBar :global(.ant-progress-rail)::after,
+.railBar :global(.ant-progress-inner)::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  right: 0;
+  width: 2px;
+  background: var(--amber-color);
+  box-shadow: 0 0 5px 1px var(--amber-color);
+}
+
+/* Tree row (itemTemplate.rowVariant: tree) — detail Relations "composed children":
+   tight single-line mono row, `└─` connector + glow dot + Kind + muted name +
+   right-aligned colored state. Mirrors the mockup `.rel-row`. */
+.treeRow {
+  align-items: center;
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  gap: 8px;
+  padding: 6px 2px !important;
+}
+
+.treeConnector {
+  color: var(--gray-color);
+  flex: none;
+}
+
+.treeDot {
+  border-radius: 50%;
+  flex: none;
+  height: 6px;
+  width: 6px;
+}
+
+.treeKind {
+  color: var(--text-color);
+  flex: none;
+}
+
+.treeName {
+  color: var(--gray-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.treeState {
+  flex: none;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* Card tile (itemTemplate.rowVariant: card) — Marketplace catalog grid. Each grid cell is
+   a full antd Card: icon-tile + name + version badge + category tag + 2-line description +
+   a footer of visible action buttons. Mirrors the mockup `.card`. Full height so cards in a
+   grid row align and the footer pins to the bottom. */
+.tileCard {
+  height: 100%;
+}
+
+.tileCard :global(.ant-card-body) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 8px);
+  height: 100%;
+}
+
+/* Card hover. EVERY tile gets a subtle border-brighten (mockup marketplace `.card:hover` →
+   `--hair-2`) — incl. non-clickable tiles like the Marketplace Install cards. Clickable tiles
+   (whole-card `navigateTo`) get the stronger AMBER border (mockup `.tile:hover`), a clear
+   "this navigates" signal. (The prior 6% bg-tint was near-invisible on the bezel.) */
+.tileCard {
+  transition: border-color 0.12s ease;
+}
+
+.tileCard:hover {
+  border-color: color-mix(in srgb, var(--text-color) 28%, transparent);
+}
+
+.tileCard.clickable:hover {
+  border-color: color-mix(in srgb, var(--amber-color) 55%, transparent);
+}
+
+.cardTop {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+}
+
+.cardTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Meta line under the card name: category tag + version badge share one wrapping flex
+   row (mockup `.tile-meta` / `.card-meta`) — name sits alone on the line above. */
+.cardMeta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cardName {
+  color: var(--text-color);
+  display: block;
+  font-weight: var(--font-weight-bold);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Version badge — bordered mono pill (mockup `.ver-badge`). */
+.verBadge {
+  border: 1px solid var(--border-color, rgba(230, 237, 243, 0.16));
+  border-radius: var(--radius-sm);
+  color: var(--gray-color);
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+/* Category tag in a card: hug its content + left-align (a flex-column child would otherwise
+   stretch to the full column width under the default align-items: stretch). */
+.cardCatTag {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+/* 2-line clamped description body — grows to push the footer to the card bottom. */
+.cardDesc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--gray-color);
+  display: -webkit-box;
+  flex: 1;
+  font-size: 12.5px;
+  line-height: 1.5;
+  min-height: 3em;
+  overflow: hidden;
+}
+
+/* Top-bordered footer: provider (left) + action buttons (right) — mockup `.card-foot`. */
+.cardFoot {
+  align-items: center;
+  border-top: 1px solid var(--border-color, rgba(230, 237, 243, 0.1));
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+  margin-top: auto;
+  padding-top: var(--spacing-sm, 8px);
+}
+
+.cardProvider {
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardFootActions {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-left: auto;
+}
+
+/* Footer-left navigation cue ("Configure →") on clickable cards — mono amber, the arrow
+   slides on card hover (mockup `.configure` + `.tile:hover .arr`). A hint, not a button. */
+.cardCta {
+  align-items: center;
+  color: var(--amber-color);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.cardCtaArrow {
+  transition: transform 0.12s ease;
+}
+
+.tileCard.clickable:hover .cardCtaArrow {
+  transform: translateX(2px);
+}

@@ -321,7 +321,42 @@
                     "icon": {
                       "type": "string",
                       "description": "icon name for secondary button"
+                    },
+                    "navigateTo": {
+                      "type": "string",
+                      "description": "when set, the secondary button is a Cancel that navigates to this route (SPA) instead of resetting the form"
                     }
+                  },
+                  "additionalProperties": false
+                },
+                "draft": {
+                  "type": "object",
+                  "description": "draft button configuration — only rendered when widgetData.draftActionId is also set; clicking it persists the current (un-validated) field values via that action",
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "description": "text label for draft button"
+                    },
+                    "icon": {
+                      "type": "string",
+                      "description": "icon name for draft button"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "review": {
+                  "type": "object",
+                  "description": "Configure-step button label when reviewBeforeSubmit is set (the button that opens the in-place Review; default 'Review →')",
+                  "properties": {
+                    "label": { "type": "string", "description": "text label for the Review button" }
+                  },
+                  "additionalProperties": false
+                },
+                "reviewBack": {
+                  "type": "object",
+                  "description": "Review-step back button label when reviewBeforeSubmit is set (returns to editing; default '← Back to edit')",
+                  "properties": {
+                    "label": { "type": "string", "description": "text label for the back-to-edit button" }
                   },
                   "additionalProperties": false
                 }
@@ -346,8 +381,35 @@
                 }
               }
             },
+            "schema": {
+              "description": "JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields — the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema. Note: a schema sourced from a CRD's openAPIV3Schema has its `properties` map serialized alphabetically (order lost); use `stringSchema` to preserve the source values.schema.json authoring order.",
+              "type": "object",
+              "additionalProperties": true,
+              "tsType": "Record<string, unknown>"
+            },
+            "stringSchema": {
+              "description": "Same JSON schema as `schema`, but as a raw JSON STRING. Preferred over `schema` when present: the client JSON.parses it, preserving key insertion order, so fields render in the source values.schema.json order rather than the alphabetized order a CRD-sourced object schema yields. Typically populated server-side from the blueprint's per-version jsonschema ConfigMap (which keeps authoring order). Falls back to `schema` when absent or not valid JSON.",
+              "type": "string"
+            },
+            "propertiesToHide": {
+              "description": "top-level schema property names to omit from the schema-driven form",
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "reviewBeforeSubmit": {
+              "description": "when true (inline render only), the primary button validates and reveals an in-place read-only Review of the entered values before the real submit — the form stays mounted so 'Back to edit' preserves every value. Pair with buttonConfig.review / buttonConfig.reviewBack for custom labels.",
+              "type": "boolean"
+            },
+            "submitDisabledWhenPristine": {
+              "description": "when true, the primary (submit) button stays disabled until at least one field differs from its initial value (initialValues overlaid on schema defaults). Use for update forms where submitting an unchanged value is a no-op — e.g. a version picker pre-set to the currently-installed version.",
+              "type": "boolean"
+            },
             "submitActionId": {
               "description": "the id of the action to be called when the form is submitted",
+              "type": "string"
+            },
+            "draftActionId": {
+              "description": "optional id of an action fired by a 'Save draft' button that captures the CURRENT field values WITHOUT running form validation (so an incomplete form can be persisted). Pair with buttonConfig.draft to show the button.",
               "type": "string"
             }
           },
@@ -376,6 +438,124 @@
               },
               "expression": {
                 "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "allowed",
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
               }
             },
             "additionalProperties": false

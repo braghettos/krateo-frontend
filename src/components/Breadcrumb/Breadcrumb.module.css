@@ -1,47 +1,34 @@
 :global(.ant-breadcrumb) {
   display: flex;
-  flex-wrap: nowrap;
   min-width: 0;
-  overflow: hidden;
 }
 
 :global(.ant-breadcrumb > ol) {
   display: flex;
   flex-wrap: nowrap;
   min-width: 0;
-  overflow: hidden;
-  width: 100%;
 }
 
+/* Each crumb shows its full content (no squeeze); only a genuinely long one (> max-width)
+   truncates with an ellipsis + the native `title` tooltip. */
 :global(.ant-breadcrumb > ol > li) {
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .breadcrumbItem {
-  cursor: pointer;
-  display: block;
-  max-width: 100%;
+  display: inline-block;
+  max-width: 40ch;
   overflow: hidden;
   text-overflow: ellipsis;
+  vertical-align: bottom;
   white-space: nowrap;
 
   &.capitalize {
     text-transform: capitalize;
   }
 
-  & .link {
-    display: flex;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    width: 100%;
-
-    &:hover {
-      color: var(--primary-color);
-    }
+  & .link:hover {
+    color: var(--primary-color);
   }
 }

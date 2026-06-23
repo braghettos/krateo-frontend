@@ -42,6 +42,7 @@
                   "cards",
                   "paragraphs",
                   "piecharts",
+                  "rangepickers",
                   "tables",
                   "tabs",
                   "yamlviewers"
@@ -53,8 +54,8 @@
               "enum": ["small", "middle", "large"],
               "type": "string"
             },
-            "direction": {
-              "description": "antd Space direction",
+            "orientation": {
+              "description": "antd Space orientation",
               "enum": ["horizontal", "vertical"],
               "type": "string"
             },
@@ -165,6 +166,52 @@
             "additionalProperties": false
           },
           "additionalProperties": false
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
       "required": ["widgetData", "resourcesRefs"],
