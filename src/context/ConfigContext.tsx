@@ -9,6 +9,10 @@ export interface Config {
     EVENTS_PUSH_API_BASE_URL: string
     INIT: string
     TERMINAL_SOCKET_URL: string
+    /** Base URL of the Krateo Autopilot (kagent) A2A endpoint. Optional: when
+     * absent the Autopilot rail + header toggle do not render (graceful absence
+     * for installs without autopilot deployed). */
+    AUTOPILOT_API_BASE_URL?: string
   }
   params: {
     FRONTEND_NAMESPACE: string

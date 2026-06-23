@@ -5,6 +5,7 @@ import { Outlet } from 'react-router'
 import { useConfigContext } from '../../context/ConfigContext'
 import Drawer from '../../widgets/Drawer'
 import Modal from '../../widgets/Modal'
+import { AutopilotProvider, AutopilotShell, AutopilotToggle } from '../Autopilot'
 import Breadcrumb from '../Breadcrumb'
 import CommandPalette from '../CommandPalette'
 import Notifications from '../Notifications'
@@ -20,7 +21,7 @@ import { ShellSlotsProvider } from './ShellSlots'
 const HeaderChrome = () => (
   <>
     <div className={styles.headerLeft}><Breadcrumb /></div>
-    <div className={styles.headerRight}><CommandPalette /><Notifications /><ThemeToggle /><UserMenu /></div>
+    <div className={styles.headerRight}><CommandPalette /><AutopilotToggle /><Notifications /><ThemeToggle /><UserMenu /></div>
   </>
 )
 
@@ -56,9 +57,13 @@ export const ShellRoute = () => {
 
   return (
     <ShellSlotsProvider value={{ content: <Outlet />, header: <HeaderChrome />, siderFooter: <SiderFooter /> }}>
-      <WidgetRenderer key='shell' widgetEndpoint={config!.api.INIT} />
-      <Drawer />
-      <Modal />
+      <AutopilotProvider>
+        <AutopilotShell>
+          <WidgetRenderer key='shell' widgetEndpoint={config!.api.INIT} />
+        </AutopilotShell>
+        <Drawer />
+        <Modal />
+      </AutopilotProvider>
     </ShellSlotsProvider>
   )
 }
