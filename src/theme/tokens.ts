@@ -57,6 +57,9 @@ export const color = {
   cyan: '#0E8F86',
   magenta: '#A6358F',
   amber: '#C0760B',
+  // antd preset alias used by status cells for "pending" — map to the amber brand
+  // (was absent → getColorCode('gold') fell back to ink, and antd's preset gold is off-brand).
+  gold: '#C0760B',
 } as const
 
 /**
@@ -149,7 +152,9 @@ const buildComponents = (palette: Record<keyof typeof color, string>, mode: Them
   Drawer: { paddingLG: spacing.lg },
   Input: { borderRadius: radius.md, controlHeight: 32 },
   List: { borderRadiusLG: radius.lg },
-  Menu: { itemBorderRadius: radius.md, itemHeight: 36, subMenuItemBorderRadius: radius.md },
+  // Sidebar nav density — match the mockup `.nav-item` (padding 7px 9px · 13px · ~30px tall),
+  // not antd's 36px/14px default (which read "larger than the render").
+  Menu: { fontSize: 13, itemBorderRadius: radius.md, itemHeight: 30, itemMarginBlock: 0, itemPaddingInline: 9, subMenuItemBorderRadius: radius.md },
   Modal: { borderRadiusLG: radius.xl },
   Progress: { defaultColor: palette.green },
   Select: { borderRadius: radius.md, controlHeight: 32 },
@@ -160,15 +165,23 @@ const buildComponents = (palette: Record<keyof typeof color, string>, mode: Them
   Tag: { borderRadiusSM: radius.sm },
 })
 
-/** Light "Paper" antd theme. */
+/** Light "Paper" antd theme. compactAlgorithm = the instrument-panel density pass: tighter
+ * paddings/margins/gaps across every component (cards/tables/lists/descriptions/forms), fonts
+ * unchanged — closes the cross-page "more compact, match the static render" gap (D5/O1). */
 export const lightTheme: ThemeConfig = {
-  algorithm: antdAlgorithms.defaultAlgorithm,
+  algorithm: [antdAlgorithms.defaultAlgorithm, antdAlgorithms.compactAlgorithm],
   token: {
     borderRadius: radius.md,
     boxShadow: elevation.md,
     boxShadowSecondary: elevation.lg,
     colorBgBase: color.panelbg,
+    // Pin the bg/border MAP tokens (see the dark theme note): white card on a #F6F8FA page,
+    // not antd's derived near-white layout. colorBgLayout = the cool paper background.
+    colorBgContainer: color.panelbg,
+    colorBgElevated: color.light,
+    colorBgLayout: color.background,
     colorBorder: color.border,
+    colorBorderSecondary: color.border,
     colorError: color.error,
     colorInfo: color.info,
     colorLink: color.primary,
@@ -185,15 +198,24 @@ export const lightTheme: ThemeConfig = {
   components: buildComponents(color, 'light'),
 }
 
-/** Dark "Petrol" antd theme — antd dark algorithm + amber-brand / cyan-status overrides. */
+/** Dark "Petrol" antd theme — antd dark + compact algorithms + amber-brand / cyan-status overrides. */
 export const darkTheme: ThemeConfig = {
-  algorithm: antdAlgorithms.darkAlgorithm,
+  algorithm: [antdAlgorithms.darkAlgorithm, antdAlgorithms.compactAlgorithm],
   token: {
     borderRadius: radius.md,
     boxShadow: elevationDark.md,
     boxShadowSecondary: elevationDark.lg,
     colorBgBase: colorDark.background,
+    // Pin the bg/border MAP tokens to the exact Petrol values — antd otherwise DERIVES them from
+    // the blue-leaning void base + dark algorithm, producing a lighter blue-tinted container
+    // (#0d1f35) and a blue border (#183962) instead of the neutral bezel. colorBgContainer = card/
+    // input fill (bezel), colorBgElevated = popover/dropdown/modal (bezel-2), colorBgLayout = page
+    // (void); colorBorderSecondary = the card's hairline.
+    colorBgContainer: colorDark.panelbg,
+    colorBgElevated: colorDark.light,
+    colorBgLayout: colorDark.background,
     colorBorder: colorDark.border,
+    colorBorderSecondary: colorDark.border,
     colorError: colorDark.error,
     colorInfo: colorDark.info,
     colorLink: colorDark.primary,

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router'
 
 import { useFilter } from '../../components/FiltesProvider/FiltersProvider'
 import WidgetRenderer from '../../components/WidgetRenderer'
-import { getColorCode } from '../../theme/palette'
+import { getColorCode, getTagStyle } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 import { formatISODate, formatRelativeTime, getEndpointUrl } from '../../utils/utils'
 
@@ -73,9 +73,10 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
 
           switch (kind) {
             case 'tag':
-              // Per-row colored Tag (e.g. status Healthy/Failed/Pending). The color
-              // rides on the cell so each row can differ — unlike the per-column color.
-              return <Tag color={cellColor ?? color}>{stringValue ?? '-'}</Tag>
+              // Per-row colored Tag (e.g. status Healthy/Failed/Pending). The color rides on
+              // the cell so each row can differ. Resolved to the EXACT Petrol hex soft-tint
+              // (not antd's preset palette) so the status pill is cyan/crimson/magenta/amber.
+              return <Tag style={getTagStyle(cellColor ?? color)}>{stringValue ?? '-'}</Tag>
 
             case 'bar': {
               // Reconciliation-rail gauge cell (desired-vs-actual): cyan CONVERGED fill to
@@ -86,6 +87,26 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
               return (
                 <div className={styles.railBar} style={{ '--rail-rem': barColor } as CSSProperties}>
                   <Progress percent={Number.isFinite(pct) ? pct : 0} showInfo={false} size='small' strokeColor={getColorCode('cyan')} />
+                </div>
+              )
+            }
+
+            case 'conditions': {
+              // The row's REAL status.conditions as small pills, each coloured by its own status
+              // (True=cyan / False=crimson) — replaces a single derived "Healthy/Drift" Tag, so
+              // every condition shows honestly. Passed as a JSON string ([{type,status}]) in
+              // `stringValue` (avoids widening the `arrayValue: string[]` cell type).
+              let conds: { status?: string; type?: string }[] = []
+              try {
+                conds = stringValue ? (JSON.parse(stringValue) as { status?: string; type?: string }[]) : []
+              } catch {
+                conds = []
+              }
+              if (!Array.isArray(conds) || !conds.length) { return <span>-</span> }
+              const tone: Record<string, string> = { False: 'red', True: 'cyan' }
+              return (
+                <div className={styles.conditions}>
+                  {conds.map((cond) => <Tag key={cond.type} style={getTagStyle(tone[cond.status ?? ''] ?? 'gray')}>{cond.type}</Tag>)}
                 </div>
               )
             }

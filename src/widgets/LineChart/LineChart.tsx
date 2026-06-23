@@ -12,22 +12,84 @@ export type LineChartWidgetData = WidgetType['spec']['widgetData']
 
 /**
  * Gradient area fill beneath the line when `widgetData.area` is true: Petrol cyan
- * (healthy/throughput) at ~0.22 alpha, fading to transparent. Theme-aware — resolved
- * from getColorCode('cyan') at render so it follows the light/dark toggle. (G2 parses
+ * (healthy/throughput) at 0.30 alpha, fading to transparent — matches the mockup's
+ * `#petrolFill` gradient (cyan stop-opacity .30 → 0). Theme-aware — resolved from
+ * getColorCode('cyan') at render so it follows the light/dark toggle. (G2 parses
  * the CSS linear-gradient; rgba keeps its colour parser happy — color-mix is not.)
  */
 const cyanAreaFill = (): { style: { fill: string } } => {
   const hex = getColorCode('cyan')
   const channel = (start: number) => parseInt(hex.slice(start, start + 2), 16)
   const rgb = `${channel(1)},${channel(3)},${channel(5)}`
-  return { style: { fill: `linear-gradient(180deg, rgba(${rgb},0.22) 0%, rgba(${rgb},0) 100%)` } }
+  return { style: { fill: `linear-gradient(180deg, rgba(${rgb},0.30) 0%, rgba(${rgb},0) 100%)` } }
 }
 
 /**
  * Centered legend below the chart — G2's legend is keyed by the `color` channel
- * (driven by `colorField`). Keeps the series legend centered under the plot.
+ * (driven by `colorField`). `itemLabelFill` = theme ink so the legend text is legible on
+ * the Petrol void (G2's default is near-black). A function so getColorCode re-evaluates per
+ * render/mode toggle.
  */
-const CENTERED_LEGEND = { color: { layout: { justifyContent: 'center' }, position: 'bottom' } }
+const centeredLegend = () => ({ color: { itemLabelFill: getColorCode('text'), layout: { justifyContent: 'center' }, position: 'bottom' } })
+
+/**
+ * Default axis tick/title fill = theme ink (G2's near-black default is invisible on the
+ * Petrol void). Merged UNDER the CR's own `axis.x`/`axis.y`, so any explicit per-axis
+ * config still wins; preserves any other axis keys the CR set.
+ */
+const axisWithInk = (axis: LineChartWidgetData['axis']) => {
+  const ink = getColorCode('gray')
+  const axisObj = (axis ?? {}) as Record<string, unknown>
+  const merge = (key: 'x' | 'y') => ({ labelFill: ink, titleFill: ink, ...((axisObj[key] as Record<string, unknown> | undefined) ?? {}) })
+  return { ...axisObj, x: merge('x'), y: merge('y') }
+}
+
+/**
+ * Format a UNIX epoch (seconds) to an x-axis label in the BROWSER's local timezone — the fix
+ * for server-side `gmtime|strftime` rendering UTC (a 21:00-Rome bucket showed 19:00). `Date`
+ * accessors (`getHours`) and `toLocaleDateString` both resolve to the local zone (full IANA
+ * rules incl. DST), so this is correct even across a DST boundary inside a 30-day window.
+ * Non-numbers pass through unchanged (already-formatted labels / non-epoch xFields).
+ */
+const formatEpochLabel = (value: unknown, unit: 'hour' | 'day'): unknown => {
+  if (typeof value !== 'number') {
+    return value
+  }
+  const date = new Date(value * 1000)
+  if (unit === 'hour') {
+    return `${String(date.getHours()).padStart(2, '0')}:00`
+  }
+  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+}
+
+/**
+ * Localize every `xField` value (epoch → local label) in the data AND in any annotations that
+ * carry the same field, so the peak `point` (objects with `xField`) and the `lineX` "now" mark
+ * (bare x values) stay aligned to their categorical band after the data is relabelled.
+ */
+const localizeXField = (
+  data: LineChartWidgetData['data'],
+  annotations: LineChartWidgetData['annotations'],
+  xField: string,
+  unit: 'hour' | 'day',
+) => {
+  const fmt = (value: unknown) => formatEpochLabel(value, unit)
+  const localData = data.map((row) => ({ ...row, [xField]: fmt(row[xField]) }))
+  const localAnnotations = annotations?.map((mark) => {
+    const markData = (mark as { data?: unknown }).data
+    if (!Array.isArray(markData)) {
+      return mark
+    }
+    const relabeled = markData.map((item) => {
+      if (item && typeof item === 'object') {
+        return { ...(item as object), [xField]: fmt((item as Record<string, unknown>)[xField]) }
+      }
+      return fmt(item)
+    })
+    return { ...mark, data: relabeled }
+  })
+  return { localAnnotations, localData }
+}
 
 /**
  * Faithful wrapper of the @ant-design/plots `Line` (AntV G2). widgetData maps
@@ -47,19 +109,34 @@ const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
+  // When the CR marks xField as epochs (`xTimeUnit`), relabel data + annotations to the browser's
+  // local timezone here — otherwise pass both through verbatim (server already supplied labels).
+  const { localAnnotations, localData } = widgetData.xTimeUnit
+    ? localizeXField(widgetData.data, widgetData.annotations, widgetData.xField, widgetData.xTimeUnit)
+    : { localAnnotations: widgetData.annotations, localData: widgetData.data }
+
+  // Petrol SERIES colours: map each colorField category → a palette hex (mirrors PieChart.colorMap),
+  // merged into the CR's scale. Without it the LINE + points take G2's default blue, not the brand
+  // cyan — the area fill is already cyan, so the line read "wrong colour vs the render".
+  const { colorMap } = widgetData
+  const scale = colorMap
+    ? { ...widgetData.scale, color: { domain: Object.keys(colorMap), range: Object.keys(colorMap).map((key) => getColorCode(colorMap[key])) } }
+    : widgetData.scale
+
   return (
     <div className={styles.lineChart} ref={ref} style={{ height }}>
       {width > 0 ? (
         <Line
+          annotations={localAnnotations}
           area={widgetData.area ? cyanAreaFill() : undefined}
           autoFit
-          axis={widgetData.axis}
+          axis={axisWithInk(widgetData.axis)}
           colorField={widgetData.colorField}
-          data={widgetData.data}
+          data={localData}
           key={uid}
-          legend={widgetData.legend === false ? false : CENTERED_LEGEND}
+          legend={widgetData.legend === false ? false : centeredLegend()}
           point={widgetData.point}
-          scale={widgetData.scale}
+          scale={scale}
           shapeField={widgetData.shapeField}
           stack={widgetData.stack}
           title={widgetData.title}

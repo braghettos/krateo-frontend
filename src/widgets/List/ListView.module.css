@@ -187,6 +187,22 @@
   height: 100%;
 }
 
+/* Card hover. EVERY tile gets a subtle border-brighten (mockup marketplace `.card:hover` →
+   `--hair-2`) — incl. non-clickable tiles like the Marketplace Install cards. Clickable tiles
+   (whole-card `navigateTo`) get the stronger AMBER border (mockup `.tile:hover`), a clear
+   "this navigates" signal. (The prior 6% bg-tint was near-invisible on the bezel.) */
+.tileCard {
+  transition: border-color 0.12s ease;
+}
+
+.tileCard:hover {
+  border-color: color-mix(in srgb, var(--text-color) 28%, transparent);
+}
+
+.tileCard.clickable:hover {
+  border-color: color-mix(in srgb, var(--amber-color) 55%, transparent);
+}
+
 .cardTop {
   align-items: flex-start;
   display: flex;
@@ -200,17 +216,19 @@
   min-width: 0;
 }
 
-.cardNameRow {
+/* Meta line under the card name: category tag + version badge share one wrapping flex
+   row (mockup `.tile-meta` / `.card-meta`) — name sits alone on the line above. */
+.cardMeta {
   align-items: center;
   display: flex;
-  flex-wrap: nowrap;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   min-width: 0;
 }
 
 .cardName {
   color: var(--text-color);
-  flex: 1;
+  display: block;
   font-weight: var(--font-weight-bold);
   min-width: 0;
   overflow: hidden;
@@ -273,4 +291,25 @@
   display: flex;
   gap: var(--spacing-xs);
   margin-left: auto;
+}
+
+/* Footer-left navigation cue ("Configure →") on clickable cards — mono amber, the arrow
+   slides on card hover (mockup `.configure` + `.tile:hover .arr`). A hint, not a button. */
+.cardCta {
+  align-items: center;
+  color: var(--amber-color);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.cardCtaArrow {
+  transition: transform 0.12s ease;
+}
+
+.tileCard.clickable:hover .cardCtaArrow {
+  transform: translateX(2px);
 }

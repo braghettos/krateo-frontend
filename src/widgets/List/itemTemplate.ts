@@ -54,6 +54,8 @@ export interface ItemTemplate {
   subSecondaryText?: string
   /** Longer body line (2-line clamp) — only rendered by the `card` rowVariant (e.g. a catalog tile description). */
   description?: string
+  /** Card-footer call-to-action cue (e.g. "Configure") shown at the footer-left when the `card` is clickable (`navigateTo`) — rendered as mono amber text + a sliding arrow (a navigation hint, NOT a button). */
+  cardCta?: string
   /** Icon name (font awesome), or a `{path}`. */
   icon?: string
   /**
@@ -111,6 +113,7 @@ export interface ResolvedRow {
   subPrimaryText: string
   subSecondaryText: string
   description: string
+  cardCta: string
   icon: string
   color: string
   /** Resolved navigation target (empty string when the row is not clickable). */
@@ -163,6 +166,7 @@ export const resolveRow = (template: ItemTemplate, item: unknown): ResolvedRow =
       variant: template.bar.variant ?? 'line',
     }
     : undefined,
+  cardCta: interpolate(template.cardCta, item),
   color: resolveColor(template.color, item),
   description: interpolate(template.description, item),
   icon: interpolate(template.icon, item),

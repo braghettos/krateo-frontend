@@ -17,7 +17,9 @@ export type PieChartWidgetData = WidgetType['spec']['widgetData']
  * with the centered donut on whichever axis the legend runs.
  */
 const legendFor = (position: 'bottom' | 'right' | 'top' | 'left' = 'bottom') => ({
-  color: { layout: { justifyContent: 'center' }, position },
+  // itemLabelFill = theme ink: G2's default legend text is near-black → invisible on the
+  // Petrol void. Resolved per render so it follows the light/dark toggle.
+  color: { itemLabelFill: getColorCode('text'), layout: { justifyContent: 'center' }, position },
 })
 
 /**

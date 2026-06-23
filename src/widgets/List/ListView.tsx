@@ -148,6 +148,11 @@ export const ListView = ({
               {rowAction.label}
             </Button>
           ))
+          // Footer-left "Configure →" cue for clickable cards (mockup `.configure`); provider/ns moves right.
+          const ctaCue = row.cardCta && row.navigateTo
+            ? <span className={styles.cardCta}>{row.cardCta}<span className={styles.cardCtaArrow}>→</span></span>
+            : null
+          const provider = row.subSecondaryText ? <span className={styles.cardProvider}>{row.subSecondaryText}</span> : null
           return (
             <AntdList.Item key={`${rowKey}-${index}`}>
               <Card
@@ -159,21 +164,29 @@ export const ListView = ({
                 <div className={styles.cardTop}>
                   {avatar}
                   <div className={styles.cardTitles}>
-                    <div className={styles.cardNameRow}>
-                      <span className={styles.cardName}>{row.primaryText}</span>
-                      {row.subPrimaryText && <span className={styles.verBadge}>{row.subPrimaryText}</span>}
-                    </div>
-                    {row.secondaryText && (
-                      <Tag className={`${styles.tag} ${styles.cardCatTag}`} style={{ backgroundColor: soft, color: colorCode }}>{row.secondaryText}</Tag>
+                    {/* Name alone on the first line; version badge + category tag share the meta line below it. */}
+                    <span className={styles.cardName}>{row.primaryText}</span>
+                    {(row.secondaryText || row.subPrimaryText) && (
+                      <div className={styles.cardMeta}>
+                        {row.secondaryText && (
+                          <Tag className={`${styles.tag} ${styles.cardCatTag}`} style={{ backgroundColor: soft, color: colorCode }}>{row.secondaryText}</Tag>
+                        )}
+                        {row.subPrimaryText && <span className={styles.verBadge}>{row.subPrimaryText}</span>}
+                      </div>
                     )}
                   </div>
                 </div>
                 {/* Always render (even when empty) so the 2-line min-height reserves space → equal-height tiles. */}
                 <div className={styles.cardDesc}>{row.description}</div>
-                {(cardActions.length > 0 || row.subSecondaryText) && (
+                {(cardActions.length > 0 || provider || ctaCue) && (
                   <div className={styles.cardFoot}>
-                    {row.subSecondaryText && <span className={styles.cardProvider}>{row.subSecondaryText}</span>}
-                    <div className={styles.cardFootActions}>{cardActions}</div>
+                    {/* Footer-left: provider/ns. Right group: the "Configure →" cue + any action buttons
+                        (arrow points toward the right edge). */}
+                    {provider}
+                    <div className={styles.cardFootActions}>
+                      {ctaCue}
+                      {cardActions}
+                    </div>
                   </div>
                 )}
               </Card>

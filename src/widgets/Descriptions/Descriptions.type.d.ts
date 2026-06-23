@@ -23,6 +23,10 @@ export interface Descriptions {
        */
       size?: 'default' | 'middle' | 'small'
       /**
+       * rendering style. 'default' = antd Descriptions definition list; 'form' = read-only mirror of the create Form's property layout — each item a connector-rail field (bold label above a mono value), grouped into sections by the item's `section` (nested objects each become a labelled section)
+       */
+      variant?: 'default' | 'form'
+      /**
        * the label/value pairs to display
        */
       items: {
@@ -30,6 +34,10 @@ export interface Descriptions {
          * the label of the item
          */
         label: string
+        /**
+         * (variant:form only) the section this property is grouped under — e.g. a nested object's top-level key; empty/absent = the ungrouped top section
+         */
+        section?: string
         /**
          * the value of the item (rendered as the antd Descriptions item children)
          */

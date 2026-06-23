@@ -47,3 +47,11 @@
   background: var(--amber-color);
   box-shadow: 0 0 5px 1px var(--amber-color);
 }
+
+/* `conditions` cell — the row's real status.conditions as small wrapping pills. */
+.conditions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}

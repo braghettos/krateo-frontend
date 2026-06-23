@@ -119,6 +119,10 @@
                   "type": "string",
                   "description": "longer body line (2-line clamp); only rendered by the card rowVariant (e.g. a catalog tile description)"
                 },
+                "cardCta": {
+                  "type": "string",
+                  "description": "card-footer call-to-action cue (e.g. \"Configure\") shown footer-left when a card rowVariant is clickable (navigateTo); rendered as mono amber text + a sliding arrow (a navigation hint, not a button)"
+                },
                 "icon": {
                   "type": "string"
                 },

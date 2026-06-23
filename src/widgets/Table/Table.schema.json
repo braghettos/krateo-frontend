@@ -97,9 +97,10 @@
                         "icon",
                         "widget",
                         "tag",
-                        "bar"
+                        "bar",
+                        "conditions"
                       ],
-                      "description": "type of cell value. `tag` renders the stringValue as a colored antd Tag (use the cell `color`). `bar` renders a reconciliation-rail Progress gauge (stringValue = percent 0-100, `color` = bar/state color, amber target-tick at 100%)."
+                      "description": "type of cell value. `tag` renders the stringValue as a colored antd Tag (use the cell `color`). `bar` renders a reconciliation-rail Progress gauge (stringValue = percent 0-100, `color` = bar/state color, amber target-tick at 100%). `conditions` renders `arrayValue` (an array of {type,status}) as small status pills, each coloured cyan (True) / crimson (False)."
                     },
                     "color": {
                       "type": "string",

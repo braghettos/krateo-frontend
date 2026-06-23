@@ -45,13 +45,17 @@ interface FormExtraProps {
   // it persists the current field values as-is. Only wired for the inline (non-drawer)
   // render; the drawer omits it.
   onDraft?: (() => void | Promise<void>) | undefined
+  // Disables ONLY the primary (submit) button while leaving Cancel/Reset usable — used by
+  // `submitDisabledWhenPristine` so an unchanged form (e.g. a version picker still on the
+  // current version) can't submit a no-op.
+  submitDisabled?: boolean | undefined
   // Overrides the primary (submit) button label — used by review-before-submit so the
   // Configure step's button reads "Review →" while the final Review-step button keeps
   // the real create label.
   submitLabel?: string | undefined
 }
 
-const FormExtra = ({ buttonConfig, disabled = false, form, loading, onDraft, submitLabel }: FormExtraProps): React.ReactNode => {
+const FormExtra = ({ buttonConfig, disabled = false, form, loading, onDraft, submitDisabled = false, submitLabel }: FormExtraProps): React.ReactNode => {
   const navigate = useNavigate()
   // When `secondary.navigateTo` is set the secondary button is a Cancel that
   // navigates (SPA) instead of resetting the form.
@@ -86,6 +90,7 @@ const FormExtra = ({ buttonConfig, disabled = false, form, loading, onDraft, sub
           {buttonConfig?.secondary?.label || 'Reset'}
         </Button>
         <Button
+          disabled={submitDisabled}
           form={form}
           htmlType='submit'
           icon={buttonConfig?.primary?.icon ? <FontAwesomeIcon icon={buttonConfig?.primary?.icon as IconProp} /> : undefined}
@@ -156,7 +161,7 @@ const ReviewSummary = ({ schema, values }: { schema?: JSONSchema4; values: Recor
  * button runs the same submit action. Default (flag off) is unchanged.
  */
 const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>) => {
-  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, stringSchema, submitActionId } = widgetData
+  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, stringSchema, submitActionId, submitDisabledWhenPristine } = widgetData
   // Prefer `stringSchema` (the schema as a raw JSON STRING) when present: `JSON.parse`
   // preserves the object's key insertion order, so a server that hands us the blueprint's
   // values.schema.json verbatim (e.g. from the per-blueprint jsonschema ConfigMap, which
@@ -189,6 +194,30 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   // In-place Review state: the validated values captured on "Review →" (null = editing).
   const [reviewValues, setReviewValues] = useState<Record<string, unknown> | null>(null)
   const reviewing = !insideDrawer && !!reviewBeforeSubmit && reviewValues !== null
+
+  // Effective initial values = schema defaults overlaid by explicit initialValues — the SAME
+  // object handed to <AntdForm initialValues> below. Factored out so the pristine check compares
+  // against exactly what the form was seeded with.
+  const effectiveInitialValues = useMemo<Record<string, unknown>>(
+    () => (jsonSchema ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues } : (initialValues ?? {})),
+    [jsonSchema, initialValues],
+  )
+
+  // Live form values (re-renders on any field change). Used only to gate the submit button when
+  // `submitDisabledWhenPristine` is set: disabled until at least one field differs from its initial
+  // value — so e.g. a version picker still on the installed version can't submit a no-op update.
+  // `[]` watches the whole store. The store is partial before fields settle, so DIRTY is defined as
+  // "some field has a DEFINED value that differs from its initial" — an absent/undefined value is
+  // treated as unchanged (still pristine), which keeps the button disabled until a real change.
+  const watchedValues = AntdForm.useWatch([], form) as Record<string, unknown> | undefined
+  const submitPristine = useMemo<boolean>(() => {
+    if (!submitDisabledWhenPristine) { return false }
+    const dirty = !!watchedValues && Object.keys(effectiveInitialValues).some((key) => {
+      const current = watchedValues[key]
+      return current !== undefined && JSON.stringify(current) !== JSON.stringify(effectiveInitialValues[key])
+    })
+    return !dirty
+  }, [submitDisabledWhenPristine, watchedValues, effectiveInitialValues])
 
   /* https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button#form */
   const formId = useId()
@@ -317,6 +346,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       form={formId}
       loading={isActionLoading}
       onDraft={onDraft}
+      submitDisabled={submitPristine}
       submitLabel={reviewBeforeSubmit ? (buttonConfig?.review?.label || 'Review →') : undefined}
     />
   )
@@ -334,7 +364,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
           disabled={disabled}
           form={form}
           id={formId}
-          initialValues={jsonSchema ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues } : initialValues}
+          initialValues={effectiveInitialValues}
           layout={layout}
           onFinish={(formValues) => { onFinish(formValues as Record<string, unknown>) }}
           size={size}

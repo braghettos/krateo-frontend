@@ -50,7 +50,7 @@ export interface Table {
         /**
          * type of cell value. `tag` renders the stringValue as a colored antd Tag (use the cell `color`). `bar` renders a reconciliation-rail Progress gauge: `stringValue` = percent (0-100), `color` = bar/state color, + an amber target-tick at 100%.
          */
-        kind: 'jsonSchemaType' | 'icon' | 'widget' | 'tag' | 'bar'
+        kind: 'jsonSchemaType' | 'icon' | 'widget' | 'tag' | 'bar' | 'conditions'
         /**
          * per-cell color — for a `tag` cell, an antd Tag color (e.g. green / red / gold / blue); for a jsonSchemaType cell it overrides the column color. Lets each row carry its own color (e.g. status).
          */

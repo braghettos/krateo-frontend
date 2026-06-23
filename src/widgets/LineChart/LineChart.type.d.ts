@@ -52,6 +52,12 @@ export interface LineChart {
        */
       height?: number
       /**
+       * G2 annotation marks passed through (e.g. a peak `point` marker + a dashed `lineX` "now" line on a throughput chart). Each item is a G2 mark spec; usually computed server-side via a widgetDataTemplate.
+       */
+      annotations?: {
+        [k: string]: unknown
+      }[]
+      /**
        * render a default circle marker at each data point (G2 composed `point` mark). Improves legibility of sparse series.
        */
       point?: boolean
@@ -66,6 +72,16 @@ export interface LineChart {
        */
       axis?: {
         [k: string]: unknown
+      }
+      /**
+       * When set, `xField` values are treated as UNIX epoch SECONDS and formatted to a label in the BROWSER's local timezone at render: 'hour' -> 'HH:00', 'day' -> 'Mon D'. Use this instead of server-side strftime so a 21:00-Rome bucket reads 21:00 (not the server's UTC 19:00). Annotations sharing `xField` are localized identically so peak/now marks stay aligned.
+       */
+      xTimeUnit?: 'hour' | 'day'
+      /**
+       * map each colorField category to a Krateo palette colour name (e.g. {"Created":"cyan"}); sets the G2 color scale domain/range so the line + points render in the brand colour, not G2's default blue palette
+       */
+      colorMap?: {
+        [k: string]: string
       }
       /**
        * live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.

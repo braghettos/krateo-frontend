@@ -31,6 +31,15 @@
   width: 100%;
 }
 
+/* A disabled submit (e.g. submitDisabledWhenPristine while nothing has changed) must READ as
+   disabled: the Petrol amber-wash primary otherwise keeps full amber colour (only the cursor
+   flips to not-allowed). Dim it so the gated state is obvious. Scoped to the form action row,
+   so global buttons are unaffected. */
+.actionRow button:disabled,
+.actionRow button[disabled] {
+  opacity: 0.4;
+}
+
 .loading {
   align-items: center;
   display: flex;

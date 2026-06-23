@@ -400,6 +400,10 @@
               "description": "when true (inline render only), the primary button validates and reveals an in-place read-only Review of the entered values before the real submit — the form stays mounted so 'Back to edit' preserves every value. Pair with buttonConfig.review / buttonConfig.reviewBack for custom labels.",
               "type": "boolean"
             },
+            "submitDisabledWhenPristine": {
+              "description": "when true, the primary (submit) button stays disabled until at least one field differs from its initial value (initialValues overlaid on schema defaults). Use for update forms where submitting an unchanged value is a no-op — e.g. a version picker pre-set to the currently-installed version.",
+              "type": "boolean"
+            },
             "submitActionId": {
               "description": "the id of the action to be called when the form is submitted",
               "type": "string"

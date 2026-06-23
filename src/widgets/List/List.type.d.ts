@@ -65,6 +65,10 @@ export interface List {
          * longer body line (2-line clamp); only rendered by the card rowVariant (e.g. a catalog tile description)
          */
         description?: string
+        /**
+         * card-footer call-to-action cue (e.g. "Configure") shown footer-left when a card rowVariant is clickable (navigateTo); rendered as mono amber text + a sliding arrow (a navigation hint, not a button)
+         */
+        cardCta?: string
         icon?: string
         /**
          * leading-indicator style: avatar (solid disc + glyph, default), tile (soft-tint rounded square + glyph), dot (small status dot + halo)

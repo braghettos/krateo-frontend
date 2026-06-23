@@ -302,6 +302,10 @@ export interface Form {
        */
       reviewBeforeSubmit?: boolean
       /**
+       * when true, the primary (submit) button stays disabled until at least one field differs from its initial value (initialValues overlaid on schema defaults). Use for update forms where submitting an unchanged value is a no-op — e.g. a version picker pre-set to the currently-installed version.
+       */
+      submitDisabledWhenPristine?: boolean
+      /**
        * the id of the action to be called when the form is submitted
        */
       submitActionId: string

@@ -36,6 +36,11 @@
               "enum": ["default", "middle", "small"],
               "description": "the size of the description list"
             },
+            "variant": {
+              "type": "string",
+              "enum": ["default", "form"],
+              "description": "rendering style. 'default' = antd Descriptions definition list; 'form' = read-only mirror of the create Form's property layout — each item a connector-rail field (bold label above a mono value), grouped into sections by the item's `section` (nested objects each become a labelled section)"
+            },
             "items": {
               "type": "array",
               "description": "the label/value pairs to display",
@@ -47,6 +52,10 @@
                   "label": {
                     "type": "string",
                     "description": "the label of the item"
+                  },
+                  "section": {
+                    "type": "string",
+                    "description": "(variant:form only) the section this property is grouped under — e.g. a nested object's top-level key; empty/absent = the ungrouped top section"
                   },
                   "value": {
                     "type": "string",
