@@ -4,17 +4,17 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: buttons.widgets.templates.krateo.io
+  name: lists.widgets.templates.krateo.io
 spec:
   group: widgets.templates.krateo.io
   names:
     categories:
     - widgets
     - krateo
-    kind: Button
-    listKind: ButtonList
-    plural: buttons
-    singular: button
+    kind: List
+    listKind: ListList
+    plural: lists
+    singular: list
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -153,7 +153,8 @@ spec:
               widgetData:
                 properties:
                   actions:
-                    description: the actions of the widget
+                    description: the actions of the widget (canonical map; see src/schemas/actions.schema.json).
+                      Referenced per-row by itemTemplate.rowActions.
                     properties:
                       navigate:
                         description: client-side navigation actions
@@ -383,90 +384,265 @@ spec:
                           type: object
                         type: array
                     type: object
-                  block:
-                    description: antd Button block (full width)
+                  bordered:
+                    description: antd List bordered
                     type: boolean
-                  clickActionId:
-                    description: the id of the action to be executed when the button
-                      is clicked
+                  dataSource:
+                    description: antd List dataSource. Each element is a data object
+                      (rendered via itemTemplate) or { resourceRefId } (rendered as
+                      a child widget).
+                    items:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    type: array
+                  footer:
+                    description: antd List footer (ReactNode in antd; string here)
                     type: string
-                  color:
-                    description: antd Button color (pair with `variant`)
+                  grid:
+                    description: antd List grid layout (ListGridType); presence enables
+                      grid mode
+                    properties:
+                      column:
+                        format: int32
+                        type: integer
+                      gutter:
+                        format: int32
+                        type: integer
+                      lg:
+                        format: int32
+                        type: integer
+                      md:
+                        format: int32
+                        type: integer
+                      sm:
+                        format: int32
+                        type: integer
+                      xl:
+                        format: int32
+                        type: integer
+                      xs:
+                        format: int32
+                        type: integer
+                      xxl:
+                        format: int32
+                        type: integer
+                    type: object
+                  header:
+                    description: antd List header (ReactNode in antd; string here)
+                    type: string
+                  itemLayout:
+                    description: antd List itemLayout
                     enum:
-                    - default
-                    - primary
-                    - danger
-                    - blue
-                    - purple
-                    - cyan
-                    - green
-                    - magenta
-                    - pink
-                    - red
-                    - orange
-                    - yellow
-                    - volcano
-                    - geekblue
-                    - lime
-                    - gold
+                    - horizontal
+                    - vertical
                     type: string
-                  danger:
-                    description: antd Button danger
+                  itemTemplate:
+                    description: 'serializable substitute for antd renderItem: maps
+                      a data element''s fields to row slots ({dot.path}; {a|b} first-non-empty)'
+                    properties:
+                      bar:
+                        description: 'per-row horizontal Progress bar (the reconciliation-rail
+                          row): an antd Progress line whose percent + stroke colour
+                          are resolved per item'
+                        properties:
+                          color:
+                            properties:
+                              default:
+                                type: string
+                              map:
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
+                              value:
+                                type: string
+                            type: object
+                          label:
+                            description: optional trailing {dot.path} label (e.g.
+                              the % text or 7/7)
+                            type: string
+                          percent:
+                            description: '{dot.path} to a 0-100 number (e.g. {healthPercent})'
+                            type: string
+                          variant:
+                            enum:
+                            - line
+                            - rail
+                            type: string
+                        type: object
+                      cardCta:
+                        description: card-footer call-to-action cue (e.g. "Configure")
+                          shown footer-left when a card rowVariant is clickable (navigateTo);
+                          rendered as mono amber text + a sliding arrow (a navigation
+                          hint, not a button)
+                        type: string
+                      color:
+                        properties:
+                          default:
+                            type: string
+                          map:
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                          value:
+                            type: string
+                        type: object
+                      description:
+                        description: longer body line (2-line clamp); only rendered
+                          by the card rowVariant (e.g. a catalog tile description)
+                        type: string
+                      formats:
+                        properties:
+                          primaryText:
+                            enum:
+                            - text
+                            - datetime
+                            - relative
+                            type: string
+                          secondaryText:
+                            enum:
+                            - text
+                            - datetime
+                            - relative
+                            type: string
+                          subPrimaryText:
+                            enum:
+                            - text
+                            - datetime
+                            - relative
+                            type: string
+                          subSecondaryText:
+                            enum:
+                            - text
+                            - datetime
+                            - relative
+                            type: string
+                        type: object
+                      icon:
+                        type: string
+                      iconVariant:
+                        description: 'leading-indicator style: avatar (solid disc
+                          + glyph, default), tile (soft-tint rounded square + glyph),
+                          dot (small status dot + halo)'
+                        enum:
+                        - avatar
+                        - tile
+                        - dot
+                        type: string
+                      navigateTo:
+                        description: per-item navigation target ({dot.path} template,
+                          e.g. {link}); when it resolves non-empty the row becomes
+                          clickable and navigates there (SPA route)
+                        type: string
+                      primaryText:
+                        type: string
+                      rowActions:
+                        description: per-row action controls rendered as a kebab (⋯)
+                          menu on each row; each entry references an action id from
+                          widgetData.actions and is fired with the row's data as the
+                          action payload (customPayload). Distinct from navigateTo
+                          (whole-row click).
+                        items:
+                          properties:
+                            actionId:
+                              description: id of an action defined in widgetData.actions
+                                to fire when this menu item is clicked
+                              type: string
+                            danger:
+                              description: render the menu item in a destructive (red)
+                                style
+                              type: boolean
+                            icon:
+                              description: optional Font Awesome icon name for the
+                                menu item
+                              type: string
+                            label:
+                              description: menu item label
+                              type: string
+                          required:
+                          - actionId
+                          - label
+                          type: object
+                        type: array
+                      rowVariant:
+                        description: 'row layout: default (antd List.Item.Meta — avatar
+                          + stacked title/description) | tree (tight single-line mono
+                          Relations row: connector + status dot + primaryText + muted
+                          inline subPrimaryText + right-aligned colored secondaryText)
+                          | card (full antd Card tile — icon-tile + name + version
+                          badge (subPrimaryText) + category tag (secondaryText) +
+                          description + a footer of rowActions as visible buttons
+                          — the Marketplace catalog grid)'
+                        enum:
+                        - default
+                        - tree
+                        - card
+                        type: string
+                      secondaryText:
+                        type: string
+                      secondaryTextAsTag:
+                        description: render secondaryText as a soft-tint Tag pill
+                          (e.g. a category) instead of plain text
+                        type: boolean
+                      subPrimaryText:
+                        type: string
+                      subPrimaryTextMono:
+                        description: render subPrimaryText as a small mono bordered
+                          pill (e.g. an event involvedObject Kind/name ref) instead
+                          of plain sub-text
+                        type: boolean
+                      subSecondaryText:
+                        type: string
+                    type: object
+                  loading:
+                    description: antd List loading
                     type: boolean
-                  disabled:
-                    description: antd Button disabled
-                    type: boolean
-                  ghost:
-                    description: antd Button ghost
-                    type: boolean
-                  icon:
-                    description: 'the icon of the button (font awesome icon name eg:
-                      `fa-inbox`)'
-                    type: string
-                  iconColor:
-                    description: palette color name (e.g. green / orange / red / cyan)
-                      applied to the icon independently of the button color — e.g.
-                      a leading fa-circle status dot on a filter chip
-                    type: string
-                  label:
-                    description: the label of the button
-                    type: string
-                  shape:
-                    description: the shape of the button
-                    enum:
-                    - default
-                    - circle
-                    - round
+                  maxItems:
+                    description: max items kept when streaming (Krateo extension,
+                      default 200)
+                    format: int32
+                    type: integer
+                  prefix:
+                    description: Filters prefix (Krateo extension)
                     type: string
                   size:
-                    description: the size of the button
-                    enum:
-                    - small
-                    - middle
-                    - large
-                    type: string
-                  type:
-                    description: the visual style of the button
+                    description: antd List size
                     enum:
                     - default
-                    - text
-                    - link
-                    - primary
-                    - dashed
+                    - large
+                    - small
                     type: string
-                  variant:
-                    description: antd Button variant (pair with `color`)
-                    enum:
-                    - outlined
-                    - dashed
-                    - solid
-                    - filled
-                    - text
-                    - link
+                  split:
+                    description: antd List split
+                    type: boolean
+                  sseEndpoint:
+                    description: optional SSE endpoint to stream items from (Krateo
+                      extension)
                     type: string
-                required:
-                - actions
-                - clickActionId
+                  sseTopic:
+                    description: optional SSE subscription topic (Krateo extension)
+                    type: string
+                  watch:
+                    description: 'live-refresh watch: involvedObject(s) this widget
+                      is tied to (see src/schemas/watch.schema.json). A matching k8s
+                      event refetches the widget.'
+                    items:
+                      properties:
+                        apiVersion:
+                          description: group/version, e.g. composition.krateo.io/v1alpha1
+                          type: string
+                        kind:
+                          description: e.g. DemoClaim
+                          type: string
+                        name:
+                          description: a specific object; omit to match any object
+                            of this kind ("GVR-level")
+                          type: string
+                        namespace:
+                          description: scope to a namespace; omit to match any
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      type: object
+                    type: array
                 type: object
               widgetDataTemplate:
                 items:

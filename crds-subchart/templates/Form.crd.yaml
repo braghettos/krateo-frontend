@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -346,10 +344,6 @@ spec:
                               description: static payload sent with the request
                               type: object
                               x-kubernetes-preserve-unknown-fields: true
-                            payloadKey:
-                              description: '***DEPRECATED*** key used to nest the
-                                payload in the request body'
-                              type: string
                             payloadToOverride:
                               description: list of payload fields to override dynamically
                               items:
@@ -390,38 +384,21 @@ spec:
                           type: object
                         type: array
                     type: object
-                  autocomplete:
-                    description: Configuration for the Autocomplete form fields. The
-                      field options could be configured using enum values coming from
-                      the schema or via an API call made using a RESTAction which
-                      sould be defined below. The RESTActions shuold contain a `status`
-                      field, which is an array of object with the `{ label, value
-                      }` format.
-                    items:
-                      properties:
-                        extra:
-                          description: parameter to be added to the RESTAction call
-                          properties:
-                            key:
-                              description: the key of the additional parameter
-                              type: string
-                          required:
-                          - key
-                          type: object
-                        name:
-                          description: the name of the autocomplete field
-                          type: string
-                        resourceRefId:
-                          description: the identifier of the RESTAction that should
-                            be called to retrieve autocomplete data
-                          type: string
-                      required:
-                      - name
-                      type: object
-                    type: array
                   buttonConfig:
                     description: custom labels and icons for form buttons
                     properties:
+                      draft:
+                        description: draft button configuration — only rendered when
+                          widgetData.draftActionId is also set; clicking it persists
+                          the current (un-validated) field values via that action
+                        properties:
+                          icon:
+                            description: icon name for draft button
+                            type: string
+                          label:
+                            description: text label for draft button
+                            type: string
+                        type: object
                       primary:
                         description: primary button configuration
                         properties:
@@ -430,6 +407,23 @@ spec:
                             type: string
                           label:
                             description: text label for primary button
+                            type: string
+                        type: object
+                      review:
+                        description: Configure-step button label when reviewBeforeSubmit
+                          is set (the button that opens the in-place Review; default
+                          'Review →')
+                        properties:
+                          label:
+                            description: text label for the Review button
+                            type: string
+                        type: object
+                      reviewBack:
+                        description: Review-step back button label when reviewBeforeSubmit
+                          is set (returns to editing; default '← Back to edit')
+                        properties:
+                          label:
+                            description: text label for the back-to-edit button
                             type: string
                         type: object
                       secondary:
@@ -441,56 +435,21 @@ spec:
                           label:
                             description: text label for secondary button
                             type: string
+                          navigateTo:
+                            description: when set, the secondary button is a Cancel
+                              that navigates to this route (SPA) instead of resetting
+                              the form
+                            type: string
                         type: object
                     type: object
-                  dependencies:
-                    description: Configuration for the form fields who are dependent
-                      from other form fields. The field options are set via an API
-                      call made using a RESTAction which sould be defined below. The
-                      RESTActions shuold contain a `status` field, which is an array
-                      of object with the `{ label, value }` format.
-                    items:
-                      properties:
-                        dependsOn:
-                          description: the field on which this field depends on
-                          properties:
-                            name:
-                              description: the name of the field on which this field
-                                depends on
-                              type: string
-                          required:
-                          - name
-                          type: object
-                        extra:
-                          description: parameter to be added to the RESTAction call
-                          properties:
-                            key:
-                              description: the key of the additional parameter
-                              type: string
-                          required:
-                          - key
-                          type: object
-                        name:
-                          description: the name of the autocomplete field
-                          type: string
-                        resourceRefId:
-                          description: the identifier of the RESTAction that should
-                            be called to retrieve dependency data
-                          type: string
-                      required:
-                      - dependsOn
-                      - extra
-                      - name
-                      - resourceRefId
-                      type: object
-                    type: array
-                  fieldDescription:
-                    default: inline
-                    description: the displaying mode of the field description, default
-                      is inline but it could also be displayed as a tooltip
-                    enum:
-                    - tooltip
-                    - inline
+                  disabled:
+                    description: antd Form disabled (disables all fields)
+                    type: boolean
+                  draftActionId:
+                    description: optional id of an action fired by a 'Save draft'
+                      button that captures the CURRENT field values WITHOUT running
+                      form validation (so an incomplete form can be persisted). Pair
+                      with buttonConfig.draft to show the button.
                     type: string
                   initialValues:
                     description: optional object with initial values for form fields.
@@ -498,32 +457,78 @@ spec:
                       These values override schema defaults.
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
-                  objectFields:
-                    description: configuration for object fields in the form
+                  items:
+                    description: resourceRefIds of form-control widgets (Input, Select,
+                      Switch, …) to compose inside the Form. Composable mode — an
+                      alternative to the schema/stringSchema generator.
                     items:
                       properties:
-                        displayField:
-                          description: the field to display in the objects list
-                          type: string
-                        path:
-                          description: the path of the object field
+                        resourceRefId:
+                          description: the identifier of the form-control widget to
+                            render
                           type: string
                       required:
-                      - displayField
-                      - path
+                      - resourceRefId
                       type: object
                     type: array
+                  layout:
+                    description: antd Form layout
+                    enum:
+                    - horizontal
+                    - vertical
+                    - inline
+                    type: string
+                  propertiesToHide:
+                    description: top-level schema property names to omit from the
+                      schema-driven form
+                    items:
+                      type: string
+                    type: array
+                  reviewBeforeSubmit:
+                    description: when true (inline render only), the primary button
+                      validates and reveals an in-place read-only Review of the entered
+                      values before the real submit — the form stays mounted so 'Back
+                      to edit' preserves every value. Pair with buttonConfig.review
+                      / buttonConfig.reviewBack for custom labels.
+                    type: boolean
                   schema:
-                    description: the schema of the form as an object
+                    description: 'JSON schema (e.g. a blueprint CRD''s openAPIV3Schema
+                      spec) rendered as form fields — the schema-driven alternative
+                      to `items`. Usually populated server-side via a widgetDataTemplate
+                      jq expression that extracts the spec schema. Note: a schema
+                      sourced from a CRD''s openAPIV3Schema has its `properties` map
+                      serialized alphabetically (order lost); use `stringSchema` to
+                      preserve the source values.schema.json authoring order.'
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
+                  size:
+                    description: antd Form size
+                    enum:
+                    - small
+                    - middle
+                    - large
+                    type: string
                   stringSchema:
-                    description: the schema of the form as a string
+                    description: 'Same JSON schema as `schema`, but as a raw JSON
+                      STRING. Preferred over `schema` when present: the client JSON.parses
+                      it, preserving key insertion order, so fields render in the
+                      source values.schema.json order rather than the alphabetized
+                      order a CRD-sourced object schema yields. Typically populated
+                      server-side from the blueprint''s per-version jsonschema ConfigMap
+                      (which keeps authoring order). Falls back to `schema` when absent
+                      or not valid JSON.'
                     type: string
                   submitActionId:
                     description: the id of the action to be called when the form is
                       submitted
                     type: string
+                  submitDisabledWhenPristine:
+                    description: when true, the primary (submit) button stays disabled
+                      until at least one field differs from its initial value (initialValues
+                      overlaid on schema defaults). Use for update forms where submitting
+                      an unchanged value is a no-op — e.g. a version picker pre-set
+                      to the currently-installed version.
+                    type: boolean
                 required:
                 - actions
                 - submitActionId

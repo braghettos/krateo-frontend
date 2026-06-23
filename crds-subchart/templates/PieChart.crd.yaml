@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -153,55 +151,93 @@ spec:
                   type: object
                 type: array
               widgetData:
+                description: '@ant-design/charts Pie config (AntV G2)'
                 properties:
-                  description:
-                    description: supplementary text displayed below or near the title
+                  angleField:
+                    description: field mapped to the slice value / angle (G2 `angleField`)
                     type: string
-                  series:
-                    description: data to be visualized in the pie chart
-                    properties:
-                      data:
-                        description: individual segments of the pie chart
-                        items:
-                          properties:
-                            color:
-                              description: color used to represent the segment
-                              enum:
-                              - blue
-                              - darkBlue
-                              - orange
-                              - gray
-                              - red
-                              - green
-                              - violet
-                              type: string
-                            label:
-                              description: label for the segment
-                              type: string
-                            value:
-                              description: numeric value for the segment
-                              format: int32
-                              type: integer
-                          required:
-                          - color
-                          - label
-                          - value
-                          type: object
-                        type: array
-                      total:
-                        description: sum of all data values, used to calculate segment
-                          sizes
-                        format: int32
-                        type: integer
-                    required:
-                    - data
-                    - total
+                  annotations:
+                    description: G2 annotations passed through (e.g. a donut center
+                      `text` annotation positioned at x/y 50%)
+                    items:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    type: array
+                  colorField:
+                    description: field mapped to color / category (G2 `colorField`)
+                    type: string
+                  colorMap:
+                    description: map each colorField category to a Krateo palette
+                      color name (e.g. {"Healthy":"green","Failed":"red"}); sets the
+                      G2 color scale domain/range for semantic slice colors
                     type: object
-                  title:
-                    description: title displayed above the chart
+                    x-kubernetes-preserve-unknown-fields: true
+                  data:
+                    description: chart data records (G2 `data`)
+                    items:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    type: array
+                  height:
+                    description: fixed height in px (G2 `height`); omit to autofit
+                    format: int32
+                    type: integer
+                  innerRadius:
+                    description: donut hole as a percentage of the radius, 0-100 (maps
+                      to antd Pie `innerRadius` ÷ 100); omit for a full pie
+                    format: int32
+                    type: integer
+                  label:
+                    description: per-slice label config passed through to G2 (e.g.
+                      {"text":"count","position":"inside"}); omit for no slice labels
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  legend:
+                    description: show the legend; false hides it (G2 `legend`). When
+                      shown it is rendered centered, positioned per legendPosition
+                      (default below the chart).
+                    type: boolean
+                  legendPosition:
+                    description: where the legend sits relative to the chart (G2 legend
+                      position). Default bottom; right stacks it beside the donut
+                      (status-breakdown layout)
+                    enum:
+                    - bottom
+                    - right
+                    - top
+                    - left
                     type: string
+                  title:
+                    description: chart title (G2 `title`)
+                    type: string
+                  watch:
+                    description: 'live-refresh watch: involvedObject(s) this widget
+                      is tied to (see src/schemas/watch.schema.json). A matching k8s
+                      event refetches the widget.'
+                    items:
+                      properties:
+                        apiVersion:
+                          description: group/version, e.g. composition.krateo.io/v1alpha1
+                          type: string
+                        kind:
+                          description: e.g. DemoClaim
+                          type: string
+                        name:
+                          description: a specific object; omit to match any object
+                            of this kind ("GVR-level")
+                          type: string
+                        namespace:
+                          description: scope to a namespace; omit to match any
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      type: object
+                    type: array
                 required:
-                - title
+                - angleField
+                - colorField
+                - data
                 type: object
               widgetDataTemplate:
                 items:

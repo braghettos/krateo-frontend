@@ -4,17 +4,17 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: blueprintbuilders.widgets.templates.krateo.io
+  name: progresses.widgets.templates.krateo.io
 spec:
   group: widgets.templates.krateo.io
   names:
     categories:
     - widgets
     - krateo
-    kind: BlueprintBuilder
-    listKind: BlueprintBuilderList
-    plural: blueprintbuilders
-    singular: blueprintbuilder
+    kind: Progress
+    listKind: ProgressList
+    plural: progresses
+    singular: progress
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -86,7 +86,6 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - page
                           - perPage
                           type: object
                         verb:
@@ -115,7 +114,6 @@ spec:
                         format: int32
                         type: integer
                     required:
-                    - page
                     - perPage
                     type: object
                 required:
@@ -154,71 +152,60 @@ spec:
                 type: array
               widgetData:
                 properties:
-                  availableResources:
-                    description: List of Kubernetes resource types available for use
-                      as nodes in the builder
-                    items:
-                      properties:
-                        apiVersion:
-                          description: Kubernetes API version (e.g. apps/v1, v1)
-                          type: string
-                        category:
-                          description: Resource category for grouping in the palette
-                          enum:
-                          - workloads
-                          - networking
-                          - config
-                          - storage
-                          - rbac
-                          - custom
-                          type: string
-                        icon:
-                          description: FontAwesome icon class name (e.g. fa-cubes)
-                          type: string
-                        kind:
-                          description: Kubernetes resource kind (e.g. Deployment,
-                            Service)
-                          type: string
-                        schema:
-                          description: OpenAPI-style JSON schema for this resource
-                            kind, read from the API server. Properties describe the
-                            spec fields available for configuration.
-                          properties:
-                            description:
-                              type: string
-                            properties:
-                              type: object
-                              x-kubernetes-preserve-unknown-fields: true
-                            required:
-                              items:
-                                type: string
-                              type: array
-                            type:
-                              type: string
-                          type: object
-                          x-kubernetes-preserve-unknown-fields: true
-                      required:
-                      - apiVersion
-                      - category
-                      - kind
-                      type: object
-                    type: array
-                  chartDefaults:
-                    description: Default values for the Helm chart metadata
-                    properties:
-                      appVersion:
-                        description: Default application version
-                        type: string
-                      description:
-                        description: Default chart description
-                        type: string
-                      name:
-                        description: Default chart name
-                        type: string
-                      version:
-                        description: Default chart version
-                        type: string
-                    type: object
+                  description:
+                    description: optional secondary readout (muted graphite) rendered
+                      under `label` (e.g. "all conditions True")
+                    type: string
+                  label:
+                    description: optional primary readout rendered below the indicator,
+                      tinted in the strokeColor (e.g. a circle gauge's "Healthy ·
+                      100% converged" headline)
+                    type: string
+                  percent:
+                    description: the completion percentage (0-100)
+                    format: int32
+                    type: integer
+                  showInfo:
+                    description: whether to display the progress value text
+                    type: boolean
+                  size:
+                    description: the size of the progress indicator
+                    enum:
+                    - default
+                    - small
+                    type: string
+                  status:
+                    description: the status of the progress indicator
+                    enum:
+                    - success
+                    - exception
+                    - normal
+                    - active
+                    type: string
+                  steps:
+                    description: render the progress as a discrete number of steps
+                    format: int32
+                    type: integer
+                  strokeColor:
+                    description: the color of the progress stroke
+                    enum:
+                    - blue
+                    - darkBlue
+                    - orange
+                    - gray
+                    - red
+                    - green
+                    - violet
+                    type: string
+                  type:
+                    description: the visual type of the progress indicator
+                    enum:
+                    - line
+                    - circle
+                    - dashboard
+                    type: string
+                required:
+                - percent
                 type: object
               widgetDataTemplate:
                 items:
