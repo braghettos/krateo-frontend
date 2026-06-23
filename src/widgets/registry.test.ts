@@ -30,7 +30,7 @@ for (const raw of Object.values(exampleFiles)) {
 /** Every antd-mapped widget kind (legacy aliases removed; structural kinds excluded). */
 const KNOWN_KINDS = [
   'BarChart', 'Button', 'ButtonGroup', 'Card', 'Col',
-  'EventList', 'Filters', 'Flex', 'FlowChart', 'Form', 'LineChart', 'List', 'Markdown',
+  'EventList', 'Filters', 'Flex', 'FlowChart', 'Form', 'LineChart', 'Listy', 'Markdown',
   'Menu', 'Paragraph', 'PieChart', 'Row',
   'Table', 'Tabs', 'YamlViewer',
 ]
@@ -67,8 +67,8 @@ describe('widgetRegistry', () => {
     }
   })
 
-  it('marks List as paginated', () => {
-    expect(widgetRegistry.List?.paginated).toBe(true)
+  it('marks Listy as paginated', () => {
+    expect(widgetRegistry.Listy?.paginated).toBe(true)
   })
 
   it('does not resolve legacy kind aliases (hard-break)', () => {

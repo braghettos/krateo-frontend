@@ -1,7 +1,7 @@
 # Data list (rows from data via itemTemplate) — antd List API
 # Target: arbitrary objects mapped to rows; antd `bordered` + `size` honored.
 # Expected behavior: three bordered rows; avatar color from `severity` via the map.
-kind: List
+kind: Listy
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-list-rows
@@ -30,7 +30,7 @@ spec:
 # Grid of child widgets (replaces DataGrid) — antd List `grid` API
 # Target: dataSource elements carrying resourceRefId render as child widgets in a grid.
 # Expected behavior: responsive grid (1/2/3 columns) of the referenced widgets.
-kind: List
+kind: Listy
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-list-grid
@@ -51,7 +51,7 @@ spec:
 # Streaming list (Server-Sent Events) — Krateo extension
 # Target: items arrive from an SSE topic, capped at 50.
 # Expected behavior: loading until the first event, then prepends rows.
-kind: List
+kind: Listy
 apiVersion: widgets.templates.krateo.io/v1beta1
 metadata:
   name: example-list-streaming
