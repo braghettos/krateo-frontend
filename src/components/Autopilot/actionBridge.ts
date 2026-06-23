@@ -15,15 +15,76 @@
  *     stripped here). The fenced channel needs only a system-prompt addition.
  */
 
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import { useHandleAction } from '../../hooks/useHandleActions'
-import type { ResourcesRefs } from '../../types/Widget'
+import type { ResourcesRefs, WidgetAction } from '../../types/Widget'
 
 import type { AutopilotActionChip } from './types'
 
 /** navigate needs no page refs; openDrawer/openModal will pass resolved refs. */
 const EMPTY_REFS: ResourcesRefs = { items: [] }
+
+const MUTATING_VERBS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+const asRec = (value: unknown): Record<string, unknown> | undefined =>
+  (value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined)
+
+/** The widget cache is useInfiniteQuery — entries are `{ pages: Widget[], … }`.
+ * Unwrap the last page (fullest cumulative state) before reading the widget. */
+const unwrapWidget = (data: unknown): unknown => {
+  const pages = asRec(data)?.pages
+  return Array.isArray(pages) && pages.length ? pages[pages.length - 1] : data
+}
+
+/**
+ * Find a REAL on-screen action (+ its resolved refs) in the live widget cache, by
+ * the widget's name and the action id. Returns null when absent — a hallucinated
+ * control is therefore a no-op, never a synthesized call.
+ */
+const lookupAction = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  widgetName: string | undefined,
+  actionId: string | undefined,
+): { action: WidgetAction; resourcesRefs: ResourcesRefs } | null => {
+  if (!widgetName || !actionId) {
+    return null
+  }
+  const entries = queryClient.getQueriesData<unknown>({ queryKey: ['widgets'] })
+  for (const [, data] of entries) {
+    const root = asRec(unwrapWidget(data))
+    if (asRec(root?.metadata)?.name !== widgetName) {
+      continue
+    }
+    // Read the RESOLVED status (widgetData + resourcesRefs, like WidgetRenderer), so
+    // a templated action's refs (e.g. server-resolved toggle-pause-composition) are
+    // present; spec.* holds the empty pre-template values. Falls back to spec.
+    const status = asRec(root?.status)
+    const spec = asRec(root?.spec)
+    const actionsMap = asRec(asRec(status?.widgetData)?.actions ?? asRec(spec?.widgetData)?.actions)
+    for (const arr of Object.values(actionsMap ?? {})) {
+      if (!Array.isArray(arr)) {
+        continue
+      }
+      const list: unknown[] = arr
+      const match = list.find((entry) => asRec(entry)?.id === actionId)
+      if (match) {
+        const refs = asRec(status?.resourcesRefs) ?? asRec(spec?.resourcesRefs)
+        return { action: match as WidgetAction, resourcesRefs: (refs ?? { items: [] }) as ResourcesRefs }
+      }
+    }
+  }
+  return null
+}
+
+/** The verb a real action will fire (from its resolved resourceRef; GET for navigate). */
+const verbOf = (action: WidgetAction, resourcesRefs: ResourcesRefs): string => {
+  const ref = action.resourceRefId
+    ? resourcesRefs.items.find((item) => item.id === action.resourceRefId)
+    : undefined
+  return ref?.verb ?? (action.type === 'navigate' ? 'GET' : 'POST')
+}
 
 export interface PortalActionProposal {
   /** One of the read-only verbs; anything else is denied. */
@@ -36,6 +97,9 @@ export interface PortalActionProposal {
   resourceRefId?: string
   /** prefillForm: field-name → value to merge into the mounted create Form. */
   values?: Record<string, unknown>
+  /** runAction: the widget name + action id of a REAL on-screen control to drive. */
+  widget?: string
+  actionId?: string
   title?: string
   /** Human-readable label for the auto-applied action chip. */
   label?: string
@@ -75,6 +139,7 @@ export const PORTAL_CAPABILITIES_PROMPT = [
   '```',
   'Read-only verbs: navigate (route, e.g. /compositions/<ns>/<name>, /blueprints, /marketplace, /dashboard, /settings); setExtras (an extras object with status/range/q to scope the current list).',
   'When a create Form is on screen (its field names are listed in the page context), you MAY PRE-FILL it for the user with verb "prefillForm" and a `values` object keyed by those field names, e.g. {"verb":"prefillForm","values":{"name":"demo-db","namespace":"krateo-system"},"label":"drafted the form"}. This only fills the fields — the user still reviews and presses Create themselves. NEVER submit; never invent values for fields you were not given.',
+  'To run a control ALREADY on the page (e.g. Sync, Pause/Resume, Edit, Delete), use verb "runAction" with the `widget` (its name) and `actionId` from the page context, e.g. {"verb":"runAction","widget":"composition-detail-pause","actionId":"toggle-pause","label":"Resume reconciliation"}. You drive the real control; a mutating action (PATCH/POST/PUT/DELETE) ALWAYS asks the user to confirm before it runs. Only run actions present in the page context — never invent a widget or actionId.',
   'This drives the real UI (read-only) — it is NOT a platform change. Emit at most one block per reply and still explain briefly in prose. Only propose routes/entities/fields present in the page context.',
   'You MAY also suggest up to 3 short, specific follow-up actions the user might take next (referencing on-screen entities) by emitting:',
   '```portal-suggest',
@@ -177,8 +242,27 @@ export const parseAutopilotDirectives = (text: string): AutopilotDirectives => {
  */
 export const useAutopilotActionBridge = () => {
   const { handleAction } = useHandleAction()
+  const queryClient = useQueryClient()
 
   const apply = useCallback(async (proposal: PortalActionProposal): Promise<AutopilotActionChip | null> => {
+    // runAction: drive a REAL on-screen control (Sync/Pause/Edit/Delete) through the
+    // SAME useHandleAction dispatcher the button uses — never a synthesized call. On a
+    // mutating verb, requireConfirmation is FORCED (never trusted from the model), so the
+    // dispatcher's own modal.confirm is the binding HITL gate; the user confirms.
+    if (proposal.verb === 'runAction') {
+      const found = lookupAction(queryClient, proposal.widget, proposal.actionId)
+      if (!found) {
+        return null
+      }
+      const verb = verbOf(found.action, found.resourcesRefs)
+      const mutating = MUTATING_VERBS.has(verb)
+      const toDispatch = mutating && found.action.type === 'rest'
+        ? { ...found.action, requireConfirmation: true }
+        : found.action
+      await handleAction(toDispatch, found.resourcesRefs)
+      return { label: proposal.label ?? `${verb} ${proposal.widget ?? ''}`.trim(), readOnly: !mutating, verb: 'runAction' }
+    }
+
     // Deny-by-default: only the read-only verbs are ever executed.
     if (!READONLY_VERBS.has(proposal.verb)) {
       return null
@@ -209,7 +293,7 @@ export const useAutopilotActionBridge = () => {
     // allowed resourcesRefs (collected from the widget cache). Deferred to the next
     // increment; returning null keeps deny-by-default honest (no silent fake).
     return null
-  }, [handleAction])
+  }, [handleAction, queryClient])
 
   return { apply }
 }

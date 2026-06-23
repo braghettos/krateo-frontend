@@ -24,6 +24,13 @@ const MAX_WIDGETS = 40
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   (value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined)
 
+/** The widget cache uses useInfiniteQuery, so each entry is `{ pages: Widget[], … }`
+ * (cumulative-slice pagination). Unwrap the last page — the fullest widget state. */
+const unwrapWidget = (data: unknown): unknown => {
+  const pages = asRecord(data)?.pages
+  return Array.isArray(pages) && pages.length ? pages[pages.length - 1] : data
+}
+
 const firstArrayLength = (widgetData: Record<string, unknown> | undefined): number | undefined => {
   if (!widgetData) {
     return undefined
@@ -54,14 +61,56 @@ const formFieldNames = (widgetData: Record<string, unknown> | undefined): string
   return properties ? Object.keys(properties) : undefined
 }
 
-/** Compact, payload-free summary of one cached widget. */
+/** Runnable actions on an action-bearing widget (Button), with each action's verb
+ * resolved from the widget's resolved resourcesRefs (so Autopilot can drive the REAL control). */
+const widgetActions = (
+  widgetData: Record<string, unknown> | undefined,
+  resourcesRefs: Record<string, unknown> | undefined,
+): WidgetInventoryEntry['actions'] => {
+  const actionsMap = asRecord(widgetData?.actions)
+  if (!actionsMap) {
+    return undefined
+  }
+  const label = typeof widgetData?.label === 'string' ? widgetData.label : undefined
+  const refsItems = Array.isArray(resourcesRefs?.items) ? resourcesRefs.items : []
+
+  const out: NonNullable<WidgetInventoryEntry['actions']> = []
+  for (const arr of Object.values(actionsMap)) {
+    if (!Array.isArray(arr)) {
+      continue
+    }
+    for (const entry of arr) {
+      const action = asRecord(entry)
+      const id = typeof action?.id === 'string' ? action.id : undefined
+      if (!id) {
+        continue
+      }
+      const resourceRefId = typeof action?.resourceRefId === 'string' ? action.resourceRefId : undefined
+      const ref = resourceRefId ? asRecord(refsItems.find((item) => asRecord(item)?.id === resourceRefId)) : undefined
+      let verb = 'POST'
+      if (typeof ref?.verb === 'string') {
+        verb = ref.verb
+      } else if (action?.type === 'navigate') {
+        verb = 'GET'
+      }
+      out.push({ id, label, verb })
+    }
+  }
+  return out.length ? out : undefined
+}
+
+/** Compact, payload-free summary of one cached widget. Reads the RESOLVED `status`
+ * (widgetData + resourcesRefs after the server's templates), like WidgetRenderer,
+ * falling back to `spec` — `spec` holds the pre-template static values. */
 const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry => {
-  const root = asRecord(data)
+  const root = asRecord(unwrapWidget(data))
   const kind = typeof root?.kind === 'string' ? root.kind : undefined
   const metadata = asRecord(root?.metadata)
   const name = typeof metadata?.name === 'string' ? metadata.name : undefined
+  const status = asRecord(root?.status)
   const spec = asRecord(root?.spec)
-  const widgetData = asRecord(spec?.widgetData)
+  const widgetData = asRecord(status?.widgetData) ?? asRecord(spec?.widgetData)
+  const resourcesRefs = asRecord(status?.resourcesRefs) ?? asRecord(spec?.resourcesRefs)
   const title = typeof widgetData?.title === 'string' ? widgetData.title : undefined
 
   const rows = firstArrayLength(widgetData)
@@ -74,8 +123,9 @@ const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry 
   }
   const summary = summaryParts.length ? summaryParts.join(' · ') : undefined
   const fields = kind === 'Form' ? formFieldNames(widgetData) : undefined
+  const actions = kind === 'Button' ? widgetActions(widgetData, resourcesRefs) : undefined
 
-  return { endpoint, fields, kind, name, summary, title }
+  return { actions, endpoint, fields, kind, name, summary, title }
 }
 
 const collectExtras = (search: string): Record<string, string> | undefined => {

@@ -61,6 +61,9 @@ export interface WidgetInventoryEntry {
   summary?: string
   /** For a Form widget: its top-level field names, so Autopilot can prefill them. */
   fields?: string[]
+  /** For an action-bearing widget (e.g. Button): the runnable actions on it, so
+   * Autopilot can drive the REAL control (gated). `verb` GET = read-only. */
+  actions?: { id: string; label?: string; verb: string }[]
 }
 
 /** The whoami identity surfaced to ground greetings (no token, ever). */
