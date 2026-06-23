@@ -59,6 +59,8 @@ export interface WidgetInventoryEntry {
   title?: string
   /** A short, kind-aware summary (e.g. "Table · 248 rows"). */
   summary?: string
+  /** For a Form widget: its top-level field names, so Autopilot can prefill them. */
+  fields?: string[]
 }
 
 /** The whoami identity surfaced to ground greetings (no token, ever). */

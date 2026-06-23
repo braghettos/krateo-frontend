@@ -223,13 +223,13 @@ export const createKagentTransport = (baseUrl: string): AutopilotTransport => ({
 // `portal-action` block, which the bridge strips from the text and auto-applies
 // (navigates) — exactly how the real orchestrator will propose once prompted.
 const ECHO_REPLY = [
-  'Local echo (no live backend) — here is a quick tour of the console.',
+  'Local echo (no live backend) — I drafted the form. Review the fields and press Create when ready.',
   '',
-  '```portal-tour',
-  '{"steps":[{"anchor":"nav:Dashboard","title":"Dashboard","description":"Your platform overview and reconcile throughput."},{"anchor":"nav:Compositions","title":"Compositions","description":"Every provisioned resource and its health lives here."},{"anchor":"nav:Marketplace","title":"Marketplace","description":"Browse and install blueprints from the catalog."}]}',
+  '```portal-action',
+  '{"verb":"prefillForm","values":{"name":"demo-autopilot","namespace":"krateo-system"},"label":"drafted the create form"}',
   '```',
   '```portal-suggest',
-  '["Open a composition", "Why is portal not synced?", "Show the marketplace"]',
+  '["Change the name", "Explain these fields", "Cancel"]',
   '```',
 ].join('\n')
 

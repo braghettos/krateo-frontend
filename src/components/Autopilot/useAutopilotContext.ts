@@ -37,6 +37,23 @@ const firstArrayLength = (widgetData: Record<string, unknown> | undefined): numb
   return undefined
 }
 
+/** Top-level field names of a Form widget (for Autopilot prefill); undefined for non-Forms. */
+const formFieldNames = (widgetData: Record<string, unknown> | undefined): string[] | undefined => {
+  if (!widgetData) {
+    return undefined
+  }
+  let schema = asRecord(widgetData.schema)
+  if (!schema && typeof widgetData.stringSchema === 'string') {
+    try {
+      schema = asRecord(JSON.parse(widgetData.stringSchema))
+    } catch {
+      schema = undefined
+    }
+  }
+  const properties = asRecord(schema?.properties)
+  return properties ? Object.keys(properties) : undefined
+}
+
 /** Compact, payload-free summary of one cached widget. */
 const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry => {
   const root = asRecord(data)
@@ -56,8 +73,9 @@ const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry 
     summaryParts.push(`${rows} rows`)
   }
   const summary = summaryParts.length ? summaryParts.join(' · ') : undefined
+  const fields = kind === 'Form' ? formFieldNames(widgetData) : undefined
 
-  return { endpoint, kind, name, summary, title }
+  return { endpoint, fields, kind, name, summary, title }
 }
 
 const collectExtras = (search: string): Record<string, string> | undefined => {

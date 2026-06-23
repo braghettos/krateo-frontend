@@ -34,6 +34,8 @@ export interface PortalActionProposal {
   extras?: Record<string, string>
   /** openDrawer/openModal: a resourceRefId resolved against the page's refs. */
   resourceRefId?: string
+  /** prefillForm: field-name → value to merge into the mounted create Form. */
+  values?: Record<string, unknown>
   title?: string
   /** Human-readable label for the auto-applied action chip. */
   label?: string
@@ -72,7 +74,8 @@ export const PORTAL_CAPABILITIES_PROMPT = [
   '{"verb":"navigate","route":"<path>","label":"<short label>"}',
   '```',
   'Read-only verbs: navigate (route, e.g. /compositions/<ns>/<name>, /blueprints, /marketplace, /dashboard, /settings); setExtras (an extras object with status/range/q to scope the current list).',
-  'This drives the real UI (read-only) — it is NOT a platform change. Emit at most one block per reply and still explain briefly in prose. Only propose routes/entities present in the page context.',
+  'When a create Form is on screen (its field names are listed in the page context), you MAY PRE-FILL it for the user with verb "prefillForm" and a `values` object keyed by those field names, e.g. {"verb":"prefillForm","values":{"name":"demo-db","namespace":"krateo-system"},"label":"drafted the form"}. This only fills the fields — the user still reviews and presses Create themselves. NEVER submit; never invent values for fields you were not given.',
+  'This drives the real UI (read-only) — it is NOT a platform change. Emit at most one block per reply and still explain briefly in prose. Only propose routes/entities/fields present in the page context.',
   'You MAY also suggest up to 3 short, specific follow-up actions the user might take next (referencing on-screen entities) by emitting:',
   '```portal-suggest',
   '["Show the reconcile error", "Open the failed composition", "Why is X drifting?"]',

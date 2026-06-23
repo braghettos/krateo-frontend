@@ -16,6 +16,7 @@ import { useConfigContext } from '../../context/ConfigContext'
 
 import type { PortalActionProposal, PortalTour } from './actionBridge'
 import { PORTAL_CAPABILITIES_PROMPT, parseAutopilotDirectives, useAutopilotActionBridge } from './actionBridge'
+import { AgentDraftProvider } from './agentDraft'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
@@ -66,6 +67,10 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   const [sessionId, setSessionId] = useState<string>(newSessionId)
   const [tour, setTour] = useState<PortalTour | null>(null)
   const [tourOpen, setTourOpen] = useState(false)
+  // Autopilot form draft (Phase 3 gated form-fill). The nonce re-keys the Form so a
+  // new draft re-applies (antd initialValues is mount-only).
+  const [agentDraft, setAgentDraft] = useState<Record<string, unknown> | null>(null)
+  const [draftNonce, setDraftNonce] = useState(0)
 
   const abortRef = useRef<(() => void) | null>(null)
   const sentFirstRef = useRef(false)
@@ -112,6 +117,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
 
     const chips: AutopilotActionChip[] = []
     for (const proposal of [...toolProposals, ...textProposals]) {
+      // prefillForm is handled here (it sets provider state, not a dispatcher action):
+      // merge the values into the mounted Form's initialValues; the user still reviews +
+      // submits via the form's own gate. No cluster mutation — Autopilot never submits.
+      if (proposal.verb === 'prefillForm') {
+        setAgentDraft(proposal.values ?? {})
+        setDraftNonce((nonce) => nonce + 1)
+        chips.push({ label: proposal.label ?? 'drafted the create form', readOnly: true, verb: 'prefillForm' })
+        continue
+      }
       // eslint-disable-next-line no-await-in-loop -- sequential: a navigate changes the page the next action sees
       const chip = await apply(proposal)
       if (chip) {
@@ -210,6 +224,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     setSessionId(newSessionId())
     setTour(null)
     setTourOpen(false)
+    // Clear any pending form draft and re-key (bump nonce) so the form reverts to base.
+    setAgentDraft(null)
+    setDraftNonce((nonce) => nonce + 1)
   }, [])
 
   const toggle = useCallback(() => setOpen((prev) => !prev), [])
@@ -219,7 +236,13 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     closeTour, collect, enabled, messages, newThread, open, send, setOpen, streaming, toggle, tour, tourOpen,
   }), [closeTour, collect, enabled, messages, newThread, open, send, streaming, toggle, tour, tourOpen])
 
-  return <AutopilotReactContext.Provider value={value}>{children}</AutopilotReactContext.Provider>
+  return (
+    <AutopilotReactContext.Provider value={value}>
+      <AgentDraftProvider value={{ draft: agentDraft, nonce: draftNonce }}>
+        {children}
+      </AgentDraftProvider>
+    </AutopilotReactContext.Provider>
+  )
 }
 
 export const useAutopilot = (): AutopilotContextValue => {

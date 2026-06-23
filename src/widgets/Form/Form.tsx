@@ -8,6 +8,7 @@ import type { JSONSchema4 } from 'json-schema'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+import { useAgentDraft } from '../../components/Autopilot/agentDraft'
 import WidgetRenderer from '../../components/WidgetRenderer'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import type { WidgetProps } from '../../types/Widget'
@@ -195,12 +196,21 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   const [reviewValues, setReviewValues] = useState<Record<string, unknown> | null>(null)
   const reviewing = !insideDrawer && !!reviewBeforeSubmit && reviewValues !== null
 
-  // Effective initial values = schema defaults overlaid by explicit initialValues — the SAME
-  // object handed to <AntdForm initialValues> below. Factored out so the pristine check compares
-  // against exactly what the form was seeded with.
+  // Autopilot AgentDraft (Phase 3 gated form-fill): an optional THIRD spread over schema
+  // defaults + explicit initialValues. Autopilot fills the fields; the user still reviews and
+  // presses Create. `draftNonce` re-keys the form so the merged values re-apply (antd
+  // `initialValues` is mount-only). Empty/absent when Autopilot isn't driving the form.
+  const { draft: agentDraft, nonce: draftNonce } = useAgentDraft()
+
+  // Effective initial values = schema defaults overlaid by explicit initialValues, then by the
+  // Autopilot draft — the SAME object handed to <AntdForm initialValues> below. Factored out so
+  // the pristine check compares against exactly what the form was seeded with.
   const effectiveInitialValues = useMemo<Record<string, unknown>>(
-    () => (jsonSchema ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues } : (initialValues ?? {})),
-    [jsonSchema, initialValues],
+    () => {
+      const base = jsonSchema ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues } : (initialValues ?? {})
+      return agentDraft ? { ...base, ...agentDraft } : base
+    },
+    [jsonSchema, initialValues, agentDraft],
   )
 
   // Live form values (re-renders on any field change). Used only to gate the submit button when
@@ -365,6 +375,9 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
           form={form}
           id={formId}
           initialValues={effectiveInitialValues}
+          // Re-key on a new Autopilot draft so the merged initialValues re-apply (antd
+          // applies initialValues only on mount). Stable (draftNonce 0) without a draft.
+          key={`ap-draft-${draftNonce}`}
           layout={layout}
           onFinish={(formValues) => { onFinish(formValues as Record<string, unknown>) }}
           size={size}
