@@ -22,7 +22,7 @@ spec:
     items:
       - id: sider-nav
         allowed: true
-        resource: navmenus
+        resource: menus
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: sider-nav-menu
         namespace: krateo-system

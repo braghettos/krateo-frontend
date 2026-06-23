@@ -1,6 +1,7 @@
 .panel {
   display: flex;
   flex-direction: column;
+  position: relative;
 
   &.clickable {
     cursor: pointer;
@@ -16,13 +17,13 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     min-width: 0;
 
     .body {
       display: flex;
       flex-direction: column;
-      gap: var(--spacing-md);
+      gap: var(--spacing-sm);
       min-width: 0;
     }
 
@@ -84,25 +85,178 @@
     height: 100%;
   }
 
+  /* Stat cards only (icon + no footer): trim the vertical body padding so the
+     title→value→delta stack isn't airy and there's no dead space under the delta.
+     Horizontal padding is left at antd's default; other Card consumers (marketplace,
+     detail, chart, activity cards) don't get .statCard so they're unchanged. */
+  &.statCard :global(.ant-card-body) {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
   .header {
     border-bottom: none;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-xs);
   }
 
   .title {
     align-items: center;
     display: flex;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-lighter);
-    gap: var(--spacing-md);
+    font-size: 15px;
+    font-weight: var(--font-weight-bold);
+    gap: var(--spacing-sm);
     min-width: 0;
 
+    /* Flight-deck EYEBROW title (titleVariant: eyebrow) — small IBM Plex Mono,
+       uppercase, letter-spaced, muted: the instrument-panel section caption
+       (RECONCILIATION RAIL, STATUS, COMPOSITIONS CREATED …). The default
+       'heading' variant keeps the 15px bold readable title (marketplace tiles,
+       detail headers). The Live badge keeps its own sizing. */
+    &.eyebrow {
+      font-size: 11px;
+
+      .text {
+        color: var(--gray-color);
+        font-family: var(--font-mono);
+        font-weight: var(--font-weight-medium);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+    }
+
+    /* Content-width (not flex:1) so a trailing "Live" badge hugs the title text
+       instead of being pushed to the far edge of the header. Still ellipsizes
+       long titles — the antd title slot bounds the width and flex-shrink applies. */
     .text {
-      flex: 1;
+      flex: 0 1 auto;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
+    /* "Live"/"Converged" badge → Petrol cyan outline pill with a glowing dot
+       (replaces antd's processing-blue ripple). Sits right after the title text. */
+    .liveBadge {
+      align-items: center;
+      background: rgba(52, 214, 200, 0.08);
+      border: 1px solid rgba(52, 214, 200, 0.3);
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      flex: 0 0 auto;
+      gap: 5px;
+      padding: 1px 8px;
+
+      :global(.ant-badge-status-dot) {
+        background: var(--cyan-color);
+        box-shadow: 0 0 5px 1px var(--cyan-color);
+        height: 6px;
+        width: 6px;
+      }
+
+      :global(.ant-badge-status-dot)::after {
+        border: 1px solid var(--cyan-color);
+      }
+
+      :global(.ant-badge-status-text) {
+        color: var(--cyan-color);
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        letter-spacing: 0.06em;
+        margin-inline-start: 5px;
+        text-transform: uppercase;
+      }
+    }
+  }
+
+  /* Small soft-tint rounded-square icon floated into the card's top-right corner
+     (enterprise stat-card treatment) — shares the label's row without forcing a
+     separate Card header. Colors are set inline per icon. */
+  .iconFloat {
+    align-items: center;
+    border-radius: var(--radius-md);
+    display: flex;
+    font-size: 15px;
+    height: 34px;
+    justify-content: center;
+    position: absolute;
+    right: 18px;
+    top: 18px;
+    width: 34px;
+    z-index: 1;
+  }
+}
+
+/* Legend key in the card `extra` slot (widgetData.legend) — the reconciliation-rail
+   actual/drift/target key. A horizontal row of small colour swatches + mono graphite
+   labels; sits top-right of the panel header, opposite the eyebrow title. */
+.legend {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.legendItem {
+  align-items: center;
+  color: var(--gray-color);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  gap: 6px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.legendSwatch {
+  border-radius: 2px;
+  display: inline-block;
+  height: 9px;
+  width: 9px;
+}
+
+/* Status badge-pill in the card `extra` slot (extraVariant: badge) — the mockup
+   CONVERGED/DRIFT/DEGRADED chip. Pill shape + glow dot + mono uppercase; tint +
+   colour follow the antd status (processing=cyan / warning=amber / error=crimson). */
+.statusBadge {
+  align-items: center;
+  background: rgba(52, 214, 200, 0.08);
+  border: 1px solid rgba(52, 214, 200, 0.3);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 5px;
+  padding: 1px 8px;
+
+  :global(.ant-badge-status-dot) {
+    background: var(--cyan-color);
+    box-shadow: 0 0 5px 1px var(--cyan-color);
+    height: 6px;
+    width: 6px;
+  }
+
+  :global(.ant-badge-status-text) {
+    color: var(--cyan-color);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    margin-inline-start: 5px;
+    text-transform: uppercase;
+  }
+
+  &:has(:global(.ant-badge-status-warning)) {
+    background: rgba(242, 163, 60, 0.08);
+    border-color: rgba(242, 163, 60, 0.3);
+
+    :global(.ant-badge-status-dot) { background: var(--amber-color); box-shadow: 0 0 5px 1px var(--amber-color); }
+    :global(.ant-badge-status-text) { color: var(--amber-color); }
+  }
+
+  &:has(:global(.ant-badge-status-error)) {
+    background: rgba(242, 84, 91, 0.08);
+    border-color: rgba(242, 84, 91, 0.3);
+
+    :global(.ant-badge-status-dot) { background: var(--red-color); box-shadow: 0 0 5px 1px var(--red-color); }
+    :global(.ant-badge-status-text) { color: var(--red-color); }
   }
 }

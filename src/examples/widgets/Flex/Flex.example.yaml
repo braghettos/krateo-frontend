@@ -1,0 +1,48 @@
+# Vertical Flex stacking two paragraphs (the antd-faithful replacement for Page's hand-rolled layout)
+kind: Flex
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flex
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources:
+      - paragraphs
+    vertical: true
+    gap: middle
+    align: stretch
+    items:
+      - resourceRefId: example-flex-p1
+      - resourceRefId: example-flex-p2
+  resourcesRefs:
+    items:
+      - id: example-flex-p1
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-flex-p1
+        namespace: krateo-system
+        resource: paragraphs
+        verb: GET
+      - id: example-flex-p2
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-flex-p2
+        namespace: krateo-system
+        resource: paragraphs
+        verb: GET
+---
+kind: Paragraph
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flex-p1
+  namespace: krateo-system
+spec:
+  widgetData:
+    text: "First stacked paragraph."
+---
+kind: Paragraph
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flex-p2
+  namespace: krateo-system
+spec:
+  widgetData:
+    text: "Second stacked paragraph."

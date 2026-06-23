@@ -1,0 +1,22 @@
+/* Centre the Progress within its container — a circle Progress is inline-block,
+ * so text-align centres it (the mockup's `.healthbig` centres the health donut);
+ * harmless for a full-width line Progress. */
+.progress {
+  text-align: center;
+}
+
+/* Gauge readout under the indicator (mockup `.ring-label` / `.ring-sub`). The label
+   colour is set inline to the strokeColor (state: cyan healthy / magenta drift); the
+   description is muted graphite. Both mono, matching the flight-deck telemetry voice. */
+.label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.description {
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  margin-top: 2px;
+}

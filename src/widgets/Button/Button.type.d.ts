@@ -18,10 +18,6 @@ export interface Button {
          */
         rest?: {
           /**
-           * ***DEPRECATED*** key used to nest the payload in the request body
-           */
-          payloadKey?: string
-          /**
            * unique identifier for the action
            */
           id: string
@@ -196,10 +192,6 @@ export interface Button {
         }[]
       }
       /**
-       * ***DEPRECATED*** prefer antd `color` + `variant`; sets an inline background color
-       */
-      backgroundColor?: 'blue' | 'darkBlue' | 'orange' | 'gray' | 'red' | 'green' | 'violet'
-      /**
        * antd Button color (pair with `variant`)
        */
       color?:
@@ -248,6 +240,10 @@ export interface Button {
        */
       icon?: string
       /**
+       * palette color name (e.g. green / orange / red / cyan) applied to the icon independently of the button color — e.g. a leading `fa-circle` status dot on a filter chip
+       */
+      iconColor?: string
+      /**
        * the shape of the button
        */
       shape?: 'default' | 'circle' | 'round'
@@ -294,6 +290,20 @@ export interface Button {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

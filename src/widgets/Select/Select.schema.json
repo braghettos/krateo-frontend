@@ -40,7 +40,8 @@
             "placeholder": { "type": "string", "description": "antd Select `placeholder`" },
             "size": { "type": "string", "enum": ["small", "middle", "large"], "description": "antd Select `size`" },
             "disabled": { "type": "boolean", "description": "antd Select `disabled`" },
-            "allowClear": { "type": "boolean", "description": "antd Select `allowClear`" }
+            "allowClear": { "type": "boolean", "description": "antd Select `allowClear`" },
+            "queryParam": { "type": "string", "description": "when set, the Select is STANDALONE and URL-query-bound (not a Form.Item control): its value reads from / writes to this URL search param (e.g. 'project'), flowing to server-side `extras` like RangePicker. Omit for the default Form control behavior." }
           }
         },
         "apiRef": {
@@ -59,6 +60,124 @@
             "properties": {
               "forPath": { "type": "string" },
               "expression": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "allowed",
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
             },
             "additionalProperties": false
           }

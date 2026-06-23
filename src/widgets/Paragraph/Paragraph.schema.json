@@ -16,26 +16,108 @@
       "properties": {
         "widgetData": {
           "type": "object",
-          "required": ["text"],
+          "required": [
+            "text"
+          ],
           "properties": {
             "text": {
               "description": "the content of the paragraph (the antd Typography children, as text)",
               "type": "string"
             },
+            "level": {
+              "description": "when set, render as an antd Typography.Title heading of this level (h1-h5) instead of a body paragraph",
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            },
             "type": {
               "type": "string",
-              "enum": ["secondary", "success", "warning", "danger"],
+              "enum": [
+                "secondary",
+                "success",
+                "warning",
+                "danger"
+              ],
               "description": "antd Typography type"
             },
-            "strong": { "type": "boolean", "description": "antd Typography strong" },
-            "italic": { "type": "boolean", "description": "antd Typography italic" },
-            "underline": { "type": "boolean", "description": "antd Typography underline" },
-            "delete": { "type": "boolean", "description": "antd Typography delete (strikethrough)" },
-            "code": { "type": "boolean", "description": "antd Typography code" },
-            "mark": { "type": "boolean", "description": "antd Typography mark (highlight)" },
-            "disabled": { "type": "boolean", "description": "antd Typography disabled" },
-            "copyable": { "type": "boolean", "description": "antd Typography copyable" },
-            "ellipsis": { "type": "boolean", "description": "antd Typography ellipsis" }
+            "variant": {
+              "type": "string",
+              "enum": [
+                "eyebrow"
+              ],
+              "description": "render style variant. eyebrow renders a small uppercase mono section caption (IBM Plex Mono letter-spaced muted) for page-header / panel eyebrows"
+            },
+            "strong": {
+              "type": "boolean",
+              "description": "antd Typography strong"
+            },
+            "italic": {
+              "type": "boolean",
+              "description": "antd Typography italic"
+            },
+            "underline": {
+              "type": "boolean",
+              "description": "antd Typography underline"
+            },
+            "delete": {
+              "type": "boolean",
+              "description": "antd Typography delete (strikethrough)"
+            },
+            "code": {
+              "type": "boolean",
+              "description": "antd Typography code"
+            },
+            "mark": {
+              "type": "boolean",
+              "description": "antd Typography mark (highlight)"
+            },
+            "disabled": {
+              "type": "boolean",
+              "description": "antd Typography disabled"
+            },
+            "copyable": {
+              "type": "boolean",
+              "description": "antd Typography copyable"
+            },
+            "ellipsis": {
+              "type": "boolean",
+              "description": "antd Typography ellipsis"
+            },
+            "watch": {
+              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "apiVersion",
+                  "kind"
+                ],
+                "properties": {
+                  "apiVersion": {
+                    "type": "string",
+                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "e.g. DemoClaim"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "scope to a namespace; omit to match any"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  }
+                }
+              }
+            }
           },
           "additionalProperties": false
         },
@@ -49,7 +131,10 @@
               "type": "string"
             }
           },
-          "required": ["name", "namespace"],
+          "required": [
+            "name",
+            "namespace"
+          ],
           "additionalProperties": false
         },
         "widgetDataTemplate": {
@@ -66,11 +151,135 @@
             },
             "additionalProperties": false
           }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "allowed",
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
-      "required": ["widgetData"],
+      "required": [
+        "widgetData"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["kind", "spec", "version"]
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
 }

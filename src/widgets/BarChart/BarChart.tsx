@@ -9,7 +9,7 @@ import type { BarChart as WidgetType } from './BarChart.type'
 export type BarChartWidgetData = WidgetType['spec']['widgetData']
 
 /**
- * Faithful wrapper of the @ant-design/charts `Column` (AntV G2 — vertical bars):
+ * Faithful wrapper of the @ant-design/plots `Column` (AntV G2 — vertical bars):
  * data + field mappings. Replaces the previous fake (stacked antd `Progress`
  * with a `percentage`-only schema).
  */

@@ -15,10 +15,6 @@ export interface Card {
          */
         rest?: {
           /**
-           * ***DEPRECATED*** key used to nest the payload in the request body
-           */
-          payloadKey?: string
-          /**
            * array of headers as strings, format 'key: value'
            */
           headers: string[]
@@ -214,9 +210,34 @@ export interface Card {
        */
       extra?: string
       /**
-       * antd Card bordered (outlined vs borderless)
+       * how `extra` renders top-right: `text` (default, plain) or `badge` (a status pill — glow dot + uppercase mono, e.g. a CONVERGED/DRIFT/DEGRADED reconcile chip)
        */
-      bordered?: boolean
+      extraVariant?: 'text' | 'badge'
+      /**
+       * antd Badge status driving the `extraVariant: badge` colour (processing=cyan/healthy, warning=amber/drift, error=crimson/failed)
+       */
+      extraStatus?: 'success' | 'processing' | 'warning' | 'error' | 'default'
+      /**
+       * show a pulsing "Live" badge next to the card title (for cards backed by a live/SSE feed)
+       */
+      live?: boolean
+      /**
+       * optional legend key shown top-right of the card header (e.g. the reconciliation-rail actual/drift/target swatches): each item is a small colour swatch + label
+       */
+      legend?: {
+        /**
+         * swatch colour (palette name, e.g. cyan / magenta / amber)
+         */
+        color: string
+        /**
+         * swatch label (e.g. actual / drift / target)
+         */
+        label: string
+      }[]
+      /**
+       * antd Card variant
+       */
+      variant?: 'outlined' | 'borderless'
       /**
        * antd Card size
        */
@@ -256,9 +277,34 @@ export interface Card {
        */
       title?: string
       /**
+       * how the panel title is rendered. 'heading' (default) = readable card heading (marketplace tiles, detail headers). 'eyebrow' = small mono uppercase letter-spaced muted caption (flight-deck section/panel labels).
+       */
+      titleVariant?: 'heading' | 'eyebrow'
+      /**
        * optional tooltip text shown on the top right side of the card to provide additional context
        */
       tooltip?: string
+      /**
+       * live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.
+       */
+      watch?: {
+        /**
+         * group/version, e.g. composition.krateo.io/v1alpha1
+         */
+        apiVersion: string
+        /**
+         * e.g. DemoClaim
+         */
+        kind: string
+        /**
+         * scope to a namespace; omit to match any
+         */
+        namespace?: string
+        /**
+         * a specific object; omit to match any object of this kind ("GVR-level")
+         */
+        name?: string
+      }[]
     }
     resourcesRefs: {
       items: {
@@ -290,6 +336,20 @@ export interface Card {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

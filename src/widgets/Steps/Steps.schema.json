@@ -23,10 +23,10 @@
               "type": "integer",
               "description": "the index of the current step (0-based)"
             },
-            "direction": {
+            "orientation": {
               "type": "string",
               "enum": ["horizontal", "vertical"],
-              "description": "the layout direction of the steps"
+              "description": "the layout orientation of the steps (antd Steps `orientation`)"
             },
             "size": {
               "type": "string",
@@ -38,10 +38,10 @@
               "enum": ["wait", "process", "finish", "error"],
               "description": "the status of the current step"
             },
-            "labelPlacement": {
+            "titlePlacement": {
               "type": "string",
               "enum": ["horizontal", "vertical"],
-              "description": "where the label is placed relative to the step icon"
+              "description": "where the title is placed relative to the step icon (antd Steps `titlePlacement`)"
             },
             "type": {
               "type": "string",
@@ -59,6 +59,10 @@
                   "title": {
                     "type": "string",
                     "description": "the title of the step"
+                  },
+                  "eyebrow": {
+                    "type": "string",
+                    "description": "a short eyebrow label shown ABOVE the title (e.g. `Step 1`) — rendered mono/uppercase"
                   },
                   "description": {
                     "type": "string",
@@ -105,6 +109,124 @@
               },
               "expression": {
                 "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "allowed",
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
               }
             },
             "additionalProperties": false

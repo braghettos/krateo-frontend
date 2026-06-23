@@ -16,8 +16,8 @@ export type ListWidgetData = WidgetType['spec']['widgetData']
 const hasResourceRef = (item: unknown): item is { resourceRefId: string } =>
   !!item && typeof item === 'object' && typeof (item as { resourceRefId?: unknown }).resourceRefId === 'string'
 
-const List = ({ resourcesRefs, uid, widgetData }: WidgetProps<ListWidgetData>) => {
-  const { bordered, footer, grid, header, itemLayout, itemTemplate, loading, maxItems, prefix, size, split, sseEndpoint, sseTopic } = widgetData
+const List = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ListWidgetData>) => {
+  const { actions, bordered, footer, grid, header, itemLayout, itemTemplate, loading, maxItems, prefix, size, split, sseEndpoint, sseTopic } = widgetData
 
   // `dataSource` is the antd-faithful field; `items` is accepted for back-compat with legacy DataGrid CRs.
   const dataSource = useMemo(
@@ -57,6 +57,7 @@ const List = ({ resourcesRefs, uid, widgetData }: WidgetProps<ListWidgetData>) =
 
   return (
     <ListView
+      actions={actions}
       bordered={bordered}
       footer={footer}
       grid={grid}
@@ -66,9 +67,11 @@ const List = ({ resourcesRefs, uid, widgetData }: WidgetProps<ListWidgetData>) =
       items={filtered}
       loading={loading}
       renderChild={renderChild}
+      resourcesRefs={resourcesRefs}
       rowKey={uid}
       size={size}
       split={split}
+      widget={widget}
     />
   )
 }

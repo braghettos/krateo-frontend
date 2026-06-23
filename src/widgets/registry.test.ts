@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import './load'
 
-import { getWidgetRegistry } from './registry'
+import { getWidgetModule, getWidgetRegistry } from './registry'
 
 const widgetRegistry = getWidgetRegistry()
 
@@ -27,16 +27,23 @@ for (const raw of Object.values(exampleFiles)) {
   }
 }
 
-/** The kinds that had a hand-written `case` in the old parseWidget switch. */
+/** Every antd-mapped widget kind (legacy aliases removed; structural kinds excluded). */
 const KNOWN_KINDS = [
-  'BarChart', 'BlueprintBuilder', 'Button', 'ButtonGroup', 'Column', 'DataGrid',
-  'EventList', 'Filters', 'FlowChart', 'Form', 'LineChart', 'Markdown', 'NavMenu',
-  'Page', 'Panel', 'Paragraph', 'PieChart', 'Route', 'RoutesLoader', 'Row',
-  'Table', 'TabList', 'YamlViewer',
+  'BarChart', 'Button', 'ButtonGroup', 'Card', 'Col',
+  'EventList', 'Filters', 'Flex', 'FlowChart', 'Form', 'LineChart', 'List', 'Markdown',
+  'Menu', 'Paragraph', 'PieChart', 'Row',
+  'Table', 'Tabs', 'YamlViewer',
 ]
 
+/**
+ * Structural (non-antd) kinds resolved by WidgetRenderer. Route/RoutesLoader/NavMenu
+ * and finally Page have all been removed: routing is now data — the sidebar Menu's
+ * inline items are the single route source (no routes-loader, no Page wrapper).
+ */
+const STRUCTURAL_KINDS: string[] = []
+
 describe('widgetRegistry', () => {
-  it('registers all 23 known kinds (regression gate for the switch removal)', () => {
+  it('registers all known registry kinds (regression gate for the switch removal)', () => {
     for (const kind of KNOWN_KINDS) {
       expect(widgetRegistry[kind], `kind "${kind}" should be registered`).toBeDefined()
       // A component may be a function OR a React exotic object (lazy/memo/forwardRef);
@@ -45,32 +52,29 @@ describe('widgetRegistry', () => {
     }
   })
 
-  it('registers a module for every kind used in example fixtures', () => {
+  it('resolves a module for every kind used in example fixtures', () => {
     expect(exampleKinds.size).toBeGreaterThan(0)
     for (const kind of exampleKinds) {
-      expect(widgetRegistry[kind], `example kind "${kind}" should be registered`).toBeDefined()
+      // resolve-all: antd widgets AND structural kinds
+      expect(getWidgetModule(kind), `example kind "${kind}" should resolve`).toBeDefined()
     }
   })
 
-  it('registers antd-named kinds with legacy names as back-compat aliases', () => {
-    const renames: Array<[antd: string, legacy: string]> = [
-      ['Card', 'Panel'],
-      ['Col', 'Column'],
-      ['Tabs', 'TabList'],
-      ['Menu', 'NavMenu'],
-    ]
-    for (const [antd, legacy] of renames) {
-      expect(widgetRegistry[antd], `antd kind "${antd}" should be registered`).toBeDefined()
-      expect(widgetRegistry[legacy], `legacy alias "${legacy}" should still resolve`).toBeDefined()
-      // alias and primary resolve to the very same module
-      expect(widgetRegistry[legacy]).toBe(widgetRegistry[antd])
+  it('segregates structural kinds: excluded from the antd registry, still resolvable', () => {
+    for (const kind of STRUCTURAL_KINDS) {
+      expect(widgetRegistry[kind], `structural "${kind}" must NOT be an antd widget`).toBeUndefined()
+      expect(getWidgetModule(kind), `structural "${kind}" must still resolve for rendering`).toBeDefined()
     }
   })
 
-  it('marks List as paginated and resolves DataGrid as a back-compat alias of List', () => {
+  it('marks List as paginated', () => {
     expect(widgetRegistry.List?.paginated).toBe(true)
-    // DataGrid folded into List: the legacy kind resolves to the very same module
-    expect(widgetRegistry.DataGrid).toBe(widgetRegistry.List)
+  })
+
+  it('does not resolve legacy kind aliases (hard-break)', () => {
+    for (const legacy of ['Panel', 'Column', 'TabList', 'NavMenu', 'DataGrid']) {
+      expect(widgetRegistry[legacy], `legacy kind "${legacy}" must no longer resolve`).toBeUndefined()
+    }
   })
 
   it('excludes Drawer and Modal (mounted directly by WidgetPage, not via the registry)', () => {

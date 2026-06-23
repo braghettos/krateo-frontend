@@ -1,0 +1,21 @@
+# Basic Descriptions — a read-only metadata list
+kind: Descriptions
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-descriptions-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    title: "Composition metadata"
+    bordered: true
+    column: 2
+    size: "small"
+    items:
+      - label: "Name"
+        value: "cdn-edge"
+      - label: "Namespace"
+        value: "krateo-system"
+      - label: "Status"
+        value: "Ready"
+      - label: "Created"
+        value: "2026-06-18T10:00:00Z"

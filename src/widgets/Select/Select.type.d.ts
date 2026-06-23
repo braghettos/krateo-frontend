@@ -59,6 +59,10 @@ export interface Select {
        * antd Select `allowClear`
        */
       allowClear?: boolean
+      /**
+       * when set, the Select is STANDALONE and URL-query-bound (not a Form.Item control): its value reads from / writes to this URL search param (e.g. 'project'), flowing to server-side `extras` like RangePicker. Omit for the default Form control behavior.
+       */
+      queryParam?: string
     }
     apiRef?: {
       name: string
@@ -67,6 +71,43 @@ export interface Select {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefs?: {
+      items: {
+        allowed: boolean
+        apiVersion?: string
+        id: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+        slice?: {
+          offset?: number
+          page: number
+          perPage: number
+          continue?: boolean
+          [k: string]: unknown
+        }
+        [k: string]: unknown
+      }[]
+      [k: string]: unknown
+    }
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

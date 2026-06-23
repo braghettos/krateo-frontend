@@ -27,30 +27,34 @@
                 "type": "string",
                 "enum": [
                   "barcharts",
+                  "flexes",
                   "buttons",
                   "buttongroups",
-                  "columns",
-                  "datagrids",
+                  "cols",
+                  "lists",
                   "eventlists",
                   "filters",
                   "flowcharts",
                   "forms",
                   "linecharts",
                   "markdowns",
-                  "panels",
+                  "cards",
                   "paragraphs",
                   "piecharts",
+                  "rangepickers",
                   "rows",
+                  "statistics",
                   "tables",
-                  "tablists",
+                  "tabs",
+                  "tags",
                   "yamlviewers"
                 ]
               }
             },
             "alignment": {
               "type": "string",
-              "description": "the alignment of the element inside the row. Default is 'center'",
-              "enum": ["bottom", "center", "top"]
+              "description": "vertical alignment of items in the row (antd Row `align`). Default is 'middle'; 'stretch' makes columns equal-height",
+              "enum": ["top", "middle", "bottom", "stretch"]
             },
             "items": {
               "description": "the items of the row",
@@ -70,7 +74,7 @@
                   },
                   "alignment": {
                     "type": "string",
-                    "description": "the alignment of the element inside the cell. Default is 'left'",
+                    "description": "Krateo-only: horizontal alignment of the widget inside its cell (no antd Col equivalent; applied via flex justify-content). Default is 'left'",
                     "enum": ["center", "left", "right"]
                   }
                 },
@@ -166,6 +170,52 @@
             "additionalProperties": false
           },
           "additionalProperties": false
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
       "required": ["widgetData", "resourcesRefs"],

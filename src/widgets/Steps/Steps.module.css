@@ -1,0 +1,49 @@
+/* Petrol wizard: a FINISHED (done) step is CYAN. antd's dark theme tints BOTH finish
+   and process with colorPrimary (amber), so a completed step reads amber — the mockup
+   wants done=cyan, current=amber (kept), upcoming=graphite (kept). Recolour the finish
+   step's dot + check + trailing connector to cyan. `!important` beats antd's CSS-in-JS
+   (equal specificity, injected later). Mirrors mockup `.step.done .dot`. */
+.steps :global(.ant-steps-item-finish .ant-steps-item-icon) {
+  background-color: color-mix(in srgb, var(--cyan-color) 12%, transparent) !important;
+  border-color: var(--cyan-color) !important;
+}
+
+.steps :global(.ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon),
+.steps :global(.ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon svg) {
+  color: var(--cyan-color) !important;
+  fill: var(--cyan-color) !important;
+}
+
+/* Done→current connector — cyan→amber gradient (mockup `.ln.fill` cyan→amber). */
+.steps :global(.ant-steps-item-finish > .ant-steps-item-container > .ant-steps-item-tail)::after {
+  background: linear-gradient(90deg, var(--cyan-color), var(--amber-color)) !important;
+}
+
+/* Bezel strip frame — the stepper sits in a raised panel (mockup `.steps` bezel border+bg). */
+.steps {
+  background: var(--panelbg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+
+/* Current (process) step — amber glow ring around the dot (mockup `.step.cur` glow ring). */
+.steps :global(.ant-steps-item-process .ant-steps-item-icon) {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber-color) 14%, transparent);
+}
+
+/* Per-item "STEP N" eyebrow stacked above the title (mockup `.step .k` mono eyebrow). */
+.titleStack {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.eyebrow {
+  color: var(--gray-color);
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  font-weight: var(--font-weight-medium, 500);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

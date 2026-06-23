@@ -54,6 +54,44 @@
             "suffix": {
               "description": "text shown after the value",
               "type": "string"
+            },
+            "valueStyle": {
+              "description": "antd Statistic `valueStyle` — inline style for the numeral, primarily `color` for a semantic value (e.g. Healthy=cyan, Failed=crimson). Accepts a CSS color incl. theme vars like var(--cyan-color).",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "color": { "type": "string", "description": "CSS color (hex or var(--token))" }
+              }
+            },
+            "watch": {
+              "description": "live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "apiVersion",
+                  "kind"
+                ],
+                "properties": {
+                  "apiVersion": {
+                    "type": "string",
+                    "description": "group/version, e.g. composition.krateo.io/v1alpha1"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "e.g. DemoClaim"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "scope to a namespace; omit to match any"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "a specific object; omit to match any object of this kind (\"GVR-level\")"
+                  }
+                }
+              }
             }
           }
         },
@@ -71,6 +109,124 @@
             "type": "object"
           },
           "type": "array"
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "allowed",
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
       "required": [

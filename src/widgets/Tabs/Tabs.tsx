@@ -12,7 +12,7 @@ import type { Tabs as WidgetType } from './Tabs.type'
 export type TabsWidgetData = WidgetType['spec']['widgetData']
 
 const Tabs = ({ resourcesRefs, uid, widgetData }: WidgetProps<TabsWidgetData>) => {
-  const { centered, items, size, tabPosition, type } = widgetData
+  const { centered, items, size, tabPlacement, type } = widgetData
 
   const tabItems = useMemo(() => {
     return items.reduce<NonNullable<TabsProps['items']>>((acc, { label, resourceRefId, title }, index) => {
@@ -44,7 +44,7 @@ const Tabs = ({ resourcesRefs, uid, widgetData }: WidgetProps<TabsWidgetData>) =
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
-  return <AntdTabs centered={centered} items={tabItems} key={uid} size={size} tabPosition={tabPosition} type={type} />
+  return <AntdTabs centered={centered} className={styles.tabs} items={tabItems} key={uid} size={size} tabPlacement={tabPlacement} type={type} />
 }
 
 export default Tabs

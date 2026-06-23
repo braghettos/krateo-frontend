@@ -28,21 +28,22 @@ export interface ButtonGroup {
         | 'forms'
         | 'linecharts'
         | 'markdowns'
-        | 'panels'
+        | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'tables'
-        | 'tablists'
+        | 'tabs'
         | 'yamlviewers'
       )[]
       /**
-       * antd Space size — spacing between items (legacy `gap` still accepted)
+       * antd Space size — spacing between items
        */
       size?: 'small' | 'middle' | 'large'
       /**
-       * antd Space direction
+       * antd Space orientation
        */
-      direction?: 'horizontal' | 'vertical'
+      orientation?: 'horizontal' | 'vertical'
       /**
        * antd Space wrap
        */
@@ -84,6 +85,20 @@ export interface ButtonGroup {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

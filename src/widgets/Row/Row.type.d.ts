@@ -17,28 +17,32 @@ export interface Row {
        */
       allowedResources: (
         | 'barcharts'
+        | 'flexes'
         | 'buttons'
         | 'buttongroups'
-        | 'columns'
-        | 'datagrids'
+        | 'cols'
+        | 'lists'
         | 'eventlists'
         | 'filters'
         | 'flowcharts'
         | 'forms'
         | 'linecharts'
         | 'markdowns'
-        | 'panels'
+        | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'rows'
+        | 'statistics'
         | 'tables'
-        | 'tablists'
+        | 'tabs'
+        | 'tags'
         | 'yamlviewers'
       )[]
       /**
-       * the alignment of the element inside the row. Default is 'center'
+       * vertical alignment of items in the row (antd Row `align`). Default is 'middle'; 'stretch' makes columns equal-height
        */
-      alignment?: 'bottom' | 'center' | 'top'
+      alignment?: 'top' | 'middle' | 'bottom' | 'stretch'
       /**
        * the items of the row
        */
@@ -49,7 +53,7 @@ export interface Row {
          */
         size?: number
         /**
-         * the alignment of the element inside the cell. Default is 'left'
+         * Krateo-only: horizontal alignment of the widget inside its cell (no antd Col equivalent; applied via flex justify-content). Default is 'left'
          */
         alignment?: 'center' | 'left' | 'right'
       }[]
@@ -84,6 +88,20 @@ export interface Row {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

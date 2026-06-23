@@ -31,7 +31,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { MAX_WIDGET_FETCH_RETRIES, shouldRetryWidgetFetch, WidgetFetchError, widgetFetchRetryDelay } from './useWidgetQuery'
+import { buildExtrasParam, MAX_WIDGET_FETCH_RETRIES, shouldRetryWidgetFetch, WidgetFetchError, widgetFetchRetryDelay } from './useWidgetQuery'
 
 /**
  * Pure replica of ScrollPagination.tsx:25-29 — the intersection-observer
@@ -205,8 +205,16 @@ describe('initial-render retry — transient failures retry, permanent ones do n
     expect(shouldRetryWidgetFetch(0, new WidgetFetchError('boom', 500))).toBe(true)
   })
 
-  it('never retries 4xx (auth / forbidden / not-found / bad-request)', () => {
-    for (const status of [400, 401, 403, 404]) {
+  it('retries 404 (transient cold-cache miss right after load), up to the cap', () => {
+    // snowplow can 404 a widget whose CR exists while its informer cache is cold;
+    // this recovers on a retry, so 404 keeps the skeleton up rather than flashing
+    // the error. Still bounded by the retry cap so a real 404 eventually surfaces.
+    expect(shouldRetryWidgetFetch(0, new WidgetFetchError('nope', 404))).toBe(true)
+    expect(shouldRetryWidgetFetch(MAX_WIDGET_FETCH_RETRIES, new WidgetFetchError('nope', 404))).toBe(false)
+  })
+
+  it('never retries permanent 4xx (auth / forbidden / bad-request)', () => {
+    for (const status of [400, 401, 403]) {
       expect(shouldRetryWidgetFetch(0, new WidgetFetchError('nope', status))).toBe(false)
     }
   })
@@ -217,5 +225,59 @@ describe('initial-render retry — transient failures retry, permanent ones do n
     expect(widgetFetchRetryDelay(2)).toBe(2800)
     // capped
     expect(widgetFetchRetryDelay(10)).toBe(5000)
+  })
+})
+
+describe('buildExtrasParam — request/user values forwarded into the RA jq dict', () => {
+  const sp = (query: string) => new URLSearchParams(query)
+
+  it('returns empty string when there is no query, no route params, no identity', () => {
+    // Empty → '' (not '{}') so the param and the queryKey stay absent/stable.
+    expect(buildExtrasParam(sp(''))).toBe('')
+  })
+
+  it('forwards the browser URL query (server-side search term)', () => {
+    expect(buildExtrasParam(sp('q=foo'))).toBe('{"q":"foo"}')
+  })
+
+  it('forwards route params (e.g. /compositions/:namespace/:name → the convention param channel)', () => {
+    expect(buildExtrasParam(sp(''), { name: 'rancher', namespace: 'demo' })).toBe('{"name":"rancher","namespace":"demo"}')
+  })
+
+  it('route params win over a same-named URL query key', () => {
+    expect(buildExtrasParam(sp('name=fromquery'), { name: 'fromroute' })).toBe('{"name":"fromroute"}')
+  })
+
+  it('skips undefined route params', () => {
+    expect(buildExtrasParam(sp('q=foo'), { name: undefined })).toBe('{"q":"foo"}')
+  })
+
+  it('forwards the login displayName when present (greeting)', () => {
+    expect(buildExtrasParam(sp(''), {}, 'Diego')).toBe('{"displayName":"Diego"}')
+  })
+
+  it('merges query, route params, and identity', () => {
+    expect(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego')).toBe('{"q":"foo","namespace":"demo","displayName":"Diego"}')
+  })
+
+  it('identity overrides a spoofed displayName URL param', () => {
+    // A URL like ?displayName=evil must NOT override the authenticated identity.
+    expect(buildExtrasParam(sp('displayName=evil'), {}, 'Diego')).toBe('{"displayName":"Diego"}')
+  })
+
+  it('forwards the login username when present (per-user server state, e.g. drafts)', () => {
+    expect(buildExtrasParam(sp(''), {}, 'Diego', 'diego.braga')).toBe('{"displayName":"Diego","username":"diego.braga"}')
+  })
+
+  it('identity overrides a spoofed username URL param', () => {
+    // A URL like ?username=evil must NOT override the authenticated identity — drafts
+    // are keyed by username, so a spoof must not let one user write another's state.
+    // (The `username` key keeps the position of its first sighting in the query, but
+    // its value is overwritten by the authenticated identity — value wins, not order.)
+    expect(buildExtrasParam(sp('username=evil'), {}, 'Diego', 'diego.braga')).toBe('{"username":"diego.braga","displayName":"Diego"}')
+  })
+
+  it('is stable for the same inputs (so the react-query key does not churn)', () => {
+    expect(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego')).toBe(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego'))
   })
 })

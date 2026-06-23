@@ -3,6 +3,7 @@ import type { ItemTemplate } from '../List/itemTemplate'
 import List from '../List/List'
 import type { ListWidgetData } from '../List/List'
 
+import styles from './EventList.module.css'
 import type { EventList as WidgetType } from './EventList.type'
 
 export type EventListWidgetData = WidgetType['spec']['widgetData']
@@ -13,12 +14,14 @@ export type EventListWidgetData = WidgetType['spec']['widgetData']
  * event shape. New widgets should prefer `List` directly with their own template.
  */
 const EVENT_ITEM_TEMPLATE: ItemTemplate = {
-  color: { default: 'gray', map: { Normal: 'blue', Warning: 'orange' }, value: '{type}' },
-  formats: { secondaryText: 'datetime' },
-  icon: 'fa-ellipsis-h',
-  primaryText: 'name: {involvedObject.name}  ·  namespace: {involvedObject.namespace}  ·  kind: {involvedObject.kind}  ·  apiVersion: {involvedObject.apiVersion}',
+  // Petrol status grammar: Normal=cyan (healthy), Warning=amber (attention). Was
+  // Normal:blue/Warning:orange, which both resolve to amber in Petrol — indistinct.
+  color: { default: 'gray', map: { Normal: 'green', Warning: 'orange' }, value: '{type}' },
+  formats: { secondaryText: 'relative' },
+  iconVariant: 'dot',
+  primaryText: '{message}',
   secondaryText: '{lastTimestamp|firstTimestamp|eventTime}',
-  subPrimaryText: '{message}',
+  subPrimaryText: '{involvedObject.kind}  ·  {involvedObject.namespace}',
   subSecondaryText: '{reason}',
 }
 
@@ -34,7 +37,14 @@ const EventList = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<Event
     sseTopic,
   } satisfies ListWidgetData
 
-  return <List resourcesRefs={resourcesRefs} uid={uid} widget={widget} widgetData={listWidgetData} />
+  // The "Live" indicator now lives on the enclosing Card title (Card `live` flag),
+  // so the SSE-backed feed shows "Live" inline with the card heading instead of a
+  // separate row above the list.
+  return (
+    <div className={styles.eventList}>
+      <List resourcesRefs={resourcesRefs} uid={uid} widget={widget} widgetData={listWidgetData} />
+    </div>
+  )
 }
 
 export default EventList

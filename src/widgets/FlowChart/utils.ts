@@ -1,36 +1,23 @@
-import type { Edge } from 'reactflow'
+import type { FlowChartData } from './FlowChart'
 
-import type { FlowChartData, NodeElement } from './FlowChart'
-
-export const parseGraphData = (data: FlowChartData): { parsedNodes: NodeElement[]; parsedEdges: Edge[] } => {
+/** G6 graph data derived from the domain resource list (nodes + parent→child edges). */
+export const toGraphData = (data: FlowChartData): { nodes: { id: string; data: Record<string, unknown> }[]; edges: { source: string; target: string }[] } => {
   if (!data || !Array.isArray(data)) {
-    return { parsedEdges: [], parsedNodes: [] }
+    return { edges: [], nodes: [] }
   }
 
   try {
-    const parsedNodes = data.map(
-      (node): NodeElement => ({
-        data: node,
-        id: node.uid,
-        position: { x: 0, y: 0 },
-        type: 'nodeElement',
-      })
-    )
+    const nodes = data.map((node) => ({ data: { ...node }, id: node.uid }))
 
-    const parsedEdges: Edge[] = data.flatMap(({ parentRefs, uid }) =>
-      (parentRefs ?? [])
+    const edges = data.flatMap((node) =>
+      (node.parentRefs ?? [])
         .filter((ref): ref is { uid: string } => typeof ref?.uid === 'string')
-        .map((ref) => ({
-          id: `${ref.uid}-${uid}`,
-          label: '',
-          source: ref.uid,
-          target: uid,
-        }))
+        .map((ref) => ({ source: ref.uid, target: node.uid }))
     )
 
-    return { parsedEdges, parsedNodes }
+    return { edges, nodes }
   } catch (error) {
     console.error('Error parsing data', error)
-    return { parsedEdges: [], parsedNodes: [] }
+    return { edges: [], nodes: [] }
   }
 }

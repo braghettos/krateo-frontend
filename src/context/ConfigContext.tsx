@@ -7,13 +7,34 @@ export interface Config {
     SNOWPLOW_API_BASE_URL: string
     EVENTS_API_BASE_URL: string
     EVENTS_PUSH_API_BASE_URL: string
-    ROUTES_LOADER: string
     INIT: string
     TERMINAL_SOCKET_URL: string
+    /** Base URL of the Krateo Autopilot (kagent) A2A endpoint. Optional: when
+     * absent the Autopilot rail + header toggle do not render (graceful absence
+     * for installs without autopilot deployed). */
+    AUTOPILOT_API_BASE_URL?: string
   }
   params: {
     FRONTEND_NAMESPACE: string
     DELAY_SAVE_NOTIFICATION: string
+  }
+  /** Optional login-screen branding. Fetched pre-auth (before any backend
+   * identity), so it lives in the static config (ConfigMap-mountable per install)
+   * rather than a snowplow widget. Absent keys fall back to built-in defaults. */
+  login?: {
+    /** Branding logo for the login panel. A URL (absolute, or a path the
+     * frontend serves). Should be a light/white mark — it sits on the brand
+     * gradient. Falls back to the bundled Krateo logo when absent. */
+    logoUrl?: string
+    /** Accessible alt text for the logo. Falls back to 'Krateo | PlatformOps'. */
+    logoAlt?: string
+    headline?: string
+    subtitle?: string
+    highlights?: string[]
+    /** Optional "Request an account" link target (e.g. an internal access-request
+     * form or mailto). Krateo has no self-signup, so the link only renders when an
+     * install sets this — no dead link by default. */
+    requestAccountUrl?: string
   }
 }
 

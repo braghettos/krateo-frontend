@@ -191,5 +191,5 @@ spec:
         apiVersion: widgets.templates.krateo.io/v1beta1
         name: example-column-multiple-child
         namespace: krateo-system
-        resource: columns
+        resource: cols
         verb: GET

@@ -1,7 +1,7 @@
 export interface Menu {
   version: string
   /**
-   * NavMenu is a container for NavMenuItem widgets, which are used to setup navigation inside the application
+   * antd Menu — navigation. `items` are inline nav entries: a `label`+`path` makes a visible sidebar entry and a route; a label-less item is a route-only (hidden) route. Content resolves by resourceRefId or the flexes/page-<slug> convention.
    */
   kind: string
   spec: {
@@ -17,15 +17,35 @@ export interface Menu {
       /**
        * the list of resources that are allowed to be children of this widget or referenced by it
        */
-      allowedResources: 'navmenuitems'[]
+      allowedResources: ('navmenuitems' | 'pages')[]
       /**
-       * list of navigation entries each pointing to a k8s custom resource
+       * navigation entries (inline nav data); each references its content widget by resourceRefId or resolves via the path → flexes/page-<slug> convention. A label-less item registers a route with no sidebar entry.
        */
       items: {
         /**
-         * the identifier of the k8s custom resource that should be represented, usually a NavMenuItem
+         * route path; '{param}' segments become :param and reach the content widget via ?extras. A label-less item registers a route with NO sidebar entry (hidden — e.g. detail/create/search).
          */
-        resourceRefId: string
+        path?: string
+        /**
+         * menu entry label; omit for a route-only (hidden) item
+         */
+        label?: string
+        /**
+         * FontAwesome icon name shown beside the label (e.g. 'fa-inbox')
+         */
+        icon?: string
+        /**
+         * sort weight for the entry
+         */
+        order?: number
+        /**
+         * id of the content widget (resolved via resourcesRefs, RBAC-aware). Optional — omit to use the path → flexes/page-<slug> convention.
+         */
+        resourceRefId?: string
+        /**
+         * convention page-slug override → content is flexes/page-<slug>; set this for templated paths to avoid list-vs-detail collisions.
+         */
+        page?: string
       }[]
     }
     apiRef?: {
@@ -59,5 +79,19 @@ export interface Menu {
       }[]
       [k: string]: unknown
     }
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
+    }[]
   }
 }

@@ -9,7 +9,53 @@ import type { Paragraph as WidgetType } from './Paragraph.type'
 export type ParagraphWidgetData = WidgetType['spec']['widgetData']
 
 const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
-  const { code, copyable, delete: del, disabled, ellipsis, italic, mark, strong, text, type, underline } = widgetData
+  const { code, copyable, delete: del, disabled, ellipsis, italic, level, mark, strong, text, type, underline, variant } = widgetData
+
+  const content = (
+    <Linkify
+      options={{
+        rel: 'noopener noreferrer',
+        target: '_blank',
+      }}
+    >
+      {text}
+    </Linkify>
+  )
+
+  // `variant: eyebrow` renders the small uppercase mono section caption (the Flight-deck
+  // page-header / panel eyebrow). Rendered as a plain element rather than antd
+  // Typography.Paragraph — antd Typography collapses a multi-class className to its first
+  // token, which would drop the `.eyebrow` modifier class.
+  if (variant === 'eyebrow') {
+    return (
+      <div className={`${styles.paragraph} ${styles.eyebrow}`} key={uid}>
+        {content}
+      </div>
+    )
+  }
+
+  // A `level` promotes the text to a Typography.Title (h1-h5); otherwise it
+  // renders as a body Paragraph. Both share the same inline-style props.
+  if (level) {
+    return (
+      <Typography.Title
+        className={styles.paragraph}
+        code={code}
+        copyable={copyable}
+        delete={del}
+        disabled={disabled}
+        ellipsis={ellipsis}
+        italic={italic}
+        key={uid}
+        level={level}
+        mark={mark}
+        type={type}
+        underline={underline}
+      >
+        {content}
+      </Typography.Title>
+    )
+  }
 
   return (
     <Typography.Paragraph
@@ -26,14 +72,7 @@ const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
       type={type}
       underline={underline}
     >
-      <Linkify
-        options={{
-          rel: 'noopener noreferrer',
-          target: '_blank',
-        }}
-      >
-        {text}
-      </Linkify>
+      {content}
     </Typography.Paragraph>
   )
 }

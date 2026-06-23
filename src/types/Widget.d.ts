@@ -1,3 +1,5 @@
+import type { WidgetActions } from './actions.generated'
+
 export interface ResourceRef {
   allowed: boolean
   id: string
@@ -44,67 +46,11 @@ export interface Widget<WidgetDataType = unknown> {
     | string
 }
 
-export type WidgetActions = {
-  rest?: {
-    type: 'rest'
-    id: string
-    payload?: Record<string, unknown>
-    payloadKey?: string
-    resourceRefId: string
-    requireConfirmation?: boolean
-    successMessage?: string
-    errorMessage?: string
-    onSuccessNavigateTo?: string
-    onEventNavigateTo?: {
-      url: string
-      eventReason: string
-      timeout?: number
-      reloadRoutes?: boolean
-      loadingMessage?: string
-    }
-    payloadToOverride?: {
-      name: string
-      value: string
-    }[]
-    headers?: string[]
-    loading?: {
-      display: boolean
-    }
-  }[]
-  navigate?: {
-    id: string
-    loading?: {
-      display: boolean
-    }
-    path?: string
-    resourceRefId?: string
-    requireConfirmation?: boolean
-    type: 'navigate'
-  }[]
-  openDrawer?: {
-    id: string
-    type: 'openDrawer'
-    resourceRefId: string
-    requireConfirmation?: boolean
-    size?: 'default' | 'large'
-    title?: string
-    loading?: {
-      display: boolean
-    }
-  }[]
-  openModal?: {
-    id: string
-    type: 'openModal'
-    resourceRefId: string
-    requireConfirmation?: boolean
-    title?: string
-    loading?: {
-      display: boolean
-    }
-    customWidth?: string
-    size?: 'custom' | 'default' | 'fullscreen' | 'large'
-  }[]
-}
+// WidgetActions is GENERATED from the canonical fragment src/schemas/actions.schema.json
+// (the single source of truth) by `npm run generate-types`. Do not hand-edit the shape —
+// edit the fragment and regenerate. validate-schemas enforces that every widget's
+// widgetData.actions copies that fragment verbatim, so the schema and this type can't drift.
+export type { WidgetActions }
 
 type RestAction = NonNullable<WidgetActions['rest']>[number]
 type NavigateAction = NonNullable<WidgetActions['navigate']>[number]

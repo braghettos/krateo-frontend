@@ -33,10 +33,6 @@ export interface Form {
          */
         rest?: {
           /**
-           * ***DEPRECATED*** key used to nest the payload in the request body
-           */
-          payloadKey?: string
-          /**
            * array of headers as strings, format 'key: value'
            */
           headers: string[]
@@ -239,6 +235,41 @@ export interface Form {
            * icon name for secondary button
            */
           icon?: string
+          /**
+           * when set, the secondary button is a Cancel that navigates to this route (SPA) instead of resetting the form
+           */
+          navigateTo?: string
+        }
+        /**
+         * draft button configuration — only rendered when widgetData.draftActionId is also set; clicking it persists the current (un-validated) field values via that action
+         */
+        draft?: {
+          /**
+           * text label for draft button
+           */
+          label?: string
+          /**
+           * icon name for draft button
+           */
+          icon?: string
+        }
+        /**
+         * Configure-step button label when reviewBeforeSubmit is set (the button that opens the in-place Review; default 'Review →')
+         */
+        review?: {
+          /**
+           * text label for the Review button
+           */
+          label?: string
+        }
+        /**
+         * Review-step back button label when reviewBeforeSubmit is set (returns to editing; default '← Back to edit')
+         */
+        reviewBack?: {
+          /**
+           * text label for the back-to-edit button
+           */
+          label?: string
         }
       }
       /**
@@ -255,9 +286,33 @@ export interface Form {
         resourceRefId: string
       }[]
       /**
+       * JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields — the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema. Note: a schema sourced from a CRD's openAPIV3Schema has its `properties` map serialized alphabetically (the order is lost); use `stringSchema` to preserve the source `values.schema.json` authoring order.
+       */
+      schema?: Record<string, unknown>
+      /**
+       * Same JSON schema as `schema`, but provided as a raw JSON STRING. Preferred over `schema` when present: the client `JSON.parse`s it, preserving the object's key insertion order, so fields render in the source `values.schema.json` order rather than the alphabetized order a CRD-sourced object schema yields. Typically populated server-side from the blueprint's per-version jsonschema ConfigMap (which keeps authoring order) via a widgetDataTemplate. Falls back to `schema` when absent or not valid JSON.
+       */
+      stringSchema?: string
+      /**
+       * top-level schema property names to omit from the schema-driven form
+       */
+      propertiesToHide?: string[]
+      /**
+       * when true (inline render only), the primary button validates and reveals an in-place read-only Review of the entered values before the real submit — the form stays mounted so 'Back to edit' preserves every value. Pair with buttonConfig.review / buttonConfig.reviewBack for custom labels.
+       */
+      reviewBeforeSubmit?: boolean
+      /**
+       * when true, the primary (submit) button stays disabled until at least one field differs from its initial value (initialValues overlaid on schema defaults). Use for update forms where submitting an unchanged value is a no-op — e.g. a version picker pre-set to the currently-installed version.
+       */
+      submitDisabledWhenPristine?: boolean
+      /**
        * the id of the action to be called when the form is submitted
        */
       submitActionId: string
+      /**
+       * optional id of an action fired by a 'Save draft' button that captures the CURRENT field values WITHOUT running form validation (so an incomplete form can be persisted). Pair with buttonConfig.draft to show the button.
+       */
+      draftActionId?: string
     }
     apiRef?: {
       name: string
@@ -266,6 +321,43 @@ export interface Form {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefs?: {
+      items: {
+        allowed: boolean
+        apiVersion?: string
+        id: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+        slice?: {
+          offset?: number
+          page: number
+          perPage: number
+          continue?: boolean
+          [k: string]: unknown
+        }
+        [k: string]: unknown
+      }[]
+      [k: string]: unknown
+    }
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

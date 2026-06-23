@@ -13,8 +13,12 @@ export interface WidgetModule<T = unknown> {
   component: React.ComponentType<WidgetProps<T>>
   /** When true, `WidgetRenderer` wraps the component in `ScrollPagination`. */
   paginated?: boolean
-  /** Legacy `kind` names that resolve to this same component (back-compat after a rename/fold). */
-  aliases?: string[]
+  /**
+   * Navigation/structural resource (routing, page shell) — NOT an antd-mapped
+   * widget. Still resolved by `WidgetRenderer`, but excluded from the antd
+   * `widgetRegistry` (the antd-fidelity set). See docs/widget-authoring.md.
+   */
+  structural?: boolean
 }
 
 /** Identity helper that preserves the generic while enforcing the shape. */

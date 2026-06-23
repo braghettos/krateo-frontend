@@ -1,13 +1,11 @@
 import { Breadcrumb as AntdBreadcrumb, Typography } from 'antd'
 import type { BreadcrumbItemType, BreadcrumbSeparatorType } from 'antd/es/breadcrumb/Breadcrumb'
 import { useEffect, useState } from 'react'
-import { useMatches, useNavigate } from 'react-router'
+import { Link, useMatches } from 'react-router'
 
 import styles from './Breadcrumb.module.css'
 
 const Breadcrumb = () => {
-  const navigate = useNavigate()
-
   const [items, setItems] = useState<Partial<BreadcrumbItemType & BreadcrumbSeparatorType>[]>()
   const matches = useMatches()
 
@@ -19,40 +17,37 @@ const Breadcrumb = () => {
       const splitPath = path.split('/')
 
       splitPath.forEach((pathElement, index) => {
-        if (index === splitPath.length - 1) {
-          items.push({
-            title: (
-              <Typography.Text
-                className={`${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`}
-                ellipsis={{ tooltip: true }}
-              >
-                {pathElement}
-              </Typography.Text>
-            ),
-          })
-        } else {
-          const fullPath = `/${splitPath.slice(0, index + 1).join('/')}`
-
-          items.push({
-            title: (
-              <Typography.Text
-                className={`${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`}
-                ellipsis={{ tooltip: true }}
-              >
-                <span className={styles.link} onClick={() => { void navigate(fullPath) } }>
-                  {pathElement}
-                </span>
-              </Typography.Text>
-            ),
-          })
+        const isLast = index === splitPath.length - 1
+        const className = `${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`
+        // The first crumb (the section) links to its list route. On a composition
+        // detail route (/compositions/:namespace/:name) the namespace crumb links to
+        // the per-namespace list /compositions/:namespace. Other intermediate segments
+        // have no list route, so they stay plain text rather than become broken links.
+        // No antd `ellipsis` (its JS measurement over-truncates even with room) — the
+        // CSS truncates only past the cap; `title` is the tooltip.
+        let to: string | undefined
+        if (index === 0 && !isLast) {
+          to = `/${splitPath[0]}`
+        } else if (index === 1 && !isLast && splitPath[0] === 'compositions') {
+          to = `/${splitPath[0]}/${splitPath[1]}`
         }
+
+        items.push({
+          title: (
+            <Typography.Text className={className} title={pathElement}>
+              {to
+                ? <Link className={styles.link} to={to}>{pathElement}</Link>
+                : pathElement}
+            </Typography.Text>
+          ),
+        })
       })
 
       setItems(items)
     } else {
       setItems([{ title: '' }])
     }
-  }, [matches, navigate])
+  }, [matches])
 
   return <AntdBreadcrumb items={items}/>
 }

@@ -2,10 +2,15 @@
 /* this rules conflicts with react-query ordering required for correct type inference */
 
 import { useInfiniteQuery, useIsFetching } from '@tanstack/react-query'
+import { useParams, useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../context/ConfigContext'
 import type { Widget } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
+import { getUserInfo } from '../utils/getUserInfo'
+
+import type { WatchMatcher } from './liveRefresh'
+import { useLiveWatch } from './useLiveRefresh'
 
 function parseNumberParam(param: string | null) {
   const parsed = param ? parseInt(param) : undefined
@@ -28,13 +33,20 @@ export const MAX_WIDGET_FETCH_RETRIES = 3
  * Whether a failed widget fetch should be retried. The global QueryClient sets
  * `retry: false`, so without this a backend that has not answered yet (network
  * error / 5xx during startup) lands immediately in the error state — the
- * "red cross on initial render". We retry transient failures (network errors,
- * which carry no status, and 5xx) but never permanent ones (4xx: auth /
- * forbidden / not-found / bad-request).
+ * "red cross on initial render". We retry transient failures and never permanent
+ * client errors.
+ *
+ * 404 is treated as TRANSIENT here: right after a page load/refresh snowplow can
+ * answer 404 for a widget endpoint while its informer cache is still cold (the CR
+ * exists but isn't listed yet) — that produced an "Error while rendering widget"
+ * flash on first paint that recovered on the next fetch. Retrying 404 a few times
+ * keeps the skeleton up until the cache warms; a genuinely-missing widget still
+ * surfaces the error once the retries are exhausted. The other 4xx (400 bad
+ * request, 401 auth, 403 forbidden) stay permanent — retrying them never helps.
  */
 export const shouldRetryWidgetFetch = (failureCount: number, error: unknown): boolean => {
   const status = (error as { status?: number } | null)?.status
-  if (typeof status === 'number' && status >= 400 && status < 500) {
+  if (typeof status === 'number' && status >= 400 && status < 500 && status !== 404) {
     return false
   }
   return failureCount < MAX_WIDGET_FETCH_RETRIES
@@ -43,8 +55,45 @@ export const shouldRetryWidgetFetch = (failureCount: number, error: unknown): bo
 /** Exponential backoff (capped) between widget-fetch retries. */
 export const widgetFetchRetryDelay = (attemptIndex: number): number => Math.min(700 * 2 ** attemptIndex, 5000)
 
+/**
+ * Build the `?extras=` JSON envelope snowplow forwards into the RESTAction jq dict
+ * (its `ParseExtras` reads only this query param; the caller's identity/route are
+ * NOT otherwise exposed to RA jq). Sources, later-wins on key collision: the browser
+ * URL query (e.g. /search?q=… → `extras.q`), the active route params
+ * (e.g. /compositions/:namespace/:name → `extras.namespace`/`extras.name` — the
+ * convention's param channel), and the login-provided identity `displayName` +
+ * `username` (there is no runtime /me; displayName feeds the greeting, username
+ * scopes per-user server state e.g. blueprint drafts). Identity is applied LAST so
+ * a spoofed `?displayName=`/`?username=` URL param can never override the
+ * authenticated value. Returns '' when empty so the param — and the react-query key
+ * it feeds — stay stable (same inputs → same string, no spurious refetch).
+ */
+export const buildExtrasParam = (
+  searchParams: URLSearchParams,
+  routeParams: Record<string, string | undefined> = {},
+  displayName?: string,
+  username?: string,
+): string => {
+  const extras: Record<string, unknown> = Object.fromEntries(searchParams.entries())
+  for (const [key, value] of Object.entries(routeParams)) {
+    if (value !== undefined) { extras[key] = value }
+  }
+  if (displayName) { extras.displayName = displayName }
+  if (username) { extras.username = username }
+  return Object.keys(extras).length > 0 ? JSON.stringify(extras) : ''
+}
+
 export const useWidgetQuery = (widgetEndpoint: string) => {
   const { config } = useConfigContext()
+  const [searchParams] = useSearchParams()
+  const routeParams = useParams()
+  // Extras envelope snowplow forwards into the RESTAction jq dict (`?extras=<json>`):
+  // route params (e.g. /compositions/:namespace/:name) + browser URL query (search `q`)
+  // + login identity `displayName` (greeting) + `username` (per-user server state, e.g.
+  // blueprint drafts). See buildExtrasParam.
+  const { displayName, username } = getUserInfo()
+  const extrasParam = buildExtrasParam(searchParams, routeParams, displayName, username)
+
   const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${widgetEndpoint}`
   const requestUrl = new URL(widgetFullUrl)
 
@@ -64,6 +113,9 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
     }
     if (typeof perPage === 'number') {
       requestUrl.searchParams.set('perPage', perPage.toString())
+    }
+    if (extrasParam) {
+      requestUrl.searchParams.set('extras', extrasParam)
     }
 
     const urlString = requestUrl.toString()
@@ -90,7 +142,7 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   }
 
   const queryResult = useInfiniteQuery({
-    queryKey: ['widgets', widgetEndpoint],
+    queryKey: ['widgets', widgetEndpoint, extrasParam],
     queryFn: ({ pageParam }) => fetchWidget(pageParam),
     // Override the global `retry: false` for widget data: a backend that is not
     // ready yet should keep showing a loading state and retry, not flash the
@@ -167,6 +219,14 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
       return resourcesRefsPaths.includes(resourceRefPath)
     },
   })
+
+  // Live-refresh: a widget can declare widgetData.watch — refetch this query when a
+  // matching k8s event arrives (precise, per-widget throttled by the registry).
+  const liveStatus = queryResult.data?.status
+  const watch = liveStatus && typeof liveStatus === 'object'
+    ? (liveStatus.widgetData as { watch?: WatchMatcher[] } | undefined)?.watch
+    : undefined
+  useLiveWatch(watch, queryResult.refetch)
 
   return {
     queryResult,

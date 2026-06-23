@@ -19,6 +19,7 @@ export interface Table {
         | 'markdowns'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'yamlviewers'
       )[]
       /**
@@ -47,9 +48,17 @@ export interface Table {
          */
         valueKey: string
         /**
-         * type of cell value
+         * type of cell value. `tag` renders the stringValue as a colored antd Tag (use the cell `color`). `bar` renders a reconciliation-rail Progress gauge: `stringValue` = percent (0-100), `color` = bar/state color, + an amber target-tick at 100%.
          */
-        kind: 'jsonSchemaType' | 'icon' | 'widget'
+        kind: 'jsonSchemaType' | 'icon' | 'widget' | 'tag' | 'bar' | 'conditions'
+        /**
+         * per-cell color — for a `tag` cell, an antd Tag color (e.g. green / red / gold / blue); for a jsonSchemaType cell it overrides the column color. Lets each row carry its own color (e.g. status).
+         */
+        color?: string
+        /**
+         * optional display format for a string value — `relative` (e.g. "14d ago"), `date`, or `datetime`. The raw value stays in the data; only the rendering changes.
+         */
+        format?: 'relative' | 'date' | 'datetime'
         /**
          * used if kind = widget
          */
@@ -80,7 +89,7 @@ export interface Table {
         arrayValue?: string[]
       }[][]
       /**
-       * antd Table pagination config (subproperties mirror antd). Replaces the flat `pageSize`, which is still accepted for back-compat.
+       * antd Table pagination config (subproperties mirror antd).
        */
       pagination?: {
         /**
@@ -116,6 +125,31 @@ export interface Table {
        * it's the filters prefix to get right values
        */
       prefix?: string
+      /**
+       * optional route path to navigate to on row click; `{valueKey}` placeholders are filled from that row's cells (e.g. /compositions/{ns}/{name})
+       */
+      rowNavigateTo?: string
+      /**
+       * live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.
+       */
+      watch?: {
+        /**
+         * group/version, e.g. composition.krateo.io/v1alpha1
+         */
+        apiVersion: string
+        /**
+         * e.g. DemoClaim
+         */
+        kind: string
+        /**
+         * scope to a namespace; omit to match any
+         */
+        namespace?: string
+        /**
+         * a specific object; omit to match any object of this kind ("GVR-level")
+         */
+        name?: string
+      }[]
     }
     resourcesRefs?: {
       items: {
@@ -147,6 +181,20 @@ export interface Table {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

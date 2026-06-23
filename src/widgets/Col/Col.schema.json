@@ -26,22 +26,26 @@
                 "type": "string",
                 "enum": [
                   "barcharts",
+                  "flexes",
                   "buttons",
                   "buttongroups",
-                  "columns",
-                  "datagrids",
+                  "cols",
+                  "lists",
                   "eventlists",
                   "filters",
                   "flowcharts",
                   "forms",
                   "linecharts",
                   "markdowns",
-                  "panels",
+                  "cards",
                   "paragraphs",
                   "piecharts",
+                  "rangepickers",
                   "rows",
+                  "statistics",
                   "tables",
-                  "tablists",
+                  "tabs",
+                  "tags",
                   "yamlviewers"
                 ]
               }
@@ -160,6 +164,52 @@
               },
               "expression": {
                 "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
               }
             },
             "additionalProperties": false

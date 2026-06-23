@@ -17,5 +17,5 @@ metadata:
 spec:
   widgetData:
     label: "Details"
-    orientation: "left"
+    titlePlacement: "left"
     plain: true

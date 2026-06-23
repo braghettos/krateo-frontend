@@ -49,7 +49,8 @@ const Upload = ({ resourcesRefs, uid, widgetData }: WidgetProps<UploadWidgetData
       if (xhr.status >= 200 && xhr.status < 300) {
         onSuccess?.(xhr.response)
         notification.success({ message: successMessage || 'Upload complete', placement: 'bottomLeft' })
-        void queryClient.invalidateQueries()
+        // Refresh widget data only (key ['widgets', ...]); don't blow away the SSE events cache.
+        void queryClient.invalidateQueries({ queryKey: ['widgets'] })
       } else {
         const error = new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`)
         onError?.(error)

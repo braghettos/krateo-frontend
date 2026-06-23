@@ -11,10 +11,17 @@ const registry = new Map<string, WidgetModule>()
 
 export const registerWidget = (module: WidgetModule): void => {
   registry.set(module.kind, module)
-  // Back-compat: legacy kind names resolve to the same component (e.g. Panel→Card, DataGrid→List).
-  module.aliases?.forEach((alias) => registry.set(alias, module))
 }
 
+/** Resolve any registered module — antd widgets AND structural kinds (used by WidgetRenderer). */
 export const getWidgetModule = (kind: string): WidgetModule | undefined => registry.get(kind)
 
-export const getWidgetRegistry = (): Record<string, WidgetModule> => Object.fromEntries(registry)
+/** The antd-mapped widget set — excludes structural navigation/routing kinds. */
+export const getWidgetRegistry = (): Record<string, WidgetModule> =>
+  Object.fromEntries([...registry].filter(([, module]) => !module.structural))
+
+/** Structural (non-antd) kinds — currently none (Page/Route/RoutesLoader/NavMenu
+ * removed: routing is data, the sidebar Menu's inline items are the route source).
+ * The hook is kept so a future non-antd kind can opt out of the antd registry. */
+export const getStructuralRegistry = (): Record<string, WidgetModule> =>
+  Object.fromEntries([...registry].filter(([, module]) => module.structural))

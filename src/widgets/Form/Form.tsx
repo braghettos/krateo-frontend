@@ -1,11 +1,14 @@
 import { LoadingOutlined } from '@ant-design/icons'
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Form as AntdForm, Result, Space, Spin } from 'antd'
+import { Button, Descriptions, Form as AntdForm, Result, Space, Spin } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import dayjs from 'dayjs'
-import { useEffect, useId, useRef } from 'react'
+import type { JSONSchema4 } from 'json-schema'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router'
 
+import { useAgentDraft } from '../../components/Autopilot/agentDraft'
 import WidgetRenderer from '../../components/WidgetRenderer'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import type { WidgetProps } from '../../types/Widget'
@@ -14,6 +17,8 @@ import { useDrawerContext } from '../Drawer/DrawerContext'
 
 import styles from './Form.module.css'
 import type { Form as WidgetType } from './Form.type'
+import { SchemaForm } from './SchemaFields'
+import { getDefaultsFromSchema } from './utils'
 
 export type FormWidgetData = WidgetType['spec']['widgetData']
 
@@ -36,30 +41,111 @@ interface FormExtraProps {
   disabled?: boolean | undefined
   form?: string | undefined
   loading?: boolean
+  // When set, a "Save draft" button is shown between Cancel and the primary; it is a
+  // plain (htmlType='button') button so it does NOT trigger form validation — clicking
+  // it persists the current field values as-is. Only wired for the inline (non-drawer)
+  // render; the drawer omits it.
+  onDraft?: (() => void | Promise<void>) | undefined
+  // Disables ONLY the primary (submit) button while leaving Cancel/Reset usable — used by
+  // `submitDisabledWhenPristine` so an unchanged form (e.g. a version picker still on the
+  // current version) can't submit a no-op.
+  submitDisabled?: boolean | undefined
+  // Overrides the primary (submit) button label — used by review-before-submit so the
+  // Configure step's button reads "Review →" while the final Review-step button keeps
+  // the real create label.
+  submitLabel?: string | undefined
 }
 
-const FormExtra = ({ buttonConfig, disabled = false, form, loading }: FormExtraProps): React.ReactNode => {
+const FormExtra = ({ buttonConfig, disabled = false, form, loading, onDraft, submitDisabled = false, submitLabel }: FormExtraProps): React.ReactNode => {
+  const navigate = useNavigate()
+  // When `secondary.navigateTo` is set the secondary button is a Cancel that
+  // navigates (SPA) instead of resetting the form.
+  const secondaryNav = buttonConfig?.secondary?.navigateTo
+  // Action bar: Save draft pinned LEFT, Cancel + primary grouped RIGHT (mockup `.actionbar`
+  // split). With no draft action (e.g. the drawer render) the left slot is an empty spacer,
+  // so the right group stays right-aligned — unchanged from the previous single-Space layout.
   return (
-    <Space>
-      <Button
-        disabled={disabled}
-        form={form}
-        htmlType='reset'
-        icon={buttonConfig?.secondary?.icon ? <FontAwesomeIcon icon={buttonConfig?.secondary?.icon as IconProp} /> : undefined}
-        type='default'
-      >
-        {buttonConfig?.secondary?.label || 'Reset'}
-      </Button>
-      <Button
-        form={form}
-        htmlType='submit'
-        icon={buttonConfig?.primary?.icon ? <FontAwesomeIcon icon={buttonConfig?.primary?.icon as IconProp} /> : undefined}
-        loading={loading}
-        type='primary'
-      >
-        {buttonConfig?.primary?.label || 'Submit'}
-      </Button>
-    </Space>
+    <div className={styles.actionRow}>
+      {onDraft
+        ? (
+          <Button
+            disabled={disabled}
+            htmlType='button'
+            icon={buttonConfig?.draft?.icon ? <FontAwesomeIcon icon={buttonConfig?.draft?.icon as IconProp} /> : undefined}
+            onClick={() => { void onDraft() }}
+            type='default'
+          >
+            {buttonConfig?.draft?.label || 'Save draft'}
+          </Button>
+        )
+        : <span />}
+      <Space>
+        <Button
+          disabled={disabled}
+          form={form}
+          htmlType={secondaryNav ? 'button' : 'reset'}
+          icon={buttonConfig?.secondary?.icon ? <FontAwesomeIcon icon={buttonConfig?.secondary?.icon as IconProp} /> : undefined}
+          onClick={secondaryNav ? () => { void navigate(secondaryNav) } : undefined}
+          type='default'
+        >
+          {buttonConfig?.secondary?.label || 'Reset'}
+        </Button>
+        <Button
+          disabled={submitDisabled}
+          form={form}
+          htmlType='submit'
+          icon={buttonConfig?.primary?.icon ? <FontAwesomeIcon icon={buttonConfig?.primary?.icon as IconProp} /> : undefined}
+          loading={loading}
+          type='primary'
+        >
+          {submitLabel ?? (buttonConfig?.primary?.label || 'Submit')}
+        </Button>
+      </Space>
+    </div>
+  )
+}
+
+/**
+ * Read-only summary shown in the in-place Review step (`reviewBeforeSubmit`). Renders the
+ * validated values that WILL create the resource as an antd `Descriptions`, labelled from
+ * the schema (`title` → key), name+namespace first, with the per-user draft key and empty
+ * values omitted. Object/array values are JSON-shown.
+ */
+/** Display a reviewed value: objects/arrays as JSON, booleans as Yes/No, else as text. */
+const formatReviewValue = (value: unknown): string => {
+  if (typeof value === 'object') { return JSON.stringify(value) }
+  if (typeof value === 'boolean') { return value ? 'Yes' : 'No' }
+  if (typeof value === 'number') { return String(value) }
+  if (typeof value === 'string') { return value }
+  return ''
+}
+
+/** Sort key: identity (name, namespace) first, everything else after. */
+const reviewFieldOrder = (key: string): number => {
+  if (key === 'name') { return 0 }
+  if (key === 'namespace') { return 1 }
+  return 2
+}
+
+const ReviewSummary = ({ schema, values }: { schema?: JSONSchema4; values: Record<string, unknown> }): React.ReactNode => {
+  const items = Object.entries(values)
+    .filter(([key]) => key !== '__owner')
+    .filter(([, value]) => value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && value.length === 0))
+    .sort(([keyA], [keyB]) => reviewFieldOrder(keyA) - reviewFieldOrder(keyB))
+    .map(([key, value]) => {
+      const node = schema?.properties?.[key]
+      const label = (typeof node?.title === 'string' && node.title) || key
+      return { children: formatReviewValue(value), key, label }
+    })
+
+  return (
+    <Descriptions
+      bordered
+      column={1}
+      items={items}
+      size='small'
+      title='Review — these values will create the composition'
+    />
   )
 }
 
@@ -69,14 +155,79 @@ const FormExtra = ({ buttonConfig, disabled = false, form, loading }: FormExtraP
  * `Form.Item` name. There is no client-side schema generator — a CR that needs
  * to build fields from a source schema does so server-side via a jq expression
  * in `widgetDataTemplate` that populates `items`.
+ *
+ * When `reviewBeforeSubmit` is set (inline render only), the primary button first
+ * validates and reveals an in-place read-only Review of the entered values; the form
+ * stays mounted (hidden) so "Back to edit" keeps every value, and the final Review-step
+ * button runs the same submit action. Default (flag off) is unchanged.
  */
 const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>) => {
-  const { actions, buttonConfig, disabled, initialValues, items, layout, size, submitActionId } = widgetData
+  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, stringSchema, submitActionId, submitDisabledWhenPristine } = widgetData
+  // Prefer `stringSchema` (the schema as a raw JSON STRING) when present: `JSON.parse`
+  // preserves the object's key insertion order, so a server that hands us the blueprint's
+  // values.schema.json verbatim (e.g. from the per-blueprint jsonschema ConfigMap, which
+  // keeps authoring order) renders fields in that order — unlike the `schema` object sourced
+  // from the CRD's openAPIV3Schema, whose properties map is serialized alphabetically. Falls
+  // back to the `schema` object when stringSchema is absent or not valid JSON. Memoized so
+  // the (potentially large) parse doesn't run on every controlled-form keystroke.
+  const jsonSchema = useMemo<JSONSchema4 | undefined>(() => {
+    if (typeof stringSchema === 'string' && stringSchema.trim() !== '') {
+      try {
+        return JSON.parse(stringSchema) as JSONSchema4
+      } catch {
+        // malformed string schema — fall back to the object schema below
+      }
+    }
+
+    return schema as JSONSchema4 | undefined
+  }, [schema, stringSchema])
   const { insideDrawer, setDrawerData } = useDrawerContext()
   const alreadySetDrawerData = useRef(false)
 
   const { notification } = useApp()
   const { handleAction, isActionLoading } = useHandleAction()
+
+  // A controlled instance so the draft handler can read the live store (incl. values
+  // seeded via initialValues but not rendered, e.g. the per-user draft key) — onFinish
+  // only yields validated, registered fields.
+  const [form] = AntdForm.useForm()
+
+  // In-place Review state: the validated values captured on "Review →" (null = editing).
+  const [reviewValues, setReviewValues] = useState<Record<string, unknown> | null>(null)
+  const reviewing = !insideDrawer && !!reviewBeforeSubmit && reviewValues !== null
+
+  // Autopilot AgentDraft (Phase 3 gated form-fill): an optional THIRD spread over schema
+  // defaults + explicit initialValues. Autopilot fills the fields; the user still reviews and
+  // presses Create. `draftNonce` re-keys the form so the merged values re-apply (antd
+  // `initialValues` is mount-only). Empty/absent when Autopilot isn't driving the form.
+  const { draft: agentDraft, nonce: draftNonce } = useAgentDraft()
+
+  // Effective initial values = schema defaults overlaid by explicit initialValues, then by the
+  // Autopilot draft — the SAME object handed to <AntdForm initialValues> below. Factored out so
+  // the pristine check compares against exactly what the form was seeded with.
+  const effectiveInitialValues = useMemo<Record<string, unknown>>(
+    () => {
+      const base = jsonSchema ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues } : (initialValues ?? {})
+      return agentDraft ? { ...base, ...agentDraft } : base
+    },
+    [jsonSchema, initialValues, agentDraft],
+  )
+
+  // Live form values (re-renders on any field change). Used only to gate the submit button when
+  // `submitDisabledWhenPristine` is set: disabled until at least one field differs from its initial
+  // value — so e.g. a version picker still on the installed version can't submit a no-op update.
+  // `[]` watches the whole store. The store is partial before fields settle, so DIRTY is defined as
+  // "some field has a DEFINED value that differs from its initial" — an absent/undefined value is
+  // treated as unchanged (still pristine), which keeps the button disabled until a real change.
+  const watchedValues = AntdForm.useWatch([], form) as Record<string, unknown> | undefined
+  const submitPristine = useMemo<boolean>(() => {
+    if (!submitDisabledWhenPristine) { return false }
+    const dirty = !!watchedValues && Object.keys(effectiveInitialValues).some((key) => {
+      const current = watchedValues[key]
+      return current !== undefined && JSON.stringify(current) !== JSON.stringify(effectiveInitialValues[key])
+    })
+    return !dirty
+  }, [submitDisabledWhenPristine, watchedValues, effectiveInitialValues])
 
   /* https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button#form */
   const formId = useId()
@@ -91,6 +242,32 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   const action = Object.values(actions)
     .flat()
     .find(({ id }) => id === submitActionId)
+
+  const draftAction = draftActionId
+    ? Object.values(actions).flat().find(({ id }) => id === draftActionId)
+    : undefined
+
+  // "Save draft" — persist the current field values WITHOUT validation. getFieldsValue(true)
+  // returns the entire form store (including values seeded via initialValues that have no
+  // rendered field, e.g. the per-user `__owner` draft key), unlike onFinish which only
+  // delivers validated registered fields. Only offered when the CR defines draftActionId.
+  const onDraft = draftAction
+    ? async () => {
+      if (draftAction.type !== 'rest') {
+        notification.error({
+          description: 'Draft action type is not "rest"',
+          message: 'Error while executing the action',
+          placement: 'bottomLeft',
+        })
+
+        return
+      }
+
+      const values = convertDayjsToISOString(form.getFieldsValue(true) as Record<string, unknown>)
+
+      await handleAction(draftAction, resourcesRefs, values, widget)
+    }
+    : undefined
 
   const onSubmit = async (formValues: Record<string, unknown>) => {
     if (!action) {
@@ -122,12 +299,24 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     await handleAction(action, resourcesRefs, values, widget)
   }
 
-  if (!items?.length) {
+  // On a validated submit: with review-before-submit on and still editing, capture the
+  // values and switch to the in-place Review step instead of submitting. Otherwise submit.
+  const onFinish = (formValues: Record<string, unknown>) => {
+    if (reviewBeforeSubmit && !insideDrawer && reviewValues === null) {
+      setReviewValues(convertDayjsToISOString(formValues))
+
+      return
+    }
+
+    void onSubmit(formValues)
+  }
+
+  if (!jsonSchema?.properties && !items?.length) {
     return (
       <div className={styles.message}>
         <Result
           status='error'
-          subTitle={`The Form widget has no items (form-control widgets) to render`}
+          subTitle={`The Form widget has nothing to render — provide a \`schema\` (schema-driven) or \`items\` (composable form-control widgets)`}
           title='Error while rendering widget'
         />
       </div>
@@ -145,25 +334,66 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   // If the form is inside a Drawer, buttons are already rendered in the Drawer
   const shouldRenderButtonsInsideForm = !insideDrawer
 
+  const reviewButtons = (
+    <Space>
+      <Button disabled={isActionLoading} htmlType='button' onClick={() => { setReviewValues(null) }} type='default'>
+        {buttonConfig?.reviewBack?.label || '← Back to edit'}
+      </Button>
+      <Button
+        htmlType='button'
+        loading={isActionLoading}
+        onClick={() => { if (reviewValues) { void onSubmit(reviewValues) } }}
+        type='primary'
+      >
+        {buttonConfig?.primary?.label || 'Create'}
+      </Button>
+    </Space>
+  )
+
+  const editButtons = (
+    <FormExtra
+      buttonConfig={buttonConfig}
+      form={formId}
+      loading={isActionLoading}
+      onDraft={onDraft}
+      submitDisabled={submitPristine}
+      submitLabel={reviewBeforeSubmit ? (buttonConfig?.review?.label || 'Review →') : undefined}
+    />
+  )
+
+  let footer: React.ReactNode = null
+  if (shouldRenderButtonsInsideForm) {
+    footer = reviewing ? reviewButtons : editButtons
+  }
+
   return (
     <div className={styles.form} data-inside-drawer={insideDrawer}>
-      <AntdForm
-        disabled={disabled}
-        id={formId}
-        initialValues={initialValues}
-        layout={layout}
-        onFinish={(formValues) => { void onSubmit(formValues as Record<string, unknown>) }}
-        size={size}
-      >
-        {items.map(({ resourceRefId }, index) => {
-          const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
-          return endpoint ? <WidgetRenderer key={`${formId}-${index}`} widgetEndpoint={endpoint} /> : null
-        })}
-      </AntdForm>
-
-      <div className={styles.extra}>
-        {shouldRenderButtonsInsideForm ? <FormExtra buttonConfig={buttonConfig} form={formId} loading={isActionLoading} /> : null}
+      {/* Kept mounted (hidden in review) so "Back to edit" preserves every entered value. */}
+      <div style={reviewing ? { display: 'none' } : undefined}>
+        <AntdForm
+          disabled={disabled}
+          form={form}
+          id={formId}
+          initialValues={effectiveInitialValues}
+          // Re-key on a new Autopilot draft so the merged initialValues re-apply (antd
+          // applies initialValues only on mount). Stable (draftNonce 0) without a draft.
+          key={`ap-draft-${draftNonce}`}
+          layout={layout}
+          onFinish={(formValues) => { onFinish(formValues as Record<string, unknown>) }}
+          size={size}
+        >
+          {jsonSchema?.properties
+            ? <SchemaForm hide={propertiesToHide} schema={jsonSchema} />
+            : items?.map(({ resourceRefId }, index) => {
+              const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
+              return endpoint ? <WidgetRenderer key={`${formId}-${index}`} widgetEndpoint={endpoint} /> : null
+            })}
+        </AntdForm>
       </div>
+
+      {reviewing && reviewValues ? <ReviewSummary schema={jsonSchema} values={reviewValues} /> : null}
+
+      <div className={styles.extra}>{footer}</div>
     </div>
   )
 }

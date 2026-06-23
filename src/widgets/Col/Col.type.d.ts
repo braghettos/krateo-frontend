@@ -14,22 +14,26 @@ export interface Col {
        */
       allowedResources: (
         | 'barcharts'
+        | 'flexes'
         | 'buttons'
         | 'buttongroups'
-        | 'columns'
-        | 'datagrids'
+        | 'cols'
+        | 'lists'
         | 'eventlists'
         | 'filters'
         | 'flowcharts'
         | 'forms'
         | 'linecharts'
         | 'markdowns'
-        | 'panels'
+        | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'rows'
+        | 'statistics'
         | 'tables'
-        | 'tablists'
+        | 'tabs'
+        | 'tags'
         | 'yamlviewers'
       )[]
       /**
@@ -112,6 +116,20 @@ export interface Col {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

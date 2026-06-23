@@ -11,9 +11,9 @@ export interface Steps {
        */
       current?: number
       /**
-       * the layout direction of the steps
+       * the layout orientation of the steps (antd Steps `orientation`)
        */
-      direction?: 'horizontal' | 'vertical'
+      orientation?: 'horizontal' | 'vertical'
       /**
        * the size of the steps
        */
@@ -23,9 +23,9 @@ export interface Steps {
        */
       status?: 'wait' | 'process' | 'finish' | 'error'
       /**
-       * where the label is placed relative to the step icon
+       * where the title is placed relative to the step icon (antd Steps `titlePlacement`)
        */
-      labelPlacement?: 'horizontal' | 'vertical'
+      titlePlacement?: 'horizontal' | 'vertical'
       /**
        * the visual type of the steps
        */
@@ -38,6 +38,10 @@ export interface Steps {
          * the title of the step
          */
         title: string
+        /**
+         * a short "eyebrow" label shown ABOVE the title (e.g. `Step 1`) — rendered mono/uppercase
+         */
+        eyebrow?: string
         /**
          * the description of the step
          */
@@ -63,6 +67,43 @@ export interface Steps {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefs?: {
+      items: {
+        allowed: boolean
+        apiVersion?: string
+        id: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+        slice?: {
+          offset?: number
+          page: number
+          perPage: number
+          continue?: boolean
+          [k: string]: unknown
+        }
+        [k: string]: unknown
+      }[]
+      [k: string]: unknown
+    }
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

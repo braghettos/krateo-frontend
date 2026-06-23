@@ -21,9 +21,9 @@ export interface Tabs {
        */
       size?: 'small' | 'middle' | 'large'
       /**
-       * antd Tabs tabPosition
+       * antd Tabs tabPlacement
        */
-      tabPosition?: 'top' | 'right' | 'bottom' | 'left'
+      tabPlacement?: 'top' | 'end' | 'bottom' | 'start'
       /**
        * antd Tabs centered
        */
@@ -35,20 +35,21 @@ export interface Tabs {
         | 'barcharts'
         | 'buttons'
         | 'buttongroups'
-        | 'columns'
-        | 'datagrids'
+        | 'cols'
+        | 'lists'
         | 'eventlists'
         | 'filters'
         | 'flowcharts'
         | 'forms'
         | 'linecharts'
         | 'markdowns'
-        | 'panels'
+        | 'cards'
         | 'paragraphs'
         | 'piecharts'
+        | 'rangepickers'
         | 'rows'
         | 'tables'
-        | 'tablists'
+        | 'tabs'
         | 'yamlviewers'
       )[]
       /**
@@ -99,6 +100,20 @@ export interface Tabs {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

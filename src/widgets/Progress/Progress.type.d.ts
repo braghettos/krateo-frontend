@@ -34,6 +34,14 @@ export interface Progress {
        * render the progress as a discrete number of steps
        */
       steps?: number
+      /**
+       * optional primary readout rendered below the indicator, tinted in the strokeColor
+       */
+      label?: string
+      /**
+       * optional secondary readout (muted graphite) rendered under `label`
+       */
+      description?: string
     }
     apiRef?: {
       name: string
@@ -42,6 +50,43 @@ export interface Progress {
     widgetDataTemplate?: {
       forPath?: string
       expression?: string
+    }[]
+    resourcesRefs?: {
+      items: {
+        allowed: boolean
+        apiVersion?: string
+        id: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+        slice?: {
+          offset?: number
+          page: number
+          perPage: number
+          continue?: boolean
+          [k: string]: unknown
+        }
+        [k: string]: unknown
+      }[]
+      [k: string]: unknown
+    }
+    resourcesRefsTemplate?: {
+      iterator?: string
+      template?: {
+        apiVersion?: string
+        id?: string
+        name?: string
+        namespace?: string
+        payload?: {
+          [k: string]: unknown
+        }
+        resource?: string
+        verb?: 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'GET'
+      }
     }[]
   }
 }

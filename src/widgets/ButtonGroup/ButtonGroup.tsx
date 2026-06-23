@@ -9,14 +9,6 @@ import type { ButtonGroup as WidgetType } from './ButtonGroup.type'
 
 export type ButtonGroupWidgetData = WidgetType['spec']['widgetData']
 
-// legacy `gap` → antd Space `size`
-const legacyGapToSize: Record<string, 'small' | 'middle' | 'large'> = {
-  'extra-small': 'small',
-  large: 'large',
-  medium: 'middle',
-  small: 'small',
-}
-
 // `alignment` (main-axis justify) has no antd Space prop — kept as a Krateo wrapper concern.
 const justifyContentMap: Record<NonNullable<ButtonGroupWidgetData['alignment']>, React.CSSProperties['justifyContent']> = {
   center: 'center',
@@ -25,13 +17,12 @@ const justifyContentMap: Record<NonNullable<ButtonGroupWidgetData['alignment']>,
 }
 
 const ButtonGroup = ({ resourcesRefs, uid, widgetData }: WidgetProps<ButtonGroupWidgetData>) => {
-  const { alignment, direction, items, size, wrap } = widgetData
-  const legacyGap = (widgetData as { gap?: string }).gap
-  const spaceSize = size ?? (legacyGap ? legacyGapToSize[legacyGap] : 'small')
+  const { alignment, items, orientation, size, wrap } = widgetData
+  const spaceSize = size ?? 'small'
 
   return (
     <div className={styles.inlineGroup} key={uid} style={{ justifyContent: justifyContentMap[alignment ?? 'left'] }}>
-      <Space direction={direction} size={spaceSize} wrap={wrap}>
+      <Space orientation={orientation} size={spaceSize} wrap={wrap}>
         {items
           .map(({ resourceRefId }, index) => {
             const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)

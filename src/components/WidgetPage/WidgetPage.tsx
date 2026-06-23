@@ -1,57 +1,41 @@
 import { useIsFetching } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { useLocation, useSearchParams } from 'react-router'
+import { useLocation } from 'react-router'
 
-import { useConfigContext } from '../../context/ConfigContext'
 import { useRoutesContext } from '../../context/RoutesContext'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import Page404 from '../../pages/Page404'
-import Drawer from '../../widgets/Drawer'
-import Modal from '../../widgets/Modal'
-import AppShell from '../AppShell'
-import Breadcrumb from '../Breadcrumb'
-import Notifications from '../Notifications'
-import UserMenu from '../UserMenu'
 import WidgetRenderer from '../WidgetRenderer'
 
+/**
+ * Content-only routed page: resolves which widget endpoint the current route
+ * should render and hands it to WidgetRenderer. The shell chrome (the Layout
+ * widget, nav, header, overlays, auth gate and route loading) lives in the Shell
+ * layout route — this renders into the Layout widget's content region via its
+ * <Outlet/>, so only the content swaps as routes change.
+ */
 export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: string }) => {
   const location = useLocation()
-  const { config } = useConfigContext()
   const { menuRoutes } = useRoutesContext()
-  const [searchParams] = useSearchParams()
-  const queryParamWidgetEndpoint = searchParams.get('widgetEndpoint')
   const currentRoute = menuRoutes.find(({ path }) => path === location.pathname)
-  const widgetEndpoint = queryParamWidgetEndpoint || currentRoute?.resourceRef?.path || defaultWidgetEndpoint || ''
+  // Route-driven browser-tab title (relocated off the Page widget's <title>).
+  useDocumentTitle(currentRoute?.title)
+  // Content resolves ONLY from the route (routes-as-data → snowplow). The legacy
+  // `?widgetEndpoint=` query-param override is intentionally not supported.
+  const widgetEndpoint = currentRoute?.resourceRef?.path || defaultWidgetEndpoint || ''
 
-  useEffect(() => {
-    const userData = localStorage.getItem('K_user')
-
-    if (!userData) {
-      window.location.replace('/login')
-    }
-  }, [])
-
+  // Routes now come from the sidebar Menu's inline items (registered once the INIT
+  // Layout → Menu resolves), so "routes still loading" = that fetch is in flight —
+  // show loading, not 404, until the route source has registered.
   const isFetchingRoutes = useIsFetching({
     predicate: (query) => {
-      return (
-        (query.queryKey[1] as string).includes('resource=routes')
-        || (query.queryKey[1] as string).includes('resource=routesloaders')
-        || (query.queryKey[1] as string).includes('resource=navmenus')
-      )
+      const key = query.queryKey[1] as string
+      return key.includes('resource=layouts') || key.includes('resource=menus')
     },
   })
 
-  return (
-    <>
-      <AppShell
-        content={widgetEndpoint || isFetchingRoutes ? <WidgetRenderer key={'content'} widgetEndpoint={widgetEndpoint} /> : <Page404 />}
-        headerLeft={<Breadcrumb />}
-        headerRight={<><Notifications /><UserMenu /></>}
-        sidebar={<WidgetRenderer key={'sidebar'} widgetEndpoint={config!.api.INIT} />}
-      />
-      <Drawer />
-      <Modal />
-    </>
-  )
+  return widgetEndpoint || isFetchingRoutes
+    ? <WidgetRenderer key={'content'} widgetEndpoint={widgetEndpoint} />
+    : <Page404 />
 }
 
 export default WidgetPage

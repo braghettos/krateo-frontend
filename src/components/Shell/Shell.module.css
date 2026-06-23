@@ -1,0 +1,35 @@
+/* Two-zone header: breadcrumb (left, grows and truncates) · search + utilities
+   (right, natural width pinned to the edge). */
+.headerLeft {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+.headerRight {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+}
+
+/* User block pinned to the bottom of the Sider. */
+.siderFooter {
+  align-items: center;
+  border-top: 1px solid var(--line-color);
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.siderFooterName {
+  color: var(--text-color);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

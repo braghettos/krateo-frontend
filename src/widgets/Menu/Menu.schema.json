@@ -8,7 +8,7 @@
     },
     "kind": {
       "default": "Menu",
-      "description": "NavMenu is a container for NavMenuItem widgets, which are used to setup navigation inside the application",
+      "description": "antd Menu — navigation. `items` are inline nav entries: a `label`+`path` makes a visible sidebar entry and a route; a label-less item is a route-only (hidden) route. Content resolves by resourceRefId or the flexes/page-<slug> convention.",
       "type": "string"
     },
     "spec": {
@@ -25,19 +25,39 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "enum": ["navmenuitems"]
+                "enum": ["navmenuitems", "pages"]
               }
             },
             "items": {
               "type": "array",
-              "description": "list of navigation entries each pointing to a k8s custom resource",
+              "description": "navigation entries (inline nav data); each references its content widget by resourceRefId or resolves via the path → flexes/page-<slug> convention. A label-less item registers a route with no sidebar entry.",
               "items": {
                 "type": "object",
-                "required": ["resourceRefId"],
                 "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "route path; '{param}' segments become :param and reach the content widget via ?extras. A label-less item registers a route with NO sidebar entry (hidden — e.g. detail/create/search)."
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "menu entry label; omit for a route-only (hidden) item"
+                  },
+                  "icon": {
+                    "type": "string",
+                    "description": "FontAwesome icon name shown beside the label (e.g. 'fa-inbox')"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "sort weight for the entry"
+                  },
                   "resourceRefId": {
                     "type": "string",
-                    "description": "the identifier of the k8s custom resource that should be represented, usually a NavMenuItem"
+                    "description": "id of the content widget (resolved via resourcesRefs, RBAC-aware). Optional — omit to use the path → flexes/page-<slug> convention."
+                  },
+                  "page": {
+                    "type": "string",
+                    "description": "convention page-slug override → content is flexes/page-<slug>; set this for templated paths to avoid list-vs-detail collisions."
                   }
                 },
                 "additionalProperties": false
@@ -131,6 +151,52 @@
             }
           },
           "required": ["items"]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
       "required": ["widgetData"],

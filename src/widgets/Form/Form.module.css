@@ -5,10 +5,39 @@
   height: 100%;
   max-height: 100%;
 
+  /* Sticky action bar: a long, section-navigated form scrolls — pin Cancel / Save draft /
+     primary to the bottom of the scroll viewport (a raised bezel strip + top hairline) so
+     they're always reachable, instead of scrolling away below the fields. */
   .extra {
+    background: var(--panelbg-color);
+    border-top: 1px solid var(--border-color);
+    bottom: 0;
     display: flex;
+    gap: var(--spacing-sm);
     justify-content: flex-end;
+    padding: 12px 4px 14px;
+    position: sticky;
+    z-index: 3;
   }
+}
+
+/* Action-bar split: Save-draft pinned left, Cancel + primary grouped right (mockup
+   `.actionbar`). Empty left spacer (no draft, e.g. drawer) keeps the right group right. */
+.actionRow {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* A disabled submit (e.g. submitDisabledWhenPristine while nothing has changed) must READ as
+   disabled: the Petrol amber-wash primary otherwise keeps full amber colour (only the cursor
+   flips to not-allowed). Dim it so the gated state is obvious. Scoped to the form action row,
+   so global buttons are unaffected. */
+.actionRow button:disabled,
+.actionRow button[disabled] {
+  opacity: 0.4;
 }
 
 .loading {
@@ -153,4 +182,163 @@
 .slider {
   margin-left: 12px;
   margin-right: 12px;
+}
+
+/* ── Schema-driven form (SchemaFields) ────────────────────────────────────────────────
+   ONE coherent unit per property — name + title + description header above its control —
+   rendered in EXACT values.schema.json order at every nesting level (no extraction, no
+   reordering). Leaf fields and nested-object groups share the same header shape; nesting
+   is shown by indenting a group's children behind a hairline rail. */
+
+/* The shared header (fieldHeader): the property name over an optional description. */
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.fieldName {
+  color: var(--text-color);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+.req {
+  color: var(--amber-color);
+}
+
+.fieldDesc {
+  color: var(--gray-color);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+/* Connector rail — one consistent left line binds each property's name + description to its
+   value (a leaf's control, or a group's child fields) as a single unit. Nested groups nest
+   the rail, so depth is legible; the rail lights amber while its field is focused, making the
+   active name↔value pair obvious. */
+.field {
+  border-left: 2px solid color-mix(in srgb, var(--gray-color) 38%, transparent);
+  margin-bottom: 16px !important;
+  padding-left: 12px;
+  transition: border-color 0.15s ease;
+}
+
+/* Valid (passed validation, via hasFeedback) → cyan rail — completes the rail's state
+   language (rest = graphite, valid = cyan, focus = amber). Focus wins while editing
+   (declared AFTER has-success, equal specificity). */
+.field:global(.ant-form-item-has-success) {
+  border-left-color: var(--cyan-color);
+}
+
+.field:focus-within {
+  border-left-color: var(--amber-color);
+}
+
+.field :global(.ant-form-item-label) {
+  padding-bottom: 5px;
+  text-align: left;
+  white-space: normal;
+}
+
+.field :global(.ant-form-item-label) > label {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+/* our own required asterisk lives in the title (.req) — suppress antd's native marks */
+.field :global(.ant-form-item-label) > label::before,
+.field :global(.ant-form-item-label) > label::after {
+  display: none !important;
+}
+
+/* Nested object: the SAME header, carrying the same connector rail — which now brackets the
+   group name together with its child fields (the rail nests, so depth stays legible). */
+.group {
+  border-left: 2px solid color-mix(in srgb, var(--gray-color) 38%, transparent);
+  margin: 20px 0 8px;
+  padding-left: 12px;
+}
+
+.groupBody {
+  margin-top: 10px;
+  padding-left: 12px;
+}
+
+/* ── Section navigator (SchemaForm) — a left rail of sections + the active section body ── */
+.sectioned {
+  align-items: flex-start;
+  display: flex;
+  gap: 22px;
+}
+
+.secNav {
+  display: flex;
+  flex: 0 0 196px;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 8px;
+}
+
+.secItem {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--gray-color);
+  cursor: pointer;
+  font-size: 13px;
+  overflow: hidden;
+  padding: 8px 12px;
+  position: relative;
+  text-align: left;
+  text-overflow: ellipsis;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.secItem:hover {
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  color: var(--text-color);
+}
+
+/* The one SYNTHETIC section ("Top-level values" — ungrouped root values, no schema key):
+   marked as a category, not a real property — display-font + italic + a divider that sets
+   it apart from the real schema-key sections beneath it. */
+.secSynthetic {
+  border-bottom: 1px solid var(--border-color);
+  font-family: var(--font-display, sans-serif);
+  font-size: 12px;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  margin-bottom: 6px;
+  padding-bottom: 12px;
+  white-space: normal;
+}
+
+.secActive {
+  background: color-mix(in srgb, var(--amber-color) 9%, transparent);
+  color: var(--amber-color);
+}
+
+.secActive::before {
+  background: var(--amber-color);
+  border-radius: 2px;
+  bottom: 6px;
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--amber-color) 55%, transparent);
+  content: '';
+  left: 0;
+  position: absolute;
+  top: 6px;
+  width: 2px;
+}
+
+.secBody {
+  flex: 1 1 auto;
+  min-width: 0;
 }
