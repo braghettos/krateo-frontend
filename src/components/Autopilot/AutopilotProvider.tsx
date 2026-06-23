@@ -14,7 +14,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { useConfigContext } from '../../context/ConfigContext'
 
-import type { PortalActionProposal } from './actionBridge'
+import type { PortalActionProposal, PortalTour } from './actionBridge'
 import { PORTAL_CAPABILITIES_PROMPT, parseAutopilotDirectives, useAutopilotActionBridge } from './actionBridge'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
@@ -37,6 +37,12 @@ interface AutopilotContextValue {
   newThread: () => void
   /** Snapshot the live page context (for the rail's context strip). */
   collect: () => PageContextEnvelope
+  /** Active guided spotlight tour, if one was proposed (null otherwise). */
+  tour: PortalTour | null
+  /** Whether the tour overlay is open. */
+  tourOpen: boolean
+  /** Dismiss the active tour. */
+  closeTour: () => void
 }
 
 const AutopilotReactContext = createContext<AutopilotContextValue | null>(null)
@@ -58,6 +64,8 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   const [messages, setMessages] = useState<AutopilotMessage[]>([])
   const [streaming, setStreaming] = useState(false)
   const [sessionId, setSessionId] = useState<string>(newSessionId)
+  const [tour, setTour] = useState<PortalTour | null>(null)
+  const [tourOpen, setTourOpen] = useState(false)
 
   const abortRef = useRef<(() => void) | null>(null)
   const sentFirstRef = useRef(false)
@@ -84,7 +92,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // non-read-only verb, so this never mutates.
   const finalize = useCallback(async (assistantId: string) => {
     const rawText = assistantTextRef.current.get(assistantId) ?? ''
-    const { cleanedText, proposals: textProposals, suggestions } = parseAutopilotDirectives(rawText)
+    const { cleanedText, proposals: textProposals, suggestions, tour: proposedTour } = parseAutopilotDirectives(rawText)
     const toolProposals = proposalsRef.current.get(assistantId) ?? []
     assistantTextRef.current.delete(assistantId)
     proposalsRef.current.delete(assistantId)
@@ -95,6 +103,12 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         : message
     )))
     setStreaming(false)
+
+    // Start a guided spotlight tour if one was proposed.
+    if (proposedTour) {
+      setTour(proposedTour)
+      setTourOpen(true)
+    }
 
     const chips: AutopilotActionChip[] = []
     for (const proposal of [...toolProposals, ...textProposals]) {
@@ -194,13 +208,16 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     setMessages([])
     setStreaming(false)
     setSessionId(newSessionId())
+    setTour(null)
+    setTourOpen(false)
   }, [])
 
   const toggle = useCallback(() => setOpen((prev) => !prev), [])
+  const closeTour = useCallback(() => setTourOpen(false), [])
 
   const value = useMemo<AutopilotContextValue>(() => ({
-    collect, enabled, messages, newThread, open, send, setOpen, streaming, toggle,
-  }), [collect, enabled, messages, newThread, open, send, streaming, toggle])
+    closeTour, collect, enabled, messages, newThread, open, send, setOpen, streaming, toggle, tour, tourOpen,
+  }), [closeTour, collect, enabled, messages, newThread, open, send, streaming, toggle, tour, tourOpen])
 
   return <AutopilotReactContext.Provider value={value}>{children}</AutopilotReactContext.Provider>
 }

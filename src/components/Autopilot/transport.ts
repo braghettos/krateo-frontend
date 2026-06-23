@@ -223,17 +223,17 @@ export const createKagentTransport = (baseUrl: string): AutopilotTransport => ({
 // `portal-action` block, which the bridge strips from the text and auto-applies
 // (navigates) — exactly how the real orchestrator will propose once prompted.
 const ECHO_REPLY = [
-  'Local echo (no live backend) — opening the portal composition to show the driving bridge.',
+  'Local echo (no live backend) — here is a quick tour of the console.',
   '',
-  '```portal-action',
-  '{"verb":"navigate","route":"/compositions/krateo-system/portal","label":"open portal composition"}',
+  '```portal-tour',
+  '{"steps":[{"anchor":"nav:Dashboard","title":"Dashboard","description":"Your platform overview and reconcile throughput."},{"anchor":"nav:Compositions","title":"Compositions","description":"Every provisioned resource and its health lives here."},{"anchor":"nav:Marketplace","title":"Marketplace","description":"Browse and install blueprints from the catalog."}]}',
   '```',
   '```portal-suggest',
-  '["Show its conditions", "Why is it not synced?", "Back to compositions"]',
+  '["Open a composition", "Why is portal not synced?", "Show the marketplace"]',
   '```',
 ].join('\n')
 
-const ECHO_CHUNK = 6
+const ECHO_CHUNK = 48
 
 export const createEchoTransport = (): AutopilotTransport => ({
   send: (_request: AutopilotSendRequest, handlers: AutopilotStreamHandlers): (() => void) => {

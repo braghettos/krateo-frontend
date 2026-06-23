@@ -78,11 +78,29 @@ export const PORTAL_CAPABILITIES_PROMPT = [
   '["Show the reconcile error", "Open the failed composition", "Why is X drifting?"]',
   '```',
   'These render as one-tap chips. Keep each under ~6 words and relevant to the current page.',
+  'When the user asks to be shown around or guided ("guide me", "how do I…", "where is…"), you MAY start a spotlight TOUR of the real on-screen UI by emitting:',
+  '```portal-tour',
+  '{"steps":[{"anchor":"nav:Compositions","title":"Compositions","description":"All your provisioned resources live here."}]}',
+  '```',
+  'Each step spotlights a real element. Anchors: `nav:<Label>` (a sidebar item: Dashboard/Compositions/Blueprints/Marketplace/Settings), `action:<Label>` (a button on the current page, e.g. action:Sync), `text:<substring>` (any visible text). Use 2–5 steps; only anchor things present on the current page.',
   '</portal_capabilities>',
 ].join('\n')
 
+/** One spotlight step in a guided tour: a semantic anchor + popover copy. */
+export interface AutopilotTourStep {
+  /** Semantic anchor resolved to a DOM element (nav:<Label> / action:<Label> / text:<substring>). */
+  anchor: string
+  title: string
+  description: string
+}
+
+export interface PortalTour {
+  steps: AutopilotTourStep[]
+}
+
 const PROPOSAL_FENCE = /```portal-action\s*\n([\s\S]*?)```/g
 const SUGGEST_FENCE = /```portal-suggest\s*\n([\s\S]*?)```/g
+const TOUR_FENCE = /```portal-tour\s*\n([\s\S]*?)```/g
 
 export interface AutopilotDirectives {
   /** Assistant prose with all directive fences stripped out. */
@@ -91,16 +109,20 @@ export interface AutopilotDirectives {
   proposals: PortalActionProposal[]
   /** Context-derived follow-up prompts to render as one-tap chips. */
   suggestions: string[]
+  /** A guided spotlight tour to start, if proposed. */
+  tour?: PortalTour
 }
 
 /**
- * Extract + STRIP the directive fences (`portal-action`, `portal-suggest`) from
- * assistant text. The JSON never shows to the user — actions become chips,
- * suggestions become quick-prompt chips. Malformed blocks are dropped.
+ * Extract + STRIP the directive fences (`portal-action`, `portal-suggest`,
+ * `portal-tour`) from assistant text. The JSON never shows to the user — actions
+ * become chips, suggestions become quick-prompt chips, a tour starts a spotlight
+ * walkthrough. Malformed blocks are dropped.
  */
 export const parseAutopilotDirectives = (text: string): AutopilotDirectives => {
   const proposals: PortalActionProposal[] = []
   const suggestions: string[] = []
+  let tour: PortalTour | undefined
 
   let cleaned = text.replace(PROPOSAL_FENCE, (_match, body: string) => {
     try {
@@ -126,7 +148,22 @@ export const parseAutopilotDirectives = (text: string): AutopilotDirectives => {
     return ''
   })
 
-  return { cleanedText: cleaned.trim(), proposals, suggestions }
+  cleaned = cleaned.replace(TOUR_FENCE, (_match, body: string) => {
+    try {
+      const parsed = JSON.parse(body.trim()) as PortalTour
+      const steps = Array.isArray(parsed?.steps)
+        ? parsed.steps.filter((step) => step && typeof step.anchor === 'string' && typeof step.title === 'string')
+        : []
+      if (steps.length) {
+        tour = { steps }
+      }
+    } catch {
+      // Malformed tour block — drop it.
+    }
+    return ''
+  })
+
+  return { cleanedText: cleaned.trim(), proposals, suggestions, tour }
 }
 
 /**

@@ -13,6 +13,7 @@ import type { KeyboardEvent } from 'react'
 
 import { useAutopilot } from './AutopilotProvider'
 import styles from './AutopilotRail.module.css'
+import AutopilotTour from './AutopilotTour'
 import { CheckIcon, CollapseIcon, EyeIcon, LinkIcon, PlusIcon, SendIcon, SparkIcon } from './icons'
 import type { AutopilotMessage } from './types'
 
@@ -162,5 +163,6 @@ export const AutopilotShell = ({ children }: { children: React.ReactNode }) => (
   <div className={styles.shellViewport}>
     <div className={styles.shellMain}>{children}</div>
     <AutopilotRail />
+    <AutopilotTour />
   </div>
 )
