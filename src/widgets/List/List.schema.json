@@ -7,8 +7,8 @@
       "default": "v1beta1"
     },
     "kind": {
-      "default": "List",
-      "description": "List renders an array of items, following the Ant Design List API (grid, itemLayout, size, bordered, split, header, footer). Each dataSource element is rendered via itemTemplate, or as a child widget when it carries a resourceRefId. Supersedes DataGrid.",
+      "default": "Listy",
+      "description": "Listy renders an array of items, following the Ant Design List API (grid, itemLayout, size, bordered, split, header, footer). Each dataSource element is rendered via itemTemplate, or as a child widget when it carries a resourceRefId. Named 'Listy' (antd's successor to the deprecated List) because k8s reserves the 'List' kind. Supersedes DataGrid.",
       "type": "string"
     },
     "spec": {
