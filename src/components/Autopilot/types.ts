@@ -61,6 +61,10 @@ export interface WidgetInventoryEntry {
   summary?: string
   /** For a Form widget: its top-level field names, so Autopilot can prefill them. */
   fields?: string[]
+  /** For a list/table widget: a sample of the visible row labels (e.g. installed blueprint
+   * names), so Autopilot can CHECK what is on screen — not just how many rows there are.
+   * Capped + label-only (no payloads); the redactor still scrubs anything sensitive. */
+  items?: string[]
   /** For an action-bearing widget (e.g. Button): the runnable actions on it, so
    * Autopilot can drive the REAL control (gated). `verb` GET = read-only. */
   actions?: { id: string; label?: string; verb: string }[]

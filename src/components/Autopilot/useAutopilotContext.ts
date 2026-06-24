@@ -18,8 +18,12 @@ import type { AutopilotIdentity, PageContextEnvelope, WidgetInventoryEntry } fro
 /** Only these URL params describe the current scope; everything else is ignored. */
 const EXTRAS_WHITELIST = ['status', 'range', 'q'] as const
 
-/** Soft budget for the serialized envelope; widgets beyond it are truncated. */
-const MAX_WIDGETS = 40
+/** Backstop cap on the serialized envelope. Now that collect() scopes to ACTIVE (on-screen)
+ * widgets, this is the count of widgets on the CURRENT page — a real page comfortably fits
+ * (the dashboard is the heaviest at ~55), so this only guards against a pathologically huge
+ * page. Set well above any real page so the strip shows the true per-page count, not a pinned
+ * cap (the old 40 truncated every page, which read as "always 40 widgets"). */
+const MAX_WIDGETS = 120
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   (value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined)
@@ -31,17 +35,53 @@ const unwrapWidget = (data: unknown): unknown => {
   return Array.isArray(pages) && pages.length ? pages[pages.length - 1] : data
 }
 
-const firstArrayLength = (widgetData: Record<string, unknown> | undefined): number | undefined => {
+/** Up to this many row labels per list/table widget are surfaced to Autopilot. */
+const MAX_ITEMS = 30
+
+/** The first array field in a widget's data (dataSource/items/data), or undefined. */
+const firstArray = (widgetData: Record<string, unknown> | undefined): unknown[] | undefined => {
   if (!widgetData) {
     return undefined
   }
   for (const key of ['dataSource', 'items', 'data']) {
     const candidate = widgetData[key]
     if (Array.isArray(candidate)) {
-      return candidate.length
+      return candidate as unknown[]
     }
   }
   return undefined
+}
+
+const firstArrayLength = (widgetData: Record<string, unknown> | undefined): number | undefined =>
+  firstArray(widgetData)?.length
+
+/** Best-effort human label for one list/table row, across item shapes. */
+const itemLabel = (item: unknown): string | undefined => {
+  if (typeof item === 'string') {
+    return item.trim() || undefined
+  }
+  const record = asRecord(item)
+  if (!record) {
+    return undefined
+  }
+  for (const key of ['primaryText', 'title', 'name', 'label', 'displayName', 'text']) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+  return undefined
+}
+
+/** A capped sample of row labels (e.g. installed blueprint names) so Autopilot can read WHAT
+ * is on screen, not just the row count. Label-only; the redactor still scrubs the envelope. */
+const itemLabels = (widgetData: Record<string, unknown> | undefined): string[] | undefined => {
+  const arr = firstArray(widgetData)
+  if (!arr?.length) {
+    return undefined
+  }
+  const labels = arr.map(itemLabel).filter((label): label is string => Boolean(label)).slice(0, MAX_ITEMS)
+  return labels.length ? labels : undefined
 }
 
 /** Top-level field names of a Form widget (for Autopilot prefill); undefined for non-Forms. */
@@ -124,8 +164,9 @@ const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry 
   const summary = summaryParts.length ? summaryParts.join(' · ') : undefined
   const fields = kind === 'Form' ? formFieldNames(widgetData) : undefined
   const actions = kind === 'Button' ? widgetActions(widgetData, resourcesRefs) : undefined
+  const items = itemLabels(widgetData)
 
-  return { actions, endpoint, fields, kind, name, summary, title }
+  return { actions, endpoint, fields, items, kind, name, summary, title }
 }
 
 const collectExtras = (search: string): Record<string, string> | undefined => {
@@ -205,7 +246,13 @@ export const useAutopilotContext = () => {
   const queryClient = useQueryClient()
 
   const collect = useCallback((): PageContextEnvelope => {
-    const entries = queryClient.getQueriesData<unknown>({ queryKey: ['widgets'] })
+    // `type: 'active'` scopes to widget queries with a MOUNTED observer — the widgets actually
+    // on screen NOW. Without it, getQueriesData returns EVERY cached ['widgets', …] entry
+    // react-query still holds (default gcTime 5m), so widgets from OTHER pages visited in the
+    // last few minutes leak in; once the accumulated cache exceeds MAX_WIDGETS the count pins at
+    // 40 on every page and the agent is grounded on off-page widgets. This restores the
+    // collector's stated intent: "the actual on-screen surface, not model memory" (see header).
+    const entries = queryClient.getQueriesData<unknown>({ queryKey: ['widgets'], type: 'active' })
     const widgets: WidgetInventoryEntry[] = entries
       .map(([queryKey, data]) => {
         const endpoint = Array.isArray(queryKey) && typeof queryKey[1] === 'string' ? queryKey[1] : ''
