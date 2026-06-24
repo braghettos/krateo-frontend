@@ -26,12 +26,23 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
     // source reads it as an array). Single mode keeps the scalar param.
     const isMulti = mode === 'multiple' || mode === 'tags'
     const raw = searchParams.get(queryParam) ?? ''
-    const multiSelected = raw ? raw.split(',') : []
+    // An EMPTY multi param means "all": render every option as selected so the resting state
+    // reads as "all projects in scope" (the data source still gets an empty value = no filter).
+    const optionValues = (options ?? []).map((option) => option.value).filter((entry): entry is string => typeof entry === 'string')
+    const multiSelected = raw ? raw.split(',') : optionValues
     const value = isMulti ? multiSelected : (raw || undefined)
     const onChange = (next?: string | string[]) => {
       setSearchParams((prev) => {
         const params = new URLSearchParams(prev)
-        const joined = Array.isArray(next) ? next.join(',') : (next ?? '')
+        let selected: string[] = []
+        if (Array.isArray(next)) {
+          selected = next
+        } else if (next) {
+          selected = [next]
+        }
+        // Empty OR every-option-selected both mean "all" → clear the param (empty renders all-selected).
+        const isAll = isMulti && (selected.length === 0 || selected.length >= optionValues.length)
+        const joined = isAll ? '' : selected.join(',')
         if (joined) {
           params.set(queryParam, joined)
         } else {
@@ -46,6 +57,7 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
         allowClear={allowClear}
         disabled={disabled}
         key={uid}
+        maxTagCount={isMulti ? 'responsive' : undefined}
         mode={isMulti ? mode : undefined}
         onChange={onChange}
         options={options}
