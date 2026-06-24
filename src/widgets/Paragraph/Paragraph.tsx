@@ -3,6 +3,7 @@ import Linkify from 'linkify-react'
 
 import type { WidgetProps } from '../../types/Widget'
 
+import { resolveLocalTokens } from './localTokens'
 import styles from './Paragraph.module.css'
 import type { Paragraph as WidgetType } from './Paragraph.type'
 
@@ -11,6 +12,10 @@ export type ParagraphWidgetData = WidgetType['spec']['widgetData']
 const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
   const { code, copyable, delete: del, disabled, ellipsis, italic, level, mark, strong, text, type, underline, variant } = widgetData
 
+  // Resolve client-side tokens (currently {localTimeOfDay}) in the browser so they reflect the
+  // viewer's local time regardless of snowplow's cached server `now`. See ./localTokens.
+  const resolvedText = resolveLocalTokens(text)
+
   const content = (
     <Linkify
       options={{
@@ -18,7 +23,7 @@ const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
         target: '_blank',
       }}
     >
-      {text}
+      {resolvedText}
     </Linkify>
   )
 
