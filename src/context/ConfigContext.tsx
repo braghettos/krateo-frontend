@@ -13,6 +13,14 @@ export interface Config {
      * absent the Autopilot rail + header toggle do not render (graceful absence
      * for installs without autopilot deployed). */
     AUTOPILOT_API_BASE_URL?: string
+    /** OTLP/HTTP traces endpoint of the OpenTelemetry collector. Optional and
+     * default-OFF: when absent the browser starts NO trace provider and injects
+     * no W3C `traceparent` header (byte-identical default runtime path). When
+     * set, the browser starts spans and propagates traceparent on the configured
+     * authn/snowplow/events backend origins so browser→backend spans link
+     * end-to-end. The collector's OTLP/HTTP receiver must CORS-allow the portal
+     * origin, and authn/snowplow must allow the `traceparent` request header. */
+    OTEL_COLLECTOR_URL?: string
   }
   params: {
     FRONTEND_NAMESPACE: string
