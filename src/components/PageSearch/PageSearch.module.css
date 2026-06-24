@@ -1,0 +1,6 @@
+/* Page-top search bar — a compact, left-aligned filter input above the routed list/grid
+   content. Sits between the shell content edge and the page widget's own H1/header. */
+.pageSearch {
+  margin-bottom: 16px;
+  max-width: 360px;
+}

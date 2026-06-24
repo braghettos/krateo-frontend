@@ -4,7 +4,7 @@ import { Avatar, Card, List as AntdList, Button, Dropdown, Progress, Tag, Typogr
 import useApp from 'antd/es/app/useApp'
 import type { ListGridType } from 'antd/es/list'
 import type { CSSProperties, ReactNode } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 
 import { WidgetEmpty } from '../../components/WidgetStates'
 import { useHandleAction } from '../../hooks/useHandleActions'
@@ -48,6 +48,10 @@ export const ListView = ({
   actions, bordered, footer, grid, header, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, resourcesRefs, rowKey, size, split, widget,
 }: ListViewProps) => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // `?spotlight=<name>` highlights the matching card tile — used by a global-search hit for a
+  // not-yet-installed blueprint, which routes to /marketplace?q=<name>&spotlight=<name>.
+  const spotlight = searchParams.get('spotlight')
   const { notification } = useApp()
   const { handleAction } = useHandleAction()
 
@@ -136,6 +140,7 @@ export const ListView = ({
         // of `rowActions` as VISIBLE buttons (first = primary), instead of a List.Item row
         // with a kebab. Whole-card click still navigates when the row carries `navigateTo`.
         if (itemTemplate.rowVariant === 'card') {
+          const isSpotlit = Boolean(spotlight) && row.primaryText === spotlight
           const cardActions = (itemTemplate.rowActions ?? []).map((rowAction, actionIndex) => (
             <Button
               danger={rowAction.danger}
@@ -156,7 +161,7 @@ export const ListView = ({
           return (
             <AntdList.Item key={`${rowKey}-${index}`}>
               <Card
-                className={`${styles.tileCard} ${row.navigateTo ? styles.clickable : ''}`}
+                className={`${styles.tileCard} ${row.navigateTo ? styles.clickable : ''} ${isSpotlit ? styles.spotlight : ''}`}
                 hoverable={Boolean(row.navigateTo)}
                 onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
                 size='small'
