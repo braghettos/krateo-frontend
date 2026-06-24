@@ -19,6 +19,8 @@
  * itself mutates the cluster.
  */
 
+import { randomId } from '../../utils/utils'
+
 import type { AutopilotSendRequest, AutopilotStreamHandlers, AutopilotTransport } from './types'
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -44,7 +46,7 @@ const buildA2aUrl = (baseUrl: string): string => `${baseUrl.replace(/\/$/, '')}/
 const buildRequestBody = (request: AutopilotSendRequest): string => {
   const message: Record<string, unknown> = {
     kind: 'message',
-    messageId: crypto.randomUUID(),
+    messageId: randomId(),
     parts: [{ kind: 'text', text: `${request.context}\n\n${request.text}` }],
     role: 'user',
   }

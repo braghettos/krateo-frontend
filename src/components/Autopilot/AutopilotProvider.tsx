@@ -13,6 +13,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useConfigContext } from '../../context/ConfigContext'
+import { randomId } from '../../utils/utils'
 
 import type { PortalActionProposal, PortalTour } from './actionBridge'
 import { PORTAL_CAPABILITIES_PROMPT, parseAutopilotDirectives, useAutopilotActionBridge } from './actionBridge'
@@ -48,7 +49,7 @@ interface AutopilotContextValue {
 
 const AutopilotReactContext = createContext<AutopilotContextValue | null>(null)
 
-const newSessionId = (): string => `s_${crypto.randomUUID()}`
+const newSessionId = (): string => `s_${randomId()}`
 
 export const AutopilotProvider = ({ children }: { children: React.ReactNode }) => {
   const { config } = useConfigContext()
@@ -196,11 +197,11 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     // (outside the page_context data-fence; it remembers via the A2A contextId).
     const contextString = firstTurn ? `${PORTAL_CAPABILITIES_PROMPT}\n\n${baseContext}` : baseContext
 
-    const assistantId = crypto.randomUUID()
+    const assistantId = randomId()
     const now = Date.now()
     setMessages((prev) => [
       ...prev,
-      { createdAt: now, id: crypto.randomUUID(), role: 'user', text: trimmed },
+      { createdAt: now, id: randomId(), role: 'user', text: trimmed },
       { createdAt: now, id: assistantId, role: 'assistant', streaming: true, text: '' },
     ])
     setStreaming(true)

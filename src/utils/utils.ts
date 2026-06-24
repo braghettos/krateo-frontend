@@ -91,6 +91,31 @@ export const getHeadersObject = (headers: string[]): Record<string, string> | un
   return result
 }
 
+/** RFC-4122 v4 UUID that works in INSECURE contexts. `crypto.randomUUID()` is
+ * secure-context-only (HTTPS / localhost) and is `undefined` over plain
+ * `http://<bare-IP>` — the default way the portal is reached via a LoadBalancer IP —
+ * so calling it there throws "crypto.randomUUID is not a function" and crashes the app.
+ * `crypto.getRandomValues()` IS available in insecure contexts, so derive the UUID from
+ * it (with a Math.random fallback for ancient runtimes). These IDs are non-security-
+ * sensitive (Autopilot session/message keys); cryptographic strength is not required. */
+export const randomId = (): string => {
+  const webCrypto = globalThis.crypto
+  if (webCrypto && typeof webCrypto.randomUUID === 'function') {
+    return webCrypto.randomUUID()
+  }
+  const bytes = new Uint8Array(16)
+  if (webCrypto && typeof webCrypto.getRandomValues === 'function') {
+    webCrypto.getRandomValues(bytes)
+  } else {
+    for (let i = 0; i < bytes.length; i++) { bytes[i] = Math.floor(Math.random() * 256) }
+  }
+  // RFC-4122 v4: pin the version (4) and variant (10xx) bits
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 export const parseNumberOrNull = (value: unknown): number | null => {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : null
