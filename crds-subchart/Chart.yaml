@@ -12,12 +12,11 @@ description: Krateo PlatformOps Frontend CRDs
 # pipeline. Library charts do not define any templates and therefore cannot be deployed.
 type: application
 
-# This is the chart version. This version number should be incremented each time you make changes
-# to the chart and its templates, including the app version.
-# Versions are expected to follow Semantic Versioning (https://semver.org/)
-# Pinned (NOT the CHART_VERSION tag): the frontend widget CRDs version
-# independently of the frontend app chart. The installer pins frontend-crd 1.0.25.
-version: 1.0.25
+# Versioned with the SAME release tag as the main chart (krateo-frontend): the CHART_VERSION
+# placeholder is substituted to the git tag by release-oci.yaml, so a single chart-repo tag
+# publishes krateo-frontend and krateo-frontend-crd at the same version. The installer therefore
+# pins both at one version. (Was independently pinned at 1.0.25.)
+version: CHART_VERSION
 
 
 home: https://krateo.io
