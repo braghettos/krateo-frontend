@@ -5,7 +5,8 @@
     "EVENTS_API_BASE_URL": "http://localhost:30083",
     "ROUTES_LOADER": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system",
     "EVENTS_PUSH_API_BASE_URL": "http://localhost:30083",
-    "INIT": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system"
+    "INIT": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system",
+    "OTEL_COLLECTOR_URL": ""
   },
   "params": {
     "FRONTEND_NAMESPACE": "krateo-system",
