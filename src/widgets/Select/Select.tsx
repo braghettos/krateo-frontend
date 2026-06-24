@@ -21,12 +21,19 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   if (queryParam) {
-    const value = searchParams.get(queryParam) ?? undefined
-    const onChange = (next?: string) => {
+    // `mode: multiple` (or `tags`) makes the URL-bound Select a MULTI-select: the value is a
+    // comma-joined list in `?<queryParam>=` (e.g. the project/namespace multi-scope → a data
+    // source reads it as an array). Single mode keeps the scalar param.
+    const isMulti = mode === 'multiple' || mode === 'tags'
+    const raw = searchParams.get(queryParam) ?? ''
+    const multiSelected = raw ? raw.split(',') : []
+    const value = isMulti ? multiSelected : (raw || undefined)
+    const onChange = (next?: string | string[]) => {
       setSearchParams((prev) => {
         const params = new URLSearchParams(prev)
-        if (next) {
-          params.set(queryParam, next)
+        const joined = Array.isArray(next) ? next.join(',') : (next ?? '')
+        if (joined) {
+          params.set(queryParam, joined)
         } else {
           params.delete(queryParam)
         }
@@ -39,6 +46,7 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
         allowClear={allowClear}
         disabled={disabled}
         key={uid}
+        mode={isMulti ? mode : undefined}
         onChange={onChange}
         options={options}
         placeholder={placeholder}
