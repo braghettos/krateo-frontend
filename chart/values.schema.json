@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema",
   "type": "object",
   "title": "Frontend",
-  "description": "Krateo Frontend blueprint — full-coverage schema (chart 1.0.10).",
+  "description": "Krateo Frontend blueprint \u2014 full-coverage schema (chart 1.0.10).",
   "additionalProperties": false,
   "properties": {
     "replicaCount": {
@@ -23,7 +23,11 @@
         "pullPolicy": {
           "type": "string",
           "title": "Image pull policy",
-          "enum": ["IfNotPresent", "Always", "Never"],
+          "enum": [
+            "IfNotPresent",
+            "Always",
+            "Never"
+          ],
           "default": "IfNotPresent"
         },
         "tag": {
@@ -124,7 +128,11 @@
         "type": {
           "type": "string",
           "title": "Service type",
-          "enum": ["ClusterIP", "NodePort", "LoadBalancer"],
+          "enum": [
+            "ClusterIP",
+            "NodePort",
+            "LoadBalancer"
+          ],
           "default": "ClusterIP"
         },
         "port": {
@@ -313,20 +321,15 @@
           "title": "Events API base URL",
           "default": "http://localhost:8083"
         },
-        "SMITHERY_API_BASE_URL": {
+        "AUTOPILOT_API_BASE_URL": {
           "type": "string",
-          "title": "Smithery API base URL",
-          "default": "http://localhost:8088"
+          "title": "Autopilot API base URL",
+          "default": "/autopilot"
         },
         "INIT": {
           "type": "string",
           "title": "Init route",
-          "default": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system"
-        },
-        "ROUTES_LOADER": {
-          "type": "string",
-          "title": "Routes loader route",
-          "default": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
+          "default": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system"
         }
       },
       "default": {
@@ -334,9 +337,8 @@
         "AUTHN_API_BASE_URL": "http://localhost:8082",
         "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
         "EVENTS_API_BASE_URL": "http://localhost:8083",
-        "SMITHERY_API_BASE_URL": "http://localhost:8088",
-        "INIT": "/call?resource=navmenus&apiVersion=widgets.templates.krateo.io/v1beta1&name=sidebar-nav-menu&namespace=krateo-system",
-        "ROUTES_LOADER": "/call?resource=routesloaders&apiVersion=widgets.templates.krateo.io/v1beta1&name=routes-loader&namespace=krateo-system"
+        "AUTOPILOT_API_BASE_URL": "/autopilot",
+        "INIT": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system"
       }
     },
     "env": {
