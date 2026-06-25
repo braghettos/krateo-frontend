@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
 import type { AuthResponseType } from '../../pages/Login/Login.types'
+import { clearClientSession } from '../../utils/logout'
 
 import styles from './UserMenu.module.css'
 
@@ -26,38 +27,13 @@ const UserMenu = () => {
 
   const onLogout = async () => {
     try {
-      // Clear local storage and session storage
-      localStorage.clear()
-      sessionStorage.clear()
-
-      // Clear cookies
-      document.cookie.split(';').forEach(cookie => {
-        const eqPos = cookie.indexOf('=')
-        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie
-        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
-      })
-
-      // Clear cache
-      if ('caches' in window) {
-        const cacheNames = await caches.keys()
-        await Promise.all(cacheNames.map(name => caches.delete(name)))
-      }
-
-      // Clear indexedDB
-      if (window.indexedDB && indexedDB.databases) {
-        const dbs = await indexedDB.databases()
-        dbs.forEach(db => {
-          if (db.name) { indexedDB.deleteDatabase(db.name) }
-        })
-      }
-
-      // Refetch config.json
+      // Shared with the standalone /logout recovery route (src/utils/logout.ts).
+      await clearClientSession()
+      // Refetch config.json so the post-redirect bootstrap starts clean.
       await refetch()
-
-      // Redirect to login
-      window.location.replace('/login')
     } catch (error) {
       console.error('Logout cleanup error', error)
+    } finally {
       window.location.replace('/login')
     }
   }

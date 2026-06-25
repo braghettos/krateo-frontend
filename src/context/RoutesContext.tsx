@@ -6,6 +6,7 @@ import ShellRoute from '../components/Shell'
 import WidgetPage from '../components/WidgetPage'
 import Auth from '../pages/Auth/Auth'
 import Login from '../pages/Login'
+import Logout from '../pages/Logout'
 import Profile from '../pages/Profile'
 import type { ResourceRef } from '../types/Widget'
 
@@ -35,13 +36,16 @@ const RoutesContext = createContext<RoutesContextType | undefined>(undefined)
 
 // The authenticated area is a single persistent shell (the `Layout` widget from
 // config INIT) rendered as a pathless layout route; every content route is a
-// CHILD that renders into the shell's <Outlet/>. Login/Auth sit outside it (no
-// chrome). Dynamic routes are inserted into the shell's children by registerRoutes.
+// CHILD that renders into the shell's <Outlet/>. Login/Auth/Logout sit outside it
+// (no chrome). Logout is a static route on purpose: it's the recovery escape hatch,
+// so it must resolve even when the snowplow-driven shell pages fail to render.
+// Dynamic routes are inserted into the shell's children by registerRoutes.
 const SHELL_ROUTE_ID = 'shell'
 
 const defaultRoutes: RouteObject[] = [
   { element: <Login />, path: '/login' },
   { element: <Auth />, path: '/auth' },
+  { element: <Logout />, path: '/logout' },
   {
     children: [
       { element: <Profile />, path: '/profile' },
