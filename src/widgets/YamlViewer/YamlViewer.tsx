@@ -1,4 +1,5 @@
-import { CopyOutlined } from '@ant-design/icons'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Empty, Result } from 'antd'
 import { dump } from 'js-yaml'
 import { useMemo, useState } from 'react'
@@ -65,7 +66,7 @@ const YamlViewer = ({ uid, widgetData }: WidgetProps<YamlViewerWidgetData>) => {
             }}
             text={yamlString}
           >
-            <Button icon={<CopyOutlined />} size='large' />
+            <Button icon={<FontAwesomeIcon icon={['fas', 'copy'] as IconProp} />} size='large' />
           </CopyToClipboard>
         </div>
 

@@ -8,7 +8,7 @@
  * shell reflows (it never overlays). All driving/HITL surfaces are Phase 2/3.
  */
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 
 import { useAutopilot } from './AutopilotProvider'
@@ -50,6 +50,17 @@ const AutopilotRail = () => {
   const { collect, enabled, messages, newThread, open, send, setOpen, streaming } = useAutopilot()
   const [draft, setDraft] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
+  // Auto-scroll the transcript to the latest content as it streams — but only when the user is
+  // already near the bottom, so scrolling up to re-read a long reply isn't yanked back down. Each
+  // streamed chunk produces a NEW `messages` array (immutable update in the provider), so this
+  // effect fires per token; the ref is updated by the body's onScroll handler below.
+  const stickToBottomRef = useRef(true)
+  useEffect(() => {
+    const el = bodyRef.current
+    if (el && stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight
+    }
+  }, [messages, streaming])
 
   if (!enabled) {
     return null
@@ -76,6 +87,14 @@ const AutopilotRail = () => {
     }
   }
 
+  // Pin/unpin auto-scroll: "stuck" while within ~80px of the bottom, released once the user scrolls up.
+  const onBodyScroll = () => {
+    const el = bodyRef.current
+    if (el) {
+      stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    }
+  }
+
   const ctxStatus = context?.extras?.status
   const lastSuggestions = messages.length ? messages[messages.length - 1].suggestions : undefined
 
@@ -96,7 +115,7 @@ const AutopilotRail = () => {
           </button>
         </div>
 
-        <div className={styles.apBody} ref={bodyRef}>
+        <div className={styles.apBody} onScroll={onBodyScroll} ref={bodyRef}>
           {context ? (
             <div className={styles.apCtx}>
               <EyeIcon className={styles.apCtxIcon} />

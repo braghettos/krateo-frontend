@@ -235,7 +235,13 @@ export const buildContextDelta = (
   const sameRoute = previous.route === next.route
   const prevEndpoints = previous.widgets.map((widget) => widget.endpoint).sort().join('|')
   const nextEndpoints = next.widgets.map((widget) => widget.endpoint).sort().join('|')
-  if (sameRoute && prevEndpoints === nextEndpoints) {
+  // Never collapse to the unchanged-note while a prefillable create Form is on screen: the model
+  // needs that form's `fields` inventory on EVERY turn to draft (prefillForm) the parameters the
+  // user names across the conversation. Without this, a follow-up turn on the same form page drops
+  // the field list, so the model can only fill generic fields (e.g. namespace) and silently omits
+  // the blueprint's own parameters (name/region/cidr/…) — the exact partial-prefill bug.
+  const hasPrefillableForm = next.widgets.some((widget) => widget.kind === 'Form' && (widget.fields?.length ?? 0) > 0)
+  if (sameRoute && prevEndpoints === nextEndpoints && !hasPrefillableForm) {
     return `<page_context>\nUnchanged: still on ${next.focus ?? next.route} (${next.widgets.length} widgets).\n</page_context>`
   }
   return serializePageContext(next)

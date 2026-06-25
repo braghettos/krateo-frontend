@@ -11,7 +11,7 @@ import WidgetRenderer from '../WidgetRenderer'
  * data-source RESTAction name/description filter). Frontend chrome, like the Shell search. */
 const PAGE_SEARCH: Record<string, string> = {
   '/blueprints': 'Search blueprints by name or description…',
-  '/compositions': 'Search compositions by name…',
+  '/compositions': 'Search compositions by name or type…',
   '/marketplace': 'Search the catalog by name or description…',
 }
 

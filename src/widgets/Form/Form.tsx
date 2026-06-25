@@ -1,4 +1,3 @@
-import { LoadingOutlined } from '@ant-design/icons'
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Descriptions, Form as AntdForm, Result, Space, Spin } from 'antd'
@@ -55,6 +54,11 @@ interface FormExtraProps {
   // the real create label.
   submitLabel?: string | undefined
 }
+
+// localStorage key prefix for client-side form drafts (replaces the former blueprint-drafts
+// ConfigMap): a half-finished form is saved/resumed entirely in the browser, so NO
+// frontend-entered field is ever persisted on the backend.
+const DRAFT_STORAGE_PREFIX = 'K_draft__'
 
 const FormExtra = ({ buttonConfig, disabled = false, form, loading, onDraft, submitDisabled = false, submitLabel }: FormExtraProps): React.ReactNode => {
   const navigate = useNavigate()
@@ -196,22 +200,53 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   const [reviewValues, setReviewValues] = useState<Record<string, unknown> | null>(null)
   const reviewing = !insideDrawer && !!reviewBeforeSubmit && reviewValues !== null
 
-  // Autopilot AgentDraft (Phase 3 gated form-fill): an optional THIRD spread over schema
-  // defaults + explicit initialValues. Autopilot fills the fields; the user still reviews and
-  // presses Create. `draftNonce` re-keys the form so the merged values re-apply (antd
-  // `initialValues` is mount-only). Empty/absent when Autopilot isn't driving the form.
-  const { draft: agentDraft, nonce: draftNonce } = useAgentDraft()
+  // Autopilot AgentDraft (Phase 3 gated form-fill): values Autopilot proposes for the create form;
+  // the user still reviews and presses Create. Applied imperatively below via setFieldsValue (NOT
+  // via initialValues — see that effect for why). Empty/absent when Autopilot isn't driving.
+  const { draft: agentDraft } = useAgentDraft()
 
-  // Effective initial values = schema defaults overlaid by explicit initialValues, then by the
-  // Autopilot draft — the SAME object handed to <AntdForm initialValues> below. Factored out so
-  // the pristine check compares against exactly what the form was seeded with.
+  // Client-side draft persistence (NO backend): a half-finished form is saved to localStorage
+  // under the per-form key the RA seeds as `__owner` (username__namespace__name) and resumed on
+  // mount — replacing the former blueprint-drafts ConfigMap, so no frontend-entered field touches
+  // the backend; the draft lives only in this browser.
+  const draftOwner = typeof initialValues?.__owner === 'string' ? initialValues.__owner : undefined
+  const draftStorageKey = draftOwner ? `${DRAFT_STORAGE_PREFIX}${draftOwner}` : undefined
+  const savedDraft = useMemo<Record<string, unknown>>(() => {
+    if (!draftStorageKey) { return {} }
+    try {
+      const raw = localStorage.getItem(draftStorageKey)
+      const parsed: unknown = raw ? JSON.parse(raw) : {}
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
+    } catch {
+      return {}
+    }
+  }, [draftStorageKey])
+
+  // Effective initial values = schema defaults < explicit initialValues < the resumed localStorage
+  // draft < the Autopilot draft — the SAME object handed to <AntdForm initialValues> below. Factored
+  // out so the pristine check compares against exactly what the form was seeded with.
   const effectiveInitialValues = useMemo<Record<string, unknown>>(
     () => {
-      const base = jsonSchema ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues } : (initialValues ?? {})
+      const base = jsonSchema
+        ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues, ...savedDraft }
+        : { ...(initialValues ?? {}), ...savedDraft }
       return agentDraft ? { ...base, ...agentDraft } : base
     },
-    [jsonSchema, initialValues, agentDraft],
+    [jsonSchema, initialValues, savedDraft, agentDraft],
   )
+
+  // Apply an Autopilot draft IMPERATIVELY. Seeding it through `initialValues` (above) does NOT work
+  // for blueprint forms: every schema field <SchemaForm> renders carries its own per-field
+  // `initialValue` (the schema default), and antd lets a field's own initialValue WIN over the
+  // form-level initialValues — so the draft only landed on fields WITHOUT a default (e.g. namespace)
+  // and silently dropped name/region/cidr/…. setFieldsValue overrides per-field defaults AND avoids
+  // a remount (so values the user already typed survive), so the Autopilot fills EVERY field it
+  // drafted. Fires once per new draft (the provider hands a fresh object on each prefillForm).
+  useEffect(() => {
+    if (agentDraft && Object.keys(agentDraft).length > 0) {
+      form.setFieldsValue(agentDraft)
+    }
+  }, [agentDraft, form])
 
   // Live form values (re-renders on any field change). Used only to gate the submit button when
   // `submitDisabledWhenPristine` is set: disabled until at least one field differs from its initial
@@ -243,29 +278,22 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     .flat()
     .find(({ id }) => id === submitActionId)
 
-  const draftAction = draftActionId
-    ? Object.values(actions).flat().find(({ id }) => id === draftActionId)
-    : undefined
-
-  // "Save draft" — persist the current field values WITHOUT validation. getFieldsValue(true)
-  // returns the entire form store (including values seeded via initialValues that have no
-  // rendered field, e.g. the per-user `__owner` draft key), unlike onFinish which only
-  // delivers validated registered fields. Only offered when the CR defines draftActionId.
-  const onDraft = draftAction
-    ? async () => {
-      if (draftAction.type !== 'rest') {
-        notification.error({
-          description: 'Draft action type is not "rest"',
-          message: 'Error while executing the action',
-          placement: 'bottomLeft',
-        })
-
-        return
-      }
-
+  // "Save draft" — persist the current field values WITHOUT validation to localStorage (NO
+  // backend). getFieldsValue(true) returns the entire form store (including values seeded via
+  // initialValues that have no rendered field), unlike onFinish which only delivers validated
+  // registered fields; we drop the `__owner` key (it IS the storage key, not a field) and write
+  // the rest under it, so a half-finished form survives a reload entirely client-side. Offered
+  // whenever the CR sets draftActionId (the button gate) and a draft key is present.
+  const onDraft = (draftActionId && draftStorageKey)
+    ? () => {
       const values = convertDayjsToISOString(form.getFieldsValue(true) as Record<string, unknown>)
-
-      await handleAction(draftAction, resourcesRefs, values, widget)
+      delete values.__owner
+      try {
+        localStorage.setItem(draftStorageKey, JSON.stringify(values))
+        notification.success({ message: 'Draft saved', placement: 'bottomLeft' })
+      } catch {
+        notification.error({ message: 'Could not save draft — browser storage is full', placement: 'bottomLeft' })
+      }
     }
     : undefined
 
@@ -326,7 +354,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   if (isActionLoading) {
     return (
       <div className={styles.loading}>
-        <Spin indicator={<LoadingOutlined />} spinning />
+        <Spin indicator={<FontAwesomeIcon icon={['fas', 'spinner'] as IconProp} spin />} spinning />
       </div>
     )
   }
@@ -375,9 +403,6 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
           form={form}
           id={formId}
           initialValues={effectiveInitialValues}
-          // Re-key on a new Autopilot draft so the merged initialValues re-apply (antd
-          // applies initialValues only on mount). Stable (draftNonce 0) without a draft.
-          key={`ap-draft-${draftNonce}`}
           layout={layout}
           onFinish={(formValues) => { onFinish(formValues as Record<string, unknown>) }}
           size={size}

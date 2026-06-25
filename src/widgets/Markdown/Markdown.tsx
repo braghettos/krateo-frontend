@@ -1,4 +1,5 @@
-import { CopyOutlined, DownloadOutlined } from '@ant-design/icons'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from 'antd'
 import { useMemo, useState } from 'react'
 import { CopyToClipboard } from 'react-copy-to-clipboard-ts'
@@ -43,14 +44,14 @@ const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
                 }}
                 text={markdown}
               >
-                <Button icon={<CopyOutlined />} size='large' />
+                <Button icon={<FontAwesomeIcon icon={['fas', 'copy'] as IconProp} />} size='large' />
               </CopyToClipboard>
             </div>
           )}
 
           {allowDownload && (
             <div className={styles.button}>
-              <Button icon={<DownloadOutlined />} onClick={handleDownload} size='large' />
+              <Button icon={<FontAwesomeIcon icon={['fas', 'download'] as IconProp} />} onClick={handleDownload} size='large' />
             </div>
           )}
         </div>

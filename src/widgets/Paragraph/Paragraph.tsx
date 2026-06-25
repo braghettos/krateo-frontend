@@ -27,16 +27,13 @@ const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
     </Linkify>
   )
 
-  // `variant: eyebrow` renders the small uppercase mono section caption (the Flight-deck
-  // page-header / panel eyebrow). Rendered as a plain element rather than antd
-  // Typography.Paragraph — antd Typography collapses a multi-class className to its first
-  // token, which would drop the `.eyebrow` modifier class.
+  // Frontend-only cosmetic hide: the page-header eyebrow ("PLATFORM · TENANT …", "CATALOG ·
+  // CURATED", …) is suppressed to drop the redundant third title — the eyebrow-styled breadcrumb
+  // now carries that context line above the H1. Canonical source is the chart's `*-eyebrow`
+  // Paragraph CRs; returning null here avoids touching the cluster. Delete this block (restoring
+  // the original `<div className=… eyebrow>{content}</div>`) to bring the eyebrows back.
   if (variant === 'eyebrow') {
-    return (
-      <div className={`${styles.paragraph} ${styles.eyebrow}`} key={uid}>
-        {content}
-      </div>
-    )
+    return null
   }
 
   // A `level` promotes the text to a Typography.Title (h1-h5); otherwise it

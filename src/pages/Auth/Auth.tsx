@@ -1,4 +1,5 @@
-import { LoadingOutlined } from '@ant-design/icons'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Result, Space, Spin, Typography } from 'antd'
 import { useEffect, useState } from 'react'
@@ -112,7 +113,7 @@ const Auth = () => {
           size='large'
           style={{ alignItems: 'center', height: '100vh', justifyContent: 'center', width: '100%' }}
         >
-          <Spin indicator={<LoadingOutlined />} size='large' />
+          <Spin indicator={<FontAwesomeIcon icon={['fas', 'spinner'] as IconProp} spin />} size='large' />
           <Typography.Text>Authentication in progress...</Typography.Text>
         </Space>
       )
