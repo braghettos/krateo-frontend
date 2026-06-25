@@ -62,6 +62,10 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 /** Per-stream state carried across SSE events (so `session` fires once). */
 interface KagentStreamState {
   contextSent: boolean
+  /** Set once a `done` frame is emitted (from a `completed`/`final` event) so the
+   * stream-close fallback in `run()` doesn't emit a SECOND `done` — a duplicate would
+   * re-run the provider's finalize and wipe the rendered answer. */
+  done: boolean
 }
 
 /**
@@ -117,7 +121,32 @@ const handleKagentPayload = (
     }
   }
 
+  // A2A `artifact-update` carries the AUTHORITATIVE full output. The ADK emits it
+  // alongside (or, for some turns, INSTEAD of) the streamed `status-update` agent
+  // text — so without this branch a turn whose answer arrives only as an artifact
+  // renders an empty bubble (verified live: the answer was in `result.artifact`,
+  // never in `status.message`). Treat it as the definitive text and REPLACE whatever
+  // the status stream accumulated (identical when both fire; recovers the answer when
+  // the status stream was empty). `functionCall` parts still surface as tool_calls.
+  const artifact = asRecord(result.artifact)
+  if (artifact && Array.isArray(artifact.parts)) {
+    let artifactText = ''
+    for (const part of artifact.parts) {
+      const partRecord = asRecord(part)
+      const functionCall = asRecord(partRecord?.functionCall)
+      if (functionCall && typeof functionCall.name === 'string') {
+        handlers.onFrame({ args: functionCall.args, kind: 'tool_call', name: functionCall.name })
+      } else if (typeof partRecord?.text === 'string') {
+        artifactText += partRecord.text
+      }
+    }
+    if (artifactText) {
+      handlers.onFrame({ delta: artifactText, kind: 'text', replace: true })
+    }
+  }
+
   if (result.final === true || status?.state === 'completed') {
+    state.done = true
     handlers.onFrame({ kind: 'done' })
   }
 }
@@ -163,7 +192,7 @@ const processSseEvent = (event: string, handlers: AutopilotStreamHandlers, state
 export const createKagentTransport = (baseUrl: string): AutopilotTransport => ({
   send: (request: AutopilotSendRequest, handlers: AutopilotStreamHandlers): (() => void) => {
     const controller = new AbortController()
-    const state: KagentStreamState = { contextSent: false }
+    const state: KagentStreamState = { contextSent: false, done: false }
 
     const run = async (): Promise<void> => {
       let response: Response
@@ -204,7 +233,11 @@ export const createKagentTransport = (baseUrl: string): AutopilotTransport => ({
           buffer = rest
           events.forEach((event) => processSseEvent(event, handlers, state))
         }
-        handlers.onFrame({ kind: 'done' })
+        // Fallback `done` only if the stream closed WITHOUT a `completed`/`final` event
+        // (otherwise handleKagentPayload already emitted it — a second one re-finalizes).
+        if (!state.done) {
+          handlers.onFrame({ kind: 'done' })
+        }
       } catch (error) {
         if (!controller.signal.aborted) {
           handlers.onFrame({ kind: 'error', message: error instanceof Error ? error.message : 'stream error' })

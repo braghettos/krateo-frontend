@@ -69,6 +69,20 @@
   background-color: color-mix(in srgb, currentColor 6%, transparent);
 }
 
+/* `?spotlight=<name>` highlight — a global-search hit for a not-yet-installed blueprint routes
+   to /marketplace?q=…&spotlight=… ; the matched tile gets an amber ring + a brief attention
+   pulse (the "mouse-over" cue), settling into a persistent amber ring. */
+.spotlight {
+  border-color: var(--amber-color) !important;
+  box-shadow: 0 0 0 1px var(--amber-color), 0 0 14px 2px color-mix(in srgb, var(--amber-color) 45%, transparent);
+  animation: spotlightPulse 1.1s ease-in-out 2;
+}
+
+@keyframes spotlightPulse {
+  0%, 100% { box-shadow: 0 0 0 1px var(--amber-color), 0 0 10px 1px color-mix(in srgb, var(--amber-color) 35%, transparent); }
+  50% { box-shadow: 0 0 0 2px var(--amber-color), 0 0 22px 5px color-mix(in srgb, var(--amber-color) 60%, transparent); }
+}
+
 /* Reconciliation-rail row: a per-item Progress line (flex) + a mono % label. The
    List.Item flexes the Meta (composition name/ns) and this bar side by side. */
 .bar {

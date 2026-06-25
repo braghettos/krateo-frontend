@@ -4,7 +4,16 @@ import { useLocation } from 'react-router'
 import { useRoutesContext } from '../../context/RoutesContext'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import Page404 from '../../pages/Page404'
+import PageSearch from '../PageSearch'
 import WidgetRenderer from '../WidgetRenderer'
+
+/** Exact routes that get a frontend-rendered page search bar (→ `?q=` → the page's
+ * data-source RESTAction name/description filter). Frontend chrome, like the Shell search. */
+const PAGE_SEARCH: Record<string, string> = {
+  '/blueprints': 'Search blueprints by name or description…',
+  '/compositions': 'Search compositions by name or type…',
+  '/marketplace': 'Search the catalog by name or description…',
+}
 
 /**
  * Content-only routed page: resolves which widget endpoint the current route
@@ -33,9 +42,16 @@ export const WidgetPage = ({ defaultWidgetEndpoint }: { defaultWidgetEndpoint?: 
     },
   })
 
-  return widgetEndpoint || isFetchingRoutes
-    ? <WidgetRenderer key={'content'} widgetEndpoint={widgetEndpoint} />
-    : <Page404 />
+  if (!widgetEndpoint && !isFetchingRoutes) {
+    return <Page404 />
+  }
+  const searchPlaceholder = PAGE_SEARCH[location.pathname]
+  return (
+    <>
+      {searchPlaceholder ? <PageSearch placeholder={searchPlaceholder} /> : null}
+      <WidgetRenderer key='content' widgetEndpoint={widgetEndpoint} />
+    </>
+  )
 }
 
 export default WidgetPage

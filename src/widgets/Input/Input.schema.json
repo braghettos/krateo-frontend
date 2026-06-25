@@ -27,7 +27,8 @@
             "size": { "type": "string", "enum": ["small", "middle", "large"], "description": "antd Input `size`" },
             "disabled": { "type": "boolean", "description": "antd Input `disabled`" },
             "allowClear": { "type": "boolean", "description": "antd Input `allowClear`" },
-            "maxLength": { "type": "integer", "description": "antd Input `maxLength`" }
+            "maxLength": { "type": "integer", "description": "antd Input `maxLength`" },
+            "queryParam": { "type": "string", "description": "when set, the Input is a STANDALONE URL-query-bound SEARCH box (antd Input.Search), NOT a Form control: submitting (Enter / search button) writes ?<queryParam>= into the URL → extras, so a data source can filter server-side in its RESTAction jq (e.g. `.q`). Clearing removes the param." }
           }
         },
         "apiRef": {

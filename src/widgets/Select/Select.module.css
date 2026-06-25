@@ -1,0 +1,189 @@
+/* URL-bound MULTI-select rendered as the multitenancy mockup's CHECKBOX SWITCHER (the project /
+ * namespace scope control). antd's popup is the panel shell (bezel bg / border / shadow); we lay
+ * the mockup chrome around antd's option list via `popupRender`, and render each option as a
+ * checkbox row via `optionRender`. Petrol discipline: boldness (amber) only on the live control. */
+
+/* ── option rows (left amber-fill checkbox + mono name) ── */
+.checkOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkBox {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gray-color);
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--light-color);
+}
+
+.checkBoxOn {
+  background-color: var(--amber-color);
+  border-color: var(--amber-color);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--amber-color) 70%, transparent);
+}
+
+.checkOptionLabel {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* hide antd's default right-side selected tick — the left checkbox replaces it */
+.checkPopup :global(.ant-select-item-option-state) {
+  display: none;
+}
+
+/* the amber checkbox is the selection signal; drop the grey selected-row fill + bold, and turn
+ * the name amber when on (mockup .p-row.on) */
+.checkPopup :global(.ant-select-item-option-selected:not(.ant-select-item-option-disabled)) {
+  background-color: transparent;
+  font-weight: inherit;
+  color: var(--amber-color);
+}
+
+/* keyboard/hover row → a faint amber wash instead of antd's default grey */
+.checkPopup :global(.ant-select-item-option-active:not(.ant-select-item-option-disabled)) {
+  background-color: color-mix(in srgb, var(--amber-color) 12%, transparent);
+}
+
+/* ── the §02 switcher panel chrome (header → master row → [menu] → apply → footer) ── */
+.panelHead {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-color);
+  padding: 2px 6px 8px;
+}
+
+.panelHr {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 0 2px 6px;
+}
+
+/* master "All projects" row — matches an option row's metrics; lives outside antd's list */
+.masterRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 12px;
+  margin-bottom: 4px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-color);
+  font: inherit;
+  text-align: left;
+}
+
+.masterRow:hover {
+  background-color: color-mix(in srgb, var(--amber-color) 12%, transparent);
+}
+
+.masterOn {
+  color: var(--amber-color);
+}
+
+.optionCount {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--gray-color);
+}
+
+.masterOn .optionCount {
+  color: var(--amber-color);
+}
+
+.panelApply {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 8px 6px 2px;
+}
+
+.panelFoot {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--gray-color);
+  padding: 8px 6px 2px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-color);
+}
+
+.panelFoot b {
+  color: var(--cyan-color);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── trigger chip (mockup .proj-chip) ── */
+/* leading pin: amber dot when a filter is active, hollow graphite at "All projects" */
+.pinOn,
+.pinAll {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.pinOn {
+  background-color: var(--amber-color);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--amber-color) 85%, transparent);
+}
+
+.pinAll {
+  background: transparent;
+  border: 1px solid var(--gray-color);
+}
+
+/* selected namespaces → amber pills in the trigger (mockup .ptag) */
+.ptag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber-color);
+  background-color: color-mix(in srgb, var(--amber-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber-color) 32%, transparent);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-inline-end: 4px;
+}
+
+.ptagClose {
+  cursor: pointer;
+  opacity: 0.7;
+  font-size: 9px;
+}
+
+.ptagClose:hover {
+  opacity: 1;
+}
+
+/* the "+N" overflow indicator → a solid amber pill (mockup .pill) */
+.pill {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--light-color);
+  background-color: var(--amber-color);
+  border-radius: 8px;
+  padding: 2px 5px;
+}

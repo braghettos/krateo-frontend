@@ -15,6 +15,13 @@
   gap: var(--spacing-md);
 }
 
+/* Breadcrumb moved OUT of the header INTO each page's content (top of the routed Outlet), so it
+   reads per-page rather than as global chrome. Sits inside the padded Content; this just adds the
+   gap to the page below it. */
+.contentCrumb {
+  margin-bottom: var(--spacing-md);
+}
+
 /* User block pinned to the bottom of the Sider. */
 .siderFooter {
   align-items: center;

@@ -24,8 +24,18 @@
   vertical-align: bottom;
   white-space: nowrap;
 
+  /* Adopt the page-header EYEBROW treatment (IBM Plex Mono, uppercase, letter-spaced, muted
+     graphite — mirrors .paragraph.eyebrow). The breadcrumb now reads as the section eyebrow
+     above the H1, replacing the separate eyebrow widget. */
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
   &.capitalize {
-    text-transform: capitalize;
+    text-transform: uppercase;
   }
 
   & .link:hover {

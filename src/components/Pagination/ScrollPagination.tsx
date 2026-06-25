@@ -1,4 +1,5 @@
-import { LoadingOutlined } from '@ant-design/icons'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Spin } from 'antd'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
@@ -33,7 +34,7 @@ export const ScrollPagination = ({
       {children}
 
       <div className={styles.loading} ref={ref}>
-        {isFetching && <Spin indicator={<LoadingOutlined />} size='large' spinning />}
+        {isFetching && <Spin indicator={<FontAwesomeIcon icon={['fas', 'spinner'] as IconProp} spin />} size='large' spinning />}
         {/* <div>isFetching: {isFetching.toString()}</div>
         <div>isFetchingNextPage: {isFetchingNextPage.toString()}</div>
         <div>isFetchingResourcesRefs: {isFetchingResourcesRefs.toString()}</div>

@@ -1,4 +1,5 @@
-import { UploadOutlined } from '@ant-design/icons'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Upload as AntdUpload, type UploadProps } from 'antd'
 import useApp from 'antd/es/app/useApp'
@@ -79,7 +80,7 @@ const Upload = ({ resourcesRefs, uid, widgetData }: WidgetProps<UploadWidgetData
       maxCount={maxCount}
       multiple={multiple}
     >
-      {isCard ? (label || 'Upload') : <Button icon={<UploadOutlined />}>{label || 'Upload'}</Button>}
+      {isCard ? (label || 'Upload') : <Button icon={<FontAwesomeIcon icon={['fas', 'upload'] as IconProp} />}>{label || 'Upload'}</Button>}
     </AntdUpload>
   )
 }

@@ -3,6 +3,7 @@ import Linkify from 'linkify-react'
 
 import type { WidgetProps } from '../../types/Widget'
 
+import { resolveLocalTokens } from './localTokens'
 import styles from './Paragraph.module.css'
 import type { Paragraph as WidgetType } from './Paragraph.type'
 
@@ -11,6 +12,10 @@ export type ParagraphWidgetData = WidgetType['spec']['widgetData']
 const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
   const { code, copyable, delete: del, disabled, ellipsis, italic, level, mark, strong, text, type, underline, variant } = widgetData
 
+  // Resolve client-side tokens (currently {localTimeOfDay}) in the browser so they reflect the
+  // viewer's local time regardless of snowplow's cached server `now`. See ./localTokens.
+  const resolvedText = resolveLocalTokens(text)
+
   const content = (
     <Linkify
       options={{
@@ -18,20 +23,17 @@ const Paragraph = ({ uid, widgetData }: WidgetProps<ParagraphWidgetData>) => {
         target: '_blank',
       }}
     >
-      {text}
+      {resolvedText}
     </Linkify>
   )
 
-  // `variant: eyebrow` renders the small uppercase mono section caption (the Flight-deck
-  // page-header / panel eyebrow). Rendered as a plain element rather than antd
-  // Typography.Paragraph — antd Typography collapses a multi-class className to its first
-  // token, which would drop the `.eyebrow` modifier class.
+  // Frontend-only cosmetic hide: the page-header eyebrow ("PLATFORM · TENANT …", "CATALOG ·
+  // CURATED", …) is suppressed to drop the redundant third title — the eyebrow-styled breadcrumb
+  // now carries that context line above the H1. Canonical source is the chart's `*-eyebrow`
+  // Paragraph CRs; returning null here avoids touching the cluster. Delete this block (restoring
+  // the original `<div className=… eyebrow>{content}</div>`) to bring the eyebrows back.
   if (variant === 'eyebrow') {
-    return (
-      <div className={`${styles.paragraph} ${styles.eyebrow}`} key={uid}>
-        {content}
-      </div>
-    )
+    return null
   }
 
   // A `level` promotes the text to a Typography.Title (h1-h5); otherwise it

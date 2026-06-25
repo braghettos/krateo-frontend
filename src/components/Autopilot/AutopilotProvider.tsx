@@ -83,6 +83,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // finalize (strip fenced proposals, auto-apply read-only actions) on `done`.
   const assistantTextRef = useRef<Map<string, string>>(new Map())
   const proposalsRef = useRef<Map<string, PortalActionProposal[]>>(new Map())
+  // Assistant turns already finalized, so a duplicate `done` frame can't re-run finalize
+  // (which deletes the text buffer and would otherwise wipe the rendered answer).
+  const finalizedRef = useRef<Set<string>>(new Set())
 
   const transport: AutopilotTransport = useMemo(
     () => (endpoint && endpoint !== 'echo' ? createKagentTransport(endpoint) : createEchoTransport()),
@@ -97,6 +100,13 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // the REAL dispatcher, attaching a chip per applied action. The bridge denies any
   // non-read-only verb, so this never mutates.
   const finalize = useCallback(async (assistantId: string) => {
+    // A turn can receive `done` more than once (the `completed` status event AND the
+    // transport's stream-close fallback). finalize() deletes the per-turn text buffer, so a
+    // second run would read an empty buffer and WIPE the rendered answer. Finalize once.
+    if (finalizedRef.current.has(assistantId)) {
+      return
+    }
+    finalizedRef.current.add(assistantId)
     const rawText = assistantTextRef.current.get(assistantId) ?? ''
     const { cleanedText, proposals: textProposals, suggestions, tour: proposedTour } = parseAutopilotDirectives(rawText)
     const toolProposals = proposalsRef.current.get(assistantId) ?? []
@@ -220,6 +230,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     contextIdRef.current = undefined
     assistantTextRef.current.clear()
     proposalsRef.current.clear()
+    finalizedRef.current.clear()
     setMessages([])
     setStreaming(false)
     setSessionId(newSessionId())
