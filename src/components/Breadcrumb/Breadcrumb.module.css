@@ -42,3 +42,14 @@
     color: var(--primary-color);
   }
 }
+
+/* antd renders breadcrumb links as INLINE-BLOCK <a> (~2px taller than the bare-text leaf
+   crumb); with vertical-align:bottom that bottom-aligned every crumb, so the no-link LEAF
+   sat ~2px lower. Force the link to plain inline so every crumb shares the bare-text line
+   height and aligns. Target the <a> ELEMENT (antd does not carry our className onto it). */
+.breadcrumbItem :global(a) {
+  display: inline !important;
+  padding: 0;
+  line-height: inherit;
+  vertical-align: baseline;
+}
