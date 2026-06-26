@@ -95,9 +95,11 @@ export interface ItemTemplate {
    * + muted inline subPrimaryText + right-aligned colored secondaryText — the detail
    * Relations "composed children" tree), or `card` (a full antd Card tile — icon-tile +
    * name + version badge (subPrimaryText) + category tag (secondaryText) + description +
-   * a footer of `rowActions` rendered as visible buttons — the Marketplace catalog grid).
+   * a footer of `rowActions` rendered as visible buttons — the Marketplace catalog grid),
+   * or `chip` (a compact navigable filter pill — `primaryText` label + optional `count`,
+   * solid/amber when the item's `active` is true; the data-driven Marketplace facet chips).
    */
-  rowVariant?: 'default' | 'tree' | 'card'
+  rowVariant?: 'default' | 'tree' | 'card' | 'chip'
 }
 
 export interface ResolvedBar {

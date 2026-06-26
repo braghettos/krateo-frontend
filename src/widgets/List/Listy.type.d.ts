@@ -77,7 +77,7 @@ export interface Listy {
         /**
          * row layout: default (antd List.Item.Meta — avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid)
          */
-        rowVariant?: 'default' | 'tree' | 'card'
+        rowVariant?: 'default' | 'tree' | 'card' | 'chip'
         /**
          * render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text
          */

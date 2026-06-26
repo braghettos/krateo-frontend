@@ -71,6 +71,10 @@ export const ListView = ({
     await handleAction(action, resourcesRefs ?? { items: [] }, item as Record<string, unknown>, widget)
   }
 
+  // Chip mode (Marketplace facet chips) lays its items out as a wrapping pill row, not a
+  // vertical split list.
+  const isChips = itemTemplate?.rowVariant === 'chip'
+
   if (!loading && !items.length) {
     return <WidgetEmpty />
   }
@@ -78,6 +82,7 @@ export const ListView = ({
   return (
     <AntdList
       bordered={bordered}
+      className={isChips ? styles.chipList : undefined}
       dataSource={items}
       footer={footer}
       grid={grid}
@@ -115,6 +120,29 @@ export const ListView = ({
           avatar = <span className={styles.tile} style={{ backgroundColor: soft, color: colorCode }}><FontAwesomeIcon icon={row.icon as IconProp} /></span>
         } else if (row.icon) {
           avatar = <Avatar icon={<FontAwesomeIcon icon={row.icon as IconProp} />} style={{ backgroundColor: colorCode }} />
+        }
+
+        // Compact navigable filter pill (Marketplace facet chips): `primaryText` label +
+        // optional `count`; solid/amber when the item's `active` flag is set. One chip per
+        // element of the catalog RA's data-driven `categories` / `sources` array.
+        if (itemTemplate.rowVariant === 'chip') {
+          const { active: activeRaw, count } = item as { active?: unknown; count?: number | string }
+          const active = Boolean(activeRaw)
+          const showCount = typeof count === 'number' || (typeof count === 'string' && count !== '')
+          return (
+            <AntdList.Item className={styles.chipItem} key={`${rowKey}-${index}`}>
+              <Button
+                className={styles.chip}
+                onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+                size='small'
+                type={active ? 'primary' : 'default'}
+                variant={active ? 'filled' : 'outlined'}
+              >
+                {row.primaryText}
+                {showCount && <span className={styles.chipCount}>{count}</span>}
+              </Button>
+            </AntdList.Item>
+          )
         }
 
         // Tree row (detail Relations): a tight single-line mono row — `└─` connector
@@ -292,7 +320,7 @@ export const ListView = ({
         )
       }}
       size={size}
-      split={split}
+      split={isChips ? false : split}
     />
   )
 }

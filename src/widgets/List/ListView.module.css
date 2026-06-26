@@ -327,3 +327,25 @@
 .tileCard.clickable:hover .cardCtaArrow {
   transform: translateX(2px);
 }
+
+/* Chip mode (Marketplace facet chips): a wrapping row of compact navigable pills instead of a
+   vertical split list. The active chip is the antd primary (amber) Button; inactive chips are
+   outlined. `chipCount` is a muted tabular count suffix (e.g. "ec2 23"). */
+.chipList :global(.ant-list-items) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chipList :global(.ant-list-item) {
+  border-block-end: none;
+  padding: 0;
+  width: auto;
+}
+
+.chipCount {
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  margin-inline-start: 6px;
+  opacity: 0.6;
+}
