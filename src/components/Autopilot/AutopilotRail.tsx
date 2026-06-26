@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { default as ReactMarkdown } from 'react-markdown'
 
 import { useAutopilot } from './AutopilotProvider'
 import styles from './AutopilotRail.module.css'
@@ -17,23 +18,17 @@ import AutopilotTour from './AutopilotTour'
 import { CheckIcon, CollapseIcon, EyeIcon, LinkIcon, PlusIcon, SendIcon, SparkIcon } from './icons'
 import type { AutopilotMessage } from './types'
 
-/** Minimal inline renderer: turns `code` spans into styled chips. No HTML injection. */
-const renderInline = (text: string): React.ReactNode => {
-  const segments = text.split('`')
-  return segments.map((segment, index) => (
-    index % 2 === 1
-      ? <code key={`c-${index}`}>{segment}</code>
-      : <span key={`t-${index}`}>{segment}</span>
-  ))
-}
-
 const MessageBubble = ({ message }: { message: AutopilotMessage }) => {
   if (message.role === 'user') {
     return <div className={`${styles.apMsg} ${styles.apMsgUser}`}>{message.text}</div>
   }
   return (
     <div className={`${styles.apMsg} ${styles.apMsgBot}`}>
-      {renderInline(message.text)}
+      {/* Render the assistant's markdown properly (bold / lists / headings / inline code). The old
+          renderInline only handled `code` spans, so everything else (**bold**, `-` lists, `##`) showed
+          as RAW markdown characters. react-markdown emits NO raw HTML by default, and sanitizeChatText
+          has already stripped any code/YAML blocks the agent shouldn't show. */}
+      <div className={styles.apMd}><ReactMarkdown>{message.text}</ReactMarkdown></div>
       {message.streaming ? <span className={styles.apCaret} /> : null}
       {message.actions?.map((action, index) => (
         <div className={styles.apAct} key={`act-${index}`}>

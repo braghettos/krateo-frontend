@@ -222,6 +222,27 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     }
   }, [draftStorageKey])
 
+  // Filter the Autopilot draft to the form's REAL field names (top-level schema properties). The model
+  // is told to use exact field names, but an invented or "closest-match" key would otherwise be held in
+  // the form store by setFieldsValue while the chip still claims "drafted the form" — a value landing
+  // nowhere. Apply only keys that are actual fields, so the draft can't mis-fill or silently vanish.
+  const safeAgentDraft = useMemo<Record<string, unknown> | undefined>(() => {
+    if (!agentDraft) {
+      return undefined
+    }
+    const props = jsonSchema?.properties
+    if (!props) {
+      return agentDraft
+    }
+    const out: Record<string, unknown> = {}
+    for (const [key, val] of Object.entries(agentDraft)) {
+      if (Object.prototype.hasOwnProperty.call(props, key)) {
+        out[key] = val
+      }
+    }
+    return out
+  }, [agentDraft, jsonSchema])
+
   // Effective initial values = schema defaults < explicit initialValues < the resumed localStorage
   // draft < the Autopilot draft — the SAME object handed to <AntdForm initialValues> below. Factored
   // out so the pristine check compares against exactly what the form was seeded with.
@@ -230,9 +251,9 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       const base = jsonSchema
         ? { ...getDefaultsFromSchema(jsonSchema), ...initialValues, ...savedDraft }
         : { ...(initialValues ?? {}), ...savedDraft }
-      return agentDraft ? { ...base, ...agentDraft } : base
+      return safeAgentDraft ? { ...base, ...safeAgentDraft } : base
     },
-    [jsonSchema, initialValues, savedDraft, agentDraft],
+    [jsonSchema, initialValues, savedDraft, safeAgentDraft],
   )
 
   // Apply an Autopilot draft IMPERATIVELY. Seeding it through `initialValues` (above) does NOT work
@@ -243,10 +264,10 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   // a remount (so values the user already typed survive), so the Autopilot fills EVERY field it
   // drafted. Fires once per new draft (the provider hands a fresh object on each prefillForm).
   useEffect(() => {
-    if (agentDraft && Object.keys(agentDraft).length > 0) {
-      form.setFieldsValue(agentDraft)
+    if (safeAgentDraft && Object.keys(safeAgentDraft).length > 0) {
+      form.setFieldsValue(safeAgentDraft)
     }
-  }, [agentDraft, form])
+  }, [safeAgentDraft, form])
 
   // Live form values (re-renders on any field change). Used only to gate the submit button when
   // `submitDisabledWhenPristine` is set: disabled until at least one field differs from its initial

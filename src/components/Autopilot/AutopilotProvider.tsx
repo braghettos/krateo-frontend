@@ -16,7 +16,7 @@ import { useConfigContext } from '../../context/ConfigContext'
 import { randomId } from '../../utils/utils'
 
 import type { PortalActionProposal, PortalTour } from './actionBridge'
-import { PORTAL_CAPABILITIES_PROMPT, parseAutopilotDirectives, useAutopilotActionBridge } from './actionBridge'
+import { PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
 import { AgentDraftProvider } from './agentDraft'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
@@ -86,6 +86,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // Assistant turns already finalized, so a duplicate `done` frame can't re-run finalize
   // (which deletes the text buffer and would otherwise wipe the rendered answer).
   const finalizedRef = useRef<Set<string>>(new Set())
+  // The user's latest message text — so finalize can gate a proposed tour on an EXPLICIT walk-me-through
+  // request (the model still emits tours on direct actions despite the prompt; the host enforces it).
+  const lastUserTextRef = useRef('')
 
   const transport: AutopilotTransport = useMemo(
     () => (endpoint && endpoint !== 'echo' ? createKagentTransport(endpoint) : createEchoTransport()),
@@ -120,33 +123,41 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     )))
     setStreaming(false)
 
-    // Start a guided spotlight tour if one was proposed.
-    if (proposedTour) {
-      setTour(proposedTour)
-      setTourOpen(true)
-    }
-
     const chips: AutopilotActionChip[] = []
-    for (const proposal of [...toolProposals, ...textProposals]) {
-      // prefillForm is handled here (it sets provider state, not a dispatcher action):
-      // merge the values into the mounted Form's initialValues; the user still reviews +
-      // submits via the form's own gate. No cluster mutation — Autopilot never submits.
+    // At most ONE action per reply — now ENFORCED, not just requested in the prompt. A model that
+    // emits two navigates (or a duplicated tool_call + a fenced block) would otherwise run them
+    // sequentially, flashing the page A then B while only the last chip's label matches. Take the first.
+    const proposal = [...toolProposals, ...textProposals][0]
+    if (proposal) {
       if (proposal.verb === 'prefillForm') {
+        // prefillForm sets provider state (not a dispatcher action): the mounted Form merges these into
+        // its values; the user still reviews + submits via the form's own gate. Autopilot never submits.
         setAgentDraft(proposal.values ?? {})
         setDraftNonce((nonce) => nonce + 1)
         chips.push({ label: proposal.label ?? 'drafted the create form', readOnly: true, verb: 'prefillForm' })
-        continue
-      }
-      // eslint-disable-next-line no-await-in-loop -- sequential: a navigate changes the page the next action sees
-      const chip = await apply(proposal)
-      if (chip) {
-        chips.push(chip)
+      } else {
+        const chip = await apply(proposal)
+        if (chip) {
+          chips.push(chip)
+        }
       }
     }
     if (chips.length) {
       setMessages((prev) => prev.map((message) => (
         message.id === assistantId ? { ...message, actions: chips } : message
       )))
+    }
+
+    // Start a guided spotlight tour AFTER applying the proposals, so a navigate/prefill in
+    // the same reply has settled the destination page / filled the form before the tour
+    // resolves its DOM anchors (an unsettled page would degrade every step to centered).
+    // Host-side tour gate: honor a proposed tour ONLY if the user literally asked to be walked through.
+    // The prompt says tours are off-by-default, but the model still emits them on direct actions
+    // ("install it for me"); the host enforces the rule deterministically (prompts decay across a thread).
+    const userAskedForTour = /\b(walk me through|guide me|show me around|walk through)\b/i.test(lastUserTextRef.current)
+    if (proposedTour && userAskedForTour) {
+      setTour(proposedTour)
+      setTourOpen(true)
     }
   }, [apply])
 
@@ -155,9 +166,12 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       case 'text': {
         const current = assistantTextRef.current.get(assistantId) ?? ''
         const next = frame.replace ? frame.delta : current + frame.delta
+        // Keep the RAW text in the buffer (finalize parses directive fences from it), but render a
+        // sanitized view so a raw tool-call echo never flashes on screen mid-stream.
         assistantTextRef.current.set(assistantId, next)
+        const rendered = sanitizeChatText(next)
         setMessages((prev) => prev.map((message) => (
-          message.id === assistantId ? { ...message, text: next } : message
+          message.id === assistantId ? { ...message, text: rendered } : message
         )))
         break
       }
@@ -197,15 +211,20 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     if (!trimmed || streaming) {
       return
     }
+    lastUserTextRef.current = trimmed
 
     const envelope = collect()
     const firstTurn = !sentFirstRef.current
     sentFirstRef.current = true
     const baseContext = buildContextDelta(envelope, lastEnvelopeRef.current)
     lastEnvelopeRef.current = envelope
-    // Teach the orchestrator the read-only proposal protocol once per thread
-    // (outside the page_context data-fence; it remembers via the A2A contextId).
-    const contextString = firstTurn ? `${PORTAL_CAPABILITIES_PROMPT}\n\n${baseContext}` : baseContext
+    // Teach the orchestrator the full read-only proposal protocol on turn 1, then re-inject the tight
+    // HOUSE RULES on EVERY later turn. The contextId alone doesn't keep the rules salient: the original
+    // ~30-line block decays as the thread grows, and create/diagnose/install all happen on later turns —
+    // exactly where the model was dropping the no-YAML / no-tour / no-invented-state guards.
+    const contextString = firstTurn
+      ? `${PORTAL_CAPABILITIES_PROMPT}\n\n${baseContext}`
+      : `${PORTAL_HOUSE_RULES}\n\n${baseContext}`
 
     const assistantId = randomId()
     const now = Date.now()
