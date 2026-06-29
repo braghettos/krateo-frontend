@@ -107,3 +107,6 @@ config:
   # Entry point: the app-shell Layout (antd-pure INIT→Layout convention).
   # NavMenu + RoutesLoader were removed (#15/#18) — routing is data via the sidebar Menu.
   INIT: /call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system
+  # Browser OpenTelemetry collector endpoint. Empty by default: the browser OTel
+  # SDK stays OFF until a non-empty endpoint is set (frontend gates on config.api.OTEL_COLLECTOR_URL).
+  OTEL_COLLECTOR_URL: ""
