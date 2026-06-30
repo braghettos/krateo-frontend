@@ -22,8 +22,9 @@ const UserMenu = () => {
     .slice(0, 2)
     .join('')
 
-  // TODO: get role from user role
-  const role = 'administrator'
+  // The authenticated identity's real access groups (from the K_user login payload). There is
+  // no separate "role" field, so surface the actual groups instead of a fabricated label.
+  const groups = (userData.groups ?? []).join(' · ')
 
   const onLogout = async () => {
     try {
@@ -67,7 +68,7 @@ const UserMenu = () => {
 
             <div className={styles.details}>
               <Typography.Text className={styles.fullname}>{fullName}</Typography.Text>
-              <Typography.Text className={styles.role}>{role}</Typography.Text>
+              {groups && <Typography.Text className={styles.role}>{groups}</Typography.Text>}
             </div>
           </div>
 
