@@ -39,12 +39,18 @@ export const clearClientSession = async (): Promise<void> => {
   }
 }
 
+// Guard so a burst of concurrent 401s (every widget on the page fails at once when the token
+// expires) triggers exactly one logout/redirect, not a flurry of session-clears.
+let loggingOut = false
+
 /**
  * Clear the client session and hard-redirect to the login screen. The hard redirect (not a
  * client-side navigate) is deliberate: it drops the in-memory access-token cache and any
- * broken React tree, guaranteeing a clean reload.
+ * broken React tree, guaranteeing a clean reload. Idempotent: only the first call acts.
  */
 export const forceLogout = async (redirectTo = '/login'): Promise<void> => {
+  if (loggingOut) { return }
+  loggingOut = true
   try {
     await clearClientSession()
   } finally {

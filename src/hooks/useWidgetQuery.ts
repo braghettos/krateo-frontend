@@ -8,6 +8,7 @@ import { useConfigContext } from '../context/ConfigContext'
 import type { Widget } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
 import { getUserInfo } from '../utils/getUserInfo'
+import { forceLogout } from '../utils/logout'
 
 import type { WatchMatcher } from './liveRefresh'
 import { getRefreshEntry, isWidgetLiveRefreshEnabled, recordRefreshHeaders } from './refreshSse'
@@ -142,6 +143,12 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
       },
     })
 
+    if (res.status === 401) {
+      // Expired/invalid token → auto-logout: clear the stale session and hard-redirect to
+      // /login instead of leaving every widget rendering a silent 401. (Until now only the
+      // manual /logout route recovered from an expired token.) Guarded to fire once.
+      void forceLogout()
+    }
     if (!res.ok) {
       throw new WidgetFetchError(`Widget fetch failed: ${res.status} ${res.statusText}`, res.status)
     }
