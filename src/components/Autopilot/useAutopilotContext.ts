@@ -55,9 +55,9 @@ const firstArray = (widgetData: Record<string, unknown> | undefined): unknown[] 
 const firstArrayLength = (widgetData: Record<string, unknown> | undefined): number | undefined =>
   firstArray(widgetData)?.length
 
-const scalar = (v: unknown): string | undefined => {
-  if (typeof v === 'string') return v.trim() || undefined
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+const scalar = (value: unknown): string | undefined => {
+  if (typeof value === 'string') { return value.trim() || undefined }
+  if (typeof value === 'number' || typeof value === 'boolean') { return String(value) }
   return undefined
 }
 
@@ -76,12 +76,12 @@ const itemLabel = (item: unknown): string | undefined => {
   if (Array.isArray(item)) {
     const cells = item
       .map((cell) => {
-        const c = asRecord(cell)
-        const key = typeof c?.valueKey === 'string' ? c.valueKey : undefined
-        const val = scalar(c?.stringValue) ?? scalar(c?.value)
+        const cellRecord = asRecord(cell)
+        const key = typeof cellRecord?.valueKey === 'string' ? cellRecord.valueKey : undefined
+        const val = scalar(cellRecord?.stringValue) ?? scalar(cellRecord?.value)
         return key && val ? `${key}=${val}` : val
       })
-      .filter((s): s is string => Boolean(s))
+      .filter((part): part is string => Boolean(part))
     return cells.length ? cells.join(' · ').slice(0, 300) : undefined
   }
   const record = asRecord(item)
@@ -99,13 +99,13 @@ const itemLabel = (item: unknown): string | undefined => {
   // Status-condition rows (a composition's Conditions list) carry {type, status, desc} — none of the
   // label keys above — so surface them, including the ReconcileError message, so diagnosis isn't a guess.
   if (!base) {
-    const type = record['type']
+    const { type } = record
     if (typeof type === 'string' && type.trim()) {
       const parts = [type.trim()]
       const status = scalar(record['status'])
-      if (status) parts.push(`= ${status}`)
+      if (status) { parts.push(`= ${status}`) }
       const desc = scalar(record['desc'])
-      if (desc) parts.push(`(${desc.slice(0, 700)})`)
+      if (desc) { parts.push(`(${desc.slice(0, 700)})`) }
       return parts.join(' ')
     }
     return undefined
@@ -113,8 +113,8 @@ const itemLabel = (item: unknown): string | undefined => {
   // Append the decision fields the agent needs to tell installed-vs-installable, healthy-vs-failed, etc.
   const extras: string[] = []
   for (const key of ROW_DECISION_KEYS) {
-    const v = scalar(record[key])
-    if (v !== undefined) extras.push(`${key}=${v}`)
+    const value = scalar(record[key])
+    if (value !== undefined) { extras.push(`${key}=${value}`) }
   }
   return extras.length ? `${base} · ${extras.join(' · ')}` : base
 }
@@ -193,8 +193,8 @@ const widgetValue = (kind: string | undefined, widgetData: Record<string, unknow
     return undefined
   }
   if (kind === 'Statistic') {
-    const v = scalar(widgetData.value)
-    return v ? [scalar(widgetData.prefix), v, scalar(widgetData.suffix)].filter(Boolean).join(' ') : undefined
+    const value = scalar(widgetData.value)
+    return value ? [scalar(widgetData.prefix), value, scalar(widgetData.suffix)].filter(Boolean).join(' ') : undefined
   }
   if (kind === 'Tag') {
     return scalar(widgetData.text) ?? scalar(widgetData.value)
@@ -204,19 +204,19 @@ const widgetValue = (kind: string | undefined, widgetData: Record<string, unknow
     return parts.length ? parts.join(' — ') : undefined
   }
   if (kind === 'Paragraph' || kind === 'Markdown') {
-    const t = scalar(widgetData.text)
-    return t ? t.slice(0, 300) : undefined
+    const text = scalar(widgetData.text)
+    return text ? text.slice(0, 300) : undefined
   }
   if (kind === 'Descriptions') {
     const arr = Array.isArray(widgetData.items) ? widgetData.items : []
     const pairs = arr
       .map((entry) => {
-        const r = asRecord(entry)
-        const label = scalar(r?.label)
-        const val = scalar(r?.value)
+        const entryRecord = asRecord(entry)
+        const label = scalar(entryRecord?.label)
+        const val = scalar(entryRecord?.value)
         return label && val ? `${label}: ${val}` : (val ?? label)
       })
-      .filter((s): s is string => Boolean(s))
+      .filter((part): part is string => Boolean(part))
       .slice(0, 12)
     return pairs.length ? pairs.join(' · ') : undefined
   }
@@ -349,11 +349,11 @@ export const useAutopilotContext = () => {
     const queries = queryClient.getQueryCache().findAll({ queryKey: ['widgets'], type: 'active' })
     const widgets: WidgetInventoryEntry[] = queries
       .map((query) => {
-        const queryKey = query.queryKey
+        const { queryKey } = query
         const endpoint = Array.isArray(queryKey) && typeof queryKey[1] === 'string' ? queryKey[1] : ''
         const entry = summarizeWidget(endpoint, query.state.data)
         const loading = query.state.status === 'pending'
-          || (query.state.fetchStatus === 'fetching' && query.state.data == null)
+          || (query.state.fetchStatus === 'fetching' && query.state.data === undefined)
         const stale = query.isStale()
         return { ...entry, loading: loading || undefined, stale: stale || undefined }
       })

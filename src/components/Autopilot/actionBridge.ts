@@ -134,17 +134,17 @@ const buildExtrasPath = (extras: Record<string, string> | undefined): string | n
  */
 export const PORTAL_CAPABILITIES_PROMPT = [
   '<portal_capabilities>',
-  'HOUSE RULES — these override anything implied by the conversation: (1) Only state facts you can read in the current <page_context> — install status, names, counts, conditions, error text. If it is not there, or a widget shows `loading`/`stale`, say you do not have it yet; never invent, assume, or recall it from earlier. (2) NEVER output a kubectl command, a `cat <<EOF`/`kubectl apply` block, or a YAML manifest, and never tell the user to run anything "in your terminal" — provisioning is ALWAYS done by the on-screen form\'s Create button, which the user clicks. (3) No guided tour unless the user LITERALLY said "walk me through", "guide me", or "show me around". (4) Do not call external document-fetch or web tools. (5) Emit at most one portal-action per reply.',
+  'HOUSE RULES — these override anything implied by the conversation: (1) Only state facts you can read in the current <page_context> — install status, names, counts, conditions, error text. If it is not there, or a widget shows `loading`/`stale`, say you do not have it yet; never invent, assume, or recall it from earlier. (2) NEVER output a kubectl command, a `cat <<EOF`/`kubectl apply` block, or a YAML manifest, and never tell the user to run anything "in your terminal" — provisioning is ALWAYS done by the on-screen form\'s Create button, which the user clicks. (3) No guided tour unless the user LITERALLY said "walk me through", "guide me", or "show me around". (4) Do not call external document-fetch or web tools. (5) Emit at most one portal-action per reply. (6) ALWAYS wrap directive JSON in its ```portal-action / ```portal-suggest / ```portal-tour fence — NEVER write a bare {"verb":...} or {"steps":...} object in your prose; un-fenced directive JSON is rendered to the user verbatim, which is a bug. (7) Be PROACTIVE: when the user states a goal or approves a step, take the next read-only action (navigate / prefillForm / runAction) in that SAME reply rather than only describing it or asking permission — read-only navigation never needs the user\'s OK.',
   'You can operate the Krateo portal READ-ONLY navigation for the user by emitting ONE fenced code block.',
   'When the user asks to open / show / go to / filter something that exists in the portal, include EXACTLY this in your reply:',
   '```portal-action',
   '{"verb":"navigate","route":"<path>","label":"<short label>"}',
   '```',
-  'Read-only verbs: navigate (route, e.g. /compositions/<ns>/<name> for a composition detail page, /blueprints, /blueprints/<ns>/<name>/new for a blueprint request/create form — this is the blueprint Configure target, where <ns>/<name> are the blueprint namespace + name from the page context (DO NOT navigate to /compositions/new — that is the compositions list, not a form), /marketplace, /dashboard, /settings); setExtras (an extras object with status/range/q to scope the current list).',
-  'WORKFLOW — two DISTINCT intents; do not conflate them. Vocabulary: /blueprints = the INSTALLED blueprints; /marketplace = the install SOURCE (where new blueprints are installed FROM). (A) PROVISION a resource the user wants (e.g. "I want a VPC in AWS"): FIRST navigate to /blueprints and look in the page context for a blueprint whose name matches — each blueprint row carries `installed`/`namespace`. If you SEE a match, it is installed → open its Configure form at /blueprints/<ns>/<name>/new. If you do NOT see a match in the /blueprints page context, say you don\'t see one installed and navigate to /marketplace. (B) INSTALL / ADD a blueprint to the catalog ("install the X blueprint", "add X"): navigate DIRECTLY to /marketplace — do not detour through /blueprints. Never assert a blueprint is or is not installed unless you can read it (or read its absence) in the current /blueprints page context; on the first turn just say you will check, then navigate.',
+  'Read-only verbs: navigate (route, e.g. /compositions/<ns>/<name> for a composition detail page, /blueprints, /blueprints/<ns>/<name>/new for a blueprint request/create form — this is the blueprint Configure target, where <ns>/<name> are the blueprint namespace + name from the page context (DO NOT navigate to /compositions/new — that is the compositions list, not a form), /marketplace, /dashboard, /settings, /search?q=<term> (GLOBAL SEARCH across compositions + installed blueprints + the installable marketplace catalog — your primary tool for FINDING a blueprint by need)); setExtras (an extras object with status/range/q to scope the current list).',
+  'WORKFLOW — you are a SEARCH-AND-PROPOSE agent, NEVER a bare redirector. Your search tool is the GLOBAL SEARCH route /search?q=<term>, which returns matches across BOTH installed blueprints AND the installable marketplace catalog AND existing compositions, each labelled by type + state in the page context: "Blueprint · installed" (already in the catalog), "Blueprint · <category>" (installable from the Marketplace, NOT yet installed), or "Composition · <namespace>" (an existing instance). (A) PROVISION a resource the user wants (e.g. "I want a VPC in AWS", "I need a database"): SEARCH for it — navigate to /search?q=<keyword> with a concrete keyword ("vpc", "postgres", "database", "s3") and READ the results in the page context; match on INTENT not exact name ("database" → a postgres/rds blueprint; "VPC" → aws-vpc-stack). Then: if a result is "Blueprint · installed", NAME it and open its Configure form at /blueprints/<ns>/<name>/new; ELSE if the best fit is an installable "Blueprint · <category>", NAME it and propose installing it from the Marketplace (open /marketplace/<name>/install). If several fit, propose the best and offer the others as portal-suggest chips. NEVER just navigate to /blueprints or /marketplace and say "look for it here" — ALWAYS run the search first, NAME what you found (or say the search returned nothing useful), and propose a concrete next action. (B) INSTALL / ADD a NAMED blueprint ("install the X blueprint", "add X"): /search?q=X, then propose installing the match from the Marketplace. Never assert a blueprint is or is not present/installed unless you can read it (or its absence) in the current page context; on the first turn say you will search, then navigate to /search + read the results.',
   'If a matching blueprint is ALREADY installed: tell the user it is already available, and offer a portal-suggest chip like ["Walk me through configuring it"]. ONLY IF the user then asks to be walked through it (per TOURS ARE OFF BY DEFAULT below), and you are ON the /blueprints page and can see the blueprint in the page context, spotlight it with a portal-tour anchored to its card title AND its Configure control (do not just describe it in prose), e.g. {"steps":[{"anchor":"text:<blueprint name>","title":"<name>","description":"This blueprint is already in your catalog — it provisions the resource you want."},{"anchor":"action:Configure","title":"Configure it","description":"Open this to fill in the request form."}]}, then invite them to open Configure. Do NOT navigate in that same reply (the tour must spotlight elements already on screen). Do NOT go to the Marketplace when it is already installed.',
-  'ONLY if NO installed blueprint matches, navigate to /marketplace, where new blueprints are installed INTO the catalog. Always state which case you found before acting.',
-  'When a create Form is on screen, its prefillable field names are in that Form widget\'s `fields` array in the page context. You MAY PRE-FILL it with verb "prefillForm" and a `values` object keyed EXACTLY by those field names. Include one entry for EVERY field the user has given a value for — never emit a partial draft (if they named a region AND a CIDR, your `values` MUST contain region AND cidr, not just one). Match each value the user gave to the closest name in that `fields` list, e.g. for fields ["name","namespace","region","cidr"] emit {"verb":"prefillForm","values":{"name":"demo-vpc","namespace":"demo-system","region":"eu-central-1","cidr":"10.0.0.0/16"},"label":"drafted the form"}. This only fills the fields — the user still reviews and presses Create themselves. NEVER submit; never invent values for fields you were not given. When the user then approves creating the filled form ("create it", "looks good", "go ahead", "deploy it"), direct them to press the form\'s on-screen Create / Submit button to provision it — that button IS how the composition is created in the portal. Do NOT hand them a kubectl command, CLI snippet, or YAML manifest to run in a terminal, and do NOT say you are "read-only and cannot create it" — there is no terminal step; the portal form is the mechanism and the user simply clicks Create. When the user asks to be GUIDED or WALKED THROUGH the form (not merely "fill it in"), ALSO emit a portal-tour in the SAME reply that spotlights each field by its label and ends on the Create control — e.g. {"steps":[{"anchor":"text:Name","title":"Name","description":"A unique name for this composition."},{"anchor":"text:Region","title":"Region","description":"The AWS region to provision into."},{"anchor":"text:CIDR","title":"CIDR","description":"The VPC address range."},{"anchor":"action:Create","title":"Create","description":"Review, then create the composition."}]} — alongside the prefillForm that fills them, so the user sees each field highlighted. Do NOT navigate in that reply.',
+  'ALWAYS state what the search found before acting — an INSTALLED blueprint (name it, open its Configure), an installable MARKETPLACE blueprint (name it, propose its Install), or NOTHING relevant (say the search returned nothing useful, and try a broader keyword). Never leave the user on a bare /search, /blueprints, or /marketplace page without a named blueprint proposal; the result names + their type/state labels ("Blueprint · installed" / "Blueprint · <category>") are in the page context — read them and pick.',
+  'FORM SUBMISSIONS work IDENTICALLY for EVERY blueprint: a create Form\'s prefillable field names are always in that Form widget\'s `fields` array in the page context (never inferred from the blueprint type), so handle every blueprint\'s form the same way. As soon as a create Form is on screen AND the user has given any values, PROACTIVELY emit ONE prefillForm right away — do not wait to be asked to "fill it". You PRE-FILL it with verb "prefillForm" and a `values` object keyed EXACTLY by those field names. Include one entry for EVERY field the user has given a value for — never emit a partial draft (if they named a region AND a CIDR, your `values` MUST contain region AND cidr, not just one). Match each value the user gave to the closest name in that `fields` list, e.g. for fields ["name","namespace","region","cidr"] emit {"verb":"prefillForm","values":{"name":"demo-vpc","namespace":"demo-system","region":"eu-central-1","cidr":"10.0.0.0/16"},"label":"drafted the form"}. This only fills the fields — the user still reviews and presses Create themselves. NEVER submit; never invent values for fields you were not given. When the user then approves creating the filled form ("create it", "looks good", "go ahead", "deploy it"), direct them to press the form\'s on-screen Create / Submit button to provision it — that button IS how the composition is created in the portal. Do NOT hand them a kubectl command, CLI snippet, or YAML manifest to run in a terminal, and do NOT say you are "read-only and cannot create it" — there is no terminal step; the portal form is the mechanism and the user simply clicks Create. When the user asks to be GUIDED or WALKED THROUGH the form (not merely "fill it in"), ALSO emit a portal-tour in the SAME reply that spotlights each field by its label and ends on the Create control — e.g. {"steps":[{"anchor":"text:Name","title":"Name","description":"A unique name for this composition."},{"anchor":"text:Region","title":"Region","description":"The AWS region to provision into."},{"anchor":"text:CIDR","title":"CIDR","description":"The VPC address range."},{"anchor":"action:Create","title":"Create","description":"Review, then create the composition."}]} — alongside the prefillForm that fills them, so the user sees each field highlighted. Do NOT navigate in that reply.',
   'CRITICAL — NEVER output a Kubernetes YAML manifest, a `cat <<EOF`/`kubectl apply` block, an `apiVersion:`/`kind:`/`spec:` snippet, or any "apply this / run this in your terminal" wording in the chat. The portal create FORM is the ONLY way compositions are made here, and the user provisions by clicking the form\'s Create button — there is no terminal step. This applies BOTH when you draft/prefill the form AND when the user approves creating it: describe the values in ONE short sentence and point them at the on-screen Create button — show NO manifest, NO code block, NO CLI command.',
   'To run a control ALREADY on the page (e.g. Sync, Pause/Resume, Edit, Delete), use verb "runAction" with the `widget` (its name) and `actionId` from the page context, e.g. {"verb":"runAction","widget":"composition-detail-pause","actionId":"toggle-pause","label":"Resume reconciliation"}. You drive the real control; a mutating action (PATCH/POST/PUT/DELETE) ALWAYS asks the user to confirm before it runs. Only run actions present in the page context — never invent a widget or actionId.',
   'This drives the real UI (read-only) — it is NOT a platform change. Emit at most one portal-action block per reply (a portal-tour and/or portal-suggest MAY accompany it) and still explain briefly in prose. Only propose routes/entities/fields present in the page context.',
@@ -179,6 +179,8 @@ export const PORTAL_HOUSE_RULES = [
   '3. Do NOT start a guided tour unless the user literally said "walk me through", "guide me", or "show me around". "install it / set it up / create it / provision it" are direct actions — just do them, no tour.',
   '4. Do NOT call external document-fetch or web-retrieval tools; answer from the page context and your own knowledge.',
   '5. Emit at most one portal-action per reply, and only reference routes, widgets, fields, and actions that appear in the current page context — never invent one.',
+  '6. ALWAYS fence directive JSON (```portal-action / ```portal-suggest / ```portal-tour); NEVER write a bare {"verb":...} or {"steps":...} object in prose — un-fenced JSON renders to the user verbatim.',
+  '7. Be PROACTIVE: when the user states a goal or approves a step, DO the next read-only action (navigate / prefillForm / runAction) in the SAME reply — do not just describe it or ask permission for read-only navigation.',
   '</house_rules>',
 ].join('\n')
 
@@ -197,6 +199,14 @@ export interface PortalTour {
 const PROPOSAL_FENCE = /```portal-action\s*\n([\s\S]*?)```/g
 const SUGGEST_FENCE = /```portal-suggest\s*\n([\s\S]*?)```/g
 const TOUR_FENCE = /```portal-tour\s*\n([\s\S]*?)```/g
+
+// Un-fenced fallback: the orchestrator sometimes drops the ```fence``` and emits the directive JSON
+// as a bare line (observed live: a raw `{"verb":"navigate","route":"/blueprints",…}` in the prose).
+// We parse those too — so the action still FIRES (the deny-by-default verb check applies downstream
+// exactly as for the fenced form) instead of silently no-op'ing — and strip them so the raw JSON
+// never renders to the user. One line per object (the model emits each directive on its own line).
+const PROPOSAL_BARE = /^[ \t]*(\{[^\n]*?"verb"\s*:[^\n]*\})[ \t]*,?[ \t]*$/gm
+const TOUR_BARE = /^[ \t]*(\{[^\n]*?"steps"\s*:[^\n]*\})[ \t]*,?[ \t]*$/gm
 
 export interface AutopilotDirectives {
   /** Assistant prose with all directive fences stripped out. */
@@ -227,7 +237,8 @@ export const sanitizeChatText = (text: string): string =>
     //    button. NOTE: affects only the RENDERED text — the raw buffer keeps the directive fences
     //    (```portal-action/-suggest/-tour```) so finalize still parses them.
     .replace(/```[\s\S]*?```/g, '')
-    .replace(/```[\s\S]*$/g, '') // an unclosed fence still streaming → strip to end (no mid-stream flash)
+    // an unclosed fence still streaming → strip to end (no mid-stream flash)
+    .replace(/```[\s\S]*$/g, '')
     // 2. Un-fenced manifests the model emits as PLAIN text (the variant the fence strip misses, seen
     //    live): a `cat <<EOF … EOF` heredoc (closed, then an unclosed one still streaming) and a bare
     //    `apiVersion:`-rooted YAML block up to the next blank line.
@@ -242,6 +253,12 @@ export const sanitizeChatText = (text: string): string =>
     .replace(/^[ \t]*[^\n]*\bin your terminal\b[^\n]*$/gim, '')
     // 5. Raw tool-call echoes (a failed doc-fetch etc.) in any wrapper, not just the one signature.
     .replace(/^[ \t]*[^\n]*(Malformed function call|default_api\.|tool_code|tool_outputs|<tool_call)[^\n]*$/gim, '')
+    // 6. Residual un-fenced directive JSON: a bare `{"verb":…}` action or `{"steps":…}` tour the model
+    //    emitted without a ```fence```. parseAutopilotDirectives parses + strips the valid ones (so they
+    //    FIRE); this catches a malformed leftover, AND — second pattern — a still-streaming incomplete
+    //    object (`{… "verb": …` with no closing brace yet) so it never flashes mid-stream.
+    .replace(/^[ \t]*\{[^\n]*"(?:verb|steps)"\s*:[^\n]*\}[ \t]*,?[ \t]*$/gim, '')
+    .replace(/^[ \t]*\{[^\n}]*"(?:verb|steps)"\s*:[^\n}]*$/gim, '')
     // tidy the gaps the removals leave
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
@@ -289,6 +306,33 @@ export const parseAutopilotDirectives = (text: string): AutopilotDirectives => {
       // Malformed tour block — drop it.
     }
     return ''
+  })
+
+  // Un-fenced fallback (the model forgot the ```fence```): parse a bare `{"verb":…}` action / a bare
+  // `{"steps":…}` tour so it FIRES, and strip it so it never renders as literal JSON. Only strips a
+  // line that parses as the expected shape — a malformed line is left for sanitizeChatText/display.
+  cleaned = cleaned.replace(PROPOSAL_BARE, (match, body: string) => {
+    try {
+      const parsed = JSON.parse(body) as PortalActionProposal
+      if (parsed && typeof parsed.verb === 'string') {
+        proposals.push(parsed)
+        return ''
+      }
+    } catch { /* not valid JSON — leave it */ }
+    return match
+  })
+  cleaned = cleaned.replace(TOUR_BARE, (match, body: string) => {
+    try {
+      const parsed = JSON.parse(body) as PortalTour
+      const steps = Array.isArray(parsed?.steps)
+        ? parsed.steps.filter((step) => step && typeof step.anchor === 'string' && typeof step.title === 'string')
+        : []
+      if (steps.length) {
+        tour = tour ?? { steps }
+        return ''
+      }
+    } catch { /* not valid JSON — leave it */ }
+    return match
   })
 
   return { cleanedText: sanitizeChatText(cleaned).trim(), proposals, suggestions, tour }
@@ -358,10 +402,10 @@ export const useAutopilotActionBridge = () => {
       // chat would still narrate as "opening X". (A param route like /compositions/:ns/:name still
       // matches by shape — but the agent now sees real resource names in the page context, so it has no
       // reason to invent one.)
-      const pathname = proposal.route.split(/[?#]/)[0]
+      const [pathname] = proposal.route.split(/[?#]/)
       // Fail OPEN if the route table hasn't registered yet (never block ALL navigation); otherwise the
       // path must match a real registered route pattern.
-      const known = routePatterns.length === 0 || routePatterns.some((pattern) => matchPath(pattern, pathname) != null)
+      const known = routePatterns.length === 0 || routePatterns.some((pattern) => matchPath(pattern, pathname) !== null)
       if (!known) {
         return null
       }

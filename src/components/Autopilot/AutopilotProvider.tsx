@@ -127,7 +127,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     // At most ONE action per reply — now ENFORCED, not just requested in the prompt. A model that
     // emits two navigates (or a duplicated tool_call + a fenced block) would otherwise run them
     // sequentially, flashing the page A then B while only the last chip's label matches. Take the first.
-    const proposal = [...toolProposals, ...textProposals][0]
+    const [proposal] = [...toolProposals, ...textProposals]
     if (proposal) {
       if (proposal.verb === 'prefillForm') {
         // prefillForm sets provider state (not a dispatcher action): the mounted Form merges these into
