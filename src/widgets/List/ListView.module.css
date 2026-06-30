@@ -225,9 +225,20 @@
 
 .cardTitles {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+
+/* At-a-glance status glyph pinned top-right of the card (e.g. a blueprint's Ready condition).
+   flex-shrink:0 + margin-left:auto keep it hugging the right edge as the title column flexes. */
+.cardStatus {
+  align-self: flex-start;
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  margin-left: var(--spacing-sm, 8px);
 }
 
 /* Meta line under the card name: category tag + version badge share one wrapping flex

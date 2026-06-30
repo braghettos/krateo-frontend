@@ -47,6 +47,22 @@ export interface BarSpec {
   variant?: 'line' | 'rail'
 }
 
+/**
+ * An at-a-glance status indicator — a single Font Awesome glyph (with an optional tooltip)
+ * rendered top-right of the `card` rowVariant. Each field is a `{path}` resolved per item;
+ * the raw-value → glyph/colour mapping is computed server-side (jq in the RESTAction), so the
+ * widget stays strongly typed and nothing is hardcoded here. Used e.g. to surface a
+ * CompositionDefinition's `Ready` condition on a blueprint card.
+ */
+export interface StatusSpec {
+  /** `{path}` to the resolved Font Awesome icon name (e.g. `{readyIcon}`). */
+  icon?: string
+  /** `{path}` to the resolved palette colour (e.g. `{readyColor}`). */
+  color?: string
+  /** `{path}` tooltip text shown on hover (e.g. `{readyReason}`). */
+  tooltip?: string
+}
+
 export interface ItemTemplate {
   primaryText?: string
   secondaryText?: string
@@ -89,6 +105,8 @@ export interface ItemTemplate {
   rowActions?: RowAction[]
   /** Per-row horizontal Progress bar — the reconciliation-rail row. */
   bar?: BarSpec
+  /** At-a-glance status glyph (top-right of the `card` rowVariant) — e.g. a blueprint's Ready condition. */
+  status?: StatusSpec
   /**
    * Row layout: `default` (antd List.Item.Meta — avatar + stacked title/description),
    * `tree` (a tight single-line mono row: `└─` connector + status dot + primaryText
@@ -109,6 +127,15 @@ export interface ResolvedBar {
   variant: 'line' | 'rail'
 }
 
+export interface ResolvedStatus {
+  /** Resolved Font Awesome icon name (empty string → no glyph rendered). */
+  icon: string
+  /** Resolved palette colour. */
+  color: string
+  /** Resolved tooltip text (empty string → no tooltip). */
+  tooltip: string
+}
+
 export interface ResolvedRow {
   primaryText: string
   secondaryText: string
@@ -122,6 +149,8 @@ export interface ResolvedRow {
   navigateTo: string
   /** Resolved per-row bar (absent when the template has no `bar`). */
   bar?: ResolvedBar
+  /** Resolved status glyph (absent when the template has no `status`). */
+  status?: ResolvedStatus
 }
 
 export const resolvePath = (item: unknown, path: string): unknown =>
@@ -150,6 +179,12 @@ export const resolveColor = (spec: ColorSpec | undefined, item: unknown): string
   return resolved || spec.default || 'gray'
 }
 
+export const resolveStatus = (spec: StatusSpec, item: unknown): ResolvedStatus => ({
+  color: interpolate(spec.color, item) || 'gray',
+  icon: interpolate(spec.icon, item),
+  tooltip: interpolate(spec.tooltip, item),
+})
+
 const resolveSlot = (template: ItemTemplate, slot: RowSlot, item: unknown): string => {
   const text = interpolate(template[slot], item)
   if (!text) { return text }
@@ -175,6 +210,7 @@ export const resolveRow = (template: ItemTemplate, item: unknown): ResolvedRow =
   navigateTo: interpolate(template.navigateTo, item),
   primaryText: resolveSlot(template, 'primaryText', item),
   secondaryText: resolveSlot(template, 'secondaryText', item),
+  status: template.status ? resolveStatus(template.status, item) : undefined,
   subPrimaryText: resolveSlot(template, 'subPrimaryText', item),
   subSecondaryText: resolveSlot(template, 'subSecondaryText', item),
 })

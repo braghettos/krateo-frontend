@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { formatISODate } from '../../utils/utils'
 
-import { interpolate, resolveColor, resolvePath, resolveRow, type ItemTemplate } from './itemTemplate'
+import { interpolate, resolveColor, resolvePath, resolveRow, resolveStatus, type ItemTemplate } from './itemTemplate'
 
 describe('itemTemplate — resolvePath', () => {
   it('resolves nested dot-paths', () => {
@@ -56,6 +56,30 @@ describe('itemTemplate — resolveColor', () => {
 
   it('falls back to gray with no spec', () => {
     expect(resolveColor(undefined, {})).toBe('gray')
+  })
+})
+
+describe('itemTemplate — resolveStatus', () => {
+  // The blueprint-card binding: the RESTAction computes the icon/colour server-side (jq), so the
+  // strongly-typed widget just resolves the {path}s — a CompositionDefinition's Ready condition
+  // becomes a green check / red x / amber clock glyph with the condition reason as the tooltip.
+  const spec = { color: '{readyColor}', icon: '{readyIcon}', tooltip: '{readyReason}' }
+
+  it('resolves the server-computed icon/colour/tooltip paths', () => {
+    expect(resolveStatus(spec, { readyColor: 'green', readyIcon: 'fa-circle-check', readyReason: 'Available' }))
+      .toEqual({ color: 'green', icon: 'fa-circle-check', tooltip: 'Available' })
+    expect(resolveStatus(spec, { readyColor: 'red', readyIcon: 'fa-circle-xmark', readyReason: 'ReconcileError' }))
+      .toEqual({ color: 'red', icon: 'fa-circle-xmark', tooltip: 'ReconcileError' })
+  })
+
+  it('falls back to gray + empty icon (no glyph rendered) when paths resolve empty', () => {
+    expect(resolveStatus({ icon: '{missing}' }, {})).toEqual({ color: 'gray', icon: '', tooltip: '' })
+  })
+
+  it('is wired through resolveRow only when the template defines status', () => {
+    expect(resolveRow({ primaryText: '{x}' }, { x: 'a' }).status).toBeUndefined()
+    const row = resolveRow({ primaryText: '{name}', status: spec }, { name: 'aws-vpc-stack', readyColor: 'green', readyIcon: 'fa-circle-check', readyReason: 'Available' })
+    expect(row.status).toEqual({ color: 'green', icon: 'fa-circle-check', tooltip: 'Available' })
   })
 })
 

@@ -1,6 +1,6 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Avatar, Card, List as AntdList, Button, Dropdown, Progress, Tag, Typography } from 'antd'
+import { Avatar, Card, List as AntdList, Button, Dropdown, Progress, Tag, Tooltip, Typography } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import type { ListGridType } from 'antd/es/list'
 import type { CSSProperties, ReactNode } from 'react'
@@ -208,6 +208,12 @@ export const ListView = ({
                       </div>
                     )}
                   </div>
+                  {/* At-a-glance status glyph (top-right) — e.g. the blueprint's CompositionDefinition Ready condition. */}
+                  {row.status?.icon && (
+                    <Tooltip title={row.status.tooltip || undefined}>
+                      <FontAwesomeIcon className={styles.cardStatus} icon={row.status.icon as IconProp} style={{ color: getColorCode(row.status.color) }} />
+                    </Tooltip>
+                  )}
                 </div>
                 {/* Always render (even when empty) so the 2-line min-height reserves space → equal-height tiles. */}
                 <div className={styles.cardDesc}>{row.description}</div>

@@ -175,6 +175,25 @@
                     }
                   }
                 },
+                "status": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "an at-a-glance status indicator (a Font Awesome glyph) rendered top-right of the `card` rowVariant. Each field is a {dot.path} resolved per item; the raw-value -> glyph/colour mapping is computed server-side (jq in the RESTAction), so the widget stays strongly typed. E.g. a blueprint's CompositionDefinition Ready condition resolved to {readyIcon}/{readyColor}/{readyReason}.",
+                  "properties": {
+                    "icon": {
+                      "type": "string",
+                      "description": "{dot.path} to the resolved Font Awesome icon name (e.g. {readyIcon})"
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "{dot.path} to the resolved palette colour (e.g. {readyColor})"
+                    },
+                    "tooltip": {
+                      "type": "string",
+                      "description": "{dot.path} tooltip text shown on hover (e.g. {readyReason})"
+                    }
+                  }
+                },
                 "bar": {
                   "type": "object",
                   "additionalProperties": false,
