@@ -94,7 +94,7 @@ describe('itemTemplate — resolveRow', () => {
     subSecondaryText: '{reason}',
   }
 
-  it('maps an event-shaped item to row slots (the EventList preset binding)', () => {
+  it('maps an event-shaped item to row slots (an event-shaped itemTemplate binding)', () => {
     const event = {
       firstTimestamp: '2026-06-13T09:30:00Z',
       involvedObject: { name: 'pod-1' },

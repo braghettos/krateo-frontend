@@ -30,7 +30,7 @@ for (const raw of Object.values(exampleFiles)) {
 /** Every antd-mapped widget kind (legacy aliases removed; structural kinds excluded). */
 const KNOWN_KINDS = [
   'BarChart', 'Button', 'ButtonGroup', 'Card', 'Col',
-  'EventList', 'Filters', 'Flex', 'FlowChart', 'Form', 'LineChart', 'Listy', 'Markdown',
+  'Filters', 'Flex', 'FlowChart', 'Form', 'LineChart', 'Listy', 'Markdown',
   'Menu', 'Paragraph', 'PieChart', 'Row',
   'Table', 'Tabs', 'YamlViewer',
 ]

@@ -9,7 +9,7 @@ metadata:
   namespace: krateo-system
 spec:
   widgetData:
-    allowedResources: [barcharts, buttons, columns, datagrids, eventlists, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
+    allowedResources: [barcharts, buttons, columns, datagrids, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
     items: []
     size: 12
   resourcesRefs:
@@ -27,7 +27,7 @@ metadata:
   namespace: krateo-system
 spec:
   widgetData:
-    allowedResources: [barcharts, buttons, columns, datagrids, eventlists, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
+    allowedResources: [barcharts, buttons, columns, datagrids, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
     items:
       - resourceRefId: button-nonexistent
     size: 8
@@ -45,7 +45,7 @@ metadata:
   namespace: krateo-system
 spec:
   widgetData:
-    allowedResources: [barcharts, buttons, columns, datagrids, eventlists, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
+    allowedResources: [barcharts, buttons, columns, datagrids, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
     items:
       - resourceRefId: example-table-basic
     size: 0
@@ -69,7 +69,7 @@ metadata:
   namespace: krateo-system
 spec:
   widgetData:
-    allowedResources: [barcharts, buttons, columns, datagrids, eventlists, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
+    allowedResources: [barcharts, buttons, columns, datagrids, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
     items:
       - resourceRefId: example-table-basic
     size: 12
@@ -93,7 +93,7 @@ metadata:
   namespace: krateo-system
 spec:
   widgetData:
-    allowedResources: [barcharts, buttons, columns, datagrids, eventlists, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
+    allowedResources: [barcharts, buttons, columns, datagrids, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
     items:
       - resourceRefId: example-table-basic
   resourcesRefs:
@@ -116,7 +116,7 @@ metadata:
   namespace: krateo-system
 spec:
   widgetData:
-    allowedResources: [barcharts, buttons, columns, datagrids, eventlists, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
+    allowedResources: [barcharts, buttons, columns, datagrids, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
     items:
       - resourceRefId: non-existent-widget
       - resourceRefId: example-table-basic
@@ -142,7 +142,7 @@ metadata:
   namespace: krateo-system
 spec:
   widgetData:
-    allowedResources: [barcharts, buttons, columns, datagrids, eventlists, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
+    allowedResources: [barcharts, buttons, columns, datagrids, filters, flowcharts, forms, linecharts, markdowns, panels, paragraphs, piecharts, rows, tables, tablists, yamlviewers]
     items:
       - resourceRefId: example-linechart-multi
       - resourceRefId: example-table-basic

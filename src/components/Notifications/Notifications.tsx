@@ -11,7 +11,7 @@ import styles from './Notifications.module.css'
 
 /**
  * Notifications is the events SSE stream rendered through the same `ListView` as
- * the `List`/`EventList` widgets (one presentation, three bindings). Only the
+ * the `List` widget (one presentation, two bindings). Only the
  * Bell badge + Drawer chrome is specific here.
  */
 const NOTIFICATION_ITEM_TEMPLATE: ItemTemplate = {

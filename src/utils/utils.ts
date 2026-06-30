@@ -51,7 +51,7 @@ export const formatISODate = (value: string, showTime: boolean = false) => {
 
 /** Compact relative time ("now", "12s", "5m", "3h", "2d", "2w") — flight-deck
  * telemetry style, no " ago" suffix, with a weeks tier; falls back to the absolute
- * date beyond ~8 weeks. Used by feed/list rows + table cells (e.g. EventList). */
+ * date beyond ~8 weeks. Used by feed/list rows + table cells. */
 export const formatRelativeTime = (value: string): string => {
   const then = new Date(value).getTime()
   if (Number.isNaN(then)) { return value }

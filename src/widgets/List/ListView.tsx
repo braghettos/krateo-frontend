@@ -41,8 +41,8 @@ interface ListViewProps {
 /**
  * Domain-agnostic list presentation mirroring the antd `List` API. Each element
  * is rendered as a child widget (when `renderChild` returns a node for it) or as
- * an `List.Item.Meta` row via `itemTemplate`. Shared by the `List` widget, the
- * `EventList` preset and `Notifications`.
+ * an `List.Item.Meta` row via `itemTemplate`. Shared by the `List` widget and
+ * `Notifications`.
  */
 export const ListView = ({
   actions, bordered, footer, grid, header, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, resourcesRefs, rowKey, size, split, widget,
