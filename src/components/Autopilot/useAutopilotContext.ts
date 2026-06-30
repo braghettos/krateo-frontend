@@ -18,8 +18,12 @@ import type { AutopilotIdentity, PageContextEnvelope, WidgetInventoryEntry } fro
 /** Only these URL params describe the current scope; everything else is ignored. */
 const EXTRAS_WHITELIST = ['status', 'range', 'q'] as const
 
-/** Soft budget for the serialized envelope; widgets beyond it are truncated. */
-const MAX_WIDGETS = 40
+/** Backstop cap on the serialized envelope. Now that collect() scopes to ACTIVE (on-screen)
+ * widgets, this is the count of widgets on the CURRENT page — a real page comfortably fits
+ * (the dashboard is the heaviest at ~55), so this only guards against a pathologically huge
+ * page. Set well above any real page so the strip shows the true per-page count, not a pinned
+ * cap (the old 40 truncated every page, which read as "always 40 widgets"). */
+const MAX_WIDGETS = 120
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   (value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined)
@@ -31,17 +35,99 @@ const unwrapWidget = (data: unknown): unknown => {
   return Array.isArray(pages) && pages.length ? pages[pages.length - 1] : data
 }
 
-const firstArrayLength = (widgetData: Record<string, unknown> | undefined): number | undefined => {
+/** Up to this many row labels per list/table widget are surfaced to Autopilot. */
+const MAX_ITEMS = 30
+
+/** The first array field in a widget's data (dataSource/items/data), or undefined. */
+const firstArray = (widgetData: Record<string, unknown> | undefined): unknown[] | undefined => {
   if (!widgetData) {
     return undefined
   }
   for (const key of ['dataSource', 'items', 'data']) {
     const candidate = widgetData[key]
     if (Array.isArray(candidate)) {
-      return candidate.length
+      return candidate as unknown[]
     }
   }
   return undefined
+}
+
+const firstArrayLength = (widgetData: Record<string, unknown> | undefined): number | undefined =>
+  firstArray(widgetData)?.length
+
+const scalar = (value: unknown): string | undefined => {
+  if (typeof value === 'string') { return value.trim() || undefined }
+  if (typeof value === 'number' || typeof value === 'boolean') { return String(value) }
+  return undefined
+}
+
+/** Decision fields the agent needs per row but that aren't a "label": whether a blueprint is
+ * INSTALLED (so /marketplace installable ≠ /blueprints installed — the "already installed" misfire),
+ * the namespace, the health status, etc. Appended to the row label as `key=value`. */
+const ROW_DECISION_KEYS = ['installed', 'namespace', 'status', 'state', 'health', 'source', 'typeLabel', 'version', 'category', 'kind'] as const
+
+/** Best-effort human label for one list/table row, across item shapes. */
+const itemLabel = (item: unknown): string | undefined => {
+  if (typeof item === 'string') {
+    return item.trim() || undefined
+  }
+  // A Table row is an ARRAY of cell objects {valueKey, stringValue, …} (the compositions list,
+  // Settings tables). Without this the agent gets only a row COUNT and invents row contents.
+  if (Array.isArray(item)) {
+    const cells = item
+      .map((cell) => {
+        const cellRecord = asRecord(cell)
+        const key = typeof cellRecord?.valueKey === 'string' ? cellRecord.valueKey : undefined
+        const val = scalar(cellRecord?.stringValue) ?? scalar(cellRecord?.value)
+        return key && val ? `${key}=${val}` : val
+      })
+      .filter((part): part is string => Boolean(part))
+    return cells.length ? cells.join(' · ').slice(0, 300) : undefined
+  }
+  const record = asRecord(item)
+  if (!record) {
+    return undefined
+  }
+  let base: string | undefined
+  for (const key of ['primaryText', 'title', 'name', 'label', 'displayName', 'text']) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) {
+      base = value.trim()
+      break
+    }
+  }
+  // Status-condition rows (a composition's Conditions list) carry {type, status, desc} — none of the
+  // label keys above — so surface them, including the ReconcileError message, so diagnosis isn't a guess.
+  if (!base) {
+    const { type } = record
+    if (typeof type === 'string' && type.trim()) {
+      const parts = [type.trim()]
+      const status = scalar(record['status'])
+      if (status) { parts.push(`= ${status}`) }
+      const desc = scalar(record['desc'])
+      if (desc) { parts.push(`(${desc.slice(0, 700)})`) }
+      return parts.join(' ')
+    }
+    return undefined
+  }
+  // Append the decision fields the agent needs to tell installed-vs-installable, healthy-vs-failed, etc.
+  const extras: string[] = []
+  for (const key of ROW_DECISION_KEYS) {
+    const value = scalar(record[key])
+    if (value !== undefined) { extras.push(`${key}=${value}`) }
+  }
+  return extras.length ? `${base} · ${extras.join(' · ')}` : base
+}
+
+/** A capped sample of row labels (e.g. installed blueprint names) so Autopilot can read WHAT
+ * is on screen, not just the row count. Label-only; the redactor still scrubs the envelope. */
+const itemLabels = (widgetData: Record<string, unknown> | undefined): string[] | undefined => {
+  const arr = firstArray(widgetData)
+  if (!arr?.length) {
+    return undefined
+  }
+  const labels = arr.map(itemLabel).filter((label): label is string => Boolean(label)).slice(0, MAX_ITEMS)
+  return labels.length ? labels : undefined
 }
 
 /** Top-level field names of a Form widget (for Autopilot prefill); undefined for non-Forms. */
@@ -99,6 +185,44 @@ const widgetActions = (
   return out.length ? out : undefined
 }
 
+/** The on-screen CONTENT of a single-value widget — the number/text the user sees. Without this the
+ * agent gets a Statistic's TITLE ("Healthy") but not its VALUE (27) and invents the count; the dashboard
+ * is four such cards. */
+const widgetValue = (kind: string | undefined, widgetData: Record<string, unknown> | undefined): string | undefined => {
+  if (!kind || !widgetData) {
+    return undefined
+  }
+  if (kind === 'Statistic') {
+    const value = scalar(widgetData.value)
+    return value ? [scalar(widgetData.prefix), value, scalar(widgetData.suffix)].filter(Boolean).join(' ') : undefined
+  }
+  if (kind === 'Tag') {
+    return scalar(widgetData.text) ?? scalar(widgetData.value)
+  }
+  if (kind === 'Alert' || kind === 'Result') {
+    const parts = [scalar(widgetData.title), scalar(widgetData.description) ?? scalar(widgetData.subTitle)].filter(Boolean)
+    return parts.length ? parts.join(' — ') : undefined
+  }
+  if (kind === 'Paragraph' || kind === 'Markdown') {
+    const text = scalar(widgetData.text)
+    return text ? text.slice(0, 300) : undefined
+  }
+  if (kind === 'Descriptions') {
+    const arr = Array.isArray(widgetData.items) ? widgetData.items : []
+    const pairs = arr
+      .map((entry) => {
+        const entryRecord = asRecord(entry)
+        const label = scalar(entryRecord?.label)
+        const val = scalar(entryRecord?.value)
+        return label && val ? `${label}: ${val}` : (val ?? label)
+      })
+      .filter((part): part is string => Boolean(part))
+      .slice(0, 12)
+    return pairs.length ? pairs.join(' · ') : undefined
+  }
+  return undefined
+}
+
 /** Compact, payload-free summary of one cached widget. Reads the RESOLVED `status`
  * (widgetData + resourcesRefs after the server's templates), like WidgetRenderer,
  * falling back to `spec` — `spec` holds the pre-template static values. */
@@ -124,8 +248,10 @@ const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry 
   const summary = summaryParts.length ? summaryParts.join(' · ') : undefined
   const fields = kind === 'Form' ? formFieldNames(widgetData) : undefined
   const actions = kind === 'Button' ? widgetActions(widgetData, resourcesRefs) : undefined
+  const items = itemLabels(widgetData)
+  const value = rows === undefined ? widgetValue(kind, widgetData) : undefined
 
-  return { actions, endpoint, fields, kind, name, summary, title }
+  return { actions, endpoint, fields, items, kind, name, summary, title, value }
 }
 
 const collectExtras = (search: string): Record<string, string> | undefined => {
@@ -194,7 +320,13 @@ export const buildContextDelta = (
   const sameRoute = previous.route === next.route
   const prevEndpoints = previous.widgets.map((widget) => widget.endpoint).sort().join('|')
   const nextEndpoints = next.widgets.map((widget) => widget.endpoint).sort().join('|')
-  if (sameRoute && prevEndpoints === nextEndpoints) {
+  // Never collapse to the unchanged-note while a prefillable create Form is on screen: the model
+  // needs that form's `fields` inventory on EVERY turn to draft (prefillForm) the parameters the
+  // user names across the conversation. Without this, a follow-up turn on the same form page drops
+  // the field list, so the model can only fill generic fields (e.g. namespace) and silently omits
+  // the blueprint's own parameters (name/region/cidr/…) — the exact partial-prefill bug.
+  const hasPrefillableForm = next.widgets.some((widget) => widget.kind === 'Form' && (widget.fields?.length ?? 0) > 0)
+  if (sameRoute && prevEndpoints === nextEndpoints && !hasPrefillableForm) {
     return `<page_context>\nUnchanged: still on ${next.focus ?? next.route} (${next.widgets.length} widgets).\n</page_context>`
   }
   return serializePageContext(next)
@@ -205,17 +337,32 @@ export const useAutopilotContext = () => {
   const queryClient = useQueryClient()
 
   const collect = useCallback((): PageContextEnvelope => {
-    const entries = queryClient.getQueriesData<unknown>({ queryKey: ['widgets'] })
-    const widgets: WidgetInventoryEntry[] = entries
-      .map(([queryKey, data]) => {
+    // `type: 'active'` scopes to widget queries with a MOUNTED observer — the widgets actually
+    // on screen NOW. Without it, getQueriesData returns EVERY cached ['widgets', …] entry
+    // react-query still holds (default gcTime 5m), so widgets from OTHER pages visited in the
+    // last few minutes leak in; once the accumulated cache exceeds MAX_WIDGETS the count pins at
+    // 40 on every page and the agent is grounded on off-page widgets. This restores the
+    // collector's stated intent: "the actual on-screen surface, not model memory" (see header).
+    // Read Query OBJECTS (not just data) so we can also surface freshness: a widget mid-fetch with no
+    // data, or a stale snapshot (snowplow L1 is stale-while-revalidate), would otherwise look like
+    // ground truth and the agent reports "0 compositions" while the list is still loading.
+    const queries = queryClient.getQueryCache().findAll({ queryKey: ['widgets'], type: 'active' })
+    const widgets: WidgetInventoryEntry[] = queries
+      .map((query) => {
+        const { queryKey } = query
         const endpoint = Array.isArray(queryKey) && typeof queryKey[1] === 'string' ? queryKey[1] : ''
-        return summarizeWidget(endpoint, data)
+        const entry = summarizeWidget(endpoint, query.state.data)
+        const loading = query.state.status === 'pending'
+          || (query.state.fetchStatus === 'fetching' && query.state.data === undefined)
+        const stale = query.isStale()
+        return { ...entry, loading: loading || undefined, stale: stale || undefined }
       })
       .filter((widget) => widget.endpoint !== '')
       .slice(0, MAX_WIDGETS)
 
     const route = window.location.pathname
     return {
+      capturedAt: Date.now(),
       extras: collectExtras(window.location.search),
       focus: focusFromRoute(route),
       identity: collectIdentity(),

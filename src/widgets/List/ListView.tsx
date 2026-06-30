@@ -1,10 +1,10 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Avatar, Card, List as AntdList, Button, Dropdown, Progress, Tag, Typography } from 'antd'
+import { Avatar, Card, List as AntdList, Button, Dropdown, Progress, Tag, Tooltip, Typography } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import type { ListGridType } from 'antd/es/list'
 import type { CSSProperties, ReactNode } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 
 import { WidgetEmpty } from '../../components/WidgetStates'
 import { useHandleAction } from '../../hooks/useHandleActions'
@@ -41,13 +41,17 @@ interface ListViewProps {
 /**
  * Domain-agnostic list presentation mirroring the antd `List` API. Each element
  * is rendered as a child widget (when `renderChild` returns a node for it) or as
- * an `List.Item.Meta` row via `itemTemplate`. Shared by the `List` widget, the
- * `EventList` preset and `Notifications`.
+ * an `List.Item.Meta` row via `itemTemplate`. Shared by the `List` widget and
+ * `Notifications`.
  */
 export const ListView = ({
   actions, bordered, footer, grid, header, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, resourcesRefs, rowKey, size, split, widget,
 }: ListViewProps) => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // `?spotlight=<name>` highlights the matching card tile — used by a global-search hit for a
+  // not-yet-installed blueprint, which routes to /marketplace?q=<name>&spotlight=<name>.
+  const spotlight = searchParams.get('spotlight')
   const { notification } = useApp()
   const { handleAction } = useHandleAction()
 
@@ -67,6 +71,10 @@ export const ListView = ({
     await handleAction(action, resourcesRefs ?? { items: [] }, item as Record<string, unknown>, widget)
   }
 
+  // Chip mode (Marketplace facet chips) lays its items out as a wrapping pill row, not a
+  // vertical split list.
+  const isChips = itemTemplate?.rowVariant === 'chip'
+
   if (!loading && !items.length) {
     return <WidgetEmpty />
   }
@@ -74,6 +82,7 @@ export const ListView = ({
   return (
     <AntdList
       bordered={bordered}
+      className={isChips ? styles.chipList : undefined}
       dataSource={items}
       footer={footer}
       grid={grid}
@@ -113,6 +122,29 @@ export const ListView = ({
           avatar = <Avatar icon={<FontAwesomeIcon icon={row.icon as IconProp} />} style={{ backgroundColor: colorCode }} />
         }
 
+        // Compact navigable filter pill (Marketplace facet chips): `primaryText` label +
+        // optional `count`; solid/amber when the item's `active` flag is set. One chip per
+        // element of the catalog RA's data-driven `categories` / `sources` array.
+        if (itemTemplate.rowVariant === 'chip') {
+          const { active: activeRaw, count } = item as { active?: unknown; count?: number | string }
+          const active = Boolean(activeRaw)
+          const showCount = typeof count === 'number' || (typeof count === 'string' && count !== '')
+          return (
+            <AntdList.Item className={styles.chipItem} key={`${rowKey}-${index}`}>
+              <Button
+                className={styles.chip}
+                onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+                size='small'
+                type={active ? 'primary' : 'default'}
+                variant={active ? 'filled' : 'outlined'}
+              >
+                {row.primaryText}
+                {showCount && <span className={styles.chipCount}>{count}</span>}
+              </Button>
+            </AntdList.Item>
+          )
+        }
+
         // Tree row (detail Relations): a tight single-line mono row — `└─` connector
         // + status dot + Kind + muted inline name + right-aligned colored state.
         if (itemTemplate.rowVariant === 'tree') {
@@ -136,6 +168,7 @@ export const ListView = ({
         // of `rowActions` as VISIBLE buttons (first = primary), instead of a List.Item row
         // with a kebab. Whole-card click still navigates when the row carries `navigateTo`.
         if (itemTemplate.rowVariant === 'card') {
+          const isSpotlit = Boolean(spotlight) && row.primaryText === spotlight
           const cardActions = (itemTemplate.rowActions ?? []).map((rowAction, actionIndex) => (
             <Button
               danger={rowAction.danger}
@@ -156,7 +189,7 @@ export const ListView = ({
           return (
             <AntdList.Item key={`${rowKey}-${index}`}>
               <Card
-                className={`${styles.tileCard} ${row.navigateTo ? styles.clickable : ''}`}
+                className={`${styles.tileCard} ${row.navigateTo ? styles.clickable : ''} ${isSpotlit ? styles.spotlight : ''}`}
                 hoverable={Boolean(row.navigateTo)}
                 onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
                 size='small'
@@ -175,6 +208,12 @@ export const ListView = ({
                       </div>
                     )}
                   </div>
+                  {/* At-a-glance status glyph (top-right) — e.g. the blueprint's CompositionDefinition Ready condition. */}
+                  {row.status?.icon && (
+                    <Tooltip title={row.status.tooltip || undefined}>
+                      <FontAwesomeIcon className={styles.cardStatus} icon={row.status.icon as IconProp} style={{ color: getColorCode(row.status.color) }} />
+                    </Tooltip>
+                  )}
                 </div>
                 {/* Always render (even when empty) so the 2-line min-height reserves space → equal-height tiles. */}
                 <div className={styles.cardDesc}>{row.description}</div>
@@ -287,7 +326,7 @@ export const ListView = ({
         )
       }}
       size={size}
-      split={split}
+      split={isChips ? false : split}
     />
   )
 }

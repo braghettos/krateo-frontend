@@ -16,14 +16,24 @@ import WidgetRenderer from '../WidgetRenderer'
 import styles from './Shell.module.css'
 import { ShellSlotsProvider } from './ShellSlots'
 
-/** Interactive app chrome rendered in the Layout header — client-state-driven
- * controls (not server data), so they live in the engine, not as widgets. */
-const HeaderChrome = () => (
-  <>
-    <div className={styles.headerLeft}><Breadcrumb /></div>
-    <div className={styles.headerRight}><CommandPalette /><AutopilotToggle /><Notifications /><ThemeToggle /><UserMenu /></div>
-  </>
-)
+/** Interactive app chrome rendered in the Layout header. Mostly client-state-driven controls
+ * (breadcrumb, search, notifications…), PLUS the declarative `header-context` flex — the tenant
+ * label + project (= namespace) switcher, moved from the sider into the topbar per the
+ * multitenancy screenshot. The shell namespace is read from the INIT endpoint (nothing
+ * hardcoded). */
+const HeaderChrome = () => {
+  const { config } = useConfigContext()
+  const ns = new URLSearchParams((config?.api.INIT ?? '').split('?')[1] ?? '').get('namespace') ?? 'krateo-system'
+  const headerContext = `/call?resource=flexes&apiVersion=widgets.templates.krateo.io/v1beta1&name=header-context&namespace=${ns}`
+  return (
+    <>
+      <div className={styles.headerLeft}>
+        <WidgetRenderer key='header-context' widgetEndpoint={headerContext} />
+      </div>
+      <div className={styles.headerRight}><CommandPalette /><AutopilotToggle /><Notifications /><ThemeToggle /><UserMenu /></div>
+    </>
+  )
+}
 
 /** User block pinned to the bottom of the Sider (avatar + name from the token). */
 const SiderFooter = () => {
@@ -56,7 +66,7 @@ export const ShellRoute = () => {
   }, [])
 
   return (
-    <ShellSlotsProvider value={{ content: <Outlet />, header: <HeaderChrome />, siderFooter: <SiderFooter /> }}>
+    <ShellSlotsProvider value={{ content: <><div className={styles.contentCrumb}><Breadcrumb /></div><Outlet /></>, header: <HeaderChrome />, siderFooter: <SiderFooter /> }}>
       <AutopilotProvider>
         <AutopilotShell>
           <WidgetRenderer key='shell' widgetEndpoint={config!.api.INIT} />

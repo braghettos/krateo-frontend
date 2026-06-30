@@ -140,9 +140,10 @@
                   "enum": [
                     "default",
                     "tree",
-                    "card"
+                    "card",
+                    "chip"
                   ],
-                  "description": "row layout: default (antd List.Item.Meta — avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid)"
+                  "description": "row layout: default (antd List.Item.Meta — avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid) | chip (compact navigable filter pill — primaryText label + optional count, solid/amber when the item's active flag is set — the data-driven Marketplace facet chips)"
                 },
                 "secondaryTextAsTag": {
                   "type": "boolean",
@@ -171,6 +172,25 @@
                     },
                     "default": {
                       "type": "string"
+                    }
+                  }
+                },
+                "status": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "an at-a-glance status indicator (a Font Awesome glyph) rendered top-right of the `card` rowVariant. Each field is a {dot.path} resolved per item; the raw-value -> glyph/colour mapping is computed server-side (jq in the RESTAction), so the widget stays strongly typed. E.g. a blueprint's CompositionDefinition Ready condition resolved to {readyIcon}/{readyColor}/{readyReason}.",
+                  "properties": {
+                    "icon": {
+                      "type": "string",
+                      "description": "{dot.path} to the resolved Font Awesome icon name (e.g. {readyIcon})"
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "{dot.path} to the resolved palette colour (e.g. {readyColor})"
+                    },
+                    "tooltip": {
+                      "type": "string",
+                      "description": "{dot.path} tooltip text shown on hover (e.g. {readyReason})"
                     }
                   }
                 },

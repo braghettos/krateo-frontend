@@ -503,7 +503,14 @@ const runRest = async (
       ? await ctx.resolveJq(onSuccessNavigateTo, { json: payload, response: jsonResponse })
       : onSuccessNavigateTo
 
-    window.location.replace(onSuccessUrl)
+    if (onSuccessUrl) {
+      // SPA navigation — NOT window.location.replace. A hard reload remounted the whole app,
+      // which (a) closed the Autopilot rail + wiped its conversation and (b) 404'd because the
+      // server was asked for a client-only route. Routes are static conventions now, so no full
+      // reload is needed; invalidate first so the destination reflects the just-written object.
+      await ctx.invalidateQueries()
+      void ctx.navigate(onSuccessUrl)
+    }
     return
   }
 

@@ -1,8 +1,9 @@
-import { LoadingOutlined } from '@ant-design/icons'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fab } from '@fortawesome/free-brands-svg-icons'
 import { far } from '@fortawesome/free-regular-svg-icons'
 import { fas } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { App as AntdApp, Spin } from 'antd'
@@ -45,7 +46,7 @@ const AppInitializer: React.FC = () => {
   if (isRoutesLoading || isConfigLoading) {
     return (
       <div className={styles.loading}>
-        <Spin indicator={<LoadingOutlined />} size='large' />
+        <Spin indicator={<FontAwesomeIcon icon={['fas', 'spinner'] as IconProp} spin />} size='large' />
       </div>
     )
   }

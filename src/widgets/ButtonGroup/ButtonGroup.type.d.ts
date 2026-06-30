@@ -22,7 +22,6 @@ export interface ButtonGroup {
       allowedResources: (
         | 'barcharts'
         | 'buttons'
-        | 'eventlists'
         | 'filters'
         | 'flowcharts'
         | 'forms'

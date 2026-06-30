@@ -26,7 +26,11 @@ const Row = ({ resourcesRefs, uid, widgetData }: WidgetProps<RowWidgetData>) => 
   return (
     <div className={styles.row}>
       <AntdRow
-        align={alignment ?? 'middle'}
+        // Default to 'stretch' so columns fill the row height and sibling cards stay
+        // equal-height when one wraps to an extra line (e.g. the dashboard stat cards
+        // once the Autopilot rail narrows the content). Matches the `.ant-row > div > *
+        // { height: 100% }` rule in Row.module.css; an explicit `alignment` still wins.
+        align={alignment ?? 'stretch'}
         gutter={[16, 16]}
         key={uid}
         wrap

@@ -8,8 +8,9 @@
  * shell reflows (it never overlays). All driving/HITL surfaces are Phase 2/3.
  */
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { default as ReactMarkdown } from 'react-markdown'
 
 import { useAutopilot } from './AutopilotProvider'
 import styles from './AutopilotRail.module.css'
@@ -17,23 +18,17 @@ import AutopilotTour from './AutopilotTour'
 import { CheckIcon, CollapseIcon, EyeIcon, LinkIcon, PlusIcon, SendIcon, SparkIcon } from './icons'
 import type { AutopilotMessage } from './types'
 
-/** Minimal inline renderer: turns `code` spans into styled chips. No HTML injection. */
-const renderInline = (text: string): React.ReactNode => {
-  const segments = text.split('`')
-  return segments.map((segment, index) => (
-    index % 2 === 1
-      ? <code key={`c-${index}`}>{segment}</code>
-      : <span key={`t-${index}`}>{segment}</span>
-  ))
-}
-
 const MessageBubble = ({ message }: { message: AutopilotMessage }) => {
   if (message.role === 'user') {
     return <div className={`${styles.apMsg} ${styles.apMsgUser}`}>{message.text}</div>
   }
   return (
     <div className={`${styles.apMsg} ${styles.apMsgBot}`}>
-      {renderInline(message.text)}
+      {/* Render the assistant's markdown properly (bold / lists / headings / inline code). The old
+          renderInline only handled `code` spans, so everything else (**bold**, `-` lists, `##`) showed
+          as RAW markdown characters. react-markdown emits NO raw HTML by default, and sanitizeChatText
+          has already stripped any code/YAML blocks the agent shouldn't show. */}
+      <div className={styles.apMd}><ReactMarkdown>{message.text}</ReactMarkdown></div>
       {message.streaming ? <span className={styles.apCaret} /> : null}
       {message.actions?.map((action, index) => (
         <div className={styles.apAct} key={`act-${index}`}>
@@ -50,6 +45,17 @@ const AutopilotRail = () => {
   const { collect, enabled, messages, newThread, open, send, setOpen, streaming } = useAutopilot()
   const [draft, setDraft] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
+  // Auto-scroll the transcript to the latest content as it streams — but only when the user is
+  // already near the bottom, so scrolling up to re-read a long reply isn't yanked back down. Each
+  // streamed chunk produces a NEW `messages` array (immutable update in the provider), so this
+  // effect fires per token; the ref is updated by the body's onScroll handler below.
+  const stickToBottomRef = useRef(true)
+  useEffect(() => {
+    const el = bodyRef.current
+    if (el && stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight
+    }
+  }, [messages, streaming])
 
   if (!enabled) {
     return null
@@ -76,6 +82,14 @@ const AutopilotRail = () => {
     }
   }
 
+  // Pin/unpin auto-scroll: "stuck" while within ~80px of the bottom, released once the user scrolls up.
+  const onBodyScroll = () => {
+    const el = bodyRef.current
+    if (el) {
+      stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    }
+  }
+
   const ctxStatus = context?.extras?.status
   const lastSuggestions = messages.length ? messages[messages.length - 1].suggestions : undefined
 
@@ -96,7 +110,7 @@ const AutopilotRail = () => {
           </button>
         </div>
 
-        <div className={styles.apBody} ref={bodyRef}>
+        <div className={styles.apBody} onScroll={onBodyScroll} ref={bodyRef}>
           {context ? (
             <div className={styles.apCtx}>
               <EyeIcon className={styles.apCtxIcon} />

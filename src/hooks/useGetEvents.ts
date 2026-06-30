@@ -59,7 +59,7 @@ export function useGetEvents({ registerToSSE = true, topic = 'krateo' }: { topic
     }
 
     // Subscribe through the shared SSE client so we don't open a second connection to
-    // /notifications when other widgets (List/EventList) listen to the same stream.
+    // /notifications when other widgets (List/Listy) listen to the same stream.
     return subscribeSse(notificationsUrl, topic, {
       onError: () => { console.error('[SSE] Connection error') },
       onMessage: (raw) => {

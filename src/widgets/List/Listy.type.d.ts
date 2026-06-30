@@ -75,9 +75,9 @@ export interface Listy {
          */
         iconVariant?: 'avatar' | 'tile' | 'dot'
         /**
-         * row layout: default (antd List.Item.Meta — avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid)
+         * row layout: default (antd List.Item.Meta — avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid) | chip (compact navigable filter pill — primaryText label + optional count, solid/amber when the item's active flag is set — the data-driven Marketplace facet chips)
          */
-        rowVariant?: 'default' | 'tree' | 'card'
+        rowVariant?: 'default' | 'tree' | 'card' | 'chip'
         /**
          * render secondaryText as a soft-tint Tag pill (e.g. a category) instead of plain text
          */
@@ -96,6 +96,23 @@ export interface Listy {
             [k: string]: string
           }
           default?: string
+        }
+        /**
+         * an at-a-glance status indicator (a Font Awesome glyph) rendered top-right of the `card` rowVariant. Each field is a {dot.path} resolved per item; the raw-value -> glyph/colour mapping is computed server-side (jq in the RESTAction), so the widget stays strongly typed. E.g. a blueprint's CompositionDefinition Ready condition resolved to {readyIcon}/{readyColor}/{readyReason}.
+         */
+        status?: {
+          /**
+           * {dot.path} to the resolved Font Awesome icon name (e.g. {readyIcon})
+           */
+          icon?: string
+          /**
+           * {dot.path} to the resolved palette colour (e.g. {readyColor})
+           */
+          color?: string
+          /**
+           * {dot.path} tooltip text shown on hover (e.g. {readyReason})
+           */
+          tooltip?: string
         }
         /**
          * per-row horizontal Progress bar (the reconciliation-rail row): an antd Progress line whose percent + stroke colour are resolved per item

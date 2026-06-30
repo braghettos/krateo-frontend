@@ -189,6 +189,43 @@
   color: var(--cyan-color);
 }
 
+/* Assistant markdown (react-markdown). The bubble's pre-wrap is for plain text; inside markdown we
+   want NORMAL whitespace so block elements (p / ul / headings) provide the spacing, and we cap heading
+   sizes so a model-emitted `##` doesn't blow up the narrow rail. */
+.apMd {
+  white-space: normal;
+}
+.apMd > :first-child { margin-top: 0; }
+.apMd > :last-child { margin-bottom: 0; }
+.apMd p { margin: 0 0 8px; }
+.apMd ul, .apMd ol { margin: 6px 0; padding-left: 18px; }
+.apMd li { margin: 2px 0; }
+.apMd li > p { margin: 0; }
+.apMd h1, .apMd h2, .apMd h3, .apMd h4, .apMd h5, .apMd h6 {
+  font-size: 1em;
+  font-weight: 700;
+  margin: 10px 0 4px;
+  color: var(--dark-color);
+}
+.apMd strong { font-weight: 700; color: var(--dark-color); }
+.apMd a { color: var(--cyan-color); text-decoration: none; }
+.apMd pre {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--light-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  margin: 6px 0;
+}
+.apMd pre code { background: none; padding: 0; color: var(--dark-color); }
+.apMd blockquote {
+  margin: 6px 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--border-color);
+}
+
 /* streaming caret */
 .apCaret {
   display: inline-block;

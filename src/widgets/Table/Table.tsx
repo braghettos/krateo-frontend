@@ -92,21 +92,23 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
             }
 
             case 'conditions': {
-              // The row's REAL status.conditions as small pills, each coloured by its own status
-              // (True=cyan / False=crimson) — replaces a single derived "Healthy/Drift" Tag, so
-              // every condition shows honestly. Passed as a JSON string ([{type,status}]) in
-              // `stringValue` (avoids widening the `arrayValue: string[]` cell type).
-              let conds: { status?: string; type?: string }[] = []
+              // The row's REAL status.conditions as small pills, each coloured by its own status —
+              // replaces a single derived "Healthy/Drift" Tag, so every condition shows honestly.
+              // Passed as a JSON string ([{type,status,color}]) in `stringValue` (avoids widening
+              // the `arrayValue: string[]` cell type). The per-condition `color` is computed
+              // SERVER-SIDE in the RESTAction jq (True=cyan / False=crimson) — same nothing-hardcoded
+              // pattern as the sibling `bar` cell's railState colour; the widget never maps
+              // status→colour itself. A CR predating the field degrades gracefully to neutral gray.
+              let conds: { color?: string; status?: string; type?: string }[] = []
               try {
-                conds = stringValue ? (JSON.parse(stringValue) as { status?: string; type?: string }[]) : []
+                conds = stringValue ? (JSON.parse(stringValue) as { color?: string; status?: string; type?: string }[]) : []
               } catch {
                 conds = []
               }
               if (!Array.isArray(conds) || !conds.length) { return <span>-</span> }
-              const tone: Record<string, string> = { False: 'red', True: 'cyan' }
               return (
                 <div className={styles.conditions}>
-                  {conds.map((cond) => <Tag key={cond.type} style={getTagStyle(tone[cond.status ?? ''] ?? 'gray')}>{cond.type}</Tag>)}
+                  {conds.map((cond) => <Tag key={cond.type} style={getTagStyle(cond.color ?? 'gray')}>{cond.type}</Tag>)}
                 </div>
               )
             }

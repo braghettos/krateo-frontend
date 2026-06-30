@@ -1,4 +1,3 @@
-import { QuestionCircleOutlined } from '@ant-design/icons'
 import { findIconDefinition } from '@fortawesome/fontawesome-svg-core'
 import type { IconName, IconPrefix, IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -132,7 +131,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
                 : extra)}
               {tooltip && (
                 <Tooltip title={tooltip}>
-                  <Button icon={<QuestionCircleOutlined />} type='text' />
+                  <Button icon={<FontAwesomeIcon icon={['fas', 'circle-question'] as IconProp} />} type='text' />
                 </Tooltip>
               )}
             </>

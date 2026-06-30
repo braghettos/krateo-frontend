@@ -1,4 +1,5 @@
-import { BellFilled } from '@ant-design/icons'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Badge, Button, Drawer, Skeleton } from 'antd'
 import { useState } from 'react'
 
@@ -10,7 +11,7 @@ import styles from './Notifications.module.css'
 
 /**
  * Notifications is the events SSE stream rendered through the same `ListView` as
- * the `List`/`EventList` widgets (one presentation, three bindings). Only the
+ * the `List` widget (one presentation, two bindings). Only the
  * Bell badge + Drawer chrome is specific here.
  */
 const NOTIFICATION_ITEM_TEMPLATE: ItemTemplate = {
@@ -31,10 +32,10 @@ const Notifications = ({ topic = 'krateo' }: { topic?: string } = {}) => {
   return (
     <>
       <Badge
-        className={`${styles.badge} ${notifications && notifications?.length > 0 ? styles.hasNotifications : ''}`}
+        className={styles.badge}
         count={notifications?.length || 0}
       >
-        <Button className={styles.icon} icon={<BellFilled />} onClick={() => setDrawerVisible(true)} shape='circle' type='link' />
+        <Button className={styles.icon} icon={<FontAwesomeIcon icon={['fas', 'bell'] as IconProp} />} onClick={() => setDrawerVisible(true)} shape='circle' type='text' />
       </Badge>
 
       <Drawer className={styles.drawer} onClose={() => setDrawerVisible(false)} open={drawerVisible} title='Notifications' width={550}>

@@ -59,8 +59,22 @@ export interface WidgetInventoryEntry {
   title?: string
   /** A short, kind-aware summary (e.g. "Table · 248 rows"). */
   summary?: string
+  /** For a single-value widget (Statistic / Alert / Paragraph / Descriptions …): its resolved
+   * content (e.g. "27", "VPC failed — no matches for kind…"), so the agent reads the NUMBER /
+   * text on screen instead of inventing one. */
+  value?: string
+  /** True while this widget's query is still fetching with no data yet — so the agent can defer
+   * ("the list is still loading") instead of reading an empty/stale snapshot as truth. */
+  loading?: boolean
+  /** True when react-query considers this widget's data stale (snowplow L1 may be mid-revalidate);
+   * a hint that the on-screen value may lag the cluster. */
+  stale?: boolean
   /** For a Form widget: its top-level field names, so Autopilot can prefill them. */
   fields?: string[]
+  /** For a list/table widget: a sample of the visible row labels (e.g. installed blueprint
+   * names), so Autopilot can CHECK what is on screen — not just how many rows there are.
+   * Capped + label-only (no payloads); the redactor still scrubs anything sensitive. */
+  items?: string[]
   /** For an action-bearing widget (e.g. Button): the runnable actions on it, so
    * Autopilot can drive the REAL control (gated). `verb` GET = read-only. */
   actions?: { id: string; label?: string; verb: string }[]
@@ -87,6 +101,8 @@ export interface PageContextEnvelope {
   widgets: WidgetInventoryEntry[]
   /** A one-line kind-aware summary of the focused surface. */
   focus?: string
+  /** When this snapshot was taken (ms epoch) — lets the model reason about freshness. */
+  capturedAt?: number
 }
 
 // ────────────────────────────────────────────────────────────────────────────

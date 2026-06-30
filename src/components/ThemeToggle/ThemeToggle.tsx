@@ -13,7 +13,7 @@ const ThemeToggle = () => {
     <Tooltip title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
       <Button
         aria-label='Toggle color theme'
-        icon={<FontAwesomeIcon icon={['fas', isDark ? 'sun' : 'moon'] as IconProp} />}
+        icon={<FontAwesomeIcon icon={['fas', isDark ? 'sun' : 'moon'] as IconProp} style={{ fontSize: 16 }} />}
         onClick={toggle}
         shape='circle'
         type='text'

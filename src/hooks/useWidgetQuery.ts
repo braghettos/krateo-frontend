@@ -8,9 +8,12 @@ import { useConfigContext } from '../context/ConfigContext'
 import type { Widget } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
 import { getUserInfo } from '../utils/getUserInfo'
+import { forceLogout } from '../utils/logout'
 
 import type { WatchMatcher } from './liveRefresh'
+import { getRefreshEntry, isWidgetLiveRefreshEnabled, recordRefreshHeaders } from './refreshSse'
 import { useLiveWatch } from './useLiveRefresh'
+import { useWidgetLiveRefresh } from './useWidgetLiveRefresh'
 
 function parseNumberParam(param: string | null) {
   const parsed = param ? parseInt(param) : undefined
@@ -97,6 +100,13 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${widgetEndpoint}`
   const requestUrl = new URL(widgetFullUrl)
 
+  // Per-widget live-refresh (snowplow `/refreshes` SSE). The `widgetId` is the
+  // serialized query key — stable per (endpoint, extras) — used to key the captured
+  // refresh headers and arm the stream. ON by default; per-install kill-switch in config
+  // (see refreshSse.isWidgetLiveRefreshEnabled).
+  const refreshEnabled = isWidgetLiveRefreshEnabled(config)
+  const widgetId = JSON.stringify(['widgets', widgetEndpoint, extrasParam])
+
   /* TO DEBUG BEFORE SNOWPLOW RETURNS THESE IN THE widgetEndpoint */
   // if (requestUrl.searchParams.get('resource') === 'datagrids') {
   //   requestUrl.searchParams.set('page', '1')
@@ -133,8 +143,22 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
       },
     })
 
+    if (res.status === 401) {
+      // Expired/invalid token → auto-logout: clear the stale session and hard-redirect to
+      // /login instead of leaving every widget rendering a silent 401. (Until now only the
+      // manual /logout route recovered from an expired token.) Guarded to fire once.
+      void forceLogout()
+    }
     if (!res.ok) {
       throw new WidgetFetchError(`Widget fetch failed: ${res.status} ${res.statusText}`, res.status)
+    }
+
+    // Capture the live-refresh coordination headers from THIS response (so coords +
+    // key always match the request that produced them). No-op / cleared when the
+    // headers are absent (cache-off, RBAC-skipped, or a snowplow without the class
+    // header). `requestUrl.searchParams` already carries the page/perPage/extras used.
+    if (refreshEnabled) {
+      recordRefreshHeaders(widgetId, requestUrl.searchParams, res.headers)
     }
 
     const widget = (await res.json()) as Widget
@@ -220,13 +244,22 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
     },
   })
 
-  // Live-refresh: a widget can declare widgetData.watch — refetch this query when a
-  // matching k8s event arrives (precise, per-widget throttled by the registry).
+  // Live-refresh (event firehose): a widget can declare widgetData.watch — refetch
+  // this query when a matching k8s event arrives (precise, per-widget throttled by
+  // the registry). Kept active regardless of the SSE path below; both converge on
+  // `refetch` and react-query dedups concurrent refetches.
   const liveStatus = queryResult.data?.status
   const watch = liveStatus && typeof liveStatus === 'object'
     ? (liveStatus.widgetData as { watch?: WatchMatcher[] } | undefined)?.watch
     : undefined
   useLiveWatch(watch, queryResult.refetch)
+
+  // Live-refresh (per-widget SSE): arm this widget on snowplow's `/refreshes` stream
+  // using the coords + key captured from its `/call` response headers. Read during
+  // render AFTER the resolving fetch wrote them (the resolved query re-renders us);
+  // the entry is undefined until the first cache-keyed response. ON by default.
+  const refreshEntry = refreshEnabled ? getRefreshEntry(widgetId) : undefined
+  useWidgetLiveRefresh(widgetId, refreshEntry, queryResult.refetch, config?.api.SNOWPLOW_API_BASE_URL, refreshEnabled)
 
   return {
     queryResult,

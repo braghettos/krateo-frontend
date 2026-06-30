@@ -46,6 +46,10 @@ export interface Input {
        * antd Input `maxLength`
        */
       maxLength?: number
+      /**
+       * when set, the Input is a STANDALONE URL-query-bound SEARCH box (antd Input.Search), NOT a Form control: submitting writes ?<queryParam>= into the URL → extras, so a data source can filter server-side in its RESTAction jq (e.g. `.q`). Clearing removes the param.
+       */
+      queryParam?: string
     }
     apiRef?: {
       name: string

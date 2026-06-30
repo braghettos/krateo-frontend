@@ -69,6 +69,20 @@
   background-color: color-mix(in srgb, currentColor 6%, transparent);
 }
 
+/* `?spotlight=<name>` highlight — a global-search hit for a not-yet-installed blueprint routes
+   to /marketplace?q=…&spotlight=… ; the matched tile gets an amber ring + a brief attention
+   pulse (the "mouse-over" cue), settling into a persistent amber ring. */
+.spotlight {
+  border-color: var(--amber-color) !important;
+  box-shadow: 0 0 0 1px var(--amber-color), 0 0 14px 2px color-mix(in srgb, var(--amber-color) 45%, transparent);
+  animation: spotlightPulse 1.1s ease-in-out 2;
+}
+
+@keyframes spotlightPulse {
+  0%, 100% { box-shadow: 0 0 0 1px var(--amber-color), 0 0 10px 1px color-mix(in srgb, var(--amber-color) 35%, transparent); }
+  50% { box-shadow: 0 0 0 2px var(--amber-color), 0 0 22px 5px color-mix(in srgb, var(--amber-color) 60%, transparent); }
+}
+
 /* Reconciliation-rail row: a per-item Progress line (flex) + a mono % label. The
    List.Item flexes the Meta (composition name/ns) and this bar side by side. */
 .bar {
@@ -211,9 +225,20 @@
 
 .cardTitles {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+
+/* At-a-glance status glyph pinned top-right of the card (e.g. a blueprint's Ready condition).
+   flex-shrink:0 + margin-left:auto keep it hugging the right edge as the title column flexes. */
+.cardStatus {
+  align-self: flex-start;
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  margin-left: var(--spacing-sm, 8px);
 }
 
 /* Meta line under the card name: category tag + version badge share one wrapping flex
@@ -312,4 +337,26 @@
 
 .tileCard.clickable:hover .cardCtaArrow {
   transform: translateX(2px);
+}
+
+/* Chip mode (Marketplace facet chips): a wrapping row of compact navigable pills instead of a
+   vertical split list. The active chip is the antd primary (amber) Button; inactive chips are
+   outlined. `chipCount` is a muted tabular count suffix (e.g. "ec2 23"). */
+.chipList :global(.ant-list-items) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chipList :global(.ant-list-item) {
+  border-block-end: none;
+  padding: 0;
+  width: auto;
+}
+
+.chipCount {
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  margin-inline-start: 6px;
+  opacity: 0.6;
 }

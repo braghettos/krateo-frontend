@@ -1,10 +1,11 @@
 .badge {
-  &.hasNotifications {
-    top: 5px;
-  }
+  /* Keep the bell on the same centerline as the other header icons. The count balloon
+     overflows upward on its own (antd positions it at the icon's top-right) — we must NOT
+     shift the whole wrapper down when notifications exist, or the bell drops below the gear. */
+  display: inline-flex;
 
   .icon {
-    font-size: 22px;
+    font-size: 16px;
   }
 }
 

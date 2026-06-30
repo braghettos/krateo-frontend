@@ -1,4 +1,5 @@
-import { SearchOutlined } from '@ant-design/icons'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Input, Modal } from 'antd'
 import type { InputRef } from 'antd'
 import { useEffect, useRef, useState } from 'react'
@@ -51,7 +52,7 @@ const CommandPalette = () => {
   return (
     <>
       <button aria-label={`Search (${shortcutHint})`} className={styles.trigger} onClick={() => setOpen(true)} type='button'>
-        <SearchOutlined className={styles.triggerIcon}/>
+        <FontAwesomeIcon className={styles.triggerIcon} icon={['fas', 'magnifying-glass'] as IconProp}/>
         <span className={styles.triggerLabel}>Search resources, blueprints…</span>
         <kbd className={styles.kbd}>{shortcutHint}</kbd>
       </button>
@@ -70,7 +71,7 @@ const CommandPalette = () => {
           onChange={(event) => setTerm(event.target.value)}
           onPressEnter={submit}
           placeholder='Search resources, blueprints…'
-          prefix={<SearchOutlined className={styles.modalIcon}/>}
+          prefix={<FontAwesomeIcon className={styles.modalIcon} icon={['fas', 'magnifying-glass'] as IconProp}/>}
           ref={inputRef}
           size='large'
           value={term}
