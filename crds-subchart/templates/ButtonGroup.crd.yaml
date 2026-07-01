@@ -168,7 +168,6 @@ spec:
                       enum:
                       - barcharts
                       - buttons
-                      - eventlists
                       - filters
                       - flowcharts
                       - forms

@@ -170,12 +170,12 @@ spec:
                           - buttongroups
                           - cards
                           - cols
-                          - eventlists
                           - filters
                           - flexes
                           - flowcharts
                           - forms
                           - images
+                          - inputs
                           - linecharts
                           - listies
                           - markdowns

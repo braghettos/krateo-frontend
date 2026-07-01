@@ -170,6 +170,30 @@ spec:
                     - solid
                     - outlined
                     type: string
+                  watch:
+                    description: 'live-refresh watch: involvedObject(s) this widget
+                      is tied to (see src/schemas/watch.schema.json). A matching k8s
+                      event refetches the widget.'
+                    items:
+                      properties:
+                        apiVersion:
+                          description: group/version, e.g. composition.krateo.io/v1alpha1
+                          type: string
+                        kind:
+                          description: e.g. DemoClaim
+                          type: string
+                        name:
+                          description: a specific object; omit to match any object
+                            of this kind ("GVR-level")
+                          type: string
+                        namespace:
+                          description: scope to a namespace; omit to match any
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      type: object
+                    type: array
                 required:
                 - label
                 type: object

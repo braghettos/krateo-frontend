@@ -175,6 +175,13 @@ spec:
                   placeholder:
                     description: antd Input `placeholder`
                     type: string
+                  queryParam:
+                    description: 'when set, the Input is a STANDALONE URL-query-bound
+                      SEARCH box (antd Input.Search), NOT a Form control: submitting
+                      (Enter / search button) writes ?<queryParam>= into the URL →
+                      extras, so a data source can filter server-side in its RESTAction
+                      jq (e.g. `.q`). Clearing removes the param.'
+                    type: string
                   required:
                     description: add a required validation rule to the field
                     type: boolean
