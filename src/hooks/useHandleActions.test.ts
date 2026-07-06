@@ -232,6 +232,24 @@ describe('dispatchAction — routing + non-SSE rest paths', () => {
     expect(ctx.navigate).toHaveBeenCalledWith('/resolved')
   })
 
+  it('navigate: an absolute http(s) URL opens in a new tab, not via the router', async () => {
+    const open = vi.fn()
+    vi.stubGlobal('open', open)
+    const ctx = makeCtx()
+    await dispatchAction({ id: 'n', path: 'https://console.example/obs', type: 'navigate' } as WidgetAction, { resourcesRefs: refs([]) }, ctx)
+    expect(open).toHaveBeenCalledWith('https://console.example/obs', '_blank', 'noopener,noreferrer')
+    expect(ctx.navigate).not.toHaveBeenCalled()
+  })
+
+  it('navigate: an external URL still respects a declined confirmation', async () => {
+    const open = vi.fn()
+    vi.stubGlobal('open', open)
+    const ctx = makeCtx({ confirm: vi.fn(() => Promise.resolve(false)) })
+    await dispatchAction({ id: 'n', path: 'https://console.example/obs', requireConfirmation: true, type: 'navigate' } as WidgetAction, { resourcesRefs: refs([]) }, ctx)
+    expect(open).not.toHaveBeenCalled()
+    expect(ctx.navigate).not.toHaveBeenCalled()
+  })
+
   it('navigate: errors when no path is given (no widgetEndpoint bypass)', async () => {
     const ctx = makeCtx()
     await dispatchAction({ id: 'n', type: 'navigate' } as WidgetAction, { resourcesRefs: refs([]) }, ctx)
