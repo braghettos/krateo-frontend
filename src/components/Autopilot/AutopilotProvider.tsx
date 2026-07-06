@@ -11,6 +11,7 @@
  */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
 
@@ -74,6 +75,8 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
 
   const abortRef = useRef<(() => void) | null>(null)
   const sentFirstRef = useRef(false)
+  // Guards the one-shot `?ask=` deep-link (below) so it fires a single turn per visit.
+  const askHandledRef = useRef(false)
   const lastEnvelopeRef = useRef<PageContextEnvelope | undefined>(undefined)
   // A2A conversation id, assigned by the server on the first turn and replayed on
   // follow-ups for thread continuity. Cleared on new-thread.
@@ -231,6 +234,22 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
 
   const toggle = useCallback(() => setOpen((prev) => !prev), [])
   const closeTour = useCallback(() => setTourOpen(false), [])
+
+  // Deep-link seed: a widget can start an Autopilot turn via `?ask=<prompt>` (e.g. an
+  // alert's "Troubleshoot with Autopilot" button navigates here with the prompt). Open the
+  // rail, send it once (guarded so a refresh doesn't re-ask), then strip the param. The
+  // context collector already carries the page's telemetry, so the analysis is grounded.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const ask = searchParams.get('ask')
+    if (!ask || !enabled || askHandledRef.current) { return }
+    askHandledRef.current = true
+    setOpen(true)
+    send(ask)
+    const next = new URLSearchParams(searchParams)
+    next.delete('ask')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, enabled, send, setSearchParams])
 
   const value = useMemo<AutopilotContextValue>(() => ({
     closeTour, collect, enabled, messages, newThread, open, send, setOpen, streaming, toggle, tour, tourOpen,
