@@ -239,6 +239,16 @@ const runNavigate = async (action: WidgetAction & { type: 'navigate' }, runtime:
   }
 
   if (!action.requireConfirmation || await ctx.confirm()) {
+    // An absolute http(s) URL is an EXTERNAL target — open it in a new tab. react-router's
+    // navigate() would treat it as an in-app route and break, so it must not go through
+    // ctx.navigate. noopener/noreferrer severs the opener reference (tab-nabbing guard).
+    // globalThis.open === window.open in the browser; guarded for non-DOM/SSR contexts.
+    if (/^https?:\/\//i.test(updatedUrl)) {
+      if (typeof globalThis.open === 'function') {
+        globalThis.open(updatedUrl, '_blank', 'noopener,noreferrer')
+      }
+      return
+    }
     await ctx.navigate(updatedUrl)
   }
 }
