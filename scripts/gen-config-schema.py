@@ -35,8 +35,22 @@ def title_for(key: str) -> str:
     return " ".join(words).replace("Base", "base")
 
 
+def json_type(value: object) -> str:
+    """JSON-Schema type inferred from the values.yaml scalar. bool is checked BEFORE int
+    (bool is an int subclass in Python), so a capability flag like SNOWPLOW_IDENTITY_INJECTION
+    renders `type: boolean` — the ConfigMap template then emits a real JSON boolean and the
+    frontend reads it as one. Everything else (URLs, routes) stays `string`."""
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, int):
+        return "integer"
+    if isinstance(value, float):
+        return "number"
+    return "string"
+
+
 schema["properties"]["config"]["properties"] = {
-    key: {"type": "string", "title": title_for(key), "default": value}
+    key: {"type": json_type(value), "title": title_for(key), "default": value}
     for key, value in config.items()
 }
 schema["properties"]["config"]["default"] = dict(config)

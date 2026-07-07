@@ -110,3 +110,10 @@ config:
   # Browser OpenTelemetry collector endpoint. Empty by default: the browser OTel
   # SDK stays OFF until a non-empty endpoint is set (frontend gates on config.api.OTEL_COLLECTOR_URL).
   OTEL_COLLECTOR_URL: ""
+  # Capability flag (chart-authored from the bundled snowplow >= 1.7.0, NOT an operator knob):
+  # true → the frontend stops volunteering login identity in ?extras= because snowplow injects it
+  # server-side, restoring per-widget L1 cache sharing. Absent/false = byte-identical legacy behavior
+  # (safe for old frontend/snowplow). Boolean → the config ConfigMap template emits it raw (valid JSON
+  # true). Ships with snowplow 1.7.0 + the widget identityContext declarations + greeting client-render.
+  # See snowplow docs/A6-chart-enablement-spec-2026-07-07.md §1.2 / §4.1.
+  SNOWPLOW_IDENTITY_INJECTION: true

@@ -330,6 +330,16 @@
           "type": "string",
           "title": "Init route",
           "default": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system"
+        },
+        "OTEL_COLLECTOR_URL": {
+          "type": "string",
+          "title": "Otel Collector URL",
+          "default": ""
+        },
+        "SNOWPLOW_IDENTITY_INJECTION": {
+          "type": "boolean",
+          "title": "Snowplow Identity Injection",
+          "default": true
         }
       },
       "default": {
@@ -338,7 +348,9 @@
         "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
         "EVENTS_API_BASE_URL": "http://localhost:8083",
         "AUTOPILOT_API_BASE_URL": "/autopilot",
-        "INIT": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system"
+        "INIT": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system",
+        "OTEL_COLLECTOR_URL": "",
+        "SNOWPLOW_IDENTITY_INJECTION": true
       }
     },
     "env": {
