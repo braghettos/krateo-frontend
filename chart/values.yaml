@@ -110,10 +110,16 @@ config:
   # Browser OpenTelemetry collector endpoint. Empty by default: the browser OTel
   # SDK stays OFF until a non-empty endpoint is set (frontend gates on config.api.OTEL_COLLECTOR_URL).
   OTEL_COLLECTOR_URL: ""
-  # Capability flag (chart-authored from the bundled snowplow >= 1.7.0, NOT an operator knob):
-  # true → the frontend stops volunteering login identity in ?extras= because snowplow injects it
-  # server-side, restoring per-widget L1 cache sharing. Absent/false = byte-identical legacy behavior
-  # (safe for old frontend/snowplow). Boolean → the config ConfigMap template emits it raw (valid JSON
-  # true). Ships with snowplow 1.7.0 + the widget identityContext declarations + greeting client-render.
-  # See snowplow docs/A6-chart-enablement-spec-2026-07-07.md §1.2 / §4.1.
-  SNOWPLOW_IDENTITY_INJECTION: true
+  # Capability flag (chart-authored, NOT an operator knob) — STRING-typed on purpose: the krateo
+  # installer's config plumbing (chart-inspector) emits only strings, and a boolean field wedges the
+  # krateofrontends composition version migration (v1-1-8 -> v1-2-0). Pinned to string in
+  # gen-config-schema.py TYPE_OVERRIDES. The frontend runtime coerces it via JS truthiness
+  # (injectIdentity = !config.api.SNOWPLOW_IDENTITY_INJECTION):
+  #   ""/absent → falsy → inject ON  = LEGACY (frontend volunteers identity in ?extras=). Shipped
+  #                                    ROLLOUT HOLD-OFF, safe-by-default.
+  #   "true"    → truthy → inject OFF = frontend stops volunteering; snowplow injects server-side.
+  # The flip to "true" is the LAST rollout step (A6 §6), driven by the installer AFTER portal 1.5.0's
+  # identityContext declarations land — so the chart ships "" (hold-off), not "true". ("false" is a
+  # trap: JS !"false" is falsy, so "false" would mean inject OFF — never set it; use "" for hold-off.)
+  # See snowplow docs/frontend-1.2.0-config-type-conflict-spec-2026-07-07.md + A6 §1.2/§4.1.
+  SNOWPLOW_IDENTITY_INJECTION: ""

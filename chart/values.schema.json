@@ -337,9 +337,9 @@
           "default": ""
         },
         "SNOWPLOW_IDENTITY_INJECTION": {
-          "type": "boolean",
+          "type": "string",
           "title": "Snowplow Identity Injection",
-          "default": true
+          "default": ""
         }
       },
       "default": {
@@ -350,7 +350,7 @@
         "AUTOPILOT_API_BASE_URL": "/autopilot",
         "INIT": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system",
         "OTEL_COLLECTOR_URL": "",
-        "SNOWPLOW_IDENTITY_INJECTION": true
+        "SNOWPLOW_IDENTITY_INJECTION": ""
       }
     },
     "env": {

@@ -35,11 +35,24 @@ def title_for(key: str) -> str:
     return " ".join(words).replace("Base", "base")
 
 
-def json_type(value: object) -> str:
-    """JSON-Schema type inferred from the values.yaml scalar. bool is checked BEFORE int
-    (bool is an int subclass in Python), so a capability flag like SNOWPLOW_IDENTITY_INJECTION
-    renders `type: boolean` — the ConfigMap template then emits a real JSON boolean and the
-    frontend reads it as one. Everything else (URLs, routes) stays `string`."""
+# Keys pinned to a specific JSON-Schema type regardless of the values.yaml scalar.
+# SNOWPLOW_IDENTITY_INJECTION MUST stay `string`: the krateo installer's config plumbing
+# (chart-inspector) emits ONLY strings, and a boolean CRD field both rejects every installer value
+# ("got string, want boolean") AND denies the krateofrontends v1-1-8 -> v1-2-0 composition migration
+# ("expected boolean, got string"), wedging it in an infinite retry. The frontend runtime coerces
+# natively (injectIdentity = !config.api.SNOWPLOW_IDENTITY_INJECTION, JS truthiness): ""/absent ->
+# inject ON (legacy rollout hold-off, safe default), "true" -> inject OFF. Do NOT retype to boolean.
+# See docs/frontend-1.2.0-config-type-conflict-spec-2026-07-07.md §4.
+TYPE_OVERRIDES = {"SNOWPLOW_IDENTITY_INJECTION": "string"}
+
+
+def json_type(key: str, value: object) -> str:
+    """JSON-Schema type for a config key: a TYPE_OVERRIDES pin if present, else inferred from the
+    values.yaml scalar (bool checked BEFORE int, since bool subclasses int). Inference lets a future
+    typed flag render its natural type; the override is the escape hatch for keys whose stored/plumbed
+    type must not follow the value (see TYPE_OVERRIDES)."""
+    if key in TYPE_OVERRIDES:
+        return TYPE_OVERRIDES[key]
     if isinstance(value, bool):
         return "boolean"
     if isinstance(value, int):
@@ -50,7 +63,7 @@ def json_type(value: object) -> str:
 
 
 schema["properties"]["config"]["properties"] = {
-    key: {"type": json_type(value), "title": title_for(key), "default": value}
+    key: {"type": json_type(key, value), "title": title_for(key), "default": value}
     for key, value in config.items()
 }
 schema["properties"]["config"]["default"] = dict(config)
