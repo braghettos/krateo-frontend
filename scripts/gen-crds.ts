@@ -124,6 +124,30 @@ async function normalizeTypedMaps(schemaPath: string, crdPath: string): Promise<
   return changed
 }
 
+/**
+ * Inject `spec.identityContext` into every widget CRD (A6 §1.1). snowplow reads
+ * `spec.identityContext` — enum-bounded to jwtutil.UserInfo fields (`username`/`groups`;
+ * `displayName` is FORECLOSED per D1) — to inject the server-trusted identity into a widget's
+ * L1 cache key + resolve input. The apiserver PRUNES fields absent from a structural CRD schema,
+ * so the field MUST be declared in the CRD or snowplow's DeclaredIdentity always reads empty and
+ * the whole author-declared cache-identity feature is silently dead. Applied here (CRD post-
+ * process, mirroring normalizeUnionTypes/normalizeTypedMaps) so ALL widget kinds get it from ONE
+ * place — the field is a uniform envelope member, not per-widget. See snowplow
+ * docs/A6-chart-enablement-spec-2026-07-07.md §1.1.
+ */
+async function injectIdentityContext(crdPath: string): Promise<void> {
+  const doc = yaml.load(await fs.readFile(crdPath, 'utf8')) as {
+    spec?: { versions?: Array<{ schema?: { openAPIV3Schema?: { properties?: { spec?: { properties?: Record<string, unknown> } } } } }> }
+  }
+  const specNode = doc.spec?.versions?.[0]?.schema?.openAPIV3Schema?.properties?.spec
+  if (!specNode?.properties || specNode.properties.identityContext) { return }
+  specNode.properties.identityContext = {
+    items: { enum: ['username', 'groups'], type: 'string' },
+    type: 'array',
+  }
+  await fs.writeFile(crdPath, yaml.dump(doc, { lineWidth: -1, noRefs: true }))
+}
+
 async function runKrateoctl(schemaPath: string) {
   const schemaName = basename(schemaPath)
   const widgetDir = dirname(schemaPath)
@@ -151,6 +175,8 @@ async function runKrateoctl(schemaPath: string) {
     // krateoctl can't emit JSON-Schema unions or typed maps as structural CRDs — fix them up.
     const normalized = await normalizeUnionTypes(schemaPath, destinationPath)
     const mapsFixed = await normalizeTypedMaps(schemaPath, destinationPath)
+    // A6 §1.1: every widget CRD carries the author-declared identity-variance field.
+    await injectIdentityContext(destinationPath)
 
     console.log(`✅ ${chalk.green(finalName)} moved to ${chalk.gray(OUTPUT_DIR)}${normalized ? chalk.yellow(' (union → x-kubernetes-int-or-string)') : ''}${mapsFixed ? chalk.yellow(' (typed maps → additionalProperties)') : ''}`)
     return true
