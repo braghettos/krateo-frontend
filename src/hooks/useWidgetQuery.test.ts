@@ -280,4 +280,29 @@ describe('buildExtrasParam — request/user values forwarded into the RA jq dict
   it('is stable for the same inputs (so the react-query key does not churn)', () => {
     expect(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego')).toBe(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego'))
   })
+
+  // A5 (SNOWPLOW_IDENTITY_INJECTION): when snowplow injects identity server-side the call
+  // site passes injectIdentity=false, and the browser must emit NO identity keys.
+  it('flag SET (injectIdentity=false) — emits no identity keys even when displayName+username are present', () => {
+    expect(buildExtrasParam(sp(''), {}, 'Diego', 'diego.braga', false)).toBe('')
+  })
+
+  it('flag SET — still forwards genuinely client-side extras (query + route params); only identity is dropped', () => {
+    expect(buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego', 'diego.braga', false))
+      .toBe('{"q":"foo","namespace":"demo"}')
+  })
+
+  it('flag SET — does not re-inject identity on top of a spoofed ?displayName= (server-side injection is the source of truth, §1.3)', () => {
+    // The identity anti-spoof merge is gated off; a URL ?displayName= passes through as opaque
+    // query, but snowplow quarantines client identity keys and injects the authenticated value,
+    // so the forwarded 'evil' is ignored server-side. The frontend simply stops volunteering.
+    expect(buildExtrasParam(sp('displayName=evil'), {}, 'Diego', 'diego.braga', false)).toBe('{"displayName":"evil"}')
+  })
+
+  it('flag ABSENT default is byte-identical to explicit injectIdentity=true (legacy protection)', () => {
+    const legacyDefault = buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego', 'diego.braga')
+    const explicitTrue = buildExtrasParam(sp('q=foo'), { namespace: 'demo' }, 'Diego', 'diego.braga', true)
+    expect(legacyDefault).toBe(explicitTrue)
+    expect(legacyDefault).toBe('{"q":"foo","namespace":"demo","displayName":"Diego","username":"diego.braga"}')
+  })
 })

@@ -64,25 +64,37 @@ export const widgetFetchRetryDelay = (attemptIndex: number): number => Math.min(
  * NOT otherwise exposed to RA jq). Sources, later-wins on key collision: the browser
  * URL query (e.g. /search?q=… → `extras.q`), the active route params
  * (e.g. /compositions/:namespace/:name → `extras.namespace`/`extras.name` — the
- * convention's param channel), and the login-provided identity `displayName` +
- * `username` (there is no runtime /me; displayName feeds the greeting, username
- * scopes per-user server state e.g. blueprint drafts). Identity is applied LAST so
- * a spoofed `?displayName=`/`?username=` URL param can never override the
- * authenticated value. Returns '' when empty so the param — and the react-query key
- * it feeds — stay stable (same inputs → same string, no spurious refetch).
+ * convention's param channel), and — ONLY when `injectIdentity` (the legacy default) —
+ * the login-provided identity `displayName` + `username` (there is no runtime /me;
+ * displayName feeds the greeting, username scopes per-user server state e.g. blueprint
+ * drafts). Identity is applied LAST so a spoofed `?displayName=`/`?username=` URL param
+ * can never override the authenticated value.
+ *
+ * `injectIdentity` gates the two identity merges behind the `api.SNOWPLOW_IDENTITY_INJECTION`
+ * capability flag (resolved at the call site). Default `true` = legacy behavior, byte-identical
+ * to before the flag existed. When snowplow injects identity server-side the caller passes
+ * `false`, so NO identity keys enter extras and identity-independent widgets share one L1 cache
+ * cell again (see snowplow docs/definitive-cache-identity-architecture-2026-07-07.md §0/§1.2).
+ *
+ * Returns '' when empty so the param — and the react-query key it feeds — stay stable
+ * (same inputs → same string, no spurious refetch).
  */
 export const buildExtrasParam = (
   searchParams: URLSearchParams,
   routeParams: Record<string, string | undefined> = {},
   displayName?: string,
   username?: string,
+  injectIdentity: boolean = true,
 ): string => {
   const extras: Record<string, unknown> = Object.fromEntries(searchParams.entries())
   for (const [key, value] of Object.entries(routeParams)) {
     if (value !== undefined) { extras[key] = value }
   }
-  if (displayName) { extras.displayName = displayName }
-  if (username) { extras.username = username }
+  // Volunteer identity only when snowplow does NOT inject it server-side (capability flag).
+  if (injectIdentity) {
+    if (displayName) { extras.displayName = displayName }
+    if (username) { extras.username = username }
+  }
   return Object.keys(extras).length > 0 ? JSON.stringify(extras) : ''
 }
 
@@ -93,9 +105,11 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   // Extras envelope snowplow forwards into the RESTAction jq dict (`?extras=<json>`):
   // route params (e.g. /compositions/:namespace/:name) + browser URL query (search `q`)
   // + login identity `displayName` (greeting) + `username` (per-user server state, e.g.
-  // blueprint drafts). See buildExtrasParam.
+  // blueprint drafts) — the identity pair ONLY when snowplow is not injecting it
+  // server-side (capability flag api.SNOWPLOW_IDENTITY_INJECTION). See buildExtrasParam.
   const { displayName, username } = getUserInfo()
-  const extrasParam = buildExtrasParam(searchParams, routeParams, displayName, username)
+  const injectIdentity = !config?.api.SNOWPLOW_IDENTITY_INJECTION
+  const extrasParam = buildExtrasParam(searchParams, routeParams, displayName, username, injectIdentity)
 
   const widgetFullUrl = `${config!.api.SNOWPLOW_API_BASE_URL}${widgetEndpoint}`
   const requestUrl = new URL(widgetFullUrl)

@@ -18,6 +18,15 @@ export interface Config {
      * **ON by default** (verified delivering on snowplow ≥1.5.13; older snowplow degrades to a
      * harmless idle stream). Set to `false` to opt an install OUT (widgets refetch as before). */
     WIDGET_LIVE_REFRESH_ENABLED?: boolean
+    /** Capability flag — authored by the portal chart from the bundled snowplow version, NOT an
+     * operator knob. When truthy, snowplow injects the authenticated identity (`displayName`/
+     * `username`) into the resolve input server-side, so the browser STOPS volunteering them in
+     * `?extras=` (see hooks/useWidgetQuery.ts buildExtrasParam) — this restores per-widget L1
+     * cache sharing for identity-independent widgets. When absent/false the frontend keeps the
+     * LEGACY behavior (sends identity extras), byte-identical to before the flag existed, so a new
+     * frontend against an old snowplow is safe. The flag + its legacy branch are removed once the
+     * fleet converges. See snowplow docs/definitive-cache-identity-architecture-2026-07-07.md §4.1. */
+    SNOWPLOW_IDENTITY_INJECTION?: boolean
     /** OTLP/HTTP traces endpoint of the OpenTelemetry collector. Optional and
      * default-OFF: when absent the browser starts NO trace provider and injects
      * no W3C `traceparent` header (byte-identical default runtime path). When
