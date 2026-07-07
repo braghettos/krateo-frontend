@@ -18,15 +18,18 @@ export interface Config {
      * **ON by default** (verified delivering on snowplow ≥1.5.13; older snowplow degrades to a
      * harmless idle stream). Set to `false` to opt an install OUT (widgets refetch as before). */
     WIDGET_LIVE_REFRESH_ENABLED?: boolean
-    /** Capability flag — authored by the portal chart from the bundled snowplow version, NOT an
-     * operator knob. When truthy, snowplow injects the authenticated identity (`displayName`/
-     * `username`) into the resolve input server-side, so the browser STOPS volunteering them in
-     * `?extras=` (see hooks/useWidgetQuery.ts buildExtrasParam) — this restores per-widget L1
-     * cache sharing for identity-independent widgets. When absent/false the frontend keeps the
-     * LEGACY behavior (sends identity extras), byte-identical to before the flag existed, so a new
-     * frontend against an old snowplow is safe. The flag + its legacy branch are removed once the
-     * fleet converges. See snowplow docs/definitive-cache-identity-architecture-2026-07-07.md §4.1. */
-    SNOWPLOW_IDENTITY_INJECTION?: boolean
+    /** Capability flag — authored by the frontend chart from the bundled snowplow version, NOT an
+     * operator knob. Typed `string | boolean`: the installer/chart plumbing (chart-inspector) can
+     * only emit STRINGS, so config.json carries `""` (hold-off) or `"true"` (flip); `boolean` is
+     * allowed for forward-compat. Consumed purely by JS truthiness in buildExtrasParam
+     * (`!config.api.SNOWPLOW_IDENTITY_INJECTION`): when TRUTHY (`"true"`/`true`) snowplow injects
+     * the authenticated `username` server-side, so the browser STOPS volunteering identity in
+     * `?extras=` — restoring per-widget L1 cache sharing. When falsy (`""`/absent/`false`) the
+     * frontend keeps the LEGACY behavior (sends identity extras), byte-identical to before the flag
+     * existed. NB `"false"` is a non-empty string and thus TRUTHY (⇒ inject-OFF, not legacy) — the
+     * rollout only ever uses `""` and `"true"`. See snowplow docs/frontend-1.2.0-config-type-conflict-spec-2026-07-07.md
+     * + definitive-cache-identity-architecture-2026-07-07.md §4.1. */
+    SNOWPLOW_IDENTITY_INJECTION?: string | boolean
     /** OTLP/HTTP traces endpoint of the OpenTelemetry collector. Optional and
      * default-OFF: when absent the browser starts NO trace provider and injects
      * no W3C `traceparent` header (byte-identical default runtime path). When
