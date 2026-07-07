@@ -43,6 +43,13 @@ spec:
               type: object
             spec:
               properties:
+                identityContext:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                    - username
+                    - groups
                 apiRef:
                   properties:
                     name:
