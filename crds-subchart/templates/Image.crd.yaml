@@ -43,13 +43,6 @@ spec:
               type: object
             spec:
               properties:
-                identityContext:
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                    - username
-                    - groups
                 apiRef:
                   properties:
                     name:
@@ -239,6 +232,13 @@ spec:
                       forPath:
                         type: string
                     type: object
+                  type: array
+                identityContext:
+                  items:
+                    enum:
+                      - username
+                      - groups
+                    type: string
                   type: array
               required:
                 - widgetData
