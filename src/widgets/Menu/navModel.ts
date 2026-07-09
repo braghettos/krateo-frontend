@@ -50,14 +50,6 @@ export const resolveContentEndpoint = (
 }
 
 /**
- * Frontend-only cosmetic hide: nav paths whose visible sidebar ENTRY is suppressed (the
- * route still resolves if reached directly by URL). The canonical source is the `sidebar-nav`
- * Menu CR served by snowplow; this is a temporary client-side override so we don't touch the
- * cluster — delete a path here to restore its sidebar item.
- */
-const HIDDEN_NAV_PATHS = new Set<string>(['/observability'])
-
-/**
  * Build the antd-Menu entries + app routes from inline nav items.
  * - ROUTES: every item with a `path` (label OPTIONAL → a label-less item is a
  *   route-only/hidden route, e.g. /search, detail, create). Content endpoint via
@@ -83,7 +75,7 @@ export const buildNavModel = (
     }))
 
   const entries: NavEntry[] = sorted
-    .filter((item): item is InlineNavItem & { label: string; path: string } => !!item.label && !!item.path && !HIDDEN_NAV_PATHS.has(item.path))
+    .filter((item): item is InlineNavItem & { label: string; path: string } => !!item.label && !!item.path)
     .map((item) => ({ iconName: item.icon, key: item.path, label: item.label }))
 
   return { entries, routes }
