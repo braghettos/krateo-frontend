@@ -69,6 +69,20 @@ export interface WidgetInventoryEntry {
   /** True when react-query considers this widget's data stale (snowplow L1 may be mid-revalidate);
    * a hint that the on-screen value may lag the cluster. */
   stale?: boolean
+  /**
+   * The widget's LIVE react-query load state — the actual on-screen render status,
+   * read from the query cache (NOT model memory): `loading` (still fetching, showing
+   * a skeleton), `error` (the fetch failed / red-cross state), or `ready` (rendered).
+   * This is the grounded signal for "why isn't this showing?" questions. (Complements the
+   * boolean `loading`/`stale` above: `loadState` also distinguishes the ERRORED render.)
+   */
+  loadState?: 'loading' | 'error' | 'ready'
+  /**
+   * True when this widget carries an unusually large row count (a client-render-scale
+   * hazard: a big non-virtualized list/table can wedge the browser tab while it paints).
+   * Grounds the RIGHT answer for a sluggish/blank page instead of guessing a cause.
+   */
+  large?: boolean
   /** For a Form widget: its top-level field names, so Autopilot can prefill them. */
   fields?: string[]
   /** For a list/table widget: a sample of the visible row labels (e.g. installed blueprint
@@ -103,6 +117,15 @@ export interface PageContextEnvelope {
   focus?: string
   /** When this snapshot was taken (ms epoch) — lets the model reason about freshness. */
   capturedAt?: number
+  /**
+   * The page's overall render/load state, derived from the widget cache — the
+   * grounded answer to "why isn't the page loading?". `loading`: at least one widget
+   * is still fetching. `error`: at least one widget's fetch failed. `heavy`: a widget
+   * on the page is rendering a very large dataset (a client-render-scale hazard that
+   * can make the tab unresponsive). `ready`: everything rendered normally. When absent
+   * (no widgets in cache), page state is unknown — do NOT infer a cause.
+   */
+  pageStatus?: 'loading' | 'error' | 'heavy' | 'ready'
 }
 
 // ────────────────────────────────────────────────────────────────────────────

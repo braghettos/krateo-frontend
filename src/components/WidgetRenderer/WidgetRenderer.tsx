@@ -2,7 +2,7 @@ import { Suspense, useEffect } from 'react'
 
 import useCatchError from '../../hooks/useCatchError'
 import { useWidgetQuery } from '../../hooks/useWidgetQuery'
-import type { Widget } from '../../types/Widget'
+import type { ServerPagination, Widget } from '../../types/Widget'
 import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
@@ -21,13 +21,33 @@ type WidgetRendererProps = {
   }
 }
 
+/**
+ * Widget-`/call` RESOURCE plurals that render potentially-unbounded lists and so
+ * default to BOUNDED server-side pagination (paginate + virtualize) instead of
+ * snowplow's `-1/-1` full-set sentinel. Keyed by the `resource` query param the
+ * endpoint carries (known before the fetch, unlike the widget `kind`). Value is
+ * the per-page window size. `tables` covers the compositions Table — the 60K-row
+ * `/compositions` wedge this map exists to prevent.
+ */
+const PAGINATED_RESOURCE_PAGE_SIZE: Record<string, number> = {
+  tables: 50,
+}
+
+export const getDefaultPageSizeForEndpoint = (widgetEndpoint: string): number | undefined => {
+  const queryStart = widgetEndpoint.indexOf('?')
+  if (queryStart === -1) { return undefined }
+  const resource = new URLSearchParams(widgetEndpoint.slice(queryStart)).get('resource')
+  return resource ? PAGINATED_RESOURCE_PAGE_SIZE[resource] : undefined
+}
+
 const parseWidget = (
   widget: Widget,
   fetchNextPage: () => Promise<unknown> | void,
   hasNextPage: boolean,
   isFetching: boolean,
   isFetchingNextPage: boolean,
-  isFetchingResourcesRefs: boolean
+  isFetchingResourcesRefs: boolean,
+  serverPagination?: ServerPagination
 ) => {
   if (typeof widget.status === 'string') {
     return null
@@ -41,6 +61,9 @@ const parseWidget = (
 
   const props = {
     resourcesRefs: { ...resourcesRefs, items: resourcesRefs?.items?.filter(({ allowed }) => allowed) ?? [] },
+    // Classic server-side pager controls, threaded down to widgets that opt into
+    // bounded pagination (e.g. the compositions Table). Undefined for all others.
+    serverPagination,
     uid: metadata.uid,
   }
 
@@ -84,7 +107,13 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     console.warn(`WidgetRenderer received widgetEndpoint=${widgetEndpoint}, which is probably invalid. An url is expected.`)
   }
 
-  const { isFetchingResourcesRefs, queryResult } = useWidgetQuery(widgetEndpoint)
+  // Bounded server-side pagination is opt-in by RESOURCE PLURAL (the `resource`
+  // param on the widget's `/call` endpoint), resolved BEFORE the fetch — the
+  // widget `kind` is only known after the response, but the plural is in the URL.
+  // Keeps `useWidgetQuery` generic; the opt-in set is one explicit, greppable map.
+  const defaultPageSize = getDefaultPageSizeForEndpoint(widgetEndpoint)
+
+  const { isFetchingResourcesRefs, queryResult, serverPagination } = useWidgetQuery(widgetEndpoint, { defaultPageSize })
   const { data: widget, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, refetch } = queryResult
 
   useEffect(() => {
@@ -175,7 +204,7 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     return null
   }
 
-  const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs)
+  const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)
 
   if (wrapper) {
     return <wrapper.component {...wrapper.props}>{renderedWidget}</wrapper.component>

@@ -169,7 +169,10 @@ export const PORTAL_CAPABILITIES_PROMPT = [
  * A tight, hardened recap of the load-bearing grounding rules, re-injected on EVERY turn. The full
  * PORTAL_CAPABILITIES_PROMPT is sent only on turn 1 and decays as the thread grows — but create,
  * diagnose, and install all happen on LATER turns, where the original rules are far back in the
- * context window. These five lines keep the rules in front of the model when it actually acts.
+ * context window. These lines keep the rules in front of the model when it actually acts.
+ *
+ * Rule 8 folds in the anti-confabulation page-load guard (see GROUNDING_GUARDRAIL_PROMPT below for
+ * the full statement) so it too survives the every-turn recap in compact form.
  */
 export const PORTAL_HOUSE_RULES = [
   '<house_rules>',
@@ -181,7 +184,31 @@ export const PORTAL_HOUSE_RULES = [
   '5. Emit at most one portal-action per reply, and only reference routes, widgets, fields, and actions that appear in the current page context — never invent one.',
   '6. ALWAYS fence directive JSON (```portal-action / ```portal-suggest / ```portal-tour); NEVER write a bare {"verb":...} or {"steps":...} object in prose — un-fenced JSON renders to the user verbatim.',
   '7. Be PROACTIVE: when the user states a goal or approves a step, DO the next read-only action (navigate / prefillForm / runAction) in the SAME reply — do not just describe it or ask permission for read-only navigation.',
+  '8. Page-load / render / responsiveness questions ("why is the page not loading / blank / frozen / slow?") are CLIENT-SIDE: answer from the page context\'s `pageStatus` and the widgets\' `loadState`/`large` only. NEVER blame them on unrelated cluster-workload health (a CrashLoopBackOff pod, a node down, an OOMKill). If no errored/loading/heavy widget is in context, say you cannot see the cause rather than inventing one.',
   '</house_rules>',
+].join('\n')
+
+/**
+ * Grounding guardrail (anti-confabulation). Injected as a trusted frontend
+ * instruction on EVERY turn (outside the `<page_context>` data fence), so it does
+ * NOT decay after the first message. This is the FULL statement of house-rule 8.
+ *
+ * Motivating incident: asked "why is the compositions page not loading?", Autopilot
+ * answered "there is a pod in CrashLoopBackOff" — an UNRELATED workload it found via
+ * its backend Kubernetes tools, with no causal link to a frontend render/load
+ * problem. This forbids exactly that: page-load / render / UI-responsiveness issues
+ * must be explained from the PROVIDED page context (the widgets' `loadState`,
+ * `large`, and the page-level `pageStatus`), never attributed to unrelated cluster
+ * workload health.
+ */
+export const GROUNDING_GUARDRAIL_PROMPT = [
+  '<grounding_rules>',
+  'Ground every answer in the <page_context> data (the user\'s actual screen: route, widgets, each widget\'s loadState, the large flag, and pageStatus) plus the conversation. Do NOT state cluster facts that are not in the page context as if they explain what the user sees.',
+  'CRITICAL — page-load / rendering / UI-responsiveness questions ("why is the page not loading / blank / frozen / slow / stuck / spinning?"): answer ONLY from the page context. These are CLIENT-SIDE render/load concerns. You MUST NOT attribute them to unrelated cluster workload health (a pod in CrashLoopBackOff, a node being down, an OOMKill, a failing Deployment, etc.) UNLESS that resource is the very data the page is trying to render AND the page context shows that widget in an error state. A crashing pod elsewhere on the cluster is almost never why a portal page will not render — do not invent that link.',
+  'Use pageStatus as the grounded cause: "error" → a widget on the page failed to load (name the errored widget from loadState:"error"); "loading" → still fetching, so it is showing skeletons; "heavy" → a widget is rendering a very large dataset (see the row count / large flag), which can make the browser tab unresponsive while it paints — this is the likely cause of a frozen/slow page; "ready" → the page rendered, so any perceived problem is elsewhere.',
+  'If the page context does NOT contain a cause (no errored/loading/heavy widget, or the widget inventory is empty), SAY you cannot see the cause in the current page state, and point the user at where to actually look — the size of the dataset the page is rendering, the specific widget\'s load state, or the browser developer console — instead of guessing a cause. It is correct and expected to say "I don\'t have enough on-screen information to know why."',
+  'Never fabricate resource names, statuses, row counts, or metrics. Only reference entities present in the page context.',
+  '</grounding_rules>',
 ].join('\n')
 
 /** One spotlight step in a guided tour: a semantic anchor + popover copy. */

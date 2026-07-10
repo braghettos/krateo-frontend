@@ -59,8 +59,22 @@ type OpenModalAction = NonNullable<WidgetActions['openModal']>[number]
 
 export type WidgetAction = RestAction | NavigateAction | OpenDrawerAction | OpenModalAction
 
+/**
+ * Classic server-side pager controls, produced by `useWidgetQuery` for widgets
+ * that opt into bounded pagination (see `PAGINATED_RESOURCE_PAGE_SIZE`) and passed
+ * down to the widget so its pager can jump pages WITHOUT accumulating the whole
+ * dataset. `page` is 1-based; `setPage` re-keys the query to fetch that page only;
+ * `pageSize` is the per-page window the request used. Undefined for non-paged widgets.
+ */
+export type ServerPagination = {
+  page: number
+  pageSize: number
+  setPage: (page: number) => void
+}
+
 export type WidgetProps<T = unknown> = {
   resourcesRefs: ResourcesRefs
+  serverPagination?: ServerPagination
   uid: string
   widgetData: T
   widget?: Widget

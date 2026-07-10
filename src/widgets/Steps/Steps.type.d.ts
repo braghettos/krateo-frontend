@@ -39,7 +39,7 @@ export interface Steps {
          */
         title: string
         /**
-         * a short "eyebrow" label shown ABOVE the title (e.g. `Step 1`) — rendered mono/uppercase
+         * a short eyebrow label shown ABOVE the title (e.g. `Step 1`) — rendered mono/uppercase
          */
         eyebrow?: string
         /**

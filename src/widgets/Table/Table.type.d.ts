@@ -48,7 +48,7 @@ export interface Table {
          */
         valueKey: string
         /**
-         * type of cell value. `tag` renders the stringValue as a colored antd Tag (use the cell `color`). `bar` renders a reconciliation-rail Progress gauge: `stringValue` = percent (0-100), `color` = bar/state color, + an amber target-tick at 100%.
+         * type of cell value. `tag` renders the stringValue as a colored antd Tag (use the cell `color`). `bar` renders a reconciliation-rail Progress gauge (stringValue = percent 0-100, `color` = bar/state color, amber target-tick at 100%). `conditions` renders `arrayValue` (an array of {type,status}) as small status pills, each coloured cyan (True) / crimson (False).
          */
         kind: 'jsonSchemaType' | 'icon' | 'widget' | 'tag' | 'bar' | 'conditions'
         /**
@@ -100,6 +100,14 @@ export interface Table {
          * default page size
          */
         defaultPageSize?: number
+        /**
+         * server-side pagination: the TOTAL row count across all pages (the widget's `dataSource` holds only the current page/window). Set by the widgetDataTemplate from the full list length so the pager renders the correct number of pages. When present, the Table uses controlled server-side pagination (each page fetched on demand) instead of client-side slicing of dataSource.
+         */
+        total?: number
+        /**
+         * server-side pagination: the 1-based current page (controlled). Usually driven by the request `page` param, not the CR.
+         */
+        current?: number
         /**
          * hide the pager when there is a single page
          */
