@@ -35,6 +35,7 @@ export interface Flex {
         | 'piecharts'
         | 'rangepickers'
         | 'rows'
+        | 'selects'
         | 'statistics'
         | 'steps'
         | 'tables'

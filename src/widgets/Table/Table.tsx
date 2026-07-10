@@ -1,6 +1,7 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Table as AntdTable, Progress, Result, Tag, Typography } from 'antd'
+import type { TablePaginationConfig } from 'antd'
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router'
 
@@ -12,13 +13,13 @@ import { formatISODate, formatRelativeTime, getEndpointUrl } from '../../utils/u
 
 import styles from './Table.module.css'
 import type { Table as WidgetType } from './Table.type'
+import { computeTablePagination, shouldVirtualize, VIRTUAL_SCROLL_Y } from './tablePagination'
 
 export type TableWidgetData = WidgetType['spec']['widgetData']
 
-const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>) => {
+const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps<TableWidgetData>) => {
   const { bordered, columns, dataSource, pagination, prefix, rowNavigateTo, size } = widgetData
   const data = dataSource ?? []
-  const pageSize = pagination?.pageSize ?? pagination?.defaultPageSize
   const { getFilteredData } = useFilter()
   const navigate = useNavigate()
 
@@ -53,6 +54,23 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
   if (prefix && data?.length > 0) {
     dataTable = getFilteredData(data, prefix) as TableWidgetData['dataSource']
   }
+
+  const rowCount = dataTable?.length ?? 0
+
+  // Virtualize once the row set is large enough to matter. `virtual` bounds the
+  // mounted <tr> nodes to the scroll viewport (VIRTUAL_SCROLL_Y) regardless of
+  // dataSource size — the load-bearing fix for the 60K-row `/compositions` wedge.
+  // antd requires a fixed numeric `scroll.y` for virtual mode.
+  const virtual = shouldVirtualize(rowCount)
+  const scroll = virtual
+    ? { x: 'max-content' as const, y: VIRTUAL_SCROLL_Y }
+    : { x: 'max-content' as const }
+
+  // Pagination: controlled server-side classic pager when the widget opts in
+  // (serverPagination), else the CR's own pagination config (or none). See
+  // computeTablePagination for the precedence + why virtual tables skip the
+  // client pager.
+  const paginationProp: TablePaginationConfig | false = computeTablePagination({ crPagination: pagination, rowCount, serverPagination })
 
   return (
     <AntdTable
@@ -186,9 +204,10 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
             : {}
         }
         : undefined}
-      pagination={pagination ?? (dataTable && pageSize && dataTable.length > pageSize ? { defaultPageSize: pageSize } : false)}
-      scroll={{ x: 'max-content' }}
+      pagination={paginationProp}
+      scroll={scroll}
       size={size}
+      virtual={virtual}
     />
   )
 }

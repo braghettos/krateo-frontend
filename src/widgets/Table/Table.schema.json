@@ -177,6 +177,14 @@
                   "type": "integer",
                   "description": "default page size"
                 },
+                "total": {
+                  "type": "integer",
+                  "description": "server-side pagination: the TOTAL row count across all pages (the widget's `dataSource` holds only the current page/window). Set by the widgetDataTemplate from the full list length so the pager renders the correct number of pages. When present, the Table uses controlled server-side pagination (each page fetched on demand) instead of client-side slicing of dataSource."
+                },
+                "current": {
+                  "type": "integer",
+                  "description": "server-side pagination: the 1-based current page (controlled). Usually driven by the request `page` param, not the CR."
+                },
                 "hideOnSinglePage": {
                   "type": "boolean",
                   "description": "hide the pager when there is a single page"

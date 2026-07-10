@@ -286,11 +286,11 @@ export interface Form {
         resourceRefId: string
       }[]
       /**
-       * JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields — the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema. Note: a schema sourced from a CRD's openAPIV3Schema has its `properties` map serialized alphabetically (the order is lost); use `stringSchema` to preserve the source `values.schema.json` authoring order.
+       * JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields — the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema. Note: a schema sourced from a CRD's openAPIV3Schema has its `properties` map serialized alphabetically (order lost); use `stringSchema` to preserve the source values.schema.json authoring order.
        */
       schema?: Record<string, unknown>
       /**
-       * Same JSON schema as `schema`, but provided as a raw JSON STRING. Preferred over `schema` when present: the client `JSON.parse`s it, preserving the object's key insertion order, so fields render in the source `values.schema.json` order rather than the alphabetized order a CRD-sourced object schema yields. Typically populated server-side from the blueprint's per-version jsonschema ConfigMap (which keeps authoring order) via a widgetDataTemplate. Falls back to `schema` when absent or not valid JSON.
+       * Same JSON schema as `schema`, but as a raw JSON STRING. Preferred over `schema` when present: the client JSON.parses it, preserving key insertion order, so fields render in the source values.schema.json order rather than the alphabetized order a CRD-sourced object schema yields. Typically populated server-side from the blueprint's per-version jsonschema ConfigMap (which keeps authoring order). Falls back to `schema` when absent or not valid JSON.
        */
       stringSchema?: string
       /**

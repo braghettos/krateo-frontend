@@ -2,6 +2,7 @@
 /* this rules conflicts with react-query ordering required for correct type inference */
 
 import { useInfiniteQuery, useIsFetching } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../context/ConfigContext'
@@ -83,10 +84,31 @@ export const buildExtrasParam = (
   return Object.keys(extras).length > 0 ? JSON.stringify(extras) : ''
 }
 
-export const useWidgetQuery = (widgetEndpoint: string) => {
+/**
+ * Options for a widget query.
+ *
+ * `defaultPageSize` opts a widget into BOUNDED, server-side classic pagination:
+ * when the widget's snowplow-generated endpoint carries no `page`/`perPage`, the
+ * query requests `page=1&perPage=<defaultPageSize>` instead of letting snowplow
+ * fall back to its `-1/-1` "no pagination" sentinel (which returns the FULL set —
+ * the 60K-row `/compositions` wedge). snowplow reads `page`/`perPage` off the
+ * `/call` URL (internal/handlers/call.go) and injects `ds.slice = {page,perPage,
+ * offset}` (resolve.go injectSlice) so the widget's `widgetDataTemplate` can
+ * window its rows. `(page,perPage)` are part of the L1 cache key, so each page is
+ * cached independently. The page is client state (see `serverPage`/`setServerPage`
+ * on the return) so a classic pager can jump to any page WITHOUT accumulating the
+ * whole dataset in the DOM — this is the request half of the paginate+virtualize
+ * fix (the render half is antd `virtual` in the Table widget).
+ */
+export type UseWidgetQueryOptions = {
+  defaultPageSize?: number
+}
+
+export const useWidgetQuery = (widgetEndpoint: string, options: UseWidgetQueryOptions = {}) => {
   const { config } = useConfigContext()
   const [searchParams] = useSearchParams()
   const routeParams = useParams()
+  const { defaultPageSize } = options
   // Extras envelope snowplow forwards into the RESTAction jq dict (`?extras=<json>`):
   // route params (e.g. /compositions/:namespace/:name) + browser URL query (search `q`)
   // + login identity `displayName` (greeting) + `username` (per-user server state, e.g.
@@ -103,8 +125,19 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   //   requestUrl.searchParams.set('perPage', '1')
   // }
 
-  const initialPage = parseNumberParam(requestUrl.searchParams.get('page'))
-  const initialPerPage = parseNumberParam(requestUrl.searchParams.get('perPage'))
+  const endpointPage = parseNumberParam(requestUrl.searchParams.get('page'))
+  const endpointPerPage = parseNumberParam(requestUrl.searchParams.get('perPage'))
+
+  // Classic server-side pager (opt-in via `defaultPageSize`, e.g. the
+  // compositions-table). When the endpoint carries no pagination, request a
+  // BOUNDED window (`page=<serverPage>&perPage=<defaultPageSize>`) instead of
+  // snowplow's -1/-1 full-set sentinel. `serverPage` is client state so the
+  // Table's pager can jump to any page; it is part of the react-query key so
+  // each page is its own (per-page-cached, snowplow-L1-aligned) entry.
+  const [serverPage, setServerPage] = useState(1)
+  const usesDefaultPaging = typeof defaultPageSize === 'number' && endpointPage === undefined && endpointPerPage === undefined
+  const initialPerPage = usesDefaultPaging ? defaultPageSize : endpointPerPage
+  const initialPage = usesDefaultPaging ? serverPage : endpointPage
 
   async function fetchWidget({ page, perPage }: { page?: number; perPage?: number }) {
     /* set new page and perPage to the original requestUrl with updated values */
@@ -142,7 +175,13 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   }
 
   const queryResult = useInfiniteQuery({
-    queryKey: ['widgets', widgetEndpoint, extrasParam],
+    // In classic-pager mode `serverPage` is part of the key so each page is a
+    // distinct, independently-cached query (jumping pages re-inits the infinite
+    // query with the new page as its only page). Non-paged widgets keep the
+    // stable 3-tuple key so their cache identity is unchanged.
+    queryKey: usesDefaultPaging
+      ? ['widgets', widgetEndpoint, extrasParam, serverPage]
+      : ['widgets', widgetEndpoint, extrasParam],
     queryFn: ({ pageParam }) => fetchWidget(pageParam),
     // Override the global `retry: false` for widget data: a backend that is not
     // ready yet should keep showing a loading state and retry, not flash the
@@ -156,6 +195,14 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
     getNextPageParam: (lastPage, _allPages, pageParams) => {
       if (typeof pageParams.page !== 'number') {
         // no initial page, so no more pages
+        return undefined
+      }
+
+      // Classic-pager mode (Table): navigation is driven by `setServerPage`
+      // (the pager), NOT infinite-scroll — each page is its own query keyed by
+      // `serverPage`. Never accumulate pages here: accumulating would re-grow
+      // the un-virtualized DOM toward the full 60K set that this fix removes.
+      if (usesDefaultPaging) {
         return undefined
       }
 
@@ -231,5 +278,12 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   return {
     queryResult,
     isFetchingResourcesRefs: resourcesRefsFetching > 0,
+    // Classic server-side pager controls (only meaningful when `defaultPageSize`
+    // was set). `serverPage` is the 1-based current page; `setServerPage` jumps
+    // to a page (re-keying the query → fetches that page only). `serverPageSize`
+    // is the per-page window size the request used.
+    serverPagination: usesDefaultPaging
+      ? { page: serverPage, pageSize: defaultPageSize, setPage: setServerPage }
+      : undefined,
   }
 }
