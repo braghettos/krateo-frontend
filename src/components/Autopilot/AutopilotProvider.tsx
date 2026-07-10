@@ -16,7 +16,7 @@ import { useSearchParams } from 'react-router'
 import { useConfigContext } from '../../context/ConfigContext'
 
 import type { PortalActionProposal, PortalTour } from './actionBridge'
-import { PORTAL_CAPABILITIES_PROMPT, parseAutopilotDirectives, useAutopilotActionBridge } from './actionBridge'
+import { GROUNDING_GUARDRAIL_PROMPT, PORTAL_CAPABILITIES_PROMPT, parseAutopilotDirectives, useAutopilotActionBridge } from './actionBridge'
 import { AgentDraftProvider } from './agentDraft'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
@@ -195,9 +195,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     sentFirstRef.current = true
     const baseContext = buildContextDelta(envelope, lastEnvelopeRef.current)
     lastEnvelopeRef.current = envelope
-    // Teach the orchestrator the read-only proposal protocol once per thread
-    // (outside the page_context data-fence; it remembers via the A2A contextId).
-    const contextString = firstTurn ? `${PORTAL_CAPABILITIES_PROMPT}\n\n${baseContext}` : baseContext
+    // Assemble the trusted-instruction preamble (outside the page_context data-fence).
+    //  - The grounding guardrail rides on EVERY turn: guardrails decay across a long
+    //    A2A thread, and the anti-confabulation rule must be present on the exact turn
+    //    a page-load question is asked (the crashloop-pod confabulation bug).
+    //  - The read-only proposal protocol is taught once per thread (the A2A contextId
+    //    thread remembers it) to keep follow-up turns lean.
+    const contextString = firstTurn
+      ? `${GROUNDING_GUARDRAIL_PROMPT}\n\n${PORTAL_CAPABILITIES_PROMPT}\n\n${baseContext}`
+      : `${GROUNDING_GUARDRAIL_PROMPT}\n\n${baseContext}`
 
     const assistantId = crypto.randomUUID()
     const now = Date.now()

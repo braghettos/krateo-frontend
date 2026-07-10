@@ -154,6 +154,29 @@ export const PORTAL_CAPABILITIES_PROMPT = [
   '</portal_capabilities>',
 ].join('\n')
 
+/**
+ * Grounding guardrail (anti-confabulation). Injected as a trusted frontend
+ * instruction on EVERY turn (outside the `<page_context>` data fence), so it does
+ * NOT decay after the first message.
+ *
+ * Motivating incident: asked "why is the compositions page not loading?", Autopilot
+ * answered "there is a pod in CrashLoopBackOff" — an UNRELATED workload it found via
+ * its backend Kubernetes tools, with no causal link to a frontend render/load
+ * problem. This forbids exactly that: page-load / render / UI-responsiveness issues
+ * must be explained from the PROVIDED page context (the widgets' `loadState`,
+ * `large`, and the page-level `pageStatus`), never attributed to unrelated cluster
+ * workload health.
+ */
+export const GROUNDING_GUARDRAIL_PROMPT = [
+  '<grounding_rules>',
+  'Ground every answer in the <page_context> data (the user\'s actual screen: route, widgets, each widget\'s loadState, the large flag, and pageStatus) plus the conversation. Do NOT state cluster facts that are not in the page context as if they explain what the user sees.',
+  'CRITICAL — page-load / rendering / UI-responsiveness questions ("why is the page not loading / blank / frozen / slow / stuck / spinning?"): answer ONLY from the page context. These are CLIENT-SIDE render/load concerns. You MUST NOT attribute them to unrelated cluster workload health (a pod in CrashLoopBackOff, a node being down, an OOMKill, a failing Deployment, etc.) UNLESS that resource is the very data the page is trying to render AND the page context shows that widget in an error state. A crashing pod elsewhere on the cluster is almost never why a portal page will not render — do not invent that link.',
+  'Use pageStatus as the grounded cause: "error" → a widget on the page failed to load (name the errored widget from loadState:"error"); "loading" → still fetching, so it is showing skeletons; "heavy" → a widget is rendering a very large dataset (see the row count / large flag), which can make the browser tab unresponsive while it paints — this is the likely cause of a frozen/slow page; "ready" → the page rendered, so any perceived problem is elsewhere.',
+  'If the page context does NOT contain a cause (no errored/loading/heavy widget, or the widget inventory is empty), SAY you cannot see the cause in the current page state, and point the user at where to actually look — the size of the dataset the page is rendering, the specific widget\'s load state, or the browser developer console — instead of guessing a cause. It is correct and expected to say "I don\'t have enough on-screen information to know why."',
+  'Never fabricate resource names, statuses, row counts, or metrics. Only reference entities present in the page context.',
+  '</grounding_rules>',
+].join('\n')
+
 /** One spotlight step in a guided tour: a semantic anchor + popover copy. */
 export interface AutopilotTourStep {
   /** Semantic anchor resolved to a DOM element (nav:<Label> / action:<Label> / text:<substring>). */

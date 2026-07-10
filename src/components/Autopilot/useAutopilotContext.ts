@@ -21,6 +21,39 @@ const EXTRAS_WHITELIST = ['status', 'range', 'q'] as const
 /** Soft budget for the serialized envelope; widgets beyond it are truncated. */
 const MAX_WIDGETS = 40
 
+/**
+ * Row count above which a widget is flagged `large` — a client-render-scale hazard.
+ * A non-virtualized list/table this big can wedge the browser tab while it paints,
+ * which presents as a "page not loading" / frozen page. This is the grounded reason
+ * to prefer ("the table is very large and still rendering") over a guessed cause.
+ * ~5k rows is well past what a plain table paints smoothly; the compositions-list
+ * incident wedged the tab at ~60k rows.
+ */
+const LARGE_ROWS_THRESHOLD = 5000
+
+/** The live react-query state of one widget endpoint (status + whether it's fetching). */
+interface WidgetLoadState {
+  loadState: 'loading' | 'error' | 'ready'
+}
+
+/**
+ * Map a react-query cache status → the grounded on-screen render state. `pending`
+ * with an active fetch is a skeleton (`loading`); `error` is the red-cross state;
+ * everything else has rendered (`ready`). Mirrors what WidgetRenderer shows.
+ */
+export const loadStateFromStatus = (
+  status: 'pending' | 'error' | 'success',
+  fetchStatus: 'fetching' | 'paused' | 'idle',
+): WidgetLoadState['loadState'] => {
+  if (status === 'error') {
+    return 'error'
+  }
+  if (status === 'pending' || fetchStatus === 'fetching') {
+    return 'loading'
+  }
+  return 'ready'
+}
+
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   (value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined)
 
@@ -102,7 +135,11 @@ const widgetActions = (
 /** Compact, payload-free summary of one cached widget. Reads the RESOLVED `status`
  * (widgetData + resourcesRefs after the server's templates), like WidgetRenderer,
  * falling back to `spec` — `spec` holds the pre-template static values. */
-const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry => {
+const summarizeWidget = (
+  endpoint: string,
+  data: unknown,
+  load: WidgetLoadState | undefined,
+): WidgetInventoryEntry => {
   const root = asRecord(unwrapWidget(data))
   const kind = typeof root?.kind === 'string' ? root.kind : undefined
   const metadata = asRecord(root?.metadata)
@@ -114,6 +151,7 @@ const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry 
   const title = typeof widgetData?.title === 'string' ? widgetData.title : undefined
 
   const rows = firstArrayLength(widgetData)
+  const large = rows !== undefined && rows >= LARGE_ROWS_THRESHOLD ? true : undefined
   const summaryParts: string[] = []
   if (kind) {
     summaryParts.push(kind)
@@ -125,7 +163,7 @@ const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry 
   const fields = kind === 'Form' ? formFieldNames(widgetData) : undefined
   const actions = kind === 'Button' ? widgetActions(widgetData, resourcesRefs) : undefined
 
-  return { actions, endpoint, fields, kind, name, summary, title }
+  return { actions, endpoint, fields, kind, large, loadState: load?.loadState, name, summary, title }
 }
 
 const collectExtras = (search: string): Record<string, string> | undefined => {
@@ -164,6 +202,29 @@ const focusFromRoute = (route: string): string => {
 }
 
 /**
+ * Roll the per-widget load states up into ONE grounded page status (the answer to
+ * "why isn't the page loading?"). Precedence: any errored widget → `error`; else any
+ * still-loading widget → `loading`; else any large-dataset widget → `heavy` (a
+ * client-render-scale hazard); else `ready`. Returns undefined when the page has no
+ * widgets in cache, so the model is told nothing rather than a fabricated state.
+ */
+export const derivePageStatus = (widgets: WidgetInventoryEntry[]): PageContextEnvelope['pageStatus'] => {
+  if (!widgets.length) {
+    return undefined
+  }
+  if (widgets.some((widget) => widget.loadState === 'error')) {
+    return 'error'
+  }
+  if (widgets.some((widget) => widget.loadState === 'loading')) {
+    return 'loading'
+  }
+  if (widgets.some((widget) => widget.large)) {
+    return 'heavy'
+  }
+  return 'ready'
+}
+
+/**
  * Serialize a (raw) envelope: redact LAST, then wrap in the injection-boundary
  * fence. The preamble tells the model this is observed data, never instructions.
  */
@@ -194,8 +255,14 @@ export const buildContextDelta = (
   const sameRoute = previous.route === next.route
   const prevEndpoints = previous.widgets.map((widget) => widget.endpoint).sort().join('|')
   const nextEndpoints = next.widgets.map((widget) => widget.endpoint).sort().join('|')
-  if (sameRoute && prevEndpoints === nextEndpoints) {
-    return `<page_context>\nUnchanged: still on ${next.focus ?? next.route} (${next.widgets.length} widgets).\n</page_context>`
+  // Same route + same widget set, AND the same page load/render state → short note.
+  // We still restate `pageStatus`, because it is the grounded answer to page-load
+  // questions and it can flip (loading→ready, or a table becoming heavy) without the
+  // route or endpoint set changing; re-send the full envelope whenever it changes so
+  // the model never reasons from a stale "the page is fine".
+  if (sameRoute && prevEndpoints === nextEndpoints && previous.pageStatus === next.pageStatus) {
+    const statusNote = next.pageStatus ? `, page ${next.pageStatus}` : ''
+    return `<page_context>\nUnchanged: still on ${next.focus ?? next.route} (${next.widgets.length} widgets${statusNote}).\n</page_context>`
   }
   return serializePageContext(next)
 }
@@ -205,11 +272,19 @@ export const useAutopilotContext = () => {
   const queryClient = useQueryClient()
 
   const collect = useCallback((): PageContextEnvelope => {
-    const entries = queryClient.getQueriesData<unknown>({ queryKey: ['widgets'] })
-    const widgets: WidgetInventoryEntry[] = entries
-      .map(([queryKey, data]) => {
+    // Read the live Query objects (not just their data) so each widget's ACTUAL render
+    // state — still fetching (skeleton) / errored (red cross) / rendered — is grounded
+    // truth from the cache, never guessed. This is what lets Autopilot answer
+    // "why isn't the page loading?" correctly instead of confabulating a cause.
+    const queries = queryClient.getQueryCache().findAll({ queryKey: ['widgets'] })
+    const widgets: WidgetInventoryEntry[] = queries
+      .map((query) => {
+        const { queryKey } = query
         const endpoint = Array.isArray(queryKey) && typeof queryKey[1] === 'string' ? queryKey[1] : ''
-        return summarizeWidget(endpoint, data)
+        const load: WidgetLoadState = {
+          loadState: loadStateFromStatus(query.state.status, query.state.fetchStatus),
+        }
+        return summarizeWidget(endpoint, query.state.data, load)
       })
       .filter((widget) => widget.endpoint !== '')
       .slice(0, MAX_WIDGETS)
@@ -219,6 +294,7 @@ export const useAutopilotContext = () => {
       extras: collectExtras(window.location.search),
       focus: focusFromRoute(route),
       identity: collectIdentity(),
+      pageStatus: derivePageStatus(widgets),
       route,
       widgets,
     }

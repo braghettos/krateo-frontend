@@ -59,6 +59,19 @@ export interface WidgetInventoryEntry {
   title?: string
   /** A short, kind-aware summary (e.g. "Table · 248 rows"). */
   summary?: string
+  /**
+   * The widget's LIVE react-query load state — the actual on-screen render status,
+   * read from the query cache (NOT model memory): `loading` (still fetching, showing
+   * a skeleton), `error` (the fetch failed / red-cross state), or `ready` (rendered).
+   * This is the grounded signal for "why isn't this showing?" questions.
+   */
+  loadState?: 'loading' | 'error' | 'ready'
+  /**
+   * True when this widget carries an unusually large row count (a client-render-scale
+   * hazard: a big non-virtualized list/table can wedge the browser tab while it paints).
+   * Grounds the RIGHT answer for a sluggish/blank page instead of guessing a cause.
+   */
+  large?: boolean
   /** For a Form widget: its top-level field names, so Autopilot can prefill them. */
   fields?: string[]
   /** For an action-bearing widget (e.g. Button): the runnable actions on it, so
@@ -87,6 +100,15 @@ export interface PageContextEnvelope {
   widgets: WidgetInventoryEntry[]
   /** A one-line kind-aware summary of the focused surface. */
   focus?: string
+  /**
+   * The page's overall render/load state, derived from the widget cache — the
+   * grounded answer to "why isn't the page loading?". `loading`: at least one widget
+   * is still fetching. `error`: at least one widget's fetch failed. `heavy`: a widget
+   * on the page is rendering a very large dataset (a client-render-scale hazard that
+   * can make the tab unresponsive). `ready`: everything rendered normally. When absent
+   * (no widgets in cache), page state is unknown — do NOT infer a cause.
+   */
+  pageStatus?: 'loading' | 'error' | 'heavy' | 'ready'
 }
 
 // ────────────────────────────────────────────────────────────────────────────
