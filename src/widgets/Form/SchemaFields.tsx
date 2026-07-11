@@ -61,16 +61,19 @@ const controlFor = (node: JSONSchema4): React.ReactNode => {
 const isGroup = (node: JSONSchema4): boolean => node.type === 'object' && !!node.properties
 
 /**
- * One COHERENT header for every property — the property `name` (the schema key) and its
- * `description` (muted, if present). Used identically for scalars, toggles, maps and
- * nested-object groups so the whole form reads as one system.
+ * One COHERENT header for every property — the property's human `title` (the label the blueprint
+ * author wrote in values.schema.json) falling back to the schema `key`, plus its `description`
+ * (muted, if present). Used identically for scalars, toggles, maps and nested-object groups so the
+ * whole form reads as one system. Preferring `title` means a novice sees "Availability zones", not
+ * the raw key `azs`.
  */
 const fieldHeader = (key: string, node: JSONSchema4, isRequired: boolean): React.ReactNode => {
   const description = typeof node.description === 'string' ? node.description : ''
+  const label = typeof node.title === 'string' && node.title.trim() ? node.title : key
   return (
     <span className={styles.fieldLabel}>
       <span className={styles.fieldName}>
-        {key}
+        {label}
         {isRequired ? <span className={styles.req}> *</span> : null}
       </span>
       {description ? <span className={styles.fieldDesc}>{description}</span> : null}
@@ -153,7 +156,10 @@ export const SchemaForm = ({ hide = [], schema }: { schema: JSONSchema4; hide?: 
 
   const sections: Section[] = []
   if (hasLoose) { sections.push({ id: '__general__', label: 'Top-level values' }) }
-  groupKeys.forEach((key) => sections.push({ id: key, label: key }))
+  groupKeys.forEach((key) => {
+    const groupTitle = properties[key].title
+    sections.push({ id: key, label: typeof groupTitle === 'string' && groupTitle.trim() ? groupTitle : key })
+  })
 
   const [active, setActive] = useState<string>(sections[0]?.id ?? '__general__')
 
