@@ -1,0 +1,79 @@
+/* FreshnessBadge — Petrol status pill. cyan=live, amber=refreshing, muted=stale.
+   Uses only the theme's :root CSS vars (theme/tokens.ts) so it tracks light/dark. */
+
+.badge {
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xxs);
+  gap: 6px;
+  line-height: 1;
+  padding: 2px 8px;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.label {
+  letter-spacing: 0.02em;
+}
+
+/* Live — cyan text on a faint cyan wash, with a pulsing status dot. */
+.live {
+  background: color-mix(in srgb, var(--cyan-color) 8%, transparent);
+  border-color: color-mix(in srgb, var(--cyan-color) 30%, transparent);
+  color: var(--cyan-color);
+}
+
+.dot {
+  background: var(--cyan-color);
+  border-radius: 50%;
+  box-shadow: 0 0 5px 1px var(--cyan-color);
+  flex: none;
+  height: 6px;
+  width: 6px;
+  animation: freshness-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes freshness-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Refreshing — amber (brand/pending); old data stays on screen underneath. */
+.refreshing {
+  background: color-mix(in srgb, var(--amber-color) 10%, transparent);
+  border-color: color-mix(in srgb, var(--amber-color) 32%, transparent);
+  color: var(--amber-color);
+}
+
+/* Stale / Updated — muted graphite; a quiet, non-alarming signal. */
+.stale {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--gray-color);
+}
+
+.refresh {
+  appearance: none;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--font-size-xxs);
+  line-height: 1;
+  opacity: 0.75;
+  padding: 0;
+  transition: opacity var(--motion-fast, 0.1s) ease;
+}
+
+.refresh:hover {
+  opacity: 1;
+}

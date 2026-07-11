@@ -17,16 +17,17 @@
 
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { matchPath, type RouteObject } from 'react-router'
+import { type RouteObject } from 'react-router'
 
 import { useRoutesContext } from '../../context/RoutesContext'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import type { ResourcesRefs, WidgetAction } from '../../types/Widget'
 
+// Import the preview handlers module for its side effect: it registers previewBlueprint /
+// previewPage into READONLY_VERB_REGISTRY on load, so they are present before any apply().
+import './previewHandlers'
 import type { AutopilotActionChip } from './types'
-
-/** navigate needs no page refs; openDrawer/openModal will pass resolved refs. */
-const EMPTY_REFS: ResourcesRefs = { items: [] }
+import { READONLY_VERB_REGISTRY } from './verbRegistry'
 
 const MUTATING_VERBS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
@@ -103,26 +104,13 @@ export interface PortalActionProposal {
   widget?: string
   actionId?: string
   title?: string
+  /** previewBlueprint: the blueprint namespace + name (either `namespace` or `ns`) to
+   * open the empty `/blueprints/<ns>/<name>/new` Configure form WITHOUT prefilling. */
+  namespace?: string
+  ns?: string
+  name?: string
   /** Human-readable label for the auto-applied action chip. */
   label?: string
-}
-
-const READONLY_VERBS = new Set(['navigate', 'setExtras', 'openDrawer', 'openModal'])
-const EXTRAS_WHITELIST = ['status', 'range', 'q']
-
-/** A same-path URL carrying only whitelisted extras (merged by resolveNavigationTarget). */
-const buildExtrasPath = (extras: Record<string, string> | undefined): string | null => {
-  if (!extras) {
-    return null
-  }
-  const params = new URLSearchParams()
-  for (const key of EXTRAS_WHITELIST) {
-    if (extras[key]) {
-      params.set(key, extras[key])
-    }
-  }
-  const query = params.toString()
-  return query ? `${window.location.pathname}?${query}` : null
 }
 
 /**
@@ -415,48 +403,15 @@ export const useAutopilotActionBridge = () => {
       return { label: proposal.label ?? `${verb} ${proposal.widget ?? ''}`.trim(), readOnly: !mutating, verb: 'runAction' }
     }
 
-    // Deny-by-default: only the read-only verbs are ever executed.
-    if (!READONLY_VERBS.has(proposal.verb)) {
+    // Deny-by-default via the DATA in READONLY_VERB_REGISTRY: a verb absent from the
+    // registry — OR any entry declaring sideEffect:'write' — returns null (denied) and
+    // never reaches a dispatch. Only a registered `read` verb whose argSchema matches is
+    // compiled + driven through the same real dispatcher a hand-clicked control uses.
+    const spec = READONLY_VERB_REGISTRY[proposal.verb]
+    if (!spec || spec.sideEffect !== 'read' || !spec.argSchema(proposal)) {
       return null
     }
-
-    if (proposal.verb === 'navigate') {
-      if (!proposal.route) {
-        return null
-      }
-      // Validate against the registered route patterns: a hallucinated path that matches no real route
-      // (e.g. `/compositions/new`, `/admin`) is a no-op, never a synthesized navigation to a 404 the
-      // chat would still narrate as "opening X". (A param route like /compositions/:ns/:name still
-      // matches by shape — but the agent now sees real resource names in the page context, so it has no
-      // reason to invent one.)
-      const [pathname] = proposal.route.split(/[?#]/)
-      // Fail OPEN if the route table hasn't registered yet (never block ALL navigation); otherwise the
-      // path must match a real registered route pattern.
-      const known = routePatterns.length === 0 || routePatterns.some((pattern) => matchPath(pattern, pathname) !== null)
-      if (!known) {
-        return null
-      }
-      await handleAction({ id: 'autopilot-navigate', path: proposal.route, type: 'navigate' }, EMPTY_REFS)
-      return { label: proposal.label ?? `open ${proposal.route}`, readOnly: true, verb: 'navigate' }
-    }
-
-    if (proposal.verb === 'setExtras') {
-      const path = buildExtrasPath(proposal.extras)
-      if (!path) {
-        return null
-      }
-      await handleAction({ id: 'autopilot-set-extras', path, type: 'navigate' }, EMPTY_REFS)
-      const summary = Object.entries(proposal.extras ?? {})
-        .filter(([key]) => EXTRAS_WHITELIST.includes(key))
-        .map(([key, value]) => `${key}=${value}`)
-        .join(' ')
-      return { label: proposal.label ?? `scope ${summary}`, readOnly: true, verb: 'setExtras' }
-    }
-
-    // openDrawer / openModal need a resourceRefId resolved against the page's
-    // allowed resourcesRefs (collected from the widget cache). Deferred to the next
-    // increment; returning null keeps deny-by-default honest (no silent fake).
-    return null
+    return spec.apply(proposal, { handleAction, routePatterns })
   }, [handleAction, queryClient, routePatterns])
 
   return { apply }

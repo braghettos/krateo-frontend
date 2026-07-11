@@ -9,3 +9,25 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* Freshness overlay — a relatively-positioned container that fills the widget's slot
+   (so the surrounding layout is unchanged) and anchors the FreshnessBadge to the
+   top-right corner. The overlay itself is pointer-transparent; only the badge
+   (and its manual-refresh button) capture pointer events. */
+.freshnessWrap {
+  height: 100%;
+  position: relative;
+  width: 100%;
+}
+
+.freshnessOverlay {
+  pointer-events: none;
+  position: absolute;
+  right: var(--spacing-xs);
+  top: var(--spacing-xs);
+  z-index: 2;
+}
+
+.freshnessOverlay > * {
+  pointer-events: auto;
+}

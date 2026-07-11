@@ -92,6 +92,25 @@ export interface WidgetInventoryEntry {
   /** For an action-bearing widget (e.g. Button): the runnable actions on it, so
    * Autopilot can drive the REAL control (gated). `verb` GET = read-only. */
   actions?: { id: string; label?: string; verb: string }[]
+  /**
+   * The resolved cluster-object identity the widget renders, parsed from its
+   * `status.resourcesRefs` path (the /apis/<group>/<version>/… URL snowplow targets):
+   * the GVR plus name/namespace for the primary GET, and uid when the widget shows a
+   * single object. This is the day-2 grounding hook — Autopilot needs the GVR to
+   * reason about "why is THIS composition failing" or propose a targeted patch against
+   * the actual object instead of a title. NON-SENSITIVE identity (no payload/token):
+   * it passes through the redactor UNCHANGED. Absent for widgets with no resolved ref
+   * (a static Paragraph, a purely-navigate Button), so the model is told nothing rather
+   * than a fabricated GVR.
+   */
+  resource?: {
+    group: string
+    version: string
+    resource: string
+    namespace?: string
+    name?: string
+    uid?: string
+  }
 }
 
 /** The whoami identity surfaced to ground greetings (no token, ever). */

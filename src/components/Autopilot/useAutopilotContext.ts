@@ -218,6 +218,83 @@ const widgetActions = (
   return out.length ? out : undefined
 }
 
+/** A resolved cluster-object identity parsed from a ResourceRef `path`. */
+type WidgetResource = NonNullable<WidgetInventoryEntry['resource']>
+
+/**
+ * Parse a snowplow ResourceRef `path` (the /apis/… or /api/… URL it GETs) into a
+ * resolved {group, version, resource, namespace?, name?}. Handles both the named
+ * (…/<resource>/<name>) and list (…/<resource>) forms, namespaced and cluster-scoped,
+ * plus the core group (/api/<version>/… → empty group). Returns undefined when the
+ * path is not a recognizable apiserver URL, so a widget with an odd ref contributes
+ * no fabricated GVR.
+ */
+export const parseGvrFromRefPath = (path: string | undefined): WidgetResource | undefined => {
+  if (typeof path !== 'string' || !path) {
+    return undefined
+  }
+  // Drop the query string / trailing slash, then split into non-empty segments.
+  const clean = path.split('?')[0].replace(/\/+$/, '')
+  const segments = clean.split('/').filter(Boolean)
+  const prefix = segments.shift()
+  // Core group is served under /api/<version>/…; named groups under /apis/<group>/<version>/….
+  let group: string
+  let version: string | undefined
+  if (prefix === 'api') {
+    group = ''
+    version = segments.shift()
+  } else if (prefix === 'apis') {
+    group = segments.shift() ?? ''
+    version = segments.shift()
+  } else {
+    return undefined
+  }
+  if (!version) {
+    return undefined
+  }
+  let namespace: string | undefined
+  if (segments[0] === 'namespaces') {
+    segments.shift()
+    namespace = segments.shift()
+  }
+  const resource = segments.shift()
+  if (!resource) {
+    return undefined
+  }
+  const name = segments.shift()
+  return { group, name, namespace, resource, version }
+}
+
+/**
+ * The resolved cluster-object identity the widget renders, derived from its
+ * `status.resourcesRefs.items`. Prefer the primary GET (the ref the widget READS to
+ * render), falling back to the first parseable ref, so a list widget yields the LIST
+ * gvr (no name) and a detail widget yields the single object's gvr+name. `uid` is only
+ * available when the widget renders one object (its resolved metadata.uid).
+ */
+const widgetResource = (
+  resourcesRefs: Record<string, unknown> | undefined,
+  widgetData: Record<string, unknown> | undefined,
+): WidgetResource | undefined => {
+  const items = Array.isArray(resourcesRefs?.items) ? resourcesRefs.items : undefined
+  if (!items?.length) {
+    return undefined
+  }
+  const paths = items
+    .map((item) => asRecord(item))
+    .filter((ref): ref is Record<string, unknown> => Boolean(ref))
+  // Prefer the ref the widget GETs to render (its backing object) over a mutating ref.
+  const primary = paths.find((ref) => ref.verb === 'GET') ?? paths[0]
+  const resource = parseGvrFromRefPath(typeof primary?.path === 'string' ? primary.path : undefined)
+  if (!resource) {
+    return undefined
+  }
+  // uid is meaningful only for a single-object widget (composition-detail-*): read the
+  // resolved metadata.uid, and only when the ref actually targets that named object.
+  const uid = resource.name ? scalar(asRecord(widgetData?.metadata)?.uid) : undefined
+  return uid ? { ...resource, uid } : resource
+}
+
 /** The on-screen CONTENT of a single-value widget — the number/text the user sees. Without this the
  * agent gets a Statistic's TITLE ("Healthy") but not its VALUE (27) and invents the count; the dashboard
  * is four such cards. */
@@ -259,7 +336,7 @@ const widgetValue = (kind: string | undefined, widgetData: Record<string, unknow
 /** Compact, payload-free summary of one cached widget. Reads the RESOLVED `status`
  * (widgetData + resourcesRefs after the server's templates), like WidgetRenderer,
  * falling back to `spec` — `spec` holds the pre-template static values. */
-const summarizeWidget = (
+export const summarizeWidget = (
   endpoint: string,
   data: unknown,
   load: WidgetLoadState | undefined,
@@ -288,8 +365,9 @@ const summarizeWidget = (
   const actions = kind === 'Button' ? widgetActions(widgetData, resourcesRefs) : undefined
   const items = itemLabels(widgetData)
   const value = rows === undefined ? widgetValue(kind, widgetData) : undefined
+  const resource = widgetResource(resourcesRefs, widgetData)
 
-  return { actions, endpoint, fields, items, kind, large, loadState: load?.loadState, name, summary, title, value }
+  return { actions, endpoint, fields, items, kind, large, loadState: load?.loadState, name, resource, summary, title, value }
 }
 
 const collectExtras = (search: string): Record<string, string> | undefined => {

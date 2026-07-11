@@ -1,12 +1,15 @@
 import { Suspense, useEffect } from 'react'
 
+import { useConfigContext } from '../../context/ConfigContext'
+import { isWidgetLiveRefreshEnabled } from '../../hooks/refreshSse'
 import useCatchError from '../../hooks/useCatchError'
 import { useWidgetQuery } from '../../hooks/useWidgetQuery'
 import type { ServerPagination, Widget } from '../../types/Widget'
 import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
+import { FreshnessBadge } from '../FreshnessBadge/FreshnessBadge'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
-import { WidgetError, WidgetLoading } from '../WidgetStates'
+import { isTimeoutError, WidgetError, WidgetLoading, WidgetTimeout } from '../WidgetStates'
 
 import styles from './WidgetRenderer.module.css'
 
@@ -102,6 +105,7 @@ const parseWidget = (
 const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndpoint, wrapper }: WidgetRendererProps) => {
   const { isWidgetFilteredByProps } = useFilter()
   const { catchError } = useCatchError()
+  const { config } = useConfigContext()
 
   if (!widgetEndpoint?.includes('widgets.templates.krateo.io')) {
     console.warn(`WidgetRenderer received widgetEndpoint=${widgetEndpoint}, which is probably invalid. An url is expected.`)
@@ -114,7 +118,15 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
   const defaultPageSize = getDefaultPageSizeForEndpoint(widgetEndpoint)
 
   const { isFetchingResourcesRefs, queryResult, serverPagination } = useWidgetQuery(widgetEndpoint, { defaultPageSize })
-  const { data: widget, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, refetch } = queryResult
+  const { data: widget, dataUpdatedAt, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, isStale, isSuccess, refetch } = queryResult
+
+  // Freshness signal fed to the FreshnessBadge overlaid on the rendered widget.
+  // `liveArmed` reflects that per-widget live-refresh is enabled AND the widget has
+  // a healthy, fresh result — the honest precondition for showing the green Live dot.
+  // (The precise /refreshes arm-state lives in useWidgetQuery's widgetId scope; this
+  // render-local proxy stays within the renderer's own data.)
+  const liveRefreshEnabled = isWidgetLiveRefreshEnabled(config)
+  const liveArmed = liveRefreshEnabled && isSuccess && !isStale
 
   useEffect(() => {
     if (onLoadingChange) {
@@ -131,6 +143,11 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
 
   if (error) {
     console.error(error)
+    // A slow/still-warming server (request deadline, cancelled fetch, 503/504) gets a
+    // CALM, distinct timeout state — not the hard-error red cross — with a working Retry.
+    if (isTimeoutError(error)) {
+      return <WidgetTimeout onRetry={() => { void refetch() }} />
+    }
     const failedToFetch = error instanceof Error && (error instanceof TypeError || error.message.includes('Failed to fetch'))
     const subtitle = failedToFetch
       ? "Couldn't reach the server. It may still be starting up."
@@ -206,11 +223,34 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
 
   const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)
 
-  if (wrapper) {
-    return <wrapper.component {...wrapper.props}>{renderedWidget}</wrapper.component>
+  // Overlay the freshness pill on the live widget so it visibly signals
+  // live / refreshing / stale instead of silently showing pre-write or hung data.
+  // Skipped for invisible renders (nothing is shown) and when live-refresh is off.
+  const withFreshness = (content: React.ReactNode): React.ReactNode => {
+    if (invisible || !liveRefreshEnabled) {
+      return content
+    }
+    return (
+      <div className={styles.freshnessWrap}>
+        {content}
+        <div className={styles.freshnessOverlay}>
+          <FreshnessBadge
+            dataUpdatedAt={dataUpdatedAt}
+            isFetching={isFetching}
+            isStale={isStale}
+            liveArmed={liveArmed}
+            onRefresh={() => { void refetch() }}
+          />
+        </div>
+      </div>
+    )
   }
 
-  return renderedWidget
+  if (wrapper) {
+    return <wrapper.component {...wrapper.props}>{withFreshness(renderedWidget)}</wrapper.component>
+  }
+
+  return withFreshness(renderedWidget)
 }
 
 export default WidgetRenderer
