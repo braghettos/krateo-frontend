@@ -32,6 +32,7 @@
 import { describe, it, expect } from 'vitest'
 
 import { getDefaultPageSizeForEndpoint } from '../components/WidgetRenderer/WidgetRenderer'
+import { isTimeoutError } from '../components/WidgetStates'
 
 import { buildExtrasParam, MAX_WIDGET_FETCH_RETRIES, shouldRetryWidgetFetch, WidgetFetchError, widgetFetchRetryDelay } from './useWidgetQuery'
 
@@ -335,6 +336,42 @@ describe('initial-render retry — transient failures retry, permanent ones do n
     expect(widgetFetchRetryDelay(2)).toBe(2800)
     // capped
     expect(widgetFetchRetryDelay(10)).toBe(5000)
+  })
+})
+
+describe('timedOut — useWidgetQuery classifies the query error via the Freshness isTimeoutError', () => {
+  /**
+   * Pure replica of the `timedOut` derivation in useWidgetQuery.ts:
+   *   `const timedOut = queryResult.error ? isTimeoutError(queryResult.error) : false`
+   * WidgetRenderer drives the CALM WidgetTimeout state off this flag rather than
+   * re-classifying the error at the render, so pin the gating here.
+   */
+  const computeTimedOut = (error: unknown): boolean => (error ? isTimeoutError(error) : false)
+
+  it('is false when there is no error (happy path)', () => {
+    expect(computeTimedOut(undefined)).toBe(false)
+    expect(computeTimedOut(null)).toBe(false)
+  })
+
+  it('is true for a 503/504 gateway-timeout WidgetFetchError', () => {
+    expect(computeTimedOut(new WidgetFetchError('boom', 503))).toBe(true)
+    expect(computeTimedOut(new WidgetFetchError('boom', 504))).toBe(true)
+  })
+
+  it('is true for deadline-exceeded / canceled / aborted messages (no status)', () => {
+    expect(computeTimedOut(new Error('context deadline exceeded'))).toBe(true)
+    expect(computeTimedOut(new Error('The user canceled the request'))).toBe(true)
+    expect(computeTimedOut(new Error('The operation was aborted'))).toBe(true)
+  })
+
+  it('is false for a hard 4xx / 500 error (red-cross path, not the calm timeout)', () => {
+    expect(computeTimedOut(new WidgetFetchError('bad request', 400))).toBe(false)
+    expect(computeTimedOut(new WidgetFetchError('forbidden', 403))).toBe(false)
+    expect(computeTimedOut(new WidgetFetchError('server error', 500))).toBe(false)
+  })
+
+  it('is false for a generic network error (surfaces as the "Couldn\'t reach the server" error, not timeout)', () => {
+    expect(computeTimedOut(new TypeError('Failed to fetch'))).toBe(false)
   })
 })
 

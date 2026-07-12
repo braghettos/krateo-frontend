@@ -23,6 +23,10 @@ import { useRoutesContext } from '../../context/RoutesContext'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import type { ResourcesRefs, WidgetAction } from '../../types/Widget'
 
+// patchField — the day-2 mutating branch (a DISTINCT, explicitly-gated verb owned by the
+// bridge, NOT a read-only registry entry): scoped by isPatchAllowed, dispatched through the
+// SAME dispatcher so it flows through the W0-2 blast-radius gate.
+import { applyPatchField, type PatchFieldProposal } from './patchField'
 // Import the preview handlers module for its side effect: it registers previewBlueprint /
 // previewPage into READONLY_VERB_REGISTRY on load, so they are present before any apply().
 import './previewHandlers'
@@ -109,6 +113,12 @@ export interface PortalActionProposal {
   namespace?: string
   ns?: string
   name?: string
+  /** patchField (day-2, MUTATING): the on-page composition's GVR (from the page-context
+   * `resource`), the single spec field to change (a `spec.<key>` path or a bare key), and
+   * its new value. Routed through the W0-2 blast-radius gate; scoped by isPatchAllowed. */
+  gvr?: { group: string; version: string; resource: string }
+  field?: string
+  value?: unknown
   /** Human-readable label for the auto-applied action chip. */
   label?: string
 }
@@ -135,6 +145,7 @@ export const PORTAL_CAPABILITIES_PROMPT = [
   'FORM SUBMISSIONS work IDENTICALLY for EVERY blueprint: a create Form\'s prefillable field names are always in that Form widget\'s `fields` array in the page context (never inferred from the blueprint type), so handle every blueprint\'s form the same way. As soon as a create Form is on screen AND the user has given any values, PROACTIVELY emit ONE prefillForm right away — do not wait to be asked to "fill it". You PRE-FILL it with verb "prefillForm" and a `values` object keyed EXACTLY by those field names. Include one entry for EVERY field the user has given a value for — never emit a partial draft (if they named a region AND a CIDR, your `values` MUST contain region AND cidr, not just one). Match each value the user gave to the closest name in that `fields` list, e.g. for fields ["name","namespace","region","cidr"] emit {"verb":"prefillForm","values":{"name":"demo-vpc","namespace":"demo-system","region":"eu-central-1","cidr":"10.0.0.0/16"},"label":"drafted the form"}. This only fills the fields — the user still reviews and presses Create themselves. NEVER submit; never invent values for fields you were not given. When the user then approves creating the filled form ("create it", "looks good", "go ahead", "deploy it"), direct them to press the form\'s on-screen Create / Submit button to provision it — that button IS how the composition is created in the portal. Do NOT hand them a kubectl command, CLI snippet, or YAML manifest to run in a terminal, and do NOT say you are "read-only and cannot create it" — there is no terminal step; the portal form is the mechanism and the user simply clicks Create. When the user asks to be GUIDED or WALKED THROUGH the form (not merely "fill it in"), ALSO emit a portal-tour in the SAME reply that spotlights each field by its label and ends on the Create control — e.g. {"steps":[{"anchor":"text:Name","title":"Name","description":"A unique name for this composition."},{"anchor":"text:Region","title":"Region","description":"The AWS region to provision into."},{"anchor":"text:CIDR","title":"CIDR","description":"The VPC address range."},{"anchor":"action:Create","title":"Create","description":"Review, then create the composition."}]} — alongside the prefillForm that fills them, so the user sees each field highlighted. Do NOT navigate in that reply.',
   'CRITICAL — NEVER output a Kubernetes YAML manifest, a `cat <<EOF`/`kubectl apply` block, an `apiVersion:`/`kind:`/`spec:` snippet, or any "apply this / run this in your terminal" wording in the chat. The portal create FORM is the ONLY way compositions are made here, and the user provisions by clicking the form\'s Create button — there is no terminal step. This applies BOTH when you draft/prefill the form AND when the user approves creating it: describe the values in ONE short sentence and point them at the on-screen Create button — show NO manifest, NO code block, NO CLI command.',
   'To run a control ALREADY on the page (e.g. Sync, Pause/Resume, Edit, Delete), use verb "runAction" with the `widget` (its name) and `actionId` from the page context, e.g. {"verb":"runAction","widget":"composition-detail-pause","actionId":"toggle-pause","label":"Resume reconciliation"}. You drive the real control; a mutating action (PATCH/POST/PUT/DELETE) ALWAYS asks the user to confirm before it runs. Only run actions present in the page context — never invent a widget or actionId.',
+  'DAY-2 FIX — CHANGE A SPEC FIELD: To change a SINGLE spec field of the composition on THIS page (a day-2 remediation, e.g. bump a size/replica/version parameter to fix a failing composition), emit verb "patchField": {"verb":"patchField","gvr":{"group":"...","version":"...","resource":"..."} (copy it VERBATIM from the on-page composition\'s `resource` in the page context),"namespace":"<its namespace>","name":"<its name>","field":"spec.<key>","value":<new value>,"label":"<short label>"}. HARD LIMITS: ONLY for a field whose CURRENT value you can SEE in the page context (so you can propose a real change, not a guess); ONLY the on-screen composition (its `resource` must be present in the page context); the change is applied as a merge-patch and the user confirms the EXACT diff (verb + GVR + namespace + before→after) in a blast-radius dialog before anything runs. NEVER patch a resource that is not the on-page composition, a field you cannot see the current value of, or anything outside spec (never metadata, status, or a deletion field). This is the ONLY way to propose a parameter change — you still never emit YAML or a kubectl command.',
   'This drives the real UI (read-only) — it is NOT a platform change. Emit at most one portal-action block per reply (a portal-tour and/or portal-suggest MAY accompany it) and still explain briefly in prose. Only propose routes/entities/fields present in the page context.',
   'You MAY also suggest up to 3 short, specific follow-up actions the user might take next (referencing on-screen entities) by emitting:',
   '```portal-suggest',
@@ -175,6 +186,7 @@ export const PORTAL_HOUSE_RULES = [
   '7. Be PROACTIVE: when the user states a goal or approves a step, DO the next read-only action (navigate / prefillForm / runAction) in the SAME reply — do not just describe it or ask permission for read-only navigation.',
   '8. Page-load / render / responsiveness questions ("why is the page not loading / blank / frozen / slow?") are CLIENT-SIDE: answer from the page context\'s `pageStatus` and the widgets\' `loadState`/`large` only. NEVER blame them on unrelated cluster-workload health (a CrashLoopBackOff pod, a node down, an OOMKill). If no errored/loading/heavy widget is in context, say you cannot see the cause rather than inventing one.',
   '9. To FIX a failing composition, if a control on the page can remediate it (Resume a paused one, Sync a stuck one, Update an outdated one), proactively propose that ONE runAction — the user confirms it in a blast-radius dialog showing the exact change. Prefer the least-disruptive control; never propose Delete as a fix unless the user asked to remove it.',
+  '10. To change a SINGLE spec field of the on-page composition (a day-2 fix), emit {"verb":"patchField","gvr":{...from the page-context `resource`...},"namespace":...,"name":...,"field":"spec.<key>","value":<new>}. ONLY a field whose current value you can SEE, ONLY the on-screen composition, ONLY under spec (never metadata/status/deletion, never a non-composition resource). The user confirms the exact merge-patch diff in a blast-radius dialog; never emit YAML or kubectl.',
   '</house_rules>',
 ].join('\n')
 
@@ -403,6 +415,16 @@ export const useAutopilotActionBridge = () => {
         : found.action
       await handleAction(toDispatch, found.resourcesRefs)
       return { label: proposal.label ?? `${verb} ${proposal.widget ?? ''}`.trim(), readOnly: !mutating, verb: 'runAction' }
+    }
+
+    // patchField: the day-2 MUTATING branch. A SCOPED merge-patch of ONE spec field of the
+    // on-page composition, compiled into a PATCH `rest` WidgetAction and dispatched through
+    // this SAME useHandleAction dispatcher — so it hits runRest's W0-2 blast-radius gate (the
+    // human confirms the exact diff). applyPatchField enforces the isPatchAllowed scoping
+    // kernel (composition-only + single simple spec field) and returns null on any reject,
+    // so a denied patch is a no-op exactly like an unknown verb — NEVER a bypass of the gate.
+    if (proposal.verb === 'patchField') {
+      return applyPatchField(proposal as unknown as PatchFieldProposal, { handleAction })
     }
 
     // Deny-by-default via the DATA in READONLY_VERB_REGISTRY: a verb absent from the
