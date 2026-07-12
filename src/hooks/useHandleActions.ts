@@ -1,9 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query'
 import useApp from 'antd/es/app/useApp'
 import { merge, set } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { createElement, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+import BlastRadiusConfirm from '../components/BlastRadius/BlastRadiusConfirm'
+import { buildBlastRadius, isMutatingVerb } from '../components/BlastRadius/buildBlastRadius'
 import { useConfigContext } from '../context/ConfigContext'
 import { useRoutesContext } from '../context/RoutesContext'
 import type { ResourceRef, ResourcesRefs, Widget, WidgetAction } from '../types/Widget'
@@ -13,6 +15,8 @@ import type { Payload, RestApiResponse } from '../utils/types'
 import { getHeadersObject, getResourceRef } from '../utils/utils'
 import { closeDrawer, openDrawer } from '../widgets/Drawer/Drawer'
 import { openModal } from '../widgets/Modal/Modal'
+
+import type { BlastRadius } from './blastRadius.types'
 
 interface EventData {
   involvedObject: {
@@ -198,7 +202,13 @@ export interface ActionContext {
   apiBaseUrl: string
   eventsBaseUrl: string
   navigate: (path: string) => void | Promise<void>
-  confirm: () => Promise<boolean>
+  /**
+   * The HITL gate. When a `radius` is supplied (mutating verbs) the confirm modal renders
+   * the structured BlastRadiusConfirm (verb+gvr+cluster/ns+count+diff); otherwise it falls
+   * back to the plain "Are you sure?" prompt (read-only navigate opt-in). Resolves true only
+   * when the human clicks Confirm.
+   */
+  confirm: (radius?: BlastRadius) => Promise<boolean>
   resolveJq: (expression: string, values: Record<string, unknown>) => Promise<string>
   setLoading: (loading: boolean) => void
   invalidateQueries: () => Promise<unknown>
@@ -266,13 +276,7 @@ const runRest = async (
 
   let jsonResponse: RestApiResponse | null = null
 
-  // Confirmation gate (was: if (!requireConfirmation || confirm()) { ...whole body... }).
-  if (action.requireConfirmation && !(await ctx.confirm())) {
-    ctx.setLoading(false)
-
-    return
-  }
-
+  // A config error (both nav modes set) must not slip past into a write — surface it first.
   if (onSuccessNavigateTo && onEventNavigateTo) {
     ctx.message.destroy()
     ctx.notification.error({
@@ -285,7 +289,27 @@ const runRest = async (
     return
   }
 
+  // Build the request body BEFORE the gate so the blast-radius diff shows the real create /
+  // update body the write will send (not the pre-override ref payload).
   const payload = await buildPayload(action, resourceRef.payload, customPayload, ctx.resolveJq)
+
+  // W0-2 HITL gate. Every MUTATING verb (POST/PUT/PATCH/DELETE) is ALWAYS gated — the human
+  // must confirm the structured BlastRadius (verb+gvr+cluster/ns+object-count+diff) — regardless
+  // of the CR's `requireConfirmation` opt-in (which is thus superseded for writes; it still gates
+  // a read-only ref that opts in). This single chokepoint covers Form submit, row actions, AND
+  // the Autopilot runAction (which already routes through this dispatcher).
+  if (isMutatingVerb(verb)) {
+    const radius = buildBlastRadius({ path: resourceRef.path, payload, verb })
+    if (!(await ctx.confirm(radius))) {
+      ctx.setLoading(false)
+
+      return
+    }
+  } else if (action.requireConfirmation && !(await ctx.confirm())) {
+    ctx.setLoading(false)
+
+    return
+  }
 
   let resourceUid: string | null = null
   let eventReceived = false
@@ -614,14 +638,20 @@ export const useHandleAction = () => {
     const ctx: ActionContext = {
       apiBaseUrl: config?.api.SNOWPLOW_API_BASE_URL ?? '',
       closeDrawer,
-      // Non-blocking confirmation (antd Modal) instead of the blocking window.confirm.
-      confirm: () => new Promise<boolean>((resolve) => {
+      // Non-blocking confirmation (antd Modal) instead of the blocking window.confirm. When a
+      // blast radius is supplied (every mutating write — W0-2), render the structured
+      // BlastRadiusConfirm (verb+gvr+cluster/ns+object-count+diff) as the modal body and title
+      // the intent by verb; otherwise keep the plain "Are you sure?" prompt (read-only opt-in).
+      confirm: (radius?: BlastRadius) => new Promise<boolean>((resolve) => {
         modal.confirm({
           cancelText: 'Cancel',
+          content: radius ? createElement(BlastRadiusConfirm, { radius }) : undefined,
+          okButtonProps: radius?.verb === 'DELETE' ? { danger: true } : undefined,
           okText: 'Confirm',
           onCancel: () => resolve(false),
           onOk: () => resolve(true),
-          title: 'Are you sure?',
+          title: radius ? 'Confirm write' : 'Are you sure?',
+          width: radius ? 560 : undefined,
         })
       }),
       eventsBaseUrl: config?.api.EVENTS_PUSH_API_BASE_URL ?? '',

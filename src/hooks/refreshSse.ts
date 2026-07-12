@@ -279,6 +279,17 @@ export class RefreshManager {
     this.scheduleReconnect()
   }
 
+  /**
+   * Whether `widgetId` is currently armed on the `/refreshes` stream — i.e. it has
+   * a live subscription (coords) that the tab's stream is (or will be) carrying.
+   * Read-only view over the armed set; the FreshnessBadge's `liveArmed` prop reads
+   * this to show the honest "Live" dot only once a push channel is actually open,
+   * not merely that the last fetch succeeded.
+   */
+  isArmed(widgetId: string): boolean {
+    return this.armed.has(widgetId)
+  }
+
   private removeFromKeyIndex(widgetId: string): void {
     this.keyToWidgets.forEach((set, key) => {
       if (set.delete(widgetId) && set.size === 0) { this.keyToWidgets.delete(key) }
@@ -425,3 +436,13 @@ export class RefreshManager {
 
 /** App-wide singleton: every widget arms against this one stream-per-tab. */
 export const refreshManager = new RefreshManager()
+
+/**
+ * Whether the given widget currently has a live `/refreshes` subscription armed on
+ * the tab-wide stream. A read-only check over the singleton's armed set — used by
+ * WidgetRenderer to drive the FreshnessBadge's `liveArmed` prop so the green "Live"
+ * dot only shows when a push channel is genuinely open for THAT widget (replacing
+ * the render-local `isSuccess && !isStale` proxy). Off (false) whenever live-refresh
+ * is disabled, the response wasn't cache-keyed, or the widget hasn't armed yet.
+ */
+export const isWidgetArmed = (widgetId: string): boolean => refreshManager.isArmed(widgetId)

@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from 'react'
 
 import { useConfigContext } from '../../context/ConfigContext'
-import { isWidgetLiveRefreshEnabled } from '../../hooks/refreshSse'
+import { isWidgetArmed, isWidgetLiveRefreshEnabled } from '../../hooks/refreshSse'
 import useCatchError from '../../hooks/useCatchError'
 import { useWidgetQuery } from '../../hooks/useWidgetQuery'
 import type { ServerPagination, Widget } from '../../types/Widget'
@@ -9,7 +9,7 @@ import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
 import { FreshnessBadge } from '../FreshnessBadge/FreshnessBadge'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
-import { isTimeoutError, WidgetError, WidgetLoading, WidgetTimeout } from '../WidgetStates'
+import { WidgetError, WidgetLoading, WidgetTimeout } from '../WidgetStates'
 
 import styles from './WidgetRenderer.module.css'
 
@@ -117,16 +117,16 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
   // Keeps `useWidgetQuery` generic; the opt-in set is one explicit, greppable map.
   const defaultPageSize = getDefaultPageSizeForEndpoint(widgetEndpoint)
 
-  const { isFetchingResourcesRefs, queryResult, serverPagination } = useWidgetQuery(widgetEndpoint, { defaultPageSize })
-  const { data: widget, dataUpdatedAt, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, isStale, isSuccess, refetch } = queryResult
+  const { isFetchingResourcesRefs, queryResult, serverPagination, timedOut, widgetId } = useWidgetQuery(widgetEndpoint, { defaultPageSize })
+  const { data: widget, dataUpdatedAt, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, isStale, refetch } = queryResult
 
   // Freshness signal fed to the FreshnessBadge overlaid on the rendered widget.
-  // `liveArmed` reflects that per-widget live-refresh is enabled AND the widget has
-  // a healthy, fresh result — the honest precondition for showing the green Live dot.
-  // (The precise /refreshes arm-state lives in useWidgetQuery's widgetId scope; this
-  // render-local proxy stays within the renderer's own data.)
+  // `liveArmed` is the HONEST arm-state: this widget currently has a live `/refreshes`
+  // subscription open on the tab-wide stream (isWidgetArmed(widgetId)), so the green
+  // "Live" dot means a push channel is genuinely open — not merely that the last fetch
+  // succeeded. Replaces the earlier render-local `isSuccess && !isStale` proxy.
   const liveRefreshEnabled = isWidgetLiveRefreshEnabled(config)
-  const liveArmed = liveRefreshEnabled && isSuccess && !isStale
+  const liveArmed = liveRefreshEnabled && isWidgetArmed(widgetId)
 
   useEffect(() => {
     if (onLoadingChange) {
@@ -145,7 +145,9 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     console.error(error)
     // A slow/still-warming server (request deadline, cancelled fetch, 503/504) gets a
     // CALM, distinct timeout state — not the hard-error red cross — with a working Retry.
-    if (isTimeoutError(error)) {
+    // `timedOut` is the Freshness layer's classification of THIS error (useWidgetQuery),
+    // reused here instead of re-classifying at the render.
+    if (timedOut) {
       return <WidgetTimeout onRetry={() => { void refetch() }} />
     }
     const failedToFetch = error instanceof Error && (error instanceof TypeError || error.message.includes('Failed to fetch'))

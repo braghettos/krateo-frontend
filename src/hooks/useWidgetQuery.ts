@@ -5,6 +5,7 @@ import { useInfiniteQuery, useIsFetching } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 
+import { isTimeoutError } from '../components/WidgetStates'
 import { useConfigContext } from '../context/ConfigContext'
 import type { Widget } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
@@ -322,8 +323,21 @@ export const useWidgetQuery = (widgetEndpoint: string, options: UseWidgetQueryOp
   const refreshEntry = refreshEnabled ? getRefreshEntry(widgetId) : undefined
   useWidgetLiveRefresh(widgetId, refreshEntry, queryResult.refetch, config?.api.SNOWPLOW_API_BASE_URL, refreshEnabled)
 
+  // Classify the query error as a TIMEOUT (deadline exceeded / canceled / 503/504) vs a
+  // hard error, reusing the Freshness layer's `isTimeoutError` classifier (WidgetStates).
+  // Surfaced so WidgetRenderer can drive the CALM WidgetTimeout state off this flag rather
+  // than re-classifying the error itself. False whenever there is no error.
+  const timedOut = queryResult.error ? isTimeoutError(queryResult.error) : false
+
   return {
     queryResult,
+    timedOut,
+    // The serialized react-query key that this widget arms the `/refreshes` stream
+    // under (see refreshSse.recordRefreshHeaders / useWidgetLiveRefresh). Returned so
+    // WidgetRenderer can ask `isWidgetArmed(widgetId)` for the honest live-arm state
+    // that drives the FreshnessBadge, instead of a render-local `isSuccess && !isStale`
+    // proxy.
+    widgetId,
     isFetchingResourcesRefs: resourcesRefsFetching > 0,
     // Classic server-side pager controls (only meaningful when `defaultPageSize`
     // was set). `serverPage` is the 1-based current page; `setServerPage` jumps

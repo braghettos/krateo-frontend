@@ -1,0 +1,133 @@
+/* BlastRadiusConfirm — the HITL gate body inside modal.confirm. Petrol status language:
+   crimson=delete, magenta=update/replace, cyan=create. Uses only theme :root vars
+   (theme/tokens.ts) so it tracks light/dark. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+  max-width: 520px;
+}
+
+/* Headline: raw VERB tag + plain-language intent + the target object name. */
+.headline {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.verb {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xxs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+}
+
+/* Verb tint — cyan create, magenta update/replace, crimson delete. */
+.verb[data-verb='POST'] {
+  background: color-mix(in srgb, var(--cyan-color) 10%, transparent);
+  border-color: color-mix(in srgb, var(--cyan-color) 32%, transparent);
+  color: var(--cyan-color);
+}
+
+.verb[data-verb='PATCH'],
+.verb[data-verb='PUT'] {
+  background: color-mix(in srgb, var(--magenta-color) 10%, transparent);
+  border-color: color-mix(in srgb, var(--magenta-color) 32%, transparent);
+  color: var(--magenta-color);
+}
+
+.verb[data-verb='DELETE'] {
+  background: color-mix(in srgb, var(--error-color) 12%, transparent);
+  border-color: color-mix(in srgb, var(--error-color) 34%, transparent);
+  color: var(--error-color);
+}
+
+.intent {
+  color: color-mix(in srgb, var(--text-color) 65%, transparent);
+  font-size: var(--font-size-xs);
+}
+
+.target {
+  color: var(--text-color);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+/* Facts grid: resource / cluster / namespace / object-count. */
+.facts {
+  display: grid;
+  gap: 4px 12px;
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+}
+
+.factRow {
+  display: contents;
+}
+
+.factKey {
+  color: color-mix(in srgb, var(--text-color) 55%, transparent);
+  font-size: var(--font-size-xxs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.factVal {
+  color: var(--text-color);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xxs);
+  margin: 0;
+  word-break: break-word;
+}
+
+/* Diff surface. */
+.diffPair {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.diffSide {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.diffLabelBefore,
+.diffLabelAfter {
+  font-size: var(--font-size-xxs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.diffLabelBefore {
+  color: var(--error-color);
+}
+
+.diffLabelAfter {
+  color: var(--success-color);
+}
+
+.code {
+  background: color-mix(in srgb, var(--text-color) 5%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-color);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xxs);
+  line-height: 1.5;
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

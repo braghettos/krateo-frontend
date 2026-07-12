@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Divider, Result, Skeleton } from 'antd'
 import { useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 
 import logo from '../../assets/images/logo_big.svg'
 import { useConfigContext } from '../../context/ConfigContext'
@@ -29,10 +29,43 @@ const DEFAULT_HIGHLIGHTS = [
   'Policy-guarded self-service catalog',
 ]
 
+/**
+ * Resolve the post-login landing route from the `?next=` param the session-resume flow
+ * writes (`forceLogout` → `/login?next=<encodeURIComponent(pathname+search)>`). Returns a
+ * SAFE in-app path only: it must decode to a single-leading-slash absolute path so an
+ * attacker can't smuggle an open-redirect (`//evil.com`, `https://evil.com`, `/\evil.com`)
+ * or a `javascript:` URL through the query. Anything absent, malformed, or off-origin
+ * falls back to `'/'` (the home route). Exported for unit testing.
+ */
+export const resolveNextPath = (rawNext: string | null): string => {
+  const HOME = '/'
+  if (!rawNext) { return HOME }
+
+  let decoded: string
+  try {
+    decoded = decodeURIComponent(rawNext)
+  } catch {
+    return HOME
+  }
+
+  // Must be an absolute in-app path: exactly one leading slash, no scheme, no
+  // protocol-relative (`//host`) or backslash trickery (`/\host`).
+  if (!decoded.startsWith('/') || decoded.startsWith('//') || decoded.startsWith('/\\')) {
+    return HOME
+  }
+  return decoded
+}
+
 const Login = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { catchError } = useCatchError()
   const { config } = useConfigContext()
+
+  // Where to land after a successful login: the session-resume flow parks the pre-expiry
+  // route in `?next=` (see utils/logout.forceLogout); fall back to home. Sanitized against
+  // open-redirects by resolveNextPath.
+  const nextPath = resolveNextPath(searchParams.get('next'))
 
   // Config-driven branding (falls back to the built-in defaults when absent).
   const branding = config?.login
@@ -75,7 +108,8 @@ const Login = () => {
       if (response.ok) {
         const data = await response.json() as AuthModeType[]
         localStorage.setItem('K_user', JSON.stringify(data))
-        void navigate('/')
+        // Resume the pre-expiry route when the session-resume flow supplied ?next=; home otherwise.
+        void navigate(nextPath)
       } else {
         catchError({
           message: `Login error (${response.status}: ${response.statusText})`,

@@ -1,0 +1,175 @@
+/**
+ * buildBlastRadius — pure-logic coverage for the W0-2 gate kernel.
+ *
+ * SCOPE: no React / no DOM. We assert the verb→diff mapping (POST=create, PATCH/PUT=update
+ * with before/after, DELETE=delete), the object count (1 scalar vs N for a write-set), and
+ * the GVR/namespace/name/cluster parse — the shape the human confirms and the audit logs.
+ */
+import { describe, expect, it } from 'vitest'
+
+import { buildBlastRadius, isMutatingVerb, parseTargetFromPath } from './buildBlastRadius'
+
+describe('parseTargetFromPath', () => {
+  it('parses a namespaced named-object path (named group)', () => {
+    expect(parseTargetFromPath('/apis/apps/v1/namespaces/prod/deployments/web')).toEqual({
+      gvr: { group: 'apps', resource: 'deployments', version: 'v1' },
+      name: 'web',
+      namespace: 'prod',
+    })
+  })
+
+  it('parses a list path (no name) and tolerates a query string + trailing slash', () => {
+    expect(parseTargetFromPath('/apis/core.krateo.io/v1/namespaces/ns/compositions/?foo=bar')).toEqual({
+      gvr: { group: 'core.krateo.io', resource: 'compositions', version: 'v1' },
+      name: undefined,
+      namespace: 'ns',
+    })
+  })
+
+  it('parses the core group (/api/<version>/…) as an empty group', () => {
+    expect(parseTargetFromPath('/api/v1/namespaces/kube-system/configmaps/cm')).toEqual({
+      gvr: { group: '', resource: 'configmaps', version: 'v1' },
+      name: 'cm',
+      namespace: 'kube-system',
+    })
+  })
+
+  it('returns undefined for an unrecognisable path', () => {
+    expect(parseTargetFromPath('/not/an/apiserver/url')).toBeUndefined()
+    expect(parseTargetFromPath('')).toBeUndefined()
+    expect(parseTargetFromPath(undefined)).toBeUndefined()
+  })
+})
+
+describe('isMutatingVerb', () => {
+  it('is true for the four mutating verbs and false for GET', () => {
+    expect(isMutatingVerb('POST')).toBe(true)
+    expect(isMutatingVerb('PUT')).toBe(true)
+    expect(isMutatingVerb('PATCH')).toBe(true)
+    expect(isMutatingVerb('DELETE')).toBe(true)
+    expect(isMutatingVerb('GET')).toBe(false)
+  })
+})
+
+describe('buildBlastRadius', () => {
+  it('POST → create diff (after=payload, no before) + count 1', () => {
+    const payload = { metadata: { name: 'my-app', namespace: 'demo' }, spec: { x: 1 } }
+    const radius = buildBlastRadius({
+      path: '/apis/core.krateo.io/v1/namespaces/demo/compositiondefinitions',
+      payload,
+      verb: 'POST',
+    })
+    expect(radius).toEqual({
+      cluster: 'local',
+      count: 1,
+      diff: { after: payload, kind: 'create' },
+      gvr: { group: 'core.krateo.io', resource: 'compositiondefinitions', version: 'v1' },
+      name: 'my-app',
+      namespace: 'demo',
+      verb: 'POST',
+    })
+  })
+
+  it('PATCH → update diff carrying both before (current) and after (merge body)', () => {
+    const before = { metadata: { name: 'c1', namespace: 'ns' }, spec: { paused: false } }
+    const payload = { spec: { paused: true } }
+    const radius = buildBlastRadius({
+      before,
+      path: '/apis/core.krateo.io/v1/namespaces/ns/compositions/c1',
+      payload,
+      verb: 'PATCH',
+    })
+    expect(radius.diff).toEqual({ after: payload, before, kind: 'update' })
+    expect(radius.verb).toBe('PATCH')
+    expect(radius.count).toBe(1)
+    expect(radius.name).toBe('c1')
+    expect(radius.namespace).toBe('ns')
+  })
+
+  it('PUT → update diff (same update kind as PATCH)', () => {
+    const payload = { spec: { replicas: 3 } }
+    const radius = buildBlastRadius({ path: '/apis/apps/v1/namespaces/ns/deployments/d', payload, verb: 'PUT' })
+    expect(radius.diff.kind).toBe('update')
+    expect(radius.diff.after).toEqual(payload)
+  })
+
+  it('DELETE → delete diff (before = current/identity, no after) + count 1', () => {
+    const radius = buildBlastRadius({
+      path: '/apis/core.krateo.io/v1/namespaces/ns/compositions/doomed',
+      verb: 'DELETE',
+    })
+    expect(radius.diff.kind).toBe('delete')
+    expect(radius.diff.after).toBeUndefined()
+    expect(radius.name).toBe('doomed')
+    expect(radius.namespace).toBe('ns')
+    expect(radius.count).toBe(1)
+  })
+
+  it('DELETE surfaces the freshly-read current object as the diff before when supplied', () => {
+    const before = { metadata: { name: 'doomed', namespace: 'ns' }, status: { ready: true } }
+    const radius = buildBlastRadius({
+      before,
+      path: '/apis/core.krateo.io/v1/namespaces/ns/compositions/doomed',
+      verb: 'DELETE',
+    })
+    expect(radius.diff).toEqual({ before, kind: 'delete' })
+  })
+
+  it('N-object write-set → count = writeSet.length (W0-4 fan-out)', () => {
+    const writeSet = [{ metadata: { name: 'a' } }, { metadata: { name: 'b' } }, { metadata: { name: 'c' } }]
+    const radius = buildBlastRadius({
+      path: '/apis/core.krateo.io/v1/namespaces/ns/compositiondefinitions',
+      payload: writeSet[0],
+      verb: 'POST',
+      writeSet,
+    })
+    expect(radius.count).toBe(3)
+  })
+
+  it('an empty write-set falls back to a scalar count of 1', () => {
+    const radius = buildBlastRadius({
+      path: '/apis/g/v1/namespaces/ns/things/t',
+      payload: {},
+      verb: 'POST',
+      writeSet: [],
+    })
+    expect(radius.count).toBe(1)
+  })
+
+  it("cluster is 'local' by default and the spoke name when the payload declares a targetRef", () => {
+    const local = buildBlastRadius({ path: '/apis/g/v1/namespaces/ns/things', payload: {}, verb: 'POST' })
+    expect(local.cluster).toBe('local')
+
+    const spoke = buildBlastRadius({
+      path: '/apis/g/v1/namespaces/ns/things',
+      payload: { spec: { deploy: { targetRef: { name: 'spoke-eu' } } } },
+      verb: 'POST',
+    })
+    expect(spoke.cluster).toBe('spoke-eu')
+
+    const overridden = buildBlastRadius({
+      cluster: 'explicit',
+      path: '/apis/g/v1/namespaces/ns/things',
+      payload: { spec: { deploy: { targetRef: { name: 'spoke-eu' } } } },
+      verb: 'POST',
+    })
+    expect(overridden.cluster).toBe('explicit')
+  })
+
+  it('falls back to an empty GVR (never fabricated) when the ref path is unparseable', () => {
+    const radius = buildBlastRadius({ path: '/garbage', payload: { metadata: { name: 'n' } }, verb: 'POST' })
+    expect(radius.gvr).toEqual({ group: '', resource: '', version: '' })
+    expect(radius.name).toBe('n')
+    expect(radius.namespace).toBe('')
+  })
+
+  it('prefers the payload metadata.name over the ref path name (create-form names the object)', () => {
+    const radius = buildBlastRadius({
+      path: '/apis/g/v1/namespaces/ns/things',
+      payload: { metadata: { name: 'from-form', namespace: 'ns2' } },
+      verb: 'POST',
+    })
+    expect(radius.name).toBe('from-form')
+    expect(radius.namespace).toBe('ns2')
+  })
+})
