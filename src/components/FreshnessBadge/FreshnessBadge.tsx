@@ -96,23 +96,31 @@ const TONE_CLASS: Record<FreshnessTone, string> = {
 }
 
 export const FreshnessBadge = ({ dataUpdatedAt, isFetching, isStale, liveArmed, now = Date.now, onRefresh }: FreshnessBadgeProps) => {
-  const { label, showDot, tone } = deriveFreshnessState({ dataUpdatedAt, isFetching, isStale, liveArmed }, now())
+  const { label, tone } = deriveFreshnessState({ dataUpdatedAt, isFetching, isStale, liveArmed }, now())
 
+  // A quiet, color-coded dot — no text. The full label ("Stale · 2m ago" / "Refreshing…")
+  // rides in the native tooltip so the widget surface stays calm.
+  const dot = <span aria-hidden='true' className={`${styles.dot} ${TONE_CLASS[tone]}`} />
+
+  // Stale is the one actionable state — make the dot itself the refresh control.
+  if (onRefresh && tone === 'stale') {
+    return (
+      <button
+        aria-label={`${label} — refresh`}
+        className={`${styles.badge} ${styles.clickable}`}
+        data-freshness={tone}
+        data-testid='freshness-badge'
+        onClick={onRefresh}
+        title={`${label} · click to refresh`}
+        type='button'
+      >
+        {dot}
+      </button>
+    )
+  }
   return (
-    <span className={`${styles.badge} ${TONE_CLASS[tone]}`} data-freshness={tone} data-testid='freshness-badge'>
-      {showDot ? <span aria-hidden='true' className={styles.dot} /> : null}
-      <span className={styles.label}>{label}</span>
-      {onRefresh ? (
-        <button
-          aria-label='Refresh widget'
-          className={styles.refresh}
-          onClick={onRefresh}
-          title='Refresh'
-          type='button'
-        >
-          ↻
-        </button>
-      ) : null}
+    <span className={styles.badge} data-freshness={tone} data-testid='freshness-badge' title={label}>
+      {dot}
     </span>
   )
 }

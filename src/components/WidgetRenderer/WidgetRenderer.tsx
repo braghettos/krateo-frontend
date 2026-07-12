@@ -7,7 +7,7 @@ import { useWidgetQuery } from '../../hooks/useWidgetQuery'
 import type { ServerPagination, Widget } from '../../types/Widget'
 import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
-import { deriveFreshnessState, FreshnessBadge } from '../FreshnessBadge/FreshnessBadge'
+import { FreshnessBadge } from '../FreshnessBadge/FreshnessBadge'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
 import { WidgetError, WidgetLoading, WidgetTimeout } from '../WidgetStates'
 
@@ -225,17 +225,17 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
 
   const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)
 
-  // Overlay the freshness pill on the widget ONLY when its state is worth noticing —
-  // "Refreshing…" (transient) or "Stale" (actionable). The steady "Live" state is the
-  // assumed default: a badge on every widget, all the time, is noise, not signal (when
-  // everything says "Live", the badge means nothing). So in the live state we render the
-  // widget with no overlay at all. Skipped entirely for invisible renders / live-refresh off.
+  // Overlay a tiny freshness DOT on the widget ONLY when its state is worth noticing —
+  // actively refreshing, or stale. The steady/fresh state (live or just-updated) is the
+  // assumed default and renders NO indicator at all: a marker on every widget, all the
+  // time, is noise not signal. So the dot appears only as an exception. Skipped entirely
+  // for invisible renders / live-refresh off.
   const withFreshness = (content: React.ReactNode): React.ReactNode => {
     if (invisible || !liveRefreshEnabled) {
       return content
     }
-    const freshness = deriveFreshnessState({ dataUpdatedAt, isFetching, isStale, liveArmed }, Date.now())
-    if (freshness.tone === 'live') {
+    const isRefreshing = isFetching && dataUpdatedAt > 0
+    if (!isStale && !isRefreshing) {
       return content
     }
     return (
