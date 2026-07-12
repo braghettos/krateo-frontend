@@ -30,6 +30,8 @@ interface ListViewProps {
   loading?: boolean
   header?: ReactNode
   footer?: ReactNode
+  /** When there are no items, render nothing instead of the antd Empty placeholder (conditional-section gate). */
+  hideWhenEmpty?: boolean
   /** The widget's action map (widgetData.actions); per-row `rowActions` reference ids in it. */
   actions?: WidgetActions
   /** The widget's resource refs, handed to useHandleAction when a row action fires. */
@@ -45,7 +47,7 @@ interface ListViewProps {
  * `Notifications`.
  */
 export const ListView = ({
-  actions, bordered, footer, grid, header, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, resourcesRefs, rowKey, size, split, widget,
+  actions, bordered, footer, grid, header, hideWhenEmpty, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, resourcesRefs, rowKey, size, split, widget,
 }: ListViewProps) => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -76,7 +78,9 @@ export const ListView = ({
   const isChips = itemTemplate?.rowVariant === 'chip'
 
   if (!loading && !items.length) {
-    return <WidgetEmpty />
+    // Conditional-section gate: when the RA emits no items (the condition is false —
+    // e.g. the user already owns compositions), render nothing instead of a "No data" box.
+    return hideWhenEmpty ? null : <WidgetEmpty />
   }
 
   return (

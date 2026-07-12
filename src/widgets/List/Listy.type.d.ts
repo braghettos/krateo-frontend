@@ -40,6 +40,10 @@ export interface Listy {
        */
       loading?: boolean
       /**
+       * When there are no items, render nothing (null) instead of the antd Empty 'No data' placeholder. Enables a server-driven conditional section: the RA emits items only when a condition holds (e.g. compositions count == 0), so the section appears/disappears with the data without any client-side logic.
+       */
+      hideWhenEmpty?: boolean
+      /**
        * antd List header (ReactNode in antd; string here)
        */
       header?: string

@@ -41,6 +41,16 @@ const MessageBubble = ({ message }: { message: AutopilotMessage }) => {
   )
 }
 
+// Curated starter prompts shown in the empty rail (before turn 1), so a zero-knowledge user
+// has an obvious first move instead of a blank box. These are universal conversation openers —
+// the model answers each grounded on the live page context. Deliberately generic (not data), so
+// they're valid on any route; per-turn suggestions (from the model) take over after the first reply.
+const STARTER_PROMPTS = [
+  'Show me around',
+  'How do I create my first resource?',
+  "What's on this page?",
+]
+
 const AutopilotRail = () => {
   const { collect, enabled, messages, newThread, open, send, setOpen, streaming } = useAutopilot()
   const [draft, setDraft] = useState('')
@@ -125,6 +135,13 @@ const AutopilotRail = () => {
               <div className={styles.apEmptyTitle}>Ask Autopilot</div>
               It can see what&apos;s on your screen and answer questions about your
               compositions, blueprints, and platform — grounded on the live page.
+              <div className={styles.apSuggest}>
+                {STARTER_PROMPTS.map((prompt, index) => (
+                  <button className={styles.apSg} key={`starter-${index}`} onClick={() => send(prompt)} type='button'>
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
             messages.map((message) => <MessageBubble key={message.id} message={message} />)
