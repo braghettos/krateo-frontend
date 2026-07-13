@@ -15,7 +15,7 @@
  * multi-class Typography.
  */
 
-import type { BlastRadius, BlastRadiusDiff, Gvr } from '../../hooks/blastRadius.types'
+import type { BlastRadius, BlastRadiusDiff, BlastRadiusSet, Gvr } from '../../hooks/blastRadius.types'
 
 import styles from './BlastRadiusConfirm.module.css'
 
@@ -71,16 +71,90 @@ const DiffView = ({ diff }: { diff: BlastRadiusDiff }) => {
   )
 }
 
+/** Compact single-line body preview for a set-op row (full diff bodies stay scalar-confirm territory). */
+const previewOf = (value: unknown): string => {
+  let text: string
+  try {
+    text = JSON.stringify(value) ?? String(value)
+  } catch {
+    text = '[unserialisable value]'
+  }
+
+  return text.length > 140 ? `${text.slice(0, 140)}…` : text
+}
+
+/** True when the radius is the aggregated W0-4 set shape (vs a scalar write). */
+const isSetRadius = (radius: BlastRadius | BlastRadiusSet): radius is BlastRadiusSet => 'ops' in radius
+
+/**
+ * The W0-4 SET decision surface: the total object count + the ORDERED op list, each op a
+ * calm one-liner (verb chip + target + namespace + irreversible badge + body preview).
+ * Ops run in the order shown and stop at the first failure — the human confirms ONCE
+ * for the whole set.
+ */
+const SetView = ({ radius }: { radius: BlastRadiusSet }) => {
+  const irreversibleCount = radius.ops.filter((op) => op.irreversible).length
+
+  return (
+    <div className={styles.root} data-testid='blast-radius-confirm'>
+      <div className={styles.headline}>
+        <span className={styles.verb} data-verb='SET'>SET</span>
+        <span className={styles.intent}>apply {radius.count} objects, in order</span>
+      </div>
+
+      <dl className={styles.facts}>
+        <div className={styles.factRow}>
+          <dt className={styles.factKey}>Objects</dt>
+          <dd className={styles.factVal} data-testid='blast-radius-count'>{radius.count}</dd>
+        </div>
+        <div className={styles.factRow}>
+          <dt className={styles.factKey}>Order</dt>
+          <dd className={styles.factVal}>sequential — stops at the first failure</dd>
+        </div>
+        {irreversibleCount > 0 && (
+          <div className={styles.factRow}>
+            <dt className={styles.factKey}>Irreversible</dt>
+            <dd className={styles.factVal}>{irreversibleCount} delete{irreversibleCount === 1 ? '' : 's'}</dd>
+          </div>
+        )}
+      </dl>
+
+      <ol className={styles.opList}>
+        {radius.ops.map((op, index) => (
+          // The index IS the op identity (dispatch order) — a set radius is immutable once built.
+          <li className={styles.opRow} data-testid='blast-radius-set-op' key={index}>
+            <div className={styles.opHead}>
+              <span className={styles.opIndex}>{index + 1}</span>
+              <span className={styles.verb} data-verb={op.verb}>{op.verb}</span>
+              <span className={styles.target}>{formatGvr(op.gvr)}{op.name ? ` · ${op.name}` : ''}</span>
+              <span className={styles.opNs}>{op.namespace || '—'}</span>
+              {op.irreversible && <span className={styles.irreversible}>irreversible</span>}
+            </div>
+            {op.payloadPreview !== undefined && (
+              <div className={styles.opPreview}>{previewOf(op.payloadPreview)}</div>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 export interface BlastRadiusConfirmProps {
-  radius: BlastRadius
+  radius: BlastRadius | BlastRadiusSet
 }
 
 /**
  * The confirm-modal body. Pure presentation of an already-built BlastRadius: the human reads
  * exactly WHAT (verb+intent), WHERE (gvr+cluster+namespace+name), HOW MANY (count), and the
- * CHANGE (diff) before clicking Confirm.
+ * CHANGE (diff) before clicking Confirm. A W0-4 set radius renders the ordered op list
+ * (SetView) instead of the scalar diff.
  */
 const BlastRadiusConfirm = ({ radius }: BlastRadiusConfirmProps) => {
+  if (isSetRadius(radius)) {
+    return <SetView radius={radius} />
+  }
+
   const { cluster, count, diff, gvr, name, namespace, verb } = radius
 
   return (

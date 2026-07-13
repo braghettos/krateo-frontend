@@ -16,7 +16,8 @@ import { getHeadersObject, getResourceRef } from '../utils/utils'
 import { closeDrawer, openDrawer } from '../widgets/Drawer/Drawer'
 import { openModal } from '../widgets/Modal/Modal'
 
-import type { BlastRadius } from './blastRadius.types'
+import type { BlastRadius, BlastRadiusSet } from './blastRadius.types'
+import { runRestSet, type WriteOp, type WriteOpResult } from './runRestSet'
 
 interface EventData {
   involvedObject: {
@@ -204,11 +205,12 @@ export interface ActionContext {
   navigate: (path: string) => void | Promise<void>
   /**
    * The HITL gate. When a `radius` is supplied (mutating verbs) the confirm modal renders
-   * the structured BlastRadiusConfirm (verb+gvr+cluster/ns+count+diff); otherwise it falls
+   * the structured BlastRadiusConfirm — the scalar verb+gvr+cluster/ns+count+diff shape, or
+   * the aggregated W0-4 SET shape (ordered op list) for an applySet; otherwise it falls
    * back to the plain "Are you sure?" prompt (read-only navigate opt-in). Resolves true only
    * when the human clicks Confirm.
    */
-  confirm: (radius?: BlastRadius) => Promise<boolean>
+  confirm: (radius?: BlastRadius | BlastRadiusSet) => Promise<boolean>
   resolveJq: (expression: string, values: Record<string, unknown>) => Promise<string>
   setLoading: (loading: boolean) => void
   invalidateQueries: () => Promise<unknown>
@@ -629,50 +631,68 @@ export const useHandleAction = () => {
     cleanupsRef.current.clear()
   }, [])
 
+  const buildCtx = (): ActionContext => ({
+    apiBaseUrl: config?.api.SNOWPLOW_API_BASE_URL ?? '',
+    closeDrawer,
+    // Non-blocking confirmation (antd Modal) instead of the blocking window.confirm. When a
+    // blast radius is supplied (every mutating write — W0-2), render the structured
+    // BlastRadiusConfirm — the scalar verb+gvr+cluster/ns+object-count+diff shape, or the
+    // aggregated ordered-op list for a W0-4 set — as the modal body and title the intent;
+    // otherwise keep the plain "Are you sure?" prompt (read-only opt-in). The Confirm button
+    // goes danger for anything irreversible (a DELETE, or a set containing one).
+    confirm: (radius?: BlastRadius | BlastRadiusSet) => new Promise<boolean>((resolve) => {
+      const isSet = radius !== undefined && 'ops' in radius
+      const irreversible = radius !== undefined
+        && (isSet ? radius.ops.some((op) => op.irreversible) : radius.verb === 'DELETE')
+      let title = radius ? 'Confirm write' : 'Are you sure?'
+      if (isSet) {
+        title = `Confirm ${radius.count} writes`
+      }
+      modal.confirm({
+        cancelText: 'Cancel',
+        content: radius ? createElement(BlastRadiusConfirm, { radius }) : undefined,
+        okButtonProps: irreversible ? { danger: true } : undefined,
+        okText: 'Confirm',
+        onCancel: () => resolve(false),
+        onOk: () => resolve(true),
+        title,
+        width: radius ? 560 : undefined,
+      })
+    }),
+    eventsBaseUrl: config?.api.EVENTS_PUSH_API_BASE_URL ?? '',
+    getAccessToken,
+    // Scope post-action invalidation to widget queries (key ['widgets', ...]) instead of
+    // ALL queries — a blank invalidate also refetched the SSE-maintained `events` cache
+    // and everything else. Any widget may show the mutated resource, so refresh them all.
+    invalidateQueries: () => queryClient.invalidateQueries({ queryKey: ['widgets'] }),
+    message,
+    navigate: (path: string) => navigate(resolveNavigationTarget(path)),
+    notification,
+    openDrawer,
+    openModal,
+    registerCleanup: (cleanup: () => void) => { cleanupsRef.current.add(cleanup) },
+    reloadRoutes,
+    resolveJq,
+    setLoading: setIsActionLoading,
+  })
+
   const handleAction = async (
     action: WidgetAction,
     resourcesRefs: ResourcesRefs,
     customPayload?: Record<string, unknown>,
     widget?: Widget
   ) => {
-    const ctx: ActionContext = {
-      apiBaseUrl: config?.api.SNOWPLOW_API_BASE_URL ?? '',
-      closeDrawer,
-      // Non-blocking confirmation (antd Modal) instead of the blocking window.confirm. When a
-      // blast radius is supplied (every mutating write — W0-2), render the structured
-      // BlastRadiusConfirm (verb+gvr+cluster/ns+object-count+diff) as the modal body and title
-      // the intent by verb; otherwise keep the plain "Are you sure?" prompt (read-only opt-in).
-      confirm: (radius?: BlastRadius) => new Promise<boolean>((resolve) => {
-        modal.confirm({
-          cancelText: 'Cancel',
-          content: radius ? createElement(BlastRadiusConfirm, { radius }) : undefined,
-          okButtonProps: radius?.verb === 'DELETE' ? { danger: true } : undefined,
-          okText: 'Confirm',
-          onCancel: () => resolve(false),
-          onOk: () => resolve(true),
-          title: radius ? 'Confirm write' : 'Are you sure?',
-          width: radius ? 560 : undefined,
-        })
-      }),
-      eventsBaseUrl: config?.api.EVENTS_PUSH_API_BASE_URL ?? '',
-      getAccessToken,
-      // Scope post-action invalidation to widget queries (key ['widgets', ...]) instead of
-      // ALL queries — a blank invalidate also refetched the SSE-maintained `events` cache
-      // and everything else. Any widget may show the mutated resource, so refresh them all.
-      invalidateQueries: () => queryClient.invalidateQueries({ queryKey: ['widgets'] }),
-      message,
-      navigate: (path: string) => navigate(resolveNavigationTarget(path)),
-      notification,
-      openDrawer,
-      openModal,
-      registerCleanup: (cleanup: () => void) => { cleanupsRef.current.add(cleanup) },
-      reloadRoutes,
-      resolveJq,
-      setLoading: setIsActionLoading,
-    }
-
-    await dispatchAction(action, { customPayload, resourcesRefs, widget }, ctx)
+    await dispatchAction(action, { customPayload, resourcesRefs, widget }, buildCtx())
   }
 
-  return { handleAction, isActionLoading }
+  /**
+   * The P1 applySet fabric entry point: run an ORDERED write-set behind ONE aggregated
+   * W0-4 blast-radius confirm (decline = nothing dispatched), sequential dispatch with
+   * stop-on-first-error, per-item results. Same ctx (same gate modal, same auth, same
+   * invalidation) as a scalar handleAction — see runRestSet.
+   */
+  const handleActionSet = async (ops: readonly WriteOp[]): Promise<WriteOpResult[] | null> =>
+    runRestSet(ops, buildCtx())
+
+  return { handleAction, handleActionSet, isActionLoading }
 }
