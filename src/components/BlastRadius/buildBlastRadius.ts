@@ -17,7 +17,7 @@
  * `count` is 1 for a scalar write, or writeSet.length for an N-fan-out apply.
  */
 
-import type { BlastRadius, BlastRadiusDiff, Gvr, MutatingVerb } from '../../hooks/blastRadius.types'
+import type { BlastRadius, BlastRadiusDiff, BlastRadiusSet, Gvr, MutatingVerb } from '../../hooks/blastRadius.types'
 
 /** The apiserver verbs the gate governs. GET (read) never produces a BlastRadius. */
 const MUTATING_VERBS: readonly MutatingVerb[] = ['POST', 'PUT', 'PATCH', 'DELETE']
@@ -125,6 +125,41 @@ export interface BuildBlastRadiusInput {
   /** Explicit target cluster override (else derived from the payload's targetRef, else 'local'). */
   cluster?: string
 }
+
+/**
+ * One ordered write op of a W0-4 applySet — the unit `runRestSet` dispatches. `path` is
+ * the same ResourceRef-shaped apiserver URL a scalar write targets (parsed by
+ * parseTargetFromPath for the confirm); DELETE ops carry no payload.
+ */
+export interface WriteOp {
+  verb: MutatingVerb
+  path: string
+  payload?: unknown
+}
+
+/**
+ * Aggregate a W0-4 ordered write-set into ONE set-level blast radius: the total object
+ * count plus, per op, the verb + apiserver target (GVR/namespace/name parsed exactly like
+ * a scalar write, payload metadata preferred over the path) + a body preview, with
+ * `irreversible` flagged per op (a DELETE cannot be undone by a later write). Pure, like
+ * buildBlastRadius: same inputs → same output, no side effects.
+ */
+export const buildBlastRadiusSet = (ops: readonly WriteOp[]): BlastRadiusSet => ({
+  count: ops.length,
+  kind: 'set',
+  ops: ops.map(({ path, payload, verb }) => {
+    const parsed = parseTargetFromPath(path)
+    const name = readString(payload, 'metadata.name') ?? parsed?.name
+    return {
+      gvr: parsed?.gvr ?? { group: '', resource: '', version: '' },
+      irreversible: verb === 'DELETE',
+      namespace: readString(payload, 'metadata.namespace') ?? parsed?.namespace ?? '',
+      verb,
+      ...(name ? { name } : {}),
+      ...(payload === undefined ? {} : { payloadPreview: payload }),
+    }
+  }),
+})
 
 /**
  * Compute the BlastRadius for a single mutating action (or a W0-4 write-set). The result is

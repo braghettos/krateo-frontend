@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { buildBlastRadius, isMutatingVerb, parseTargetFromPath } from './buildBlastRadius'
+import { buildBlastRadius, buildBlastRadiusSet, isMutatingVerb, parseTargetFromPath, type WriteOp } from './buildBlastRadius'
 
 describe('parseTargetFromPath', () => {
   it('parses a namespaced named-object path (named group)', () => {
@@ -171,5 +171,51 @@ describe('buildBlastRadius', () => {
     })
     expect(radius.name).toBe('from-form')
     expect(radius.namespace).toBe('ns2')
+  })
+})
+
+describe('buildBlastRadiusSet — the aggregated W0-4 set radius', () => {
+  const OPS: WriteOp[] = [
+    {
+      path: '/apis/core.krateo.io/v1alpha1/namespaces/demo/compositiondefinitions',
+      payload: { metadata: { name: 'my-def', namespace: 'demo' }, spec: { x: 1 } },
+      verb: 'POST',
+    },
+    { path: '/api/v1/namespaces/demo/configmaps/cm', payload: { data: { k: 'v' } }, verb: 'PATCH' },
+    { path: '/apis/g.krateo.io/v1/namespaces/demo/things/doomed', verb: 'DELETE' },
+  ]
+
+  it('count = ops.length and index order = dispatch order', () => {
+    const radius = buildBlastRadiusSet(OPS)
+    expect(radius.kind).toBe('set')
+    expect(radius.count).toBe(3)
+    expect(radius.ops.map((op) => op.verb)).toEqual(['POST', 'PATCH', 'DELETE'])
+  })
+
+  it('parses each op target like a scalar write (payload metadata preferred over the path)', () => {
+    const [post, patch, del] = buildBlastRadiusSet(OPS).ops
+    expect(post).toMatchObject({
+      gvr: { group: 'core.krateo.io', resource: 'compositiondefinitions', version: 'v1alpha1' },
+      name: 'my-def',
+      namespace: 'demo',
+    })
+    expect(patch).toMatchObject({ gvr: { group: '', resource: 'configmaps', version: 'v1' }, name: 'cm' })
+    expect(del).toMatchObject({ name: 'doomed', namespace: 'demo' })
+  })
+
+  it('flags ONLY the DELETE op irreversible and carries payload previews only where a body exists', () => {
+    const [post, patch, del] = buildBlastRadiusSet(OPS).ops
+    expect(post.irreversible).toBe(false)
+    expect(patch.irreversible).toBe(false)
+    expect(del.irreversible).toBe(true)
+    expect(post.payloadPreview).toEqual(OPS[0].payload)
+    expect(del.payloadPreview).toBeUndefined()
+  })
+
+  it('an unparseable path falls back to an empty GVR (never fabricated)', () => {
+    const [op] = buildBlastRadiusSet([{ path: '/garbage', payload: { metadata: { name: 'n' } }, verb: 'PUT' }]).ops
+    expect(op.gvr).toEqual({ group: '', resource: '', version: '' })
+    expect(op.name).toBe('n')
+    expect(op.namespace).toBe('')
   })
 })

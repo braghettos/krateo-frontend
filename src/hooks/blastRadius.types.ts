@@ -45,3 +45,35 @@ export interface BlastRadius {
   count: number
   diff: BlastRadiusDiff
 }
+
+/**
+ * One op inside a W0-4 ordered write-set, as surfaced in the aggregated set-level
+ * confirm: the op's verb + parsed apiserver target, whether it can be undone, and a
+ * compact request-body preview. Index order in `BlastRadiusSet.ops` IS dispatch order.
+ */
+export interface BlastRadiusSetOp {
+  verb: MutatingVerb
+  gvr: Gvr
+  namespace: string
+  /** Object name when the op targets a named object; absent for a collection POST. */
+  name?: string
+  /** True when the op cannot be undone by a subsequent write (DELETE). */
+  irreversible: boolean
+  /** The op's request body, shown as a compact preview (absent for a body-less DELETE). */
+  payloadPreview?: unknown
+}
+
+/**
+ * The aggregated decision surface for a W0-4 ordered multi-object write-set (the
+ * applySet fabric): ONE confirm covers the WHOLE set. Like BlastRadius it is plain
+ * serialisable data — built by a pure function, rendered by BlastRadiusConfirm, and
+ * loggable verbatim by the W0-3 audit.
+ */
+export interface BlastRadiusSet {
+  /** Discriminant vs the scalar BlastRadius (`'ops' in radius` also narrows). */
+  kind: 'set'
+  /** Total object count — always ops.length. */
+  count: number
+  /** The ordered ops, exactly as they will dispatch (stop at the first failure). */
+  ops: BlastRadiusSetOp[]
+}

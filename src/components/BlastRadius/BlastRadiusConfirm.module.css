@@ -131,3 +131,66 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* W0-4 set view: the ORDERED op list — one calm line per op (verb chip + target +
+   namespace + irreversible badge) with a truncated one-line body preview beneath. */
+.opList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  list-style: none;
+  margin: 0;
+  max-height: 280px;
+  overflow: auto;
+  padding: 0;
+}
+
+.opRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.opHead {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.opIndex {
+  color: color-mix(in srgb, var(--text-color) 45%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xxs);
+  min-width: 14px;
+  text-align: right;
+}
+
+.opNs {
+  color: color-mix(in srgb, var(--text-color) 55%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xxs);
+}
+
+/* The per-op irreversible badge (DELETE): crimson, quiet, unmissable. */
+.irreversible {
+  background: color-mix(in srgb, var(--error-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--error-color) 34%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--error-color);
+  font-size: var(--font-size-xxs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0 6px;
+  text-transform: uppercase;
+}
+
+.opPreview {
+  color: color-mix(in srgb, var(--text-color) 70%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xxs);
+  overflow: hidden;
+  padding-left: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
