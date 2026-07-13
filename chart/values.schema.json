@@ -336,6 +336,10 @@
           "title": "Otel Collector URL",
           "default": ""
         },
+        "PROVENANCE_ENABLED": {
+          "type": "string",
+          "description": "W0-3 provenance: 'true' emits one AuditRecord per gated portal write. Default '' = OFF."
+        },
         "SNOWPLOW_IDENTITY_INJECTION": {
           "type": "string",
           "title": "Snowplow Identity Injection",
@@ -350,6 +354,7 @@
         "AUTOPILOT_API_BASE_URL": "/autopilot",
         "INIT": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system",
         "OTEL_COLLECTOR_URL": "",
+        "PROVENANCE_ENABLED": "",
         "SNOWPLOW_IDENTITY_INJECTION": ""
       }
     },
