@@ -20,6 +20,7 @@ import { useCallback, useMemo } from 'react'
 import { type RouteObject } from 'react-router'
 
 import { useRoutesContext } from '../../context/RoutesContext'
+import type { WriteOrigin } from '../../hooks/provenance'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import type { ResourcesRefs, WidgetAction } from '../../types/Widget'
 
@@ -409,7 +410,11 @@ export const useAutopilotActionBridge = () => {
   const { routes } = useRoutesContext()
   const routePatterns = useMemo(() => collectRoutePatterns(routes), [routes])
 
-  const apply = useCallback(async (proposal: PortalActionProposal): Promise<AutopilotActionChip | null> => {
+  // `origin` is the W0-3 provenance tag the provider passes at dispatch time (actor:'agent'
+  // + its session id + the user's latest prompt). It is threaded into EVERY dispatch this
+  // bridge drives, so a write reached through runAction / patchField / applyResourceSet is
+  // audited as agent-originated; read-only verbs carry it harmlessly (no write → no record).
+  const apply = useCallback(async (proposal: PortalActionProposal, origin?: WriteOrigin): Promise<AutopilotActionChip | null> => {
     // runAction: drive a REAL on-screen control (Sync/Pause/Edit/Delete) through the
     // SAME useHandleAction dispatcher the button uses — never a synthesized call. On a
     // mutating verb, requireConfirmation is FORCED (never trusted from the model), so the
@@ -424,7 +429,7 @@ export const useAutopilotActionBridge = () => {
       const toDispatch = mutating && found.action.type === 'rest'
         ? { ...found.action, requireConfirmation: true }
         : found.action
-      await handleAction(toDispatch, found.resourcesRefs)
+      await handleAction(toDispatch, found.resourcesRefs, undefined, undefined, origin)
       return { label: proposal.label ?? `${verb} ${proposal.widget ?? ''}`.trim(), readOnly: !mutating, verb: 'runAction' }
     }
 
@@ -435,7 +440,11 @@ export const useAutopilotActionBridge = () => {
     // kernel (composition-only + single simple spec field) and returns null on any reject,
     // so a denied patch is a no-op exactly like an unknown verb — NEVER a bypass of the gate.
     if (proposal.verb === 'patchField') {
-      return applyPatchField(proposal as unknown as PatchFieldProposal, { handleAction })
+      // Bind the agent origin into the dispatcher the branch uses (patchField itself stays
+      // origin-agnostic): the resulting PATCH is audited as agent-originated (W0-3).
+      return applyPatchField(proposal as unknown as PatchFieldProposal, {
+        handleAction: (action, resourcesRefs) => handleAction(action, resourcesRefs, undefined, undefined, origin),
+      })
     }
 
     // applyResourceSet: the P1 applySet MUTATING branch (builder/fleet). An ORDERED set of
@@ -446,7 +455,11 @@ export const useAutopilotActionBridge = () => {
     // groups ending in .krateo.io, or core ConfigMaps only) and returns null on any reject
     // or on the human's decline — a denied set is a no-op, NEVER a bypass of the gate.
     if (proposal.verb === 'applyResourceSet') {
-      return applyResourceSet(proposal as unknown as ApplyResourceSetProposal, { handleActionSet })
+      // Same origin binding for the set fabric: the ONE per-set audit record (W0-3) carries
+      // actor:'agent' + the session/prompt context.
+      return applyResourceSet(proposal as unknown as ApplyResourceSetProposal, {
+        handleActionSet: (ops) => handleActionSet(ops, origin),
+      })
     }
 
     // Deny-by-default via the DATA in READONLY_VERB_REGISTRY: a verb absent from the

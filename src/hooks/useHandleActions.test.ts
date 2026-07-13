@@ -205,6 +205,7 @@ const makeCtx = (over: Partial<ActionContext> = {}): ActionContext => ({
   notification: { error: vi.fn(), success: vi.fn() } as unknown as ActionContext['notification'],
   openDrawer: vi.fn(),
   openModal: vi.fn(),
+  provenanceEnabled: false,
   registerCleanup: vi.fn(),
   reloadRoutes: vi.fn(),
   resolveJq: vi.fn((expr: string) => Promise.resolve(`jq:${expr}`)),

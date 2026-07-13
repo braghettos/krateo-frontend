@@ -17,6 +17,7 @@ import { closeDrawer, openDrawer } from '../widgets/Drawer/Drawer'
 import { openModal } from '../widgets/Modal/Modal'
 
 import type { BlastRadius, BlastRadiusSet } from './blastRadius.types'
+import { recordProvenance, type WriteOrigin } from './provenance'
 import { runRestSet, type WriteOp, type WriteOpResult } from './runRestSet'
 
 interface EventData {
@@ -191,6 +192,9 @@ export interface ActionRuntime {
   resourcesRefs: ResourcesRefs
   customPayload?: Record<string, unknown>
   widget?: Widget
+  /** W0-3 origin tag: who initiated the write. Absent = a hand-clicked control ({actor:'human'});
+   * the Autopilot bridge sets actor:'agent' + the session/prompt context it holds. */
+  origin?: WriteOrigin
 }
 
 /**
@@ -223,6 +227,9 @@ export interface ActionContext {
   notification: ReturnType<typeof useApp>['notification']
   /** Register a teardown to run if the widget unmounts mid-action (e.g. close an SSE stream). */
   registerCleanup: (cleanup: () => void) => void
+  /** W0-3 provenance flag (config.json api.PROVENANCE_ENABLED, default OFF). When true, every
+   * resolved gated write fire-and-forgets ONE best-effort AuditRecord CR — see hooks/provenance.ts. */
+  provenanceEnabled: boolean
 }
 
 const runNavigate = async (action: WidgetAction & { type: 'navigate' }, runtime: ActionRuntime, ctx: ActionContext): Promise<void> => {
@@ -300,8 +307,11 @@ const runRest = async (
   // of the CR's `requireConfirmation` opt-in (which is thus superseded for writes; it still gates
   // a read-only ref that opts in). This single chokepoint covers Form submit, row actions, AND
   // the Autopilot runAction (which already routes through this dispatcher).
+  // The gated radius is kept for W0-3 provenance: the SAME shape the human confirmed is
+  // logged verbatim on the audit record (reused, never rebuilt). undefined = read-only ref.
+  let radius: BlastRadius | undefined
   if (isMutatingVerb(verb)) {
-    const radius = buildBlastRadius({ path: resourceRef.path, payload, verb })
+    radius = buildBlastRadius({ path: resourceRef.path, payload, verb })
     if (!(await ctx.confirm(radius))) {
       ctx.setLoading(false)
 
@@ -453,10 +463,22 @@ const runRest = async (
 
   const shouldSendPayload = ['POST', 'PUT', 'PATCH'].includes(verb)
 
+  // W0-3 provenance: requestedAt is captured pre-dispatch; the record itself is emitted only
+  // AFTER the write resolves (success, HTTP failure, or network throw), and only for a gated
+  // write (radius set). A declined confirm returned above — it records NOTHING.
+  const requestedAt = new Date().toISOString()
+
   const res = await fetchWithTimeout(updatedUrl, {
     body: shouldSendPayload ? JSON.stringify(payload) : undefined,
     headers: requestHeaders,
     method: verb,
+  }).catch((error: unknown) => {
+    // The request itself failed (network error / timeout abort) — still an attempted write:
+    // record it (fire-and-forget, best-effort), then rethrow to the dispatcher's catch.
+    if (radius) {
+      recordProvenance(ctx, runtime.origin, radius, { message: error instanceof Error ? error.message : String(error), ok: false, status: 0 }, requestedAt)
+    }
+    throw error
   })
 
   // Empty/204 bodies (e.g. a successful DELETE) → {} via parseJsonResponse.
@@ -465,6 +487,13 @@ const runRest = async (
   jsonResponse = parseJsonResponse(responseText)
 
   ctx.setLoading(false)
+
+  // W0-3: ONE audit record per resolved gated write — success AND failure both land here,
+  // carrying the radius the human confirmed. Fire-and-forget inside recordProvenance (void,
+  // never awaited): it can never block, delay, or fail the primary write.
+  if (radius) {
+    recordProvenance(ctx, runtime.origin, radius, { message: jsonResponse.message ?? '', ok: res.ok, status: res.status }, requestedAt)
+  }
 
   if (!res.ok) {
     let description = jsonResponse.message
@@ -670,6 +699,9 @@ export const useHandleAction = () => {
     notification,
     openDrawer,
     openModal,
+    // W0-3 provenance kill-switch: default OFF (=== true), so clusters without the
+    // AuditRecord CRD see zero new traffic. Arrives from config.json like the other flags.
+    provenanceEnabled: config?.api.PROVENANCE_ENABLED === true,
     registerCleanup: (cleanup: () => void) => { cleanupsRef.current.add(cleanup) },
     reloadRoutes,
     resolveJq,
@@ -680,19 +712,23 @@ export const useHandleAction = () => {
     action: WidgetAction,
     resourcesRefs: ResourcesRefs,
     customPayload?: Record<string, unknown>,
-    widget?: Widget
+    widget?: Widget,
+    // W0-3 origin tag — omitted by every widget call site (default {actor:'human'});
+    // only the Autopilot bridge passes an agent origin.
+    origin?: WriteOrigin
   ) => {
-    await dispatchAction(action, { customPayload, resourcesRefs, widget }, buildCtx())
+    await dispatchAction(action, { customPayload, origin, resourcesRefs, widget }, buildCtx())
   }
 
   /**
    * The P1 applySet fabric entry point: run an ORDERED write-set behind ONE aggregated
    * W0-4 blast-radius confirm (decline = nothing dispatched), sequential dispatch with
    * stop-on-first-error, per-item results. Same ctx (same gate modal, same auth, same
-   * invalidation) as a scalar handleAction — see runRestSet.
+   * invalidation) as a scalar handleAction — see runRestSet. `origin` is the W0-3 tag
+   * (agent-origin sets pass it; absent = human).
    */
-  const handleActionSet = async (ops: readonly WriteOp[]): Promise<WriteOpResult[] | null> =>
-    runRestSet(ops, buildCtx())
+  const handleActionSet = async (ops: readonly WriteOp[], origin?: WriteOrigin): Promise<WriteOpResult[] | null> =>
+    runRestSet(ops, buildCtx(), origin)
 
   return { handleAction, handleActionSet, isActionLoading }
 }

@@ -22,6 +22,7 @@
 
 import { buildBlastRadiusSet, type WriteOp } from '../components/BlastRadius/buildBlastRadius'
 
+import { recordProvenance, type WriteOrigin } from './provenance'
 import type { ActionContext } from './useHandleActions'
 import { fetchWithTimeout, parseJsonResponse, POST_WRITE_REVALIDATE_DELAYS_MS } from './useHandleActions'
 
@@ -43,7 +44,7 @@ export interface WriteOpResult {
  */
 export type RunRestSetContext = Pick<
   ActionContext,
-  'apiBaseUrl' | 'confirm' | 'getAccessToken' | 'invalidateQueries' | 'message' | 'notification' | 'registerCleanup' | 'setLoading'
+  'apiBaseUrl' | 'confirm' | 'getAccessToken' | 'invalidateQueries' | 'message' | 'notification' | 'provenanceEnabled' | 'registerCleanup' | 'setLoading'
 >
 
 /** The op's request Content-Type: merge-patch for PATCH (apiserver semantics), JSON otherwise. */
@@ -77,9 +78,10 @@ const dispatchOp = async (op: WriteOp, index: number, ctx: RunRestSetContext): P
 /**
  * Run an ORDERED write-set behind ONE aggregated W0-2 confirm. Returns null when the set
  * is empty or the human declines (nothing was dispatched); otherwise the per-item results
- * of the ops that ran (stop-on-first-error: a failed op is the last entry).
+ * of the ops that ran (stop-on-first-error: a failed op is the last entry). `origin` is
+ * the W0-3 provenance tag (absent = {actor:'human'}).
  */
-export const runRestSet = async (ops: readonly WriteOp[], ctx: RunRestSetContext): Promise<WriteOpResult[] | null> => {
+export const runRestSet = async (ops: readonly WriteOp[], ctx: RunRestSetContext, origin?: WriteOrigin): Promise<WriteOpResult[] | null> => {
   if (ops.length === 0) {
     return null
   }
@@ -91,6 +93,9 @@ export const runRestSet = async (ops: readonly WriteOp[], ctx: RunRestSetContext
 
     return null
   }
+
+  // W0-3 provenance: requestedAt covers the whole ordered dispatch (pre-dispatch timestamp).
+  const requestedAt = new Date().toISOString()
 
   ctx.setLoading(true)
   const results: WriteOpResult[] = []
@@ -108,6 +113,16 @@ export const runRestSet = async (ops: readonly WriteOp[], ctx: RunRestSetContext
   }
 
   const failed = results.find((result) => !result.ok)
+
+  // W0-3 provenance: ONE AuditRecord per SET (count = ops.length; the summary lists every
+  // op) — never per op — emitted after the set resolves (full success OR stop-on-first-
+  // error). The gated set radius is reused verbatim. Fire-and-forget inside
+  // recordProvenance; a declined confirm returned above, so it records NOTHING.
+  recordProvenance(ctx, origin, radius, failed
+    ? { message: `op ${failed.index + 1} of ${ops.length} (${opLabel(radius.ops[failed.index])}) failed: ${failed.message}`, ok: false, status: failed.status }
+    : { message: `all ${ops.length} writes applied in order`, ok: true, status: results[results.length - 1]?.status ?? 0 },
+  requestedAt)
+
   ctx.message.destroy()
   if (!failed) {
     ctx.notification.success({

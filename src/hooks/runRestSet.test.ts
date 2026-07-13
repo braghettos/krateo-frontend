@@ -40,6 +40,7 @@ const makeCtx = (over: Partial<RunRestSetContext> = {}): RunRestSetContext => ({
   invalidateQueries: vi.fn(() => Promise.resolve()),
   message: { destroy: vi.fn() } as unknown as RunRestSetContext['message'],
   notification: { error: vi.fn(), success: vi.fn() } as unknown as RunRestSetContext['notification'],
+  provenanceEnabled: false,
   registerCleanup: vi.fn(),
   setLoading: vi.fn(),
   ...over,

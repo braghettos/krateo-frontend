@@ -139,7 +139,16 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         setDraftNonce((nonce) => nonce + 1)
         chips.push({ label: proposal.label ?? 'drafted the create form', readOnly: true, verb: 'prefillForm' })
       } else {
-        const chip = await apply(proposal)
+        // W0-3 provenance: tag the dispatch as agent-origin with the identity context the
+        // provider actually holds at dispatch time — the frontend-owned session id and the
+        // user's latest chat message (the prompt that produced this proposal). If a write
+        // is reached (a mutating runAction / patchField / applyResourceSet), its audit
+        // record carries actor:'agent' + this context; read-only verbs never record.
+        const chip = await apply(proposal, {
+          actor: 'agent',
+          agentSessionId: sessionId,
+          ...(lastUserTextRef.current ? { prompt: lastUserTextRef.current } : {}),
+        })
         if (chip) {
           chips.push(chip)
         }
@@ -162,7 +171,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       setTour(proposedTour)
       setTourOpen(true)
     }
-  }, [apply])
+  }, [apply, sessionId])
 
   const applyFrame = useCallback((assistantId: string, frame: AutopilotFrame) => {
     switch (frame.kind) {
