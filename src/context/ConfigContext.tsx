@@ -33,7 +33,7 @@ export interface Config {
      * best-effort: a missing CRD (404), RBAC (403), or network failure is swallowed and
      * never blocks/fails the primary write (see hooks/provenance.ts). **OFF by default** so
      * clusters without the AuditRecord CRD see zero new traffic. */
-    PROVENANCE_ENABLED?: boolean
+    PROVENANCE_ENABLED?: boolean | string
     /** OTLP/HTTP traces endpoint of the OpenTelemetry collector. Optional and
      * default-OFF: when absent the browser starts NO trace provider and injects
      * no W3C `traceparent` header (byte-identical default runtime path). When

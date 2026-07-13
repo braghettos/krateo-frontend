@@ -699,9 +699,12 @@ export const useHandleAction = () => {
     notification,
     openDrawer,
     openModal,
-    // W0-3 provenance kill-switch: default OFF (=== true), so clusters without the
-    // AuditRecord CRD see zero new traffic. Arrives from config.json like the other flags.
-    provenanceEnabled: config?.api.PROVENANCE_ENABLED === true,
+    // W0-3 provenance kill-switch: default OFF, so clusters without the AuditRecord CRD
+    // see zero new traffic. Arrives from config.json like the other flags — which the
+    // chart delivers as STRINGS (see PR #32: config values were re-typed to string for
+    // the values.schema; the installer's componentValues carry "true"/""), so accept the
+    // boolean AND the string form. Any other value (incl. "false") stays OFF.
+    provenanceEnabled: config?.api.PROVENANCE_ENABLED === true || config?.api.PROVENANCE_ENABLED === 'true',
     registerCleanup: (cleanup: () => void) => { cleanupsRef.current.add(cleanup) },
     reloadRoutes,
     resolveJq,
