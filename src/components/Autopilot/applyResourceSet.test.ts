@@ -100,6 +100,23 @@ describe('isSetOpAllowed — one op\'s shape + scope', () => {
     expect(isSetOpAllowed(opOf({ name: undefined, verb: 'DELETE' }))).toBe(false)
   })
 
+  it('rejects path-hostile name/namespace segments (subresource/query smuggling)', () => {
+    // A `/` in the name would re-target a SUBRESOURCE path (e.g. `foo/status`).
+    expect(isSetOpAllowed(opOf({ name: 'foo/status' }))).toBe(false)
+    expect(isSetOpAllowed(opOf({ name: 'foo?dryRun=All' }))).toBe(false)
+    expect(isSetOpAllowed(opOf({ name: 'foo#frag' }))).toBe(false)
+    expect(isSetOpAllowed(opOf({ name: '..' }))).toBe(false)
+    // k8s names are lower-case DNS-1123
+    expect(isSetOpAllowed(opOf({ name: 'Foo' }))).toBe(false)
+    expect(isSetOpAllowed(opOf({ namespace: 'kube-system/secrets' }))).toBe(false)
+    expect(isSetOpAllowed(opOf({ namespace: 'ns?watch=true' }))).toBe(false)
+    // A POST with a present-but-hostile name is rejected too (name rides into the path/payload).
+    expect(isSetOpAllowed(opOf({ name: 'a/b', verb: 'POST' }))).toBe(false)
+    // Clean DNS-1123 segments (dots + dashes) stay allowed.
+    expect(isSetOpAllowed(opOf({ name: 'my-app.v2' }))).toBe(true)
+    expect(isSetOpAllowed(opOf({ namespace: 'team-a' }))).toBe(true)
+  })
+
   it('rejects a non-mutating or unknown verb, and an incomplete target', () => {
     expect(isSetOpAllowed(opOf({ verb: 'GET' as ApplyResourceSetOp['verb'] }))).toBe(false)
     expect(isSetOpAllowed(opOf({ namespace: '' }))).toBe(false)

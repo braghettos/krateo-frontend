@@ -80,8 +80,18 @@ export const isSetOpGroupAllowed = (gvr: ApplyResourceSetGvr | undefined): boole
 }
 
 /**
+ * DNS-1123-ish path-segment guard: name/namespace are interpolated into the op's
+ * apiserver URL by buildSetOpPath, so they must be single clean segments — a `/`
+ * would re-target a SUBRESOURCE (e.g. `foo/status`) and `?#%` would smuggle query
+ * or encoding tricks past the confirm. Mirrors patchField's rejection of path
+ * characters in field keys (same defense-in-depth posture).
+ */
+const isPathSegment = (value: string): boolean => /^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$/.test(value)
+
+/**
  * One op's shape + scope check: a mutating verb, a complete GVR + namespace, a name
- * unless it is a collection POST, and the group allowlist. Pure predicate.
+ * unless it is a collection POST, clean path segments, and the group allowlist.
+ * Pure predicate.
  */
 export const isSetOpAllowed = (op: ApplyResourceSetOp | undefined): boolean => {
   if (!op || !isMutatingVerb(op.verb)) {
@@ -91,11 +101,15 @@ export const isSetOpAllowed = (op: ApplyResourceSetOp | undefined): boolean => {
   if (!gvr || typeof gvr.version !== 'string' || !gvr.version || typeof gvr.resource !== 'string' || !gvr.resource) {
     return false
   }
-  if (typeof namespace !== 'string' || !namespace) {
+  if (typeof namespace !== 'string' || !isPathSegment(namespace)) {
     return false
   }
   // Only a POST may omit the name (create into the collection); PUT/PATCH/DELETE target a named object.
   if (op.verb !== 'POST' && (typeof name !== 'string' || !name)) {
+    return false
+  }
+  // A present name must be a clean segment even on POST (it rides into the payload/path).
+  if (name !== undefined && (typeof name !== 'string' || !isPathSegment(name))) {
     return false
   }
 
