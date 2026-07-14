@@ -1,0 +1,48 @@
+{{- /*
+Author RBAC for the preview sandbox.
+
+Both the previewPage v2 write path (draft apply via snowplow /call) and the
+render path (GET /call, filterGetByRBAC) run under the USER's identity — no new
+service-account powers anywhere. Non-admin author cohorts are FAIL-CLOSED
+without a binding here (verified live: snowplow's per-cohort seed skips cohorts
+with no binding, prototype A.1.4); admins render the sandbox via cluster-admin
+regardless.
+
+The Role grants the whole widgets.templates.krateo.io group via resource
+wildcard '*' (Roles support '*' within an apiGroup), so NEW widget kinds need
+no RBAC change — only a widgetPlurals append for quota+janitor coverage.
+patch is included because snowplow's write path forwards merge-patch, and
+draft iteration re-applies with latest-wins semantics.
+*/ -}}
+{{- if .Values.previewSandbox.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: preview-sandbox-author
+  namespace: {{ .Values.previewSandbox.namespace }}
+  labels:
+    krateo.io/purpose: preview-sandbox
+    {{- include "frontend.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["widgets.templates.krateo.io"]
+    resources: ["*"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
+  - apiGroups: ["templates.krateo.io"]
+    resources: ["restactions"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: preview-sandbox-authors
+  namespace: {{ .Values.previewSandbox.namespace }}
+  labels:
+    krateo.io/purpose: preview-sandbox
+    {{- include "frontend.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: preview-sandbox-author
+subjects:
+  {{- toYaml .Values.previewSandbox.authors | nindent 2 }}
+{{- end }}
