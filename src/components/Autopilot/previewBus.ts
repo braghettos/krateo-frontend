@@ -25,6 +25,11 @@ export interface AutopilotPreviewPayload {
   caption?: string
   /** Render-failure text shown AS the preview content — a bad chart is data, not a crash. */
   error?: string
+  /** Client-side VALIDATION errors of the previewed draft (FE-K1: the RestDefinition
+   * checked against the live CRD shape) — the draft would be rejected if published. */
+  problems?: string[]
+  /** Warning lines (FE-K1: the CEL-immutable fields — wrong first publish = delete + recreate). */
+  warnings?: string[]
   /** Structured summary lines (e.g. a RestDefinition's mapped verbs/paths). */
   summary?: string[]
   /** The objects to list: kind/name/namespace headline + collapsible YAML each. */

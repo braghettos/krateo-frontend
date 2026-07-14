@@ -79,6 +79,24 @@ export const AutopilotPreviewDrawer = () => {
             type='error'
           />
         ) : null}
+        {/* FE-K1: client-side validation of the previewed draft (vs the live CRD shape)
+            and the CEL-immutability warnings — the decide-before-publish surface. */}
+        {payload.problems?.length ? (
+          <Alert
+            description={<ul className={styles.issueList}>{payload.problems.map((line, index) => <li key={`problem-${index}`}>{line}</li>)}</ul>}
+            message='Validation errors — publishing this draft would be rejected'
+            showIcon
+            type='error'
+          />
+        ) : null}
+        {payload.warnings?.length ? (
+          <Alert
+            description={<ul className={styles.issueList}>{payload.warnings.map((line, index) => <li key={`warning-${index}`}>{line}</li>)}</ul>}
+            message='Immutable after generation'
+            showIcon
+            type='warning'
+          />
+        ) : null}
         {payload.summary?.length ? (
           <ul className={styles.summary}>
             {payload.summary.map((line, index) => (

@@ -38,3 +38,13 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* FE-K1 validation/immutability lines inside the drawer's Alert blocks. */
+.issueList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding-left: 16px;
+}
