@@ -208,6 +208,10 @@ export interface Listy {
            */
           errorMessage?: string
           /**
+           * name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action
+           */
+          fanOutPath?: string
+          /**
            * a message that will be displayed inside a toast in case of success
            */
           successMessage?: string

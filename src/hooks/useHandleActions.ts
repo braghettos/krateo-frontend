@@ -18,6 +18,7 @@ import { openModal } from '../widgets/Modal/Modal'
 
 import type { BlastRadius, BlastRadiusSet } from './blastRadius.types'
 import { recordProvenance, type WriteOrigin } from './provenance'
+import { runRestFanOut } from './runRestFanOut'
 import { runRestSet, type WriteOp, type WriteOpResult } from './runRestSet'
 
 interface EventData {
@@ -282,6 +283,13 @@ const runRest = async (
   const { errorMessage, headers = [], onEventNavigateTo, onSuccessNavigateTo, successMessage } = action
   const { customPayload } = runtime
   const { verb } = resourceRef
+
+  // W3-1: `fanOutPath` routes the whole submit through the set fabric instead.
+  if (action.fanOutPath) {
+    await runRestFanOut(action, resourceRef, runtime, ctx)
+
+    return
+  }
 
   let jsonResponse: RestApiResponse | null = null
 

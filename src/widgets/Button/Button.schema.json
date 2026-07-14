@@ -45,6 +45,10 @@
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of error"
                       },
+                      "fanOutPath": {
+                        "type": "string",
+                        "description": "name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action"
+                      },
                       "successMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of success"
@@ -55,7 +59,10 @@
                       },
                       "onEventNavigateTo": {
                         "type": "object",
-                        "required": ["eventReason", "url"],
+                        "required": [
+                          "eventReason",
+                          "url"
+                        ],
                         "additionalProperties": false,
                         "description": "conditional navigation triggered by a specific event",
                         "properties": {
@@ -83,7 +90,9 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["rest"],
+                        "enum": [
+                          "rest"
+                        ],
                         "description": "type of action to execute"
                       },
                       "headers": {
@@ -105,7 +114,10 @@
                         "items": {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["name", "value"],
+                          "required": [
+                            "name",
+                            "value"
+                          ],
                           "properties": {
                             "name": {
                               "type": "string",
@@ -125,11 +137,18 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       }
                     },
-                    "required": ["headers", "id", "type", "resourceRefId"]
+                    "required": [
+                      "headers",
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 },
                 "navigate": {
@@ -150,7 +169,9 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       },
                       "path": {
@@ -167,11 +188,16 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["navigate"],
+                        "enum": [
+                          "navigate"
+                        ],
                         "description": "type of navigation action"
                       }
                     },
-                    "required": ["id", "type"]
+                    "required": [
+                      "id",
+                      "type"
+                    ]
                   }
                 },
                 "openDrawer": {
@@ -187,7 +213,9 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["openDrawer"],
+                        "enum": [
+                          "openDrawer"
+                        ],
                         "description": "type of drawer action"
                       },
                       "resourceRefId": {
@@ -200,7 +228,10 @@
                       },
                       "size": {
                         "type": "string",
-                        "enum": ["default", "large"],
+                        "enum": [
+                          "default",
+                          "large"
+                        ],
                         "description": "drawer size to be displayed"
                       },
                       "title": {
@@ -214,11 +245,17 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       }
                     },
-                    "required": ["id", "type", "resourceRefId"]
+                    "required": [
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 },
                 "openModal": {
@@ -234,7 +271,9 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["openModal"],
+                        "enum": [
+                          "openModal"
+                        ],
                         "description": "type of modal action"
                       },
                       "resourceRefId": {
@@ -256,7 +295,9 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       },
                       "customWidth": {
@@ -266,10 +307,19 @@
                       "size": {
                         "description": "sets the Modal size, 'default' is 520px, 'large' is 80% of the screen width, 'fullscreen' is 100% of the screen width, 'custom' should be used with the 'customWidth' property",
                         "type": "string",
-                        "enum": ["default", "large", "fullscreen", "custom"]
+                        "enum": [
+                          "default",
+                          "large",
+                          "fullscreen",
+                          "custom"
+                        ]
                       }
                     },
-                    "required": ["id", "type", "resourceRefId"]
+                    "required": [
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 }
               },
@@ -300,12 +350,31 @@
             "variant": {
               "description": "antd Button variant (pair with `color`)",
               "type": "string",
-              "enum": ["outlined", "dashed", "solid", "filled", "text", "link"]
+              "enum": [
+                "outlined",
+                "dashed",
+                "solid",
+                "filled",
+                "text",
+                "link"
+              ]
             },
-            "danger": { "type": "boolean", "description": "antd Button danger" },
-            "disabled": { "type": "boolean", "description": "antd Button disabled" },
-            "block": { "type": "boolean", "description": "antd Button block (full width)" },
-            "ghost": { "type": "boolean", "description": "antd Button ghost" },
+            "danger": {
+              "type": "boolean",
+              "description": "antd Button danger"
+            },
+            "disabled": {
+              "type": "boolean",
+              "description": "antd Button disabled"
+            },
+            "block": {
+              "type": "boolean",
+              "description": "antd Button block (full width)"
+            },
+            "ghost": {
+              "type": "boolean",
+              "description": "antd Button ghost"
+            },
             "label": {
               "description": "the label of the button",
               "type": "string"
@@ -315,30 +384,47 @@
               "type": "string"
             },
             "iconColor": {
-              "description": "palette color name (e.g. green / orange / red / cyan) applied to the icon independently of the button color — e.g. a leading fa-circle status dot on a filter chip",
+              "description": "palette color name (e.g. green / orange / red / cyan) applied to the icon independently of the button color \u2014 e.g. a leading fa-circle status dot on a filter chip",
               "type": "string"
             },
             "shape": {
               "description": "the shape of the button",
               "type": "string",
-              "enum": ["default", "circle", "round"]
+              "enum": [
+                "default",
+                "circle",
+                "round"
+              ]
             },
             "size": {
               "description": "the size of the button",
               "type": "string",
-              "enum": ["small", "middle", "large"]
+              "enum": [
+                "small",
+                "middle",
+                "large"
+              ]
             },
             "type": {
               "description": "the visual style of the button",
               "type": "string",
-              "enum": ["default", "text", "link", "primary", "dashed"]
+              "enum": [
+                "default",
+                "text",
+                "link",
+                "primary",
+                "dashed"
+              ]
             },
             "clickActionId": {
               "description": "the id of the action to be executed when the button is clicked",
               "type": "string"
             }
           },
-          "required": ["actions", "clickActionId"],
+          "required": [
+            "actions",
+            "clickActionId"
+          ],
           "additionalProperties": false
         },
         "resourcesRefs": {
@@ -372,7 +458,13 @@
                   },
                   "verb": {
                     "type": "string",
-                    "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
                   },
                   "slice": {
                     "type": "object",
@@ -390,14 +482,22 @@
                         "type": "boolean"
                       }
                     },
-                    "required": ["page", "perPage"]
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
                   }
                 },
-                "required": ["allowed", "id"]
+                "required": [
+                  "allowed",
+                  "id"
+                ]
               }
             }
           },
-          "required": ["items"]
+          "required": [
+            "items"
+          ]
         },
         "apiRef": {
           "type": "object",
@@ -409,7 +509,10 @@
               "type": "string"
             }
           },
-          "required": ["name", "namespace"],
+          "required": [
+            "name",
+            "namespace"
+          ],
           "additionalProperties": false
         },
         "widgetDataTemplate": {
@@ -474,9 +577,15 @@
           }
         }
       },
-      "required": ["widgetData"],
+      "required": [
+        "widgetData"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["kind", "spec", "version"]
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
 }

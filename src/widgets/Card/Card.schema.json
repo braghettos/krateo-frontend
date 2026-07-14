@@ -28,14 +28,6 @@
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
-                      "headers": {
-                        "description": "array of headers as strings, format 'key: value'",
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "description": "key and value as a single, example: 'x-custom-header: value'"
-                        }
-                      },
                       "id": {
                         "type": "string",
                         "description": "unique identifier for the action"
@@ -48,17 +40,21 @@
                         "type": "boolean",
                         "description": "whether user confirmation is required before triggering the action"
                       },
-                      "onSuccessNavigateTo": {
-                        "type": "string",
-                        "description": "url to navigate to after successful execution"
-                      },
                       "errorMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of error"
                       },
+                      "fanOutPath": {
+                        "type": "string",
+                        "description": "name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action"
+                      },
                       "successMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of success"
+                      },
+                      "onSuccessNavigateTo": {
+                        "type": "string",
+                        "description": "url to navigate to after successful execution"
                       },
                       "onEventNavigateTo": {
                         "type": "object",
@@ -97,6 +93,14 @@
                           "rest"
                         ],
                         "description": "type of action to execute"
+                      },
+                      "headers": {
+                        "description": "array of headers as strings, format 'key: value'",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "description": "key and value as a single, example: 'x-custom-header: value'"
+                        }
                       },
                       "payload": {
                         "type": "object",
