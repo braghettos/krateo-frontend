@@ -19,6 +19,7 @@ import { openModal } from '../widgets/Modal/Modal'
 import type { BlastRadius, BlastRadiusSet } from './blastRadius.types'
 import { recordProvenance, type WriteOrigin } from './provenance'
 import { runRestFanOut } from './runRestFanOut'
+import { runRestOps } from './runRestOps'
 import { runRestSet, type WriteOp, type WriteOpResult } from './runRestSet'
 
 interface EventData {
@@ -283,6 +284,15 @@ const runRest = async (
   const { errorMessage, headers = [], onEventNavigateTo, onSuccessNavigateTo, successMessage } = action
   const { customPayload } = runtime
   const { verb } = resourceRef
+
+  // W3-2: `ops` routes the whole submit through the set fabric — N DISTINCT writes
+  // (each entry resolves its own ref + builds its own payload) as ONE gated set.
+  // Checked FIRST so ops×fanOutPath surfaces as runRestOps' mutual-exclusion error.
+  if (action.ops) {
+    await runRestOps(action, runtime, ctx)
+
+    return
+  }
 
   // W3-1: `fanOutPath` routes the whole submit through the set fabric instead.
   if (action.fanOutPath) {

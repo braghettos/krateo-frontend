@@ -76,6 +76,50 @@
                         "type": "string",
                         "description": "name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action"
                       },
+                      "ops": {
+                        "type": "array",
+                        "description": "ordered list of DISTINCT writes applied as ONE gated set (e.g. one Form submit creating a Role AND its RoleBinding): each op resolves its OWN resourceRefId (verb + path + payload base) and builds its OWN payload/payloadToOverride against the SAME submitted values. The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics). Mutually exclusive with fanOutPath; onEventNavigateTo is not supported on a multi-op action. The action's own top-level payload/payloadToOverride are IGNORED when ops is present and its top-level resourceRefId is ignored for dispatch (it must still name a valid resource ref — point it at the first op's)",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "resourceRefId"
+                          ],
+                          "properties": {
+                            "resourceRefId": {
+                              "type": "string",
+                              "description": "the identifier of the resource ref this op targets: its verb (must be mutating), path and payload base"
+                            },
+                            "payload": {
+                              "type": "object",
+                              "additionalProperties": true,
+                              "description": "static payload sent with this op's request"
+                            },
+                            "payloadToOverride": {
+                              "type": "array",
+                              "description": "list of this op's payload fields to override dynamically (values interpolate against the same submitted values as every other op)",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "name",
+                                  "value"
+                                ],
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "description": "name of the field to override"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "description": "value to use for overriding the field"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
                       "successMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of success"
@@ -392,7 +436,7 @@
                 },
                 "draft": {
                   "type": "object",
-                  "description": "draft button configuration \u2014 only rendered when widgetData.draftActionId is also set; clicking it persists the current (un-validated) field values via that action",
+                  "description": "draft button configuration — only rendered when widgetData.draftActionId is also set; clicking it persists the current (un-validated) field values via that action",
                   "properties": {
                     "label": {
                       "type": "string",
@@ -407,7 +451,7 @@
                 },
                 "review": {
                   "type": "object",
-                  "description": "Configure-step button label when reviewBeforeSubmit is set (the button that opens the in-place Review; default 'Review \u2192')",
+                  "description": "Configure-step button label when reviewBeforeSubmit is set (the button that opens the in-place Review; default 'Review →')",
                   "properties": {
                     "label": {
                       "type": "string",
@@ -418,7 +462,7 @@
                 },
                 "reviewBack": {
                   "type": "object",
-                  "description": "Review-step back button label when reviewBeforeSubmit is set (returns to editing; default '\u2190 Back to edit')",
+                  "description": "Review-step back button label when reviewBeforeSubmit is set (returns to editing; default '← Back to edit')",
                   "properties": {
                     "label": {
                       "type": "string",
@@ -437,7 +481,7 @@
               "tsType": "Record<string, unknown>"
             },
             "items": {
-              "description": "resourceRefIds of form-control widgets (Input, Select, Switch, \u2026) to compose inside the Form. Composable mode \u2014 an alternative to the schema/stringSchema generator.",
+              "description": "resourceRefIds of form-control widgets (Input, Select, Switch, …) to compose inside the Form. Composable mode — an alternative to the schema/stringSchema generator.",
               "type": "array",
               "items": {
                 "type": "object",
@@ -454,7 +498,7 @@
               }
             },
             "schema": {
-              "description": "JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields \u2014 the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema. Note: a schema sourced from a CRD's openAPIV3Schema has its `properties` map serialized alphabetically (order lost); use `stringSchema` to preserve the source values.schema.json authoring order.",
+              "description": "JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields — the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema. Note: a schema sourced from a CRD's openAPIV3Schema has its `properties` map serialized alphabetically (order lost); use `stringSchema` to preserve the source values.schema.json authoring order.",
               "type": "object",
               "additionalProperties": true,
               "tsType": "Record<string, unknown>"
@@ -471,11 +515,11 @@
               }
             },
             "reviewBeforeSubmit": {
-              "description": "when true (inline render only), the primary button validates and reveals an in-place read-only Review of the entered values before the real submit \u2014 the form stays mounted so 'Back to edit' preserves every value. Pair with buttonConfig.review / buttonConfig.reviewBack for custom labels.",
+              "description": "when true (inline render only), the primary button validates and reveals an in-place read-only Review of the entered values before the real submit — the form stays mounted so 'Back to edit' preserves every value. Pair with buttonConfig.review / buttonConfig.reviewBack for custom labels.",
               "type": "boolean"
             },
             "submitDisabledWhenPristine": {
-              "description": "when true, the primary (submit) button stays disabled until at least one field differs from its initial value (initialValues overlaid on schema defaults). Use for update forms where submitting an unchanged value is a no-op \u2014 e.g. a version picker pre-set to the currently-installed version.",
+              "description": "when true, the primary (submit) button stays disabled until at least one field differs from its initial value (initialValues overlaid on schema defaults). Use for update forms where submitting an unchanged value is a no-op — e.g. a version picker pre-set to the currently-installed version.",
               "type": "boolean"
             },
             "submitActionId": {
