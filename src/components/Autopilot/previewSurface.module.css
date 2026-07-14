@@ -1,0 +1,40 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.yaml {
+  max-height: 600px;
+  overflow-y: auto;
+
+  /* Match YamlViewer's inset code-surface treatment: re-base the highlighter's own
+     background to the theme surface + a hairline so the YAML reads as one coherent block. */
+  :global(pre) {
+    background: var(--background-color) !important;
+    border: 1px solid var(--border-color, rgba(230, 237, 243, 0.1));
+    border-radius: var(--radius-md);
+  }
+}
+
+.headline {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.errorText {
+  font-family: inherit;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -19,6 +19,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { type RouteObject } from 'react-router'
 
+import { useConfigContext } from '../../context/ConfigContext'
 import { useRoutesContext } from '../../context/RoutesContext'
 import type { WriteOrigin } from '../../hooks/provenance'
 import { useHandleAction } from '../../hooks/useHandleActions'
@@ -113,11 +114,18 @@ export interface PortalActionProposal {
   widget?: string
   actionId?: string
   title?: string
-  /** previewBlueprint: the blueprint namespace + name (either `namespace` or `ns`) to
-   * open the empty `/blueprints/<ns>/<name>/new` Configure form WITHOUT prefilling. */
+  /** patchField / applyResourceSet: the target object's namespace + name. */
   namespace?: string
-  ns?: string
   name?: string
+  /** previewBlueprint (Wave 4): the chart to helm-render dry-run ({url, version?,
+   * repo?}); `values` above (shared with prefillForm) carries the render values. */
+  chart?: { url: string; version?: string; repo?: string }
+  /** previewPage (Wave 4): the proposed widget CR objects, shown as a read-only
+   * source-preview drawer (kind/name headline + collapsible YAML each). */
+  widgets?: unknown[]
+  /** previewRestDef (Wave 4): a RestDefinition CR draft — previewed as YAML plus a
+   * client-side summary of its mapped verbs/paths. */
+  restDefinition?: Record<string, unknown>
   /** patchField (day-2, MUTATING): the on-page composition's GVR (from the page-context
    * `resource`), the single spec field to change (a `spec.<key>` path or a bare key), and
    * its new value. Routed through the W0-2 blast-radius gate; scoped by isPatchAllowed. */
@@ -409,6 +417,10 @@ export const useAutopilotActionBridge = () => {
   const queryClient = useQueryClient()
   const { routes } = useRoutesContext()
   const routePatterns = useMemo(() => collectRoutePatterns(routes), [routes])
+  // The Wave-4 helm-render seam: absent/empty = the render service is not configured,
+  // and previewBlueprint degrades to a graceful "unavailable" chip (zero network).
+  const { config } = useConfigContext()
+  const renderBaseUrl = config?.api.RENDER_API_BASE_URL
 
   // `origin` is the W0-3 provenance tag the provider passes at dispatch time (actor:'agent'
   // + its session id + the user's latest prompt). It is threaded into EVERY dispatch this
@@ -470,8 +482,8 @@ export const useAutopilotActionBridge = () => {
     if (!spec || spec.sideEffect !== 'read' || !spec.argSchema(proposal)) {
       return null
     }
-    return spec.apply(proposal, { handleAction, routePatterns })
-  }, [handleAction, handleActionSet, queryClient, routePatterns])
+    return spec.apply(proposal, { handleAction, renderBaseUrl, routePatterns })
+  }, [handleAction, handleActionSet, queryClient, renderBaseUrl, routePatterns])
 
   return { apply }
 }

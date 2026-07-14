@@ -34,6 +34,12 @@ export interface Config {
      * never blocks/fails the primary write (see hooks/provenance.ts). **OFF by default** so
      * clusters without the AuditRecord CRD see zero new traffic. */
     PROVENANCE_ENABLED?: boolean | string
+    /** Base URL of the Wave-4 helm-render dry-run service (`POST {chart, values}` to
+     * `${RENDER_API_BASE_URL}/render` → rendered manifests, NO cluster write). Optional
+     * — the service is not deployed everywhere yet: when absent/empty the Autopilot
+     * `previewBlueprint` verb degrades to a graceful "preview unavailable" chip and
+     * issues ZERO network calls (see components/Autopilot/previewHandlers.ts). */
+    RENDER_API_BASE_URL?: string
     /** OTLP/HTTP traces endpoint of the OpenTelemetry collector. Optional and
      * default-OFF: when absent the browser starts NO trace provider and injects
      * no W3C `traceparent` header (byte-identical default runtime path). When
