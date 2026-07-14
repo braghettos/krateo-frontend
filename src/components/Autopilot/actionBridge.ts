@@ -120,6 +120,9 @@ export interface PortalActionProposal {
   /** previewBlueprint (Wave 4): the chart to helm-render dry-run ({url, version?,
    * repo?}); `values` above (shared with prefillForm) carries the render values. */
   chart?: { url: string; version?: string; repo?: string }
+  /** previewBlueprint INLINE-DRAFT mode (FE-B1): the draft chart tree as
+   * {"<path>": "<content>"} — exactly ONE of `chart` | `rawTemplates` may be set. */
+  rawTemplates?: Record<string, string>
   /** previewPage (Wave 4): the proposed widget CR objects, shown as a read-only
    * source-preview drawer (kind/name headline + collapsible YAML each). */
   widgets?: unknown[]

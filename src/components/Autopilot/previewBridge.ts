@@ -4,18 +4,20 @@
  * here: argument guards (a malformed proposal is DENIED — null — never a crash), the
  * helm-render transport seam, and the payload builders for the preview drawer.
  *
- * previewBlueprint transport contract (the render service is NOT yet deployed — this
- * seam is designed ahead of it): POST {chart:{url,version?,repo?}, values} to
- * `${RENDER_API_BASE_URL}/render` → 200 {objects:[{apiVersion,kind,name,namespace,
- * yaml}], valuesSchema?, error?}. A response carrying {error} is CONTENT (a bad chart
- * is data — the drawer shows the error string); an unreachable/failed service is
- * likewise surfaced as preview text, never a throw.
+ * previewBlueprint transport contract (helm-render-service, POST /render): the body
+ * carries EXACTLY ONE chart source — {chart:{url,version?,repo?}} (remote mode) OR
+ * {rawTemplates:{"<path>":"<content>"}} (FE-B1 inline-draft mode, previewing a chart
+ * that has no URL yet) — plus {values} → 200 {objects:[{apiVersion,kind,name,
+ * namespace,yaml}], valuesSchema?, error?}. A response carrying {error} is CONTENT (a
+ * bad chart is data — the drawer shows the error string); an unreachable/failed
+ * service is likewise surfaced as preview text, never a throw.
  */
 import { dump } from 'js-yaml'
 
 import { getAccessToken } from '../../utils/getAccessToken'
 
 import type { PortalActionProposal } from './actionBridge'
+import { parseRawTemplates } from './blueprintDraft'
 import { restDefImmutabilityWarnings, validateRestDefinitionDraft } from './kogMapping'
 import type { AutopilotPreviewPayload, PreviewObjectEntry } from './previewBus'
 
@@ -26,8 +28,11 @@ export interface BlueprintChartRef {
   repo?: string
 }
 
+/** Exactly ONE of `chart` (remote mode) | `rawTemplates` (FE-B1 inline-draft mode) —
+ * the parser guarantees the invariant; a proposal carrying both or neither is denied. */
 export interface BlueprintPreviewArgs {
-  chart: BlueprintChartRef
+  chart?: BlueprintChartRef
+  rawTemplates?: Record<string, string>
   values?: Record<string, unknown>
 }
 
@@ -43,14 +48,29 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
 
 const optionalString = (value: unknown): boolean => value === undefined || typeof value === 'string'
 
-/** previewBlueprint args: {chart:{url, version?, repo?}, values?: object}. Null = denied. */
+/**
+ * previewBlueprint args — EXACTLY ONE chart source, matching the render service's own
+ * exactly-one-of contract: {chart:{url, version?, repo?}} (remote) XOR
+ * {rawTemplates:{"<path>":"<content>"}} (inline draft, FE-B1), plus optional
+ * {values: object}. Both sources, neither, or a malformed one = null (denied).
+ */
 export const parseBlueprintPreviewArgs = (proposal: PortalActionProposal): BlueprintPreviewArgs | null => {
-  const chart = asRecord(proposal.chart)
-  if (!chart || typeof chart.url !== 'string' || !chart.url.trim() || !optionalString(chart.version) || !optionalString(chart.repo)) {
+  if (proposal.chart !== undefined && proposal.rawTemplates !== undefined) {
     return null
   }
   const values = proposal.values === undefined ? undefined : asRecord(proposal.values)
   if (proposal.values !== undefined && !values) {
+    return null
+  }
+  if (proposal.rawTemplates !== undefined) {
+    const rawTemplates = parseRawTemplates(proposal.rawTemplates)
+    if (!rawTemplates) {
+      return null
+    }
+    return { rawTemplates, ...(values ? { values } : {}) }
+  }
+  const chart = asRecord(proposal.chart)
+  if (!chart || typeof chart.url !== 'string' || !chart.url.trim() || !optionalString(chart.version) || !optionalString(chart.repo)) {
     return null
   }
   return {
@@ -140,15 +160,20 @@ const normalizeRenderedObject = (entry: unknown): PreviewObjectEntry => {
 }
 
 /**
- * POST the chart + values to the render service and normalize the response. EVERY
- * failure mode resolves (never rejects): a {error} body, a non-2xx status, and an
- * unreachable service all come back as `{error}` — the drawer shows the string as the
- * preview content. The caller decides nothing about transport.
+ * POST the chart source + values to the render service and normalize the response —
+ * remote mode sends {chart}, inline-draft mode sends {rawTemplates} (the service's
+ * exactly-one-of contract). EVERY failure mode resolves (never rejects): a {error}
+ * body, a non-2xx status, and an unreachable service all come back as `{error}` — the
+ * drawer shows the string as the preview content. The caller decides nothing about
+ * transport.
  */
 export const callHelmRender = async (renderBaseUrl: string, args: BlueprintPreviewArgs): Promise<HelmRenderResult> => {
   try {
     const response = await fetch(`${renderBaseUrl.replace(/\/+$/, '')}/render`, {
-      body: JSON.stringify({ chart: args.chart, values: args.values ?? {} }),
+      body: JSON.stringify({
+        ...(args.rawTemplates ? { rawTemplates: args.rawTemplates } : { chart: args.chart }),
+        values: args.values ?? {},
+      }),
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       method: 'POST',
     })
