@@ -203,7 +203,9 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   // Autopilot AgentDraft (Phase 3 gated form-fill): values Autopilot proposes for the create form;
   // the user still reviews and presses Create. Applied imperatively below via setFieldsValue (NOT
   // via initialValues — see that effect for why). Empty/absent when Autopilot isn't driving.
-  const { draft: agentDraft } = useAgentDraft()
+  // `nonce` is bumped by the provider on each NEW draft — the apply effect keys off it so a
+  // widget refetch (which recomputes `safeAgentDraft`'s identity) can't re-apply a stale draft.
+  const { draft: agentDraft, nonce: draftNonce } = useAgentDraft()
 
   // Client-side draft persistence (NO backend): a half-finished form is saved to localStorage
   // under the per-form key the RA seeds as `__owner` (username__namespace__name) and resumed on
@@ -262,12 +264,44 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   // form-level initialValues — so the draft only landed on fields WITHOUT a default (e.g. namespace)
   // and silently dropped name/region/cidr/…. setFieldsValue overrides per-field defaults AND avoids
   // a remount (so values the user already typed survive), so the Autopilot fills EVERY field it
-  // drafted. Fires once per new draft (the provider hands a fresh object on each prefillForm).
+  // drafted. Fires ONCE per new draft, keyed by the provider's `nonce` (bumped on each
+  // prefillForm): `safeAgentDraft` alone is not a safe trigger because a widget refetch replaces
+  // the schema identity and recomputes it — re-applying the SAME draft over values the user has
+  // edited since (issue #33). The nonce guard keeps a genuinely-new draft applying (even over
+  // dirty fields — the user asked Autopilot to fill the form) while refetches are inert.
+  const appliedDraftNonceRef = useRef<number | null>(null)
   useEffect(() => {
-    if (safeAgentDraft && Object.keys(safeAgentDraft).length > 0) {
-      form.setFieldsValue(safeAgentDraft)
+    if (!safeAgentDraft || Object.keys(safeAgentDraft).length === 0) {
+      return
     }
-  }, [safeAgentDraft, form])
+    if (appliedDraftNonceRef.current === draftNonce) {
+      return
+    }
+    appliedDraftNonceRef.current = draftNonce
+    form.setFieldsValue(safeAgentDraft)
+  }, [safeAgentDraft, draftNonce, form])
+
+  // Refetch-vs-dirty-form reconciliation (issue #33). A live-refresh/event-driven refetch
+  // replaces `widgetData` (schema + initialValues get NEW identities) WITHOUT remounting the
+  // Form (WidgetRenderer keeps the element tree stable), and antd applies `initialValues` on
+  // mount only — so by default a refetch changes nothing the user can see. This effect adds the
+  // one desirable exception: while the form is fully PRISTINE (no field touched by the user),
+  // re-seed the freshly-fetched initialValues so an idle form tracks server state. It re-seeds
+  // via `setFields` with `touched: false` — NOT `setFieldsValue`, which marks changed fields
+  // touched and would make the first server-side change freeze all future ones. The moment the
+  // user has touched ANY field, refetched initialValues are never applied again: user input
+  // wins, while fresh schema/options still flow in through the normal re-render.
+  const lastSeededInitialsRef = useRef(effectiveInitialValues)
+  useEffect(() => {
+    if (lastSeededInitialsRef.current === effectiveInitialValues) {
+      return
+    }
+    lastSeededInitialsRef.current = effectiveInitialValues
+    if (form.isFieldsTouched()) {
+      return
+    }
+    form.setFields(Object.entries(effectiveInitialValues).map(([name, value]) => ({ name, touched: false, value })))
+  }, [effectiveInitialValues, form])
 
   // Live form values (re-renders on any field change). Used only to gate the submit button when
   // `submitDisabledWhenPristine` is set: disabled until at least one field differs from its initial

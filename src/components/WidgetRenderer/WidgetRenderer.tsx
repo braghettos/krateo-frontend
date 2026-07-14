@@ -230,26 +230,35 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
   // assumed default and renders NO indicator at all: a marker on every widget, all the
   // time, is noise not signal. So the dot appears only as an exception. Skipped entirely
   // for invisible renders / live-refresh off.
+  //
+  // STRUCTURE STABILITY (issue #33): the wrapper `<div>` is rendered UNCONDITIONALLY
+  // (only the badge inside it toggles). Wrapping only-when-noticeable changed the
+  // subtree's root element type on every stale/refetch flip (Suspense ↔ div), which
+  // React reconciles as unmount+remount — resetting ALL widget-local state, most
+  // visibly wiping every in-progress Form field back to initialValues on each
+  // live-refresh cycle. The wrapper is layout-neutral (fills the widget's slot).
   const withFreshness = (content: React.ReactNode): React.ReactNode => {
     if (invisible || !liveRefreshEnabled) {
       return content
     }
     const isRefreshing = isFetching && dataUpdatedAt > 0
-    if (!isStale && !isRefreshing) {
-      return content
-    }
+    const showBadge = isStale || isRefreshing
     return (
       <div className={styles.freshnessWrap}>
         {content}
-        <div className={styles.freshnessOverlay}>
-          <FreshnessBadge
-            dataUpdatedAt={dataUpdatedAt}
-            isFetching={isFetching}
-            isStale={isStale}
-            liveArmed={liveArmed}
-            onRefresh={() => { void refetch() }}
-          />
-        </div>
+        {showBadge
+          ? (
+            <div className={styles.freshnessOverlay}>
+              <FreshnessBadge
+                dataUpdatedAt={dataUpdatedAt}
+                isFetching={isFetching}
+                isStale={isStale}
+                liveArmed={liveArmed}
+                onRefresh={() => { void refetch() }}
+              />
+            </div>
+          )
+          : null}
       </div>
     )
   }
