@@ -88,12 +88,49 @@ jobs:
           name: frontend-crds-yaml-files
           path: ${{ github.workspace }}/scripts/krateoctl-output/*.yaml
 
+      # The cross-repo push CANNOT use the default GITHUB_TOKEN: it is scoped to this repo
+      # (braghettos/krateo-frontend) only, so any push/PR to braghettos/krateo-frontend-chart
+      # 401s ("Bad credentials" / "Permission denied"). A cross-repo token (`PAT`) is required —
+      # see docs/RELEASING.md for the one-time setup (secret name + exact scopes). This step is
+      # GATED on that secret: when it is absent (or empty/expired) we skip with a clear, actionable
+      # log instead of hard-failing the release with a cryptic 401, and print the exact manual
+      # command to run. When present, the CRD sync PR opens automatically.
       - name: Push CRDs to braghettos/krateo-frontend-chart (crds-subchart) via PR
         env:
           GH_TOKEN: ${{ secrets.PAT }}
         run: |
           set -eo pipefail
           cd "$GITHUB_WORKSPACE"
+
+          # --- Gate: require the cross-repo token before touching the chart repo. -------------
+          # `secrets.PAT` expands to an empty string when the secret is unset. Without this gate,
+          # an empty token silently produces `https://x-access-token:@github.com/...` and the push
+          # 401s deep in the step. Detect it up front and skip cleanly (exit 0) so the release
+          # tag/image publish stays green and the fix is discoverable.
+          if [ -z "${GH_TOKEN:-}" ]; then
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "main")
+            {
+              echo "### ⚠️ Widget-CRD auto-sync SKIPPED — cross-repo token \`PAT\` is not set"
+              echo ""
+              echo "The default \`GITHUB_TOKEN\` cannot push to \`braghettos/krateo-frontend-chart\`"
+              echo "(it is scoped to this repo only). Add a fine-grained PAT as the repo secret"
+              echo "\`PAT\` — see [docs/RELEASING.md](docs/RELEASING.md) for the exact scopes."
+              echo ""
+              echo "Until then, sync the CRDs manually (generated CRDs are attached to this run as"
+              echo "the \`frontend-crds-yaml-files\` artifact):"
+              echo ""
+              echo '```'
+              echo "npm run generate-crds   # regenerates scripts/krateoctl-output/*.yaml for tag ${LATEST_TAG}"
+              echo "# then copy scripts/krateoctl-output/*.yaml into"
+              echo "# braghettos/krateo-frontend-chart:crds-subchart/templates/ and open a PR to main"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            echo "::warning title=Widget-CRD auto-sync skipped::Repo secret 'PAT' is not set; the CRD sync PR to braghettos/krateo-frontend-chart was NOT opened. See docs/RELEASING.md, or sync manually (crds attached as the frontend-crds-yaml-files artifact)."
+            echo "Skipping cross-repo CRD sync: secret 'PAT' is absent/empty. Not a release-blocking failure."
+            exit 0
+          fi
+          # ------------------------------------------------------------------------------------
 
           TARGET_REPO="braghettos/krateo-frontend-chart"
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "main")
