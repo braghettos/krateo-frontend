@@ -51,6 +51,12 @@ const controlFor = (node: JSONSchema4): React.ReactNode => {
   }
   if (node.type === 'boolean') { return <Switch /> }
   if (node.type === 'integer' || node.type === 'number') { return <InputNumber style={{ width: '100%' }} /> }
+  // Array with a FIXED items.enum → a closed multi-select (pick N of the known options —
+  // e.g. the W3-1 fleet-rollout target-clusters field); checked before the free-text
+  // `tags` fallback, which is for open string arrays only.
+  if (node.type === 'array' && !Array.isArray(node.items) && Array.isArray(node.items?.enum)) {
+    return <Select allowClear mode='multiple' options={getOptionsFromEnum(node.items.enum)} placeholder='Select…' />
+  }
   if (node.type === 'array' && !Array.isArray(node.items) && node.items?.type === 'string') {
     return <Select allowClear mode='tags' placeholder='Add values…' />
   }

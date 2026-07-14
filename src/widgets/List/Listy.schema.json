@@ -147,7 +147,7 @@
                     "card",
                     "chip"
                   ],
-                  "description": "row layout: default (antd List.Item.Meta — avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile — icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons — the Marketplace catalog grid) | chip (compact navigable filter pill — primaryText label + optional count, solid/amber when the item's active flag is set — the data-driven Marketplace facet chips)"
+                  "description": "row layout: default (antd List.Item.Meta \u2014 avatar + stacked title/description) | tree (tight single-line mono Relations row: connector + status dot + primaryText + muted inline subPrimaryText + right-aligned colored secondaryText) | card (full antd Card tile \u2014 icon-tile + name + version badge (subPrimaryText) + category tag (secondaryText) + description + a footer of rowActions as visible buttons \u2014 the Marketplace catalog grid) | chip (compact navigable filter pill \u2014 primaryText label + optional count, solid/amber when the item's active flag is set \u2014 the data-driven Marketplace facet chips)"
                 },
                 "secondaryTextAsTag": {
                   "type": "boolean",
@@ -211,9 +211,18 @@
                       "type": "object",
                       "additionalProperties": false,
                       "properties": {
-                        "value": { "type": "string" },
-                        "map": { "type": "object", "additionalProperties": { "type": "string" } },
-                        "default": { "type": "string" }
+                        "value": {
+                          "type": "string"
+                        },
+                        "map": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "default": {
+                          "type": "string"
+                        }
                       }
                     },
                     "label": {
@@ -222,7 +231,10 @@
                     },
                     "variant": {
                       "type": "string",
-                      "enum": ["line", "rail"]
+                      "enum": [
+                        "line",
+                        "rail"
+                      ]
                     }
                   }
                 },
@@ -338,6 +350,10 @@
                       "errorMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of error"
+                      },
+                      "fanOutPath": {
+                        "type": "string",
+                        "description": "name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action"
                       },
                       "successMessage": {
                         "type": "string",
