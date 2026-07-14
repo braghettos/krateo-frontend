@@ -345,3 +345,147 @@ export const buildRestDefPreviewPayload = (restDefinition: Record<string, unknow
     ...(warnings.length ? { warnings } : {}),
   }
 }
+
+/* ── explainUpgradeImpact (Wave 4) ───────────────────────────────────────────
+ * A READ-ONLY dry-run of what a gated blueprint Update would change — reusing the
+ * SAME server-side `upgrade-impact` RESTAction the on-page impact card uses
+ * (restaction.upgrade-impact: fetch CompositionDefinition → helm-render /diff
+ * installed-vs-target → shape), fetched over snowplow /call (the SAME transport widgets
+ * use, so the ClusterIP-only render service is NEVER browser-exposed). Surfaced through
+ * the Autopilot preview drawer so the agent can explain the update BEFORE proposing the
+ * Update runAction. The Update itself still goes through useHandleAction + the blast-radius
+ * gate — never from here. EVERY failure resolves into `{error}` content, never a throw. */
+
+/** The composition identity + target version forwarded to the upgrade-impact RA via ?extras. */
+export interface UpgradeImpactArgs {
+  name: string
+  namespace: string
+  toVersion: string
+}
+
+/** One changed-object row from the upgrade-impact RA's shaped `.status`. */
+export interface UpgradeImpactRow {
+  kind: string
+  name: string
+  namespace: string
+  change: string
+  detail: string
+}
+
+/** The upgrade-impact RA's shaped `.status` (mirrors restaction.upgrade-impact's filter). */
+export interface UpgradeImpactResult {
+  error?: string
+  from: string
+  to: string
+  summary: string
+  rows: UpgradeImpactRow[]
+  valuesSchemaChanged: boolean
+}
+
+/**
+ * explainUpgradeImpact args: the composition {name, namespace} + a {toVersion}. All three
+ * are required non-empty strings; anything else is null (denied). NOTE: no chart source is
+ * needed here — the server-side RA fetches the CompositionDefinition and reads spec.chart.
+ * A same-version request is NOT rejected here (the RA self-diffs to "no changes"); the model
+ * is told to only propose this when a newer version exists.
+ */
+export const parseUpgradeImpactArgs = (proposal: PortalActionProposal): UpgradeImpactArgs | null => {
+  const { name, namespace, toVersion } = proposal
+  if (typeof name !== 'string' || !name.trim()) {
+    return null
+  }
+  if (typeof namespace !== 'string' || !namespace.trim()) {
+    return null
+  }
+  if (typeof toVersion !== 'string' || !toVersion.trim()) {
+    return null
+  }
+  return { name, namespace, toVersion }
+}
+
+/** Serialize the composition identity + target version into the upgrade-impact RA's ?extras
+ * envelope — snowplow forwards {namespace, name, to} into the RA's jq dict (the SAME keys the
+ * blueprint detail-page route params supply), where it fetches the compdef + POSTs /diff. */
+export const buildUpgradeImpactExtras = (args: UpgradeImpactArgs): string =>
+  JSON.stringify({ name: args.name, namespace: args.namespace, to: args.toVersion })
+
+const normalizeImpactRow = (entry: unknown): UpgradeImpactRow => {
+  const row = asRecord(entry) ?? {}
+  return {
+    change: typeof row.change === 'string' ? row.change : '',
+    detail: typeof row.detail === 'string' ? row.detail : '',
+    kind: typeof row.kind === 'string' && row.kind ? row.kind : 'Object',
+    name: typeof row.name === 'string' ? row.name : '',
+    namespace: typeof row.namespace === 'string' ? row.namespace : '',
+  }
+}
+
+/**
+ * Fetch the upgrade-impact RA over snowplow /call — snowplow resolves the RESTAction
+ * in-cluster (fetching the compdef, POSTing /diff to the ClusterIP render service) and
+ * places its jq filter output DIRECTLY in `.status` (a RESTAction's status IS the filter
+ * output — not `.status.widgetData`, which is the widget shape). EVERY failure mode
+ * resolves into an `{error}` result — a 403/404/5xx transport failure, an unreachable
+ * snowplow, or the RA's own honest `.status.error` (a render failure is data).
+ */
+export const callUpgradeImpactRA = async (
+  snowplowBaseUrl: string,
+  raNamespace: string,
+  args: UpgradeImpactArgs,
+): Promise<UpgradeImpactResult> => {
+  const empty: UpgradeImpactResult = { from: args.toVersion, rows: [], summary: '', to: args.toVersion, valuesSchemaChanged: false }
+  try {
+    const url = new URL(`${snowplowBaseUrl.replace(/\/+$/, '')}/call`)
+    url.searchParams.set('resource', 'restactions')
+    url.searchParams.set('apiVersion', 'templates.krateo.io/v1')
+    url.searchParams.set('name', 'upgrade-impact')
+    url.searchParams.set('namespace', raNamespace)
+    url.searchParams.set('extras', buildUpgradeImpactExtras(args))
+    const response = await fetch(url.toString(), { headers: { ...authHeader() } })
+    if (!response.ok) {
+      return { ...empty, error: `upgrade-impact RESTAction responded ${response.status}` }
+    }
+    const cr = await response.json().catch(() => null) as { status?: unknown } | null
+    const status = asRecord(cr?.status)
+    if (!status) {
+      return { ...empty, error: 'upgrade-impact RESTAction returned no status' }
+    }
+    const err = typeof status.error === 'string' && status.error ? status.error : undefined
+    return {
+      ...(err ? { error: err } : {}),
+      from: typeof status.from === 'string' && status.from ? status.from : args.toVersion,
+      rows: Array.isArray(status.rows) ? status.rows.map(normalizeImpactRow) : [],
+      summary: typeof status.summary === 'string' ? status.summary : '',
+      to: typeof status.to === 'string' && status.to ? status.to : args.toVersion,
+      valuesSchemaChanged: status.valuesSchemaChanged === true,
+    }
+  } catch (error) {
+    return { ...empty, error: `upgrade-impact RESTAction unreachable — ${error instanceof Error ? error.message : String(error)}` }
+  }
+}
+
+export const UPGRADE_IMPACT_CAPTION
+  = 'helm-render dry-run diff of CHART DEFAULTS — nothing is applied. Real composition values are not used, so a live instance may differ; the Update itself still goes through the gated confirm.'
+
+/** The one-line change marker per object row (mirrors the on-page impact table's semantics). */
+const IMPACT_CHANGE_MARK: Record<string, string> = { added: '+', error: '!', modified: '~', removed: '-' }
+
+/**
+ * Shape an upgrade-impact result into the preview-drawer payload: the RA's own headline
+ * summary line, then one `<mark> Kind ns/name — detail` line per changed object. A render
+ * error is CONTENT (shown as the drawer error), never a throw.
+ */
+export const buildUpgradeImpactPayload = (result: UpgradeImpactResult): AutopilotPreviewPayload => {
+  const title = `Upgrade impact — ${result.from} → ${result.to}`
+  if (result.error) {
+    return { caption: UPGRADE_IMPACT_CAPTION, error: result.error, title }
+  }
+  const rows = result.rows.map((row) => {
+    const id = row.namespace ? `${row.namespace}/${row.name}` : row.name
+    const mark = IMPACT_CHANGE_MARK[row.change] ?? '·'
+    return `${mark} ${row.kind}${id ? ` ${id}` : ''}${row.detail ? ` — ${row.detail}` : ''}`
+  })
+  const body = rows.length ? rows : ['No changes between the two versions (chart defaults).']
+  const summary = result.summary ? [result.summary, ...rows] : body
+  return { caption: UPGRADE_IMPACT_CAPTION, summary, title }
+}

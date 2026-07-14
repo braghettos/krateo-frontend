@@ -38,12 +38,15 @@ import { buildFormSchemaText, DRAFT_REJECTED_CAPTION, draftDisplayName, lintBlue
 import {
   buildPagePreviewPayload,
   buildRestDefPreviewPayload,
+  buildUpgradeImpactPayload,
   callBlueprintRenderRA,
   callHelmRender,
+  callUpgradeImpactRA,
   chartDisplayName,
   parseBlueprintPreviewArgs,
   parsePagePreviewArgs,
   parseRestDefPreviewArgs,
+  parseUpgradeImpactArgs,
 } from './previewBridge'
 import { openAutopilotPreview } from './previewBus'
 import { registerReadOnlyVerb, type VerbSpec } from './verbRegistry'
@@ -163,9 +166,47 @@ export const previewRestDefSpec: VerbSpec = {
   sideEffect: 'read',
 }
 
+/** The graceful-absence chip label when the RA transport is unavailable (no snowplow base
+ * URL / no frontend namespace) — the upgrade-impact RA is the ONLY transport (the render
+ * service is never browser-exposed), so absence means no diff can be produced here. */
+export const UPGRADE_IMPACT_UNAVAILABLE_LABEL = 'upgrade impact unavailable — render service not reachable'
+
+/**
+ * explainUpgradeImpact → what a gated blueprint Update would change, BEFORE proposing the
+ * Update runAction. Read-only end to end: it fetches the server-side `upgrade-impact`
+ * RESTAction over snowplow /call (which helm-render /diffs installed-vs-target), and renders
+ * the added/removed/modified objects + the values-schema flag into the shared preview drawer.
+ * The Update itself still goes through useHandleAction + the blast-radius gate — never here.
+ *
+ * TRANSPORT: the server-side RA over snowplow /call is the ONLY path (the ClusterIP render
+ * service is never browser-exposed). No snowplow base URL / frontend namespace → a graceful
+ * "unavailable" chip, ZERO network. A render/diff failure is CONTENT (shown in the drawer).
+ */
+export const explainUpgradeImpactSpec: VerbSpec = {
+  apply: async (proposal, deps) => {
+    const args = parseUpgradeImpactArgs(proposal)
+    if (!args) {
+      return null
+    }
+    if (!deps.snowplowBaseUrl || !deps.frontendNamespace) {
+      return { label: UPGRADE_IMPACT_UNAVAILABLE_LABEL, readOnly: true, verb: 'explainUpgradeImpact' }
+    }
+    const result = await callUpgradeImpactRA(deps.snowplowBaseUrl, deps.frontendNamespace, args)
+    openAutopilotPreview(buildUpgradeImpactPayload(result))
+    const outcome = result.error
+      ? 'diff failed'
+      : (result.summary || `${result.rows.length} change${result.rows.length === 1 ? '' : 's'}`)
+    return { label: proposal.label ?? `upgrade impact → ${args.toVersion} (${outcome})`, readOnly: true, verb: 'explainUpgradeImpact' }
+  },
+  argSchema: (proposal) => parseUpgradeImpactArgs(proposal) !== null,
+  name: 'explainUpgradeImpact',
+  sideEffect: 'read',
+}
+
 // Seed the preview verbs into the shared read-only registry (one-line entries). This
 // runs on module load; actionBridge.ts imports this module so the entries are present
 // before any apply() dispatch.
 registerReadOnlyVerb(previewBlueprintSpec)
 registerReadOnlyVerb(previewPageSpec)
 registerReadOnlyVerb(previewRestDefSpec)
+registerReadOnlyVerb(explainUpgradeImpactSpec)
