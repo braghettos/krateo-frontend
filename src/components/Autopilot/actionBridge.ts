@@ -430,9 +430,14 @@ export const useAutopilotActionBridge = () => {
   const queryClient = useQueryClient()
   const { routes } = useRoutesContext()
   const routePatterns = useMemo(() => collectRoutePatterns(routes), [routes])
-  // The Wave-4 helm-render seam: absent/empty = the render service is not configured,
-  // and previewBlueprint degrades to a graceful "unavailable" chip (zero network).
+  // previewBlueprint render transport. PREFERRED: the server-side `blueprint-render`
+  // RESTAction fetched via snowplow `/call` (snowplowBaseUrl + frontendNamespace) — the
+  // ClusterIP-only render service is never browser-exposed. FALLBACK: the legacy direct
+  // browser fetch (renderBaseUrl = RENDER_API_BASE_URL). Neither → a graceful "unavailable"
+  // chip (zero network).
   const { config } = useConfigContext()
+  const snowplowBaseUrl = config?.api.SNOWPLOW_API_BASE_URL
+  const frontendNamespace = config?.params.FRONTEND_NAMESPACE
   const renderBaseUrl = config?.api.RENDER_API_BASE_URL
   // FE-P4: the quarantined preview sandbox. Absent/empty = previewPage v2 OFF (v1
   // source preview) AND the applyResourceSet widgets/restactions carve-out fully closed.
@@ -519,8 +524,8 @@ export const useAutopilotActionBridge = () => {
     if (!spec || spec.sideEffect !== 'read' || !spec.argSchema(proposal)) {
       return null
     }
-    return spec.apply(proposal, { handleAction, renderBaseUrl, routePatterns })
-  }, [handleAction, handleActionSet, previewPageSession, queryClient, renderBaseUrl, routePatterns, sandboxNamespace])
+    return spec.apply(proposal, { frontendNamespace, handleAction, renderBaseUrl, routePatterns, snowplowBaseUrl })
+  }, [frontendNamespace, handleAction, handleActionSet, previewPageSession, queryClient, renderBaseUrl, routePatterns, sandboxNamespace, snowplowBaseUrl])
 
   return { apply }
 }

@@ -39,8 +39,18 @@ export interface VerbDeps {
   handleAction: (action: WidgetAction, resourcesRefs: ResourcesRefs) => Promise<void>
   /** The registered route patterns (see collectRoutePatterns). Empty = table not ready yet. */
   routePatterns: string[]
-  /** Base URL of the Wave-4 helm-render dry-run service (config api.RENDER_API_BASE_URL).
-   * Absent = not configured — previewBlueprint degrades to a graceful "unavailable" chip. */
+  /** PREFERRED previewBlueprint transport: snowplow base URL (config api.SNOWPLOW_API_BASE_URL,
+   * always present) → previewBlueprint fetches the `blueprint-render` RESTAction via `/call`
+   * (server-side render, so the ClusterIP-only render service is never browser-exposed). Paired
+   * with `frontendNamespace` (the RA's namespace). */
+  snowplowBaseUrl?: string
+  /** The frontend namespace (config params.FRONTEND_NAMESPACE) where the `blueprint-render`
+   * RESTAction lives — the `namespace` of its `/call` fetch. */
+  frontendNamespace?: string
+  /** LEGACY previewBlueprint transport: base URL of the Wave-4 helm-render dry-run service
+   * (config api.RENDER_API_BASE_URL) for a DIRECT browser fetch. Used only as the fallback
+   * when the RA transport is not available. Absent AND no RA transport → previewBlueprint
+   * degrades to a graceful "unavailable" chip. */
   renderBaseUrl?: string
 }
 

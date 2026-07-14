@@ -7,15 +7,17 @@
  *
  *   - previewBlueprint {chart:{url,version?,repo?}, values?} OR — FE-B1 inline-draft
  *     mode — {rawTemplates:{"<path>":"<content>"}, values?} (exactly ONE source):
- *     POSTs to the helm-render service (config api.RENDER_API_BASE_URL) and lists the
- *     rendered child objects; a returned valuesSchema additionally renders as a
- *     read-only "Create form preview" section (the production SchemaForm — zero extra
- *     network). Inline drafts pass the FE-B2 crdgen lint FIRST: a values.schema.json
- *     carrying a non-empty object/array default (the core-provider#46 class that
- *     wedges CRD generation) — or a draft over the 512 KiB cap — is a HARD ERROR
- *     shown in the drawer, and NOTHING is fetched. No renderBaseUrl configured → a
- *     graceful "preview unavailable" chip, ZERO network. A render error is CONTENT
- *     (a bad chart is data), shown in the drawer.
+ *     renders the chart SERVER-SIDE via the `blueprint-render` RESTAction (fetched over
+ *     snowplow `/call`, the SAME transport widgets use — so the ClusterIP-only render
+ *     service is never browser-exposed) and lists the rendered child objects; a returned
+ *     valuesSchema additionally renders as a read-only "Create form preview" section (the
+ *     production SchemaForm — zero extra network). Legacy fallback: a DIRECT browser fetch
+ *     to config api.RENDER_API_BASE_URL when the RA transport is unavailable. Inline drafts
+ *     pass the FE-B2 crdgen lint FIRST: a values.schema.json carrying a non-empty
+ *     object/array default (the core-provider#46 class that wedges CRD generation) — or a
+ *     draft over the 512 KiB cap — is a HARD ERROR shown in the drawer, and NOTHING is
+ *     fetched. Neither transport available → a graceful "preview unavailable" chip, ZERO
+ *     network. A render error is CONTENT (a bad chart is data), shown in the drawer.
  *   - previewPage {widgets:[<widget CR objects>]}: ZERO network — an honest SOURCE
  *     preview (kind/name headline + collapsible YAML per proposed CR). Deliberately
  *     NOT a live render: WidgetRenderer requires a SERVED widgetEndpoint
@@ -36,6 +38,7 @@ import { buildFormSchemaText, DRAFT_REJECTED_CAPTION, draftDisplayName, lintBlue
 import {
   buildPagePreviewPayload,
   buildRestDefPreviewPayload,
+  callBlueprintRenderRA,
   callHelmRender,
   chartDisplayName,
   parseBlueprintPreviewArgs,
@@ -45,13 +48,21 @@ import {
 import { openAutopilotPreview } from './previewBus'
 import { registerReadOnlyVerb, type VerbSpec } from './verbRegistry'
 
-/** The graceful-absence chip label when RENDER_API_BASE_URL is not configured. */
+/** The graceful-absence chip label when NEITHER previewBlueprint transport is available
+ * (no snowplow RA reachable AND no direct RENDER_API_BASE_URL configured). */
 export const RENDER_UNAVAILABLE_LABEL = 'preview unavailable — render service not configured'
 
 /**
  * previewBlueprint → helm-render the chart against the values and show the rendered
- * child objects. Read-only end to end: the render service is a dry-run (no cluster
- * write), and every failure mode resolves into drawer content or a chip — no throw.
+ * child objects. Read-only end to end: the render is a dry-run (no cluster write), and
+ * every failure mode resolves into drawer content or a chip — no throw.
+ *
+ * TRANSPORT: PREFER the server-side `blueprint-render` RESTAction (fetched via snowplow
+ * `/call`, the same transport widgets use) so the ClusterIP-only render service is NEVER
+ * browser-exposed. When the RA transport is unavailable (no snowplow base URL / no
+ * frontend namespace) but a direct RENDER_API_BASE_URL IS configured, fall back to the
+ * legacy direct browser fetch. When NEITHER is available → the graceful "unavailable"
+ * chip, ZERO network.
  */
 export const previewBlueprintSpec: VerbSpec = {
   apply: async (proposal, deps) => {
@@ -59,9 +70,12 @@ export const previewBlueprintSpec: VerbSpec = {
     if (!args) {
       return null
     }
-    if (!deps.renderBaseUrl) {
-      // Graceful absence: the render service is optional install surface. No fetch,
-      // no drawer — just an honest chip saying the preview cannot be produced here.
+    // The RA transport needs both the snowplow base URL AND the RA's namespace (frontend
+    // namespace); a direct render base URL is the fallback. Neither → graceful absence.
+    const canUseRA = Boolean(deps.snowplowBaseUrl && deps.frontendNamespace)
+    if (!canUseRA && !deps.renderBaseUrl) {
+      // Graceful absence: no render path is configured. No fetch, no drawer — just an
+      // honest chip saying the preview cannot be produced here.
       return { label: RENDER_UNAVAILABLE_LABEL, readOnly: true, verb: 'previewBlueprint' }
     }
     const name = args.chart ? chartDisplayName(args.chart.url) : draftDisplayName(args.rawTemplates ?? {})
@@ -79,7 +93,10 @@ export const previewBlueprintSpec: VerbSpec = {
         return { label: proposal.label ?? `preview ${name} (draft rejected)`, readOnly: true, verb: 'previewBlueprint' }
       }
     }
-    const rendered = await callHelmRender(deps.renderBaseUrl, args)
+    // PREFER the RA (server-side render); DIRECT fetch is the config-absent fallback.
+    const rendered = canUseRA
+      ? await callBlueprintRenderRA(deps.snowplowBaseUrl!, deps.frontendNamespace!, args)
+      : await callHelmRender(deps.renderBaseUrl!, args)
     // FE-B1: the create-form half — the raw values.schema.json string (verbatim from
     // the draft file when inline; the response's valuesSchema otherwise) rides the
     // payload and mounts as a read-only SchemaForm section in the drawer.

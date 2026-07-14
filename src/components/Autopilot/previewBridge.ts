@@ -159,6 +159,33 @@ const normalizeRenderedObject = (entry: unknown): PreviewObjectEntry => {
   }
 }
 
+/** The render CONTRACT body — `{objects, valuesSchema?, error?}` — as produced by BOTH
+ * transports: the direct render service (`callHelmRender`, the response JSON) and the
+ * server-side RA (`callBlueprintRenderRA`, the RESTAction's resolved `.status`). The RA
+ * jq filter emits EXACTLY this shape, so one normalizer serves both. */
+interface RenderContractBody { error?: unknown; objects?: unknown; valuesSchema?: unknown }
+
+/** Normalize the shared `{objects, valuesSchema?, error?}` contract body into a
+ * HelmRenderResult. An `{error}` string is CONTENT (a bad chart is data → objects:[]);
+ * otherwise the objects list (+ valuesSchema when present). Never throws. */
+const toHelmRenderResult = (body: RenderContractBody | null): HelmRenderResult => {
+  if (typeof body?.error === 'string' && body.error) {
+    return { error: body.error, objects: [] }
+  }
+  const objects = Array.isArray(body?.objects) ? body.objects.map(normalizeRenderedObject) : []
+  return { objects, ...(body?.valuesSchema === undefined ? {} : { valuesSchema: body.valuesSchema }) }
+}
+
+/** Serialize the previewBlueprint args into the RA's `?extras` envelope — the SAME
+ * exactly-one-of source contract, forwarded by snowplow into the RA's jq dict, where the
+ * `blueprint-render` payload step rebuilds the render service body server-side. Exactly
+ * ONE of `chart` | `rawTemplates` (the parser guarantees it), plus `values` (default {}). */
+export const buildBlueprintRenderExtras = (args: BlueprintPreviewArgs): string =>
+  JSON.stringify({
+    ...(args.rawTemplates ? { rawTemplates: args.rawTemplates } : { chart: args.chart }),
+    values: args.values ?? {},
+  })
+
 /**
  * POST the chart source + values to the render service and normalize the response —
  * remote mode sends {chart}, inline-draft mode sends {rawTemplates} (the service's
@@ -166,6 +193,11 @@ const normalizeRenderedObject = (entry: unknown): PreviewObjectEntry => {
  * body, a non-2xx status, and an unreachable service all come back as `{error}` — the
  * drawer shows the string as the preview content. The caller decides nothing about
  * transport.
+ *
+ * NOTE: this is the LEGACY direct-fetch transport (config api.RENDER_API_BASE_URL). The
+ * render service is ClusterIP-only and should NOT be browser-exposed, so the preferred
+ * path is `callBlueprintRenderRA` (server-side via snowplow). This is kept as the
+ * config-absent fallback for installs that still expose the render service directly.
  */
 export const callHelmRender = async (renderBaseUrl: string, args: BlueprintPreviewArgs): Promise<HelmRenderResult> => {
   try {
@@ -177,17 +209,59 @@ export const callHelmRender = async (renderBaseUrl: string, args: BlueprintPrevi
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       method: 'POST',
     })
-    const body = await response.json().catch(() => null) as { error?: unknown; objects?: unknown; valuesSchema?: unknown } | null
-    if (typeof body?.error === 'string' && body.error) {
-      return { error: body.error, objects: [] }
-    }
-    if (!response.ok) {
+    const body = await response.json().catch(() => null) as RenderContractBody | null
+    // A non-2xx WITHOUT an {error} body is the only transport-specific case (the RA path
+    // has no equivalent — snowplow answers 200 with the {error} in .status). Everything
+    // else flows through the shared contract normalizer.
+    if (!(typeof body?.error === 'string' && body.error) && !response.ok) {
       return { error: `render service responded ${response.status}`, objects: [] }
     }
-    const objects = Array.isArray(body?.objects) ? body.objects.map(normalizeRenderedObject) : []
-    return { objects, ...(body?.valuesSchema === undefined ? {} : { valuesSchema: body.valuesSchema }) }
+    return toHelmRenderResult(body)
   } catch (error) {
     return { error: `render service unreachable — ${error instanceof Error ? error.message : String(error)}`, objects: [] }
+  }
+}
+
+/**
+ * Render a blueprint through the snowplow `blueprint-render` RESTAction — the SAME
+ * transport a widget uses (`GET ${snowplowBaseUrl}/call?resource=restactions&...` with
+ * the user's Bearer), so the ClusterIP-only render service is NEVER browser-exposed:
+ * snowplow POSTs it in-cluster via the RA's endpointRef and returns the shaped result in
+ * the RESTAction's resolved `.status`.
+ *
+ * The previewBlueprint args ride in `?extras` (the exactly-one-of chart source + values);
+ * the response is the resolved RESTAction CR whose `.status` is the render contract body
+ * `{objects, valuesSchema?, error?}` (snowplow places a RESTAction's jq filter output
+ * directly in `.status`). EVERY failure mode resolves into `{error}` content — never a
+ * throw — exactly like `callHelmRender`, so the drawer path is identical.
+ */
+export const callBlueprintRenderRA = async (
+  snowplowBaseUrl: string,
+  namespace: string,
+  args: BlueprintPreviewArgs,
+): Promise<HelmRenderResult> => {
+  try {
+    const url = new URL(`${snowplowBaseUrl.replace(/\/+$/, '')}/call`)
+    url.searchParams.set('resource', 'restactions')
+    url.searchParams.set('apiVersion', 'templates.krateo.io/v1')
+    url.searchParams.set('name', 'blueprint-render')
+    url.searchParams.set('namespace', namespace)
+    url.searchParams.set('extras', buildBlueprintRenderExtras(args))
+    const response = await fetch(url.toString(), { headers: { ...authHeader() } })
+    if (!response.ok) {
+      // A RA transport failure (RBAC 403, the RA not installed 404, snowplow 5xx) — the
+      // render service {error} would have been a 200 with .status.error, so a non-2xx here
+      // is genuinely the RA path failing. Surface it as content, never a throw.
+      return { error: `blueprint-render RESTAction responded ${response.status}`, objects: [] }
+    }
+    // snowplow resolves a RESTAction with its jq filter output placed DIRECTLY in .status
+    // (not .status.widgetData — that is the widget shape). The filter emits the render
+    // contract body verbatim.
+    const cr = await response.json().catch(() => null) as { status?: unknown } | null
+    const status = asRecord(cr?.status) as RenderContractBody | null
+    return toHelmRenderResult(status)
+  } catch (error) {
+    return { error: `blueprint-render RESTAction unreachable — ${error instanceof Error ? error.message : String(error)}`, objects: [] }
   }
 }
 
