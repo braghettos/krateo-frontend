@@ -5,11 +5,17 @@
  * drawer (previewSurface.tsx, opened via the previewBus event). The write that may
  * follow still goes through useHandleAction + the blast-radius gate — never from here.
  *
- *   - previewBlueprint {chart:{url,version?,repo?}, values?}: POSTs to the helm-render
- *     service (config api.RENDER_API_BASE_URL — the transport seam is designed ahead
- *     of the service's deployment) and lists the rendered child objects. No
- *     renderBaseUrl configured → a graceful "preview unavailable" chip, ZERO network.
- *     A render error is CONTENT (a bad chart is data), shown in the drawer.
+ *   - previewBlueprint {chart:{url,version?,repo?}, values?} OR — FE-B1 inline-draft
+ *     mode — {rawTemplates:{"<path>":"<content>"}, values?} (exactly ONE source):
+ *     POSTs to the helm-render service (config api.RENDER_API_BASE_URL) and lists the
+ *     rendered child objects; a returned valuesSchema additionally renders as a
+ *     read-only "Create form preview" section (the production SchemaForm — zero extra
+ *     network). Inline drafts pass the FE-B2 crdgen lint FIRST: a values.schema.json
+ *     carrying a non-empty object/array default (the core-provider#46 class that
+ *     wedges CRD generation) — or a draft over the 512 KiB cap — is a HARD ERROR
+ *     shown in the drawer, and NOTHING is fetched. No renderBaseUrl configured → a
+ *     graceful "preview unavailable" chip, ZERO network. A render error is CONTENT
+ *     (a bad chart is data), shown in the drawer.
  *   - previewPage {widgets:[<widget CR objects>]}: ZERO network — an honest SOURCE
  *     preview (kind/name headline + collapsible YAML per proposed CR). Deliberately
  *     NOT a live render: WidgetRenderer requires a SERVED widgetEndpoint
@@ -26,6 +32,7 @@
  * Malformed args are DENIED (argSchema false / apply → null), matching every other
  * registry verb — never a crash, never a partial dispatch.
  */
+import { buildFormSchemaText, DRAFT_REJECTED_CAPTION, draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
 import {
   buildPagePreviewPayload,
   buildRestDefPreviewPayload,
@@ -57,11 +64,30 @@ export const previewBlueprintSpec: VerbSpec = {
       // no drawer — just an honest chip saying the preview cannot be produced here.
       return { label: RENDER_UNAVAILABLE_LABEL, readOnly: true, verb: 'previewBlueprint' }
     }
-    const name = chartDisplayName(args.chart.url)
+    const name = args.chart ? chartDisplayName(args.chart.url) : draftDisplayName(args.rawTemplates ?? {})
+    // FE-B2: inline drafts pass the client-side crdgen lint BEFORE any render fetch —
+    // a #46-class schema default (or an over-cap draft) is a HARD ERROR: the drawer
+    // shows the verdicts only and NOTHING leaves the browser.
+    if (args.rawTemplates) {
+      const problems = lintBlueprintDraft(args.rawTemplates)
+      if (problems.length) {
+        openAutopilotPreview({
+          caption: DRAFT_REJECTED_CAPTION,
+          problems,
+          title: `Blueprint preview — ${name}`,
+        })
+        return { label: proposal.label ?? `preview ${name} (draft rejected)`, readOnly: true, verb: 'previewBlueprint' }
+      }
+    }
     const rendered = await callHelmRender(deps.renderBaseUrl, args)
+    // FE-B1: the create-form half — the raw values.schema.json string (verbatim from
+    // the draft file when inline; the response's valuesSchema otherwise) rides the
+    // payload and mounts as a read-only SchemaForm section in the drawer.
+    const formSchema = buildFormSchemaText(args.rawTemplates, rendered.valuesSchema, rendered.error)
     openAutopilotPreview({
       caption: 'helm-render dry run — nothing is applied to the cluster',
       ...(rendered.error ? { error: rendered.error } : {}),
+      ...(formSchema ? { formSchema } : {}),
       objects: rendered.objects,
       title: `Blueprint preview — ${name}`,
     })

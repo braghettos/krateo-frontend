@@ -34,6 +34,10 @@ export interface AutopilotPreviewPayload {
   summary?: string[]
   /** The objects to list: kind/name/namespace headline + collapsible YAML each. */
   objects?: PreviewObjectEntry[]
+  /** FE-B1: the RAW values.schema.json string of a previewed blueprint — rendered as a
+   * read-only "Create form preview" section via the production SchemaForm. Kept a
+   * STRING (parsed client-side) so the draft's authoring order survives verbatim. */
+  formSchema?: string
 }
 
 /** Open the Autopilot preview drawer (mounted once by AutopilotProvider). */

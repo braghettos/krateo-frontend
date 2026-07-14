@@ -20,6 +20,7 @@ import lightfair from 'react-syntax-highlighter/dist/esm/styles/hljs/lightfair.j
 import { useThemeMode } from '../../context/ThemeModeContext'
 
 import { AUTOPILOT_PREVIEW_EVENT, type AutopilotPreviewPayload, type PreviewObjectEntry } from './previewBus'
+import { PreviewFormSection } from './previewFormSection'
 import styles from './previewSurface.module.css'
 
 const ObjectHeadline = ({ entry }: { entry: PreviewObjectEntry }) => (
@@ -107,7 +108,10 @@ export const AutopilotPreviewDrawer = () => {
           </ul>
         ) : null}
         {items.length ? <Collapse items={items} /> : null}
-        {!items.length && !payload.error && !payload.summary?.length
+        {/* FE-B1: the create-form half of a blueprint preview — the draft's
+            values.schema.json mounted read-only through the production SchemaForm. */}
+        {payload.formSchema ? <PreviewFormSection formSchema={payload.formSchema} /> : null}
+        {!items.length && !payload.error && !payload.summary?.length && !payload.formSchema && !payload.problems?.length
           ? <Empty description='Nothing to preview' image={Empty.PRESENTED_IMAGE_SIMPLE} />
           : null}
       </div>
