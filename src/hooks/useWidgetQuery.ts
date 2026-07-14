@@ -10,7 +10,7 @@ import { useConfigContext } from '../context/ConfigContext'
 import type { Widget } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
 import { getUserInfo } from '../utils/getUserInfo'
-import { forceLogout } from '../utils/logout'
+import { raiseSessionExpired } from '../utils/sessionResume'
 
 import type { WatchMatcher } from './liveRefresh'
 import { getRefreshEntry, isWidgetLiveRefreshEnabled, recordRefreshHeaders } from './refreshSse'
@@ -192,10 +192,13 @@ export const useWidgetQuery = (widgetEndpoint: string, options: UseWidgetQueryOp
     })
 
     if (res.status === 401) {
-      // Expired/invalid token → auto-logout: clear the stale session and hard-redirect to
-      // /login instead of leaving every widget rendering a silent 401. (Until now only the
-      // manual /logout route recovered from an expired token.) Guarded to fire once.
-      void forceLogout()
+      // Expired/invalid token → raise the IN-PLACE session-resume modal (single app-level
+      // mount, see components/SessionResume) instead of hard-wiping the session and dumping
+      // the user on /login. Concurrent 401s (every widget failing at once) coalesce into ONE
+      // pending resume; on successful re-auth the modal invalidates all queries so this very
+      // widget refetches with the fresh token and the page resumes where it was. Non-basic
+      // auth strategies fall back to the legacy forceLogout inside the flow.
+      void raiseSessionExpired()
     }
     if (!res.ok) {
       throw new WidgetFetchError(`Widget fetch failed: ${res.status} ${res.statusText}`, res.status)

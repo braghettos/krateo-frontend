@@ -9,6 +9,7 @@ import { AutopilotProvider, AutopilotShell, AutopilotToggle } from '../Autopilot
 import Breadcrumb from '../Breadcrumb'
 import CommandPalette from '../CommandPalette'
 import Notifications from '../Notifications'
+import SessionResumeModal from '../SessionResume'
 import ThemeToggle from '../ThemeToggle'
 import UserMenu from '../UserMenu'
 import WidgetRenderer from '../WidgetRenderer'
@@ -73,6 +74,7 @@ export const ShellRoute = () => {
         </AutopilotShell>
         <Drawer />
         <Modal />
+        <SessionResumeModal />
       </AutopilotProvider>
     </ShellSlotsProvider>
   )
