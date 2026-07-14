@@ -17,6 +17,14 @@
   }
 }
 
+/* previewPage v2 "Rendered (live)" tab: give the real page render room to lay out
+   (a Flex root stacks children) and keep long pages scrollable inside the drawer. */
+.live {
+  max-height: 75vh;
+  min-height: 240px;
+  overflow-y: auto;
+}
+
 .headline {
   align-items: center;
   display: inline-flex;

@@ -20,7 +20,7 @@ import type { BlastRadius, BlastRadiusSet } from './blastRadius.types'
 import { recordProvenance, type WriteOrigin } from './provenance'
 import { runRestFanOut } from './runRestFanOut'
 import { runRestOps } from './runRestOps'
-import { runRestSet, type WriteOp, type WriteOpResult } from './runRestSet'
+import { runRestSet, type SetDispatchOptions, type WriteOp, type WriteOpResult } from './runRestSet'
 
 interface EventData {
   involvedObject: {
@@ -746,10 +746,12 @@ export const useHandleAction = () => {
    * W0-4 blast-radius confirm (decline = nothing dispatched), sequential dispatch with
    * stop-on-first-error, per-item results. Same ctx (same gate modal, same auth, same
    * invalidation) as a scalar handleAction — see runRestSet. `origin` is the W0-3 tag
-   * (agent-origin sets pass it; absent = human).
+   * (agent-origin sets pass it; absent = human). `options` is the previewPage-v2
+   * sandbox relaxation (confirm-skip verified per-op against the named namespace,
+   * silent toasts) — see SetDispatchOptions; every other caller omits it.
    */
-  const handleActionSet = async (ops: readonly WriteOp[], origin?: WriteOrigin): Promise<WriteOpResult[] | null> =>
-    runRestSet(ops, buildCtx(), origin)
+  const handleActionSet = async (ops: readonly WriteOp[], origin?: WriteOrigin, options?: SetDispatchOptions): Promise<WriteOpResult[] | null> =>
+    runRestSet(ops, buildCtx(), origin, options)
 
   return { handleAction, handleActionSet, isActionLoading }
 }

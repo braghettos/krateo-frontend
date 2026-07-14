@@ -2,7 +2,9 @@
  * P1 applySet — the SCOPED, human-gated `applyResourceSet` mutating branch. Pure-logic
  * coverage (no RTL/jsdom), matching patchField.test.ts. Proves:
  *   - the isApplySetAllowed SET SAFETY KERNEL truth table (op-count cap at 10; group
- *     allowlist = *.krateo.io OR core ConfigMaps only; per-op shape requirements);
+ *     allowlist = *.krateo.io OR core ConfigMaps only; per-op shape requirements;
+ *     the A.3 NEVER-HAND-APPLY carve-out: widget CRs / restactions DENIED except
+ *     into EXACTLY the configured preview sandbox namespace — no config, no exception);
  *   - applyResourceSet compiles the ORDERED WriteOps (snowplow /call write paths the
  *     W0-4 confirm parses) and dispatches EXACTLY ONCE through deps.handleActionSet → runRestSet,
  *     so the whole set ALWAYS flows through the ONE aggregated blast-radius gate;
@@ -63,6 +65,8 @@ describe('isSetOpGroupAllowed — Krateo groups or core ConfigMaps only', () => 
   it('accepts any group ending in .krateo.io', () => {
     expect(isSetOpGroupAllowed({ group: 'core.krateo.io', resource: 'compositiondefinitions', version: 'v1alpha1' })).toBe(true)
     expect(isSetOpGroupAllowed({ group: 'fireworksapp.composition.krateo.io', resource: 'fireworksapps', version: 'v1alpha1' })).toBe(true)
+    // The widgets group passes the GROUP predicate (it is Krateo-owned) — its
+    // namespace-dependent A.3 deny lives in isSetOpAllowed (see the carve-out matrix).
     expect(isSetOpGroupAllowed({ group: 'widgets.templates.krateo.io', resource: 'tables', version: 'v1beta1' })).toBe(true)
   })
 
@@ -123,6 +127,88 @@ describe('isSetOpAllowed — one op\'s shape + scope', () => {
     expect(isSetOpAllowed(opOf({ gvr: { group: 'core.krateo.io', resource: '', version: 'v1' } }))).toBe(false)
     expect(isSetOpAllowed(opOf({ gvr: { group: 'core.krateo.io', resource: 'x', version: '' } }))).toBe(false)
     expect(isSetOpAllowed(undefined)).toBe(false)
+  })
+})
+
+// ────────────────────────────────────────────────────────────────────────────
+// The A.3 SANDBOX CARVE-OUT: widget CRs / restactions are NEVER hand-applied —
+// DENY, except into EXACTLY the configured preview sandbox namespace.
+//   DENY   gvr.group == 'widgets.templates.krateo.io' || gvr.resource == 'restactions'
+//   EXCEPT op.namespace === config.PREVIEW_SANDBOX_NAMESPACE  // absent ⇒ no exception
+// ────────────────────────────────────────────────────────────────────────────
+
+const SANDBOX = 'krateo-preview'
+
+const WIDGET_OP: ApplyResourceSetOp = {
+  gvr: { group: 'widgets.templates.krateo.io', resource: 'paragraphs', version: 'v1beta1' },
+  name: 'preview-draft-title',
+  namespace: SANDBOX,
+  payload: { kind: 'Paragraph', spec: { widgetData: { text: 'draft' } } },
+  verb: 'POST',
+}
+
+const RESTACTION_OP: ApplyResourceSetOp = {
+  gvr: { group: 'templates.krateo.io', resource: 'restactions', version: 'v1' },
+  name: 'preview-projects',
+  namespace: SANDBOX,
+  payload: { kind: 'RESTAction', spec: {} },
+  verb: 'POST',
+}
+
+describe('A.3 carve-out matrix — widgets/restactions DENY except the exact sandbox ns', () => {
+  it('NO configured sandbox: widget-CR and restactions ops are ALWAYS denied (total deny)', () => {
+    expect(isSetOpAllowed(WIDGET_OP)).toBe(false)
+    expect(isSetOpAllowed(RESTACTION_OP)).toBe(false)
+    expect(isSetOpAllowed({ ...WIDGET_OP, namespace: 'krateo-system' })).toBe(false)
+    expect(isApplySetAllowed([WIDGET_OP])).toBe(false)
+    expect(isApplySetAllowed([RESTACTION_OP])).toBe(false)
+  })
+
+  it('configured sandbox: allowed ONLY into exactly that namespace', () => {
+    expect(isSetOpAllowed(WIDGET_OP, SANDBOX)).toBe(true)
+    expect(isSetOpAllowed(RESTACTION_OP, SANDBOX)).toBe(true)
+    // Every mutating verb — the preview flow POSTs and DELETEs (teardown).
+    expect(isSetOpAllowed({ ...WIDGET_OP, payload: undefined, verb: 'DELETE' }, SANDBOX)).toBe(true)
+  })
+
+  it('any OTHER namespace stays denied even with a sandbox configured', () => {
+    expect(isSetOpAllowed({ ...WIDGET_OP, namespace: 'krateo-system' }, SANDBOX)).toBe(false)
+    expect(isSetOpAllowed({ ...RESTACTION_OP, namespace: 'demo-system' }, SANDBOX)).toBe(false)
+  })
+
+  it('EXACT string equality — no prefix/superstring tricks', () => {
+    expect(isSetOpAllowed({ ...WIDGET_OP, namespace: 'krateo-preview2' }, SANDBOX)).toBe(false)
+    expect(isSetOpAllowed({ ...WIDGET_OP, namespace: 'krateo-previe' }, SANDBOX)).toBe(false)
+    expect(isSetOpAllowed({ ...WIDGET_OP, namespace: 'a-krateo-preview' }, SANDBOX)).toBe(false)
+  })
+
+  it('restactions are matched on the RESOURCE (any group — defensive)', () => {
+    const rogue = { ...RESTACTION_OP, gvr: { ...RESTACTION_OP.gvr, group: 'other.templates.krateo.io' }, namespace: 'krateo-system' }
+    expect(isSetOpAllowed(rogue, SANDBOX)).toBe(false)
+    expect(isSetOpAllowed({ ...rogue, namespace: SANDBOX }, SANDBOX)).toBe(true)
+  })
+
+  it('non-widget Krateo groups and core ConfigMaps are UNAFFECTED by the sandbox argument', () => {
+    expect(isSetOpAllowed(KRATEO_OP)).toBe(true)
+    expect(isSetOpAllowed(KRATEO_OP, SANDBOX)).toBe(true)
+    expect(isSetOpAllowed(CONFIGMAP_OP)).toBe(true)
+    expect(isSetOpAllowed(CONFIGMAP_OP, SANDBOX)).toBe(true)
+  })
+
+  it('all-or-nothing: ONE out-of-sandbox widget op denies the WHOLE set', () => {
+    expect(isApplySetAllowed([WIDGET_OP, RESTACTION_OP], SANDBOX)).toBe(true)
+    expect(isApplySetAllowed([WIDGET_OP, { ...WIDGET_OP, namespace: 'krateo-system' }], SANDBOX)).toBe(false)
+  })
+
+  it('applyResourceSet threads deps.sandboxNamespace: sandbox set dispatches, unconfigured is a no-op', async () => {
+    const sandboxed = makeDeps()
+    const chip = await applyResourceSet(makeProposal([WIDGET_OP, RESTACTION_OP]), { ...sandboxed.deps, sandboxNamespace: SANDBOX })
+    expect(sandboxed.handleActionSet).toHaveBeenCalledTimes(1)
+    expect(chip).toEqual({ label: 'apply 2 objects', readOnly: false, verb: 'applyResourceSet' })
+
+    const unconfigured = makeDeps()
+    expect(await applyResourceSet(makeProposal([WIDGET_OP, RESTACTION_OP]), unconfigured.deps)).toBeNull()
+    expect(unconfigured.handleActionSet).not.toHaveBeenCalled()
   })
 })
 

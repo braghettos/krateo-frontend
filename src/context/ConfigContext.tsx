@@ -40,6 +40,17 @@ export interface Config {
      * `previewBlueprint` verb degrades to a graceful "preview unavailable" chip and
      * issues ZERO network calls (see components/Autopilot/previewHandlers.ts). */
     RENDER_API_BASE_URL?: string
+    /** Namespace of the QUARANTINED preview sandbox (portal-builder Addendum A.2 —
+     * previewPage v2). When set, the Autopilot `previewPage` verb APPLIES the draft
+     * widget CRs into EXACTLY this namespace (through the gated set fabric, under the
+     * user's identity, agent-audited) and the preview drawer renders the ROOT draft's
+     * REAL served `widgetEndpoint` — the deployed snowplow compiles the drafts like any
+     * production page (zero snowplow changes). When absent the verb keeps its v1
+     * ZERO-NETWORK source-preview behavior EXACTLY, and the applyResourceSet guard's
+     * widgets/restactions sandbox carve-out stays fully closed (total deny). The
+     * namespace itself (quota + author RBAC + TTL janitor) is chart-provisioned
+     * infrastructure (CHART-SBX) — the frontend never creates it. */
+    PREVIEW_SANDBOX_NAMESPACE?: string
     /** OTLP/HTTP traces endpoint of the OpenTelemetry collector. Optional and
      * default-OFF: when absent the browser starts NO trace provider and injects
      * no W3C `traceparent` header (byte-identical default runtime path). When

@@ -11,10 +11,18 @@
  * a DISTINCT mutating branch owned by the bridge. Two independent safety layers gate it:
  *   1. `isApplySetAllowed` (below) — a pure, defense-in-depth scoping kernel, BROADER
  *      than patchField's composition-only rule because builder/fleet flows write
- *      CompositionDefinitions / widget CRs / config, but still NEVER an arbitrary
- *      cluster resource: (a) at most MAX_APPLY_SET_OPS ops, (b) every op's group must
- *      END with `.krateo.io`, OR be the core group ('') for ConfigMaps ONLY. Anything
- *      else is REJECTED here — the branch returns null, exactly like an unknown verb.
+ *      CompositionDefinitions / config, but still NEVER an arbitrary cluster
+ *      resource: (a) at most MAX_APPLY_SET_OPS ops, (b) every op's group must
+ *      END with `.krateo.io`, OR be the core group ('') for ConfigMaps ONLY, AND
+ *      (c) the NEVER-HAND-APPLY rule (Addendum A.3): widget CRs
+ *      (`widgets.templates.krateo.io`) and `restactions` are DENIED — production
+ *      widget CRs reach the cluster ONLY via the chart (GitOps), a hand-applied one
+ *      orphans from Helm and wedges the next composition render — EXCEPT when the
+ *      op's namespace EXACTLY equals the configured preview sandbox
+ *      (config api.PREVIEW_SANDBOX_NAMESPACE; absent config ⇒ no exception). The
+ *      sandbox is BY DESIGN outside every Helm release, quota-bounded and
+ *      TTL-swept, so the carve-out never widens the fabric. Anything else is
+ *      REJECTED here — the branch returns null, exactly like an unknown verb.
  *   2. The W0-4 gate — the compiled ops are dispatched via `deps.handleActionSet` →
  *      `runRestSet`, whose aggregated set-level BlastRadiusConfirm (ordered op list,
  *      per-op irreversible flag) ALWAYS blocks on ONE human confirm for the WHOLE set.
@@ -64,10 +72,26 @@ export const MAX_APPLY_SET_OPS = 10
  */
 export const KRATEO_GROUP_SUFFIX = '.krateo.io'
 
+/** The widget-CR group — the never-hand-apply surface (chart/GitOps delivery ONLY). */
+export const WIDGETS_TEMPLATES_GROUP = 'widgets.templates.krateo.io'
+
+/** The RESTAction plural — same never-hand-apply rule (matched on ANY group, defensive). */
+export const RESTACTIONS_RESOURCE = 'restactions'
+
+/**
+ * True when the op targets the NEVER-HAND-APPLY surface (widget CRs / RESTActions —
+ * the objects the portal composition renders from the chart). These are writable
+ * through the set fabric ONLY into the configured preview sandbox namespace (A.3).
+ */
+export const isSandboxOnlyTarget = (gvr: ApplyResourceSetGvr): boolean =>
+  gvr.group === WIDGETS_TEMPLATES_GROUP || gvr.resource === RESTACTIONS_RESOURCE
+
 /**
  * Group allowlist: a Krateo-owned group (ends with `.krateo.io`) OR the core group ('')
  * for ConfigMaps ONLY (portal/blueprint config rides in ConfigMaps; no other core kind
- * — never a Secret, Pod, ServiceAccount, … — is writable through this verb).
+ * — never a Secret, Pod, ServiceAccount, … — is writable through this verb). The
+ * widgets/restactions deny is NAMESPACE-dependent, so it lives in `isSetOpAllowed`
+ * (this predicate cannot see the op's namespace).
  */
 export const isSetOpGroupAllowed = (gvr: ApplyResourceSetGvr | undefined): boolean => {
   if (typeof gvr?.group !== 'string' || typeof gvr.resource !== 'string') {
@@ -91,10 +115,16 @@ const isPathSegment = (value: string): boolean => /^[a-z0-9]([-a-z0-9.]*[a-z0-9]
 
 /**
  * One op's shape + scope check: a mutating verb, a complete GVR + namespace, a name
- * unless it is a collection POST, clean path segments, and the group allowlist.
- * Pure predicate.
+ * unless it is a collection POST, clean path segments, the group allowlist, and the
+ * A.3 sandbox carve-out. Pure predicate.
+ *
+ * `sandboxNamespace` is config api.PREVIEW_SANDBOX_NAMESPACE (or undefined when the
+ * install has no sandbox). The A.3 rule, verbatim:
+ *   DENY   gvr.group == 'widgets.templates.krateo.io' || gvr.resource == 'restactions'
+ *   EXCEPT op.namespace === sandboxNamespace   // absent config ⇒ no exception
+ * EXACT string equality — no prefix, no glob. The carve-out never widens the fabric.
  */
-export const isSetOpAllowed = (op: ApplyResourceSetOp | undefined): boolean => {
+export const isSetOpAllowed = (op: ApplyResourceSetOp | undefined, sandboxNamespace?: string): boolean => {
   if (!op || !isMutatingVerb(op.verb)) {
     return false
   }
@@ -113,8 +143,14 @@ export const isSetOpAllowed = (op: ApplyResourceSetOp | undefined): boolean => {
   if (name !== undefined && (typeof name !== 'string' || !isPathSegment(name))) {
     return false
   }
+  if (!isSetOpGroupAllowed(gvr)) {
+    return false
+  }
 
-  return isSetOpGroupAllowed(gvr)
+  // NEVER-HAND-APPLY (A.3): widget CRs / restactions only ever reach the cluster
+  // through this fabric inside the preview sandbox. `namespace === undefined-config`
+  // can never hold (namespace is a validated string), so no config ⇒ total deny.
+  return !isSandboxOnlyTarget(gvr) || namespace === sandboxNamespace
 }
 
 /** Runtime array guard that keeps the element type (Array.isArray alone widens to any[]). */
@@ -123,13 +159,14 @@ const isOpArray = (value: unknown): value is readonly ApplyResourceSetOp[] => Ar
 /**
  * The SET SAFETY KERNEL. Pure predicate: is this ordered op list allowed to dispatch?
  *   ALLOW  — a non-empty list of at most MAX_APPLY_SET_OPS ops, EVERY op passing
- *            isSetOpAllowed (mutating verb, complete target, allowlisted group).
+ *            isSetOpAllowed (mutating verb, complete target, allowlisted group, and
+ *            the widgets/restactions sandbox carve-out — see isSetOpAllowed).
  *   REJECT — empty, oversized, or ANY op out of scope (all-or-nothing: one bad op
  *            denies the whole set — never a silent partial dispatch).
  * Defense-in-depth ON TOP of the human W0-4 set confirm — never a substitute for it.
  */
-export const isApplySetAllowed = (ops: readonly ApplyResourceSetOp[] | undefined): boolean =>
-  isOpArray(ops) && ops.length > 0 && ops.length <= MAX_APPLY_SET_OPS && ops.every((op) => isSetOpAllowed(op))
+export const isApplySetAllowed = (ops: readonly ApplyResourceSetOp[] | undefined, sandboxNamespace?: string): boolean =>
+  isOpArray(ops) && ops.length > 0 && ops.length <= MAX_APPLY_SET_OPS && ops.every((op) => isSetOpAllowed(op, sandboxNamespace))
 
 /**
  * Build the op's write path in snowplow's `/call` query shape — the ONLY route snowplow
@@ -155,6 +192,9 @@ export const buildSetOpPath = (op: ApplyResourceSetOp): string => {
 /** The runtime handler injected by the bridge — the hook's REAL set dispatcher (→ runRestSet). */
 export interface ApplyResourceSetDeps {
   handleActionSet: (ops: readonly WriteOp[]) => Promise<WriteOpResult[] | null>
+  /** config api.PREVIEW_SANDBOX_NAMESPACE — the ONLY namespace where widget-CR /
+   * restactions ops are allowed (A.3 carve-out). Absent = those ops are always denied. */
+  sandboxNamespace?: string
 }
 
 /** The chip a dispatched applyResourceSet returns (readOnly:false — it is a mutation). */
@@ -177,7 +217,7 @@ export const applyResourceSet = async (
 ): Promise<ApplyResourceSetChip | null> => {
   const { ops } = proposal
   // SET SAFETY KERNEL (layer 1): op-count cap + per-op scope, else deny the WHOLE set.
-  if (!isApplySetAllowed(ops)) {
+  if (!isApplySetAllowed(ops, deps.sandboxNamespace)) {
     return null
   }
 
