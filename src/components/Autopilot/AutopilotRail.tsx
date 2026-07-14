@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import type { KeyboardEvent } from 'react'
+import type { ClipboardEvent, KeyboardEvent } from 'react'
 import { default as ReactMarkdown } from 'react-markdown'
 
 import type { ApprovalPause } from './approval'
@@ -17,6 +17,7 @@ import { useAutopilot } from './AutopilotProvider'
 import styles from './AutopilotRail.module.css'
 import AutopilotTour from './AutopilotTour'
 import { CheckIcon, CollapseIcon, EyeIcon, LinkIcon, PlusIcon, SendIcon, SparkIcon } from './icons'
+import { looksLikeOpenApiDocument } from './oasAttachment'
 import type { AutopilotMessage } from './types'
 
 const MessageBubble = ({ message }: { message: AutopilotMessage }) => {
@@ -86,8 +87,10 @@ const STARTER_PROMPTS = [
 ]
 
 const AutopilotRail = () => {
-  const { approvePending, collect, denyPending, enabled, messages, newThread, open, pendingApproval, send, setOpen, streaming } = useAutopilot()
+  const { approvePending, attachOasDocument, clearOasAttachment, collect, denyPending, enabled, messages, newThread, oasAttachment, open, pendingApproval, send, setOpen, streaming } = useAutopilot()
   const [draft, setDraft] = useState('')
+  // W4 KOG (FE-K2): the over-cap paste rejection note (cleared on the next successful attach).
+  const [oasError, setOasError] = useState<string | null>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   // Auto-scroll the transcript to the latest content as it streams — but only when the user is
   // already near the bottom, so scrolling up to re-read a long reply isn't yanked back down. Each
@@ -124,6 +127,20 @@ const AutopilotRail = () => {
       event.preventDefault()
       submit()
     }
+  }
+
+  // W4 KOG (FE-K2): capture a pasted OpenAPI document as a HELD attachment. The paste
+  // still lands in the textarea (the model reads the doc in-context ONCE to propose the
+  // mapping) — but the held copy is what publish substitutes for {"$oasAttachment":true},
+  // so the document bytes go user → cluster verbatim, never model-reproduced. Over the
+  // 512 KiB cap nothing is held and the note tells the user to host it (URL path).
+  const onPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = event.clipboardData.getData('text/plain')
+    if (!looksLikeOpenApiDocument(text)) {
+      return
+    }
+    const result = attachOasDocument(text)
+    setOasError(result.ok ? null : result.error)
   }
 
   // Pin/unpin auto-scroll: "stuck" while within ~80px of the bottom, released once the user scrolls up.
@@ -197,11 +214,28 @@ const AutopilotRail = () => {
         </div>
 
         <div className={styles.apComposer}>
+          {oasAttachment ? (
+            <div className={styles.apOas} data-testid='autopilot-oas-attachment'>
+              <span>OpenAPI attached · {Math.max(1, Math.ceil(oasAttachment.bytes / 1024))} KiB — held in the portal, substituted at publish</span>
+              <button
+                aria-label='Remove the OpenAPI attachment'
+                className={styles.apIc}
+                onClick={() => {
+                  clearOasAttachment()
+                  setOasError(null)
+                }}
+                title='Remove the OpenAPI attachment'
+                type='button'
+              >×</button>
+            </div>
+          ) : null}
+          {oasError ? <div className={styles.apOasError}>{oasError}</div> : null}
           <div className={styles.apInput}>
             <textarea
               className={styles.apTextarea}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={onKeyDown}
+              onPaste={onPaste}
               placeholder='Ask Autopilot to do something…'
               rows={1}
               value={draft}

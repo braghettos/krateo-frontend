@@ -521,3 +521,22 @@
   flex: none;
   color: var(--cyan-color);
 }
+
+/* W4 KOG (FE-K2): the held-OAS-attachment chip + the over-cap rejection note. */
+.apOas {
+  align-items: center;
+  color: var(--gray-color);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  gap: 6px;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.apOasError {
+  color: var(--magenta-color);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  margin-bottom: 7px;
+}

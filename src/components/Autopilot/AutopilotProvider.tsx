@@ -14,6 +14,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
+import type { WriteOrigin } from '../../hooks/provenance'
 import { randomId } from '../../utils/utils'
 
 import type { PortalActionProposal, PortalTour } from './actionBridge'
@@ -21,6 +22,8 @@ import { GROUNDING_GUARDRAIL_PROMPT, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RU
 import { AgentDraftProvider } from './agentDraft'
 import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approval'
 import { createApprovalGovernor, summarizeApprovalTools } from './approval'
+import { createOasAttachmentStore, substituteOasAttachment, type OasAttachmentResult } from './oasAttachment'
+import { createPreviewGate } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
@@ -49,6 +52,14 @@ interface AutopilotContextValue {
   denyPending: () => void
   /** Snapshot the live page context (for the rail's context strip). */
   collect: () => PageContextEnvelope
+  /** W4 KOG (FE-K2): the held OAS attachment's size, or null when nothing is held.
+   * The DOCUMENT itself never leaves the provider's store — it is NOT in the page
+   * context (collect() never sees it) and is substituted only at publish time. */
+  oasAttachment: { bytes: number } | null
+  /** Hold a pasted OpenAPI document (512 KiB cap). Returns the cap error on reject. */
+  attachOasDocument: (text: string) => OasAttachmentResult
+  /** Drop the held OAS attachment. */
+  clearOasAttachment: () => void
   /** Active guided spotlight tour, if one was proposed (null otherwise). */
   tour: PortalTour | null
   /** Whether the tour overlay is open. */
@@ -87,6 +98,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // decision paths. Exactly one pause can be pending at a time — kagent aggregates all
   // paused tool calls of a turn into one input-required task status.
   const [pendingApproval, setPendingApproval] = useState<ApprovalPause | null>(null)
+  // W4 KOG (FE-K3): the thread-scoped PREVIEW GATE — records every applied
+  // previewRestDef and denies an applyResourceSet that writes restdefinitions unless
+  // a matching (kind+resourceGroup) draft was previewed this thread. Reset on newThread.
+  const [previewGate] = useState(createPreviewGate)
+  // W4 KOG (FE-K2): the held OAS attachment. The store keeps the verbatim pasted
+  // document OUTSIDE the page-context path (collect()/redactor never touch it, the
+  // collected context does not grow); `oasHeld` mirrors only its SIZE for the rail.
+  const [oasStore] = useState(createOasAttachmentStore)
+  const [oasHeld, setOasHeld] = useState<{ bytes: number } | null>(null)
 
   const abortRef = useRef<(() => void) | null>(null)
   const approvalRef = useRef<{ governor: ApprovalGovernor; pause: ApprovalPause } | null>(null)
@@ -155,25 +175,54 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     // sequentially, flashing the page A then B while only the last chip's label matches. Take the first.
     const [proposal] = [...toolProposals, ...textProposals]
     if (proposal) {
+      // W0-3 provenance: tag the dispatch as agent-origin with the identity context the
+      // provider actually holds at dispatch time — the frontend-owned session id and the
+      // user's latest chat message (the prompt that produced this proposal). If a write
+      // is reached (a mutating runAction / patchField / applyResourceSet), its audit
+      // record carries actor:'agent' + this context; read-only verbs never record.
+      const origin: WriteOrigin = {
+        actor: 'agent',
+        agentSessionId: sessionId,
+        ...(lastUserTextRef.current ? { prompt: lastUserTextRef.current } : {}),
+      }
       if (proposal.verb === 'prefillForm') {
         // prefillForm sets provider state (not a dispatcher action): the mounted Form merges these into
         // its values; the user still reviews + submits via the form's own gate. Autopilot never submits.
         setAgentDraft(proposal.values ?? {})
         setDraftNonce((nonce) => nonce + 1)
         chips.push({ label: proposal.label ?? 'drafted the create form', readOnly: true, verb: 'prefillForm' })
+      } else if (proposal.verb === 'applyResourceSet') {
+        // W4 KOG publish path, enforced HERE (finalize is the single entry point for
+        // model proposals). Two host-side checks BEFORE the bridge ever dispatches:
+        //  1. PREVIEW GATE (FE-K3): a set writing restdefinitions is denied unless a
+        //     matching (kind+resourceGroup) previewRestDef happened this thread.
+        //  2. $oasAttachment substitution (FE-K2): the held document replaces the
+        //     token at compile time — BEFORE the blast-radius confirm, so the human
+        //     confirms the REAL payload; token present with nothing held = refused.
+        // A denial is the standard denied chip: nothing dispatched, readOnly (honest).
+        const verdict = previewGate.evaluate(proposal.ops)
+        const compiled = verdict.allowed ? substituteOasAttachment(proposal.ops ?? [], oasStore.get()) : null
+        let denial: string | null = verdict.allowed ? null : verdict.reason
+        if (denial === null && compiled && !compiled.ok) {
+          denial = compiled.error
+        }
+        if (denial !== null) {
+          chips.push({ label: denial, readOnly: true, verb: 'applyResourceSet' })
+        } else if (compiled?.ok) {
+          const chip = await apply({ ...proposal, ops: compiled.ops }, origin)
+          if (chip) {
+            chips.push(chip)
+          }
+        }
       } else {
-        // W0-3 provenance: tag the dispatch as agent-origin with the identity context the
-        // provider actually holds at dispatch time — the frontend-owned session id and the
-        // user's latest chat message (the prompt that produced this proposal). If a write
-        // is reached (a mutating runAction / patchField / applyResourceSet), its audit
-        // record carries actor:'agent' + this context; read-only verbs never record.
-        const chip = await apply(proposal, {
-          actor: 'agent',
-          agentSessionId: sessionId,
-          ...(lastUserTextRef.current ? { prompt: lastUserTextRef.current } : {}),
-        })
+        const chip = await apply(proposal, origin)
         if (chip) {
           chips.push(chip)
+          // W4 KOG (FE-K3): an APPLIED previewRestDef (chip ⇒ the drawer opened on a
+          // parseable draft) arms the preview gate for that draft's kind+resourceGroup.
+          if (proposal.verb === 'previewRestDef') {
+            previewGate.recordPreview(proposal.restDefinition)
+          }
         }
       }
     }
@@ -194,7 +243,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       setTour(proposedTour)
       setTourOpen(true)
     }
-  }, [apply, sessionId])
+  }, [apply, oasStore, previewGate, sessionId])
 
   const applyFrame = useCallback((assistantId: string, frame: AutopilotFrame) => {
     switch (frame.kind) {
@@ -381,7 +430,28 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     // Clear any pending form draft and re-key (bump nonce) so the form reverts to base.
     setAgentDraft(null)
     setDraftNonce((nonce) => nonce + 1)
-  }, [transport])
+    // W4 KOG: the preview gate is THREAD-scoped — a new thread forgets every recorded
+    // preview (publish is denied again until re-previewed), and the held OAS attachment
+    // is dropped with the conversation that produced it (deny-by-default posture).
+    previewGate.reset()
+    oasStore.clear()
+    setOasHeld(null)
+  }, [oasStore, previewGate, transport])
+
+  // W4 KOG (FE-K2): hold / drop a pasted OpenAPI document. The text lives ONLY in the
+  // provider's store (never in the page-context envelope), mirrored as a byte count.
+  const attachOasDocument = useCallback((text: string): OasAttachmentResult => {
+    const result = oasStore.set(text)
+    // Mirror whatever the store now holds (a rejected over-cap paste keeps a prior hold).
+    const held = oasStore.get()
+    setOasHeld(held ? { bytes: held.bytes } : null)
+    return result
+  }, [oasStore])
+
+  const clearOasAttachment = useCallback(() => {
+    oasStore.clear()
+    setOasHeld(null)
+  }, [oasStore])
 
   const toggle = useCallback(() => setOpen((prev) => !prev), [])
   const closeTour = useCallback(() => setTourOpen(false), [])
@@ -403,8 +473,8 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   }, [searchParams, enabled, send, setSearchParams])
 
   const value = useMemo<AutopilotContextValue>(() => ({
-    approvePending, closeTour, collect, denyPending, enabled, messages, newThread, open, pendingApproval, send, setOpen, streaming, toggle, tour, tourOpen,
-  }), [approvePending, closeTour, collect, denyPending, enabled, messages, newThread, open, pendingApproval, send, streaming, toggle, tour, tourOpen])
+    approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasAttachment: oasHeld, open, pendingApproval, send, setOpen, streaming, toggle, tour, tourOpen,
+  }), [approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasHeld, open, pendingApproval, send, streaming, toggle, tour, tourOpen])
 
   return (
     <AutopilotReactContext.Provider value={value}>

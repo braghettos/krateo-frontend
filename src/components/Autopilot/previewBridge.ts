@@ -16,6 +16,7 @@ import { dump } from 'js-yaml'
 import { getAccessToken } from '../../utils/getAccessToken'
 
 import type { PortalActionProposal } from './actionBridge'
+import { restDefImmutabilityWarnings, validateRestDefinitionDraft } from './kogMapping'
 import type { AutopilotPreviewPayload, PreviewObjectEntry } from './previewBus'
 
 /** The chart coordinates previewBlueprint sends to the render service. */
@@ -222,10 +223,16 @@ export const extractRestDefSummary = (restDefinition: Record<string, unknown>): 
 }
 
 export const REST_DEF_PREVIEW_CAPTION
-  = 'Source preview — the RestDefinition draft and its mapped verbs/paths (parsed client-side; nothing is validated against the cluster).'
+  = 'Source preview — the RestDefinition draft, its mapped verbs/paths, and its validation against the RestDefinition CRD (all client-side; nothing touches the cluster).'
 
 export const buildRestDefPreviewPayload = (restDefinition: Record<string, unknown>): AutopilotPreviewPayload => {
   const identity = metadataOf(restDefinition)
+  // FE-K1: validate the draft against the LIVE CRD shape and surface the CEL-immutable
+  // fields — the preview drawer is exactly where the user decides whether to publish,
+  // so validation errors ("this would be rejected") and immutability warnings ("you
+  // cannot change these later") belong HERE, before the gated write is even proposed.
+  const problems = validateRestDefinitionDraft(restDefinition)
+  const warnings = restDefImmutabilityWarnings(restDefinition)
   return {
     caption: REST_DEF_PREVIEW_CAPTION,
     objects: [{
@@ -233,7 +240,9 @@ export const buildRestDefPreviewPayload = (restDefinition: Record<string, unknow
       ...identity,
       yaml: toYamlString(restDefinition),
     }],
+    ...(problems.length ? { problems } : {}),
     summary: extractRestDefSummary(restDefinition),
     title: `RestDefinition preview${identity.name ? ` — ${identity.name}` : ''}`,
+    ...(warnings.length ? { warnings } : {}),
   }
 }

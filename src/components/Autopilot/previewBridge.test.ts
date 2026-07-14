@@ -231,4 +231,19 @@ describe('previewRestDef summary — mapped verbs/paths parsed client-side', () 
     expect(payload.objects?.[0].yaml).toContain('kind: RestDefinition')
     expect(payload.objects?.[0].yaml).toContain('resourceGroup: github.ogen.krateo.io')
   })
+
+  it('FE-K1 wiring: the payload carries validation problems + immutability warnings', () => {
+    // the fixture's `get` verb uses a lowercase method — a REAL live-CRD enum violation
+    const payload = buildRestDefPreviewPayload(restDefFixture)
+    expect(payload.problems).toEqual([expect.stringContaining('method must be one of GET|POST|PUT|DELETE|PATCH')])
+    expect(payload.warnings).toEqual(expect.arrayContaining([
+      expect.stringContaining('immutable once generated: resource.kind (Repo)'),
+      expect.stringContaining('immutable once generated: resourceGroup (github.ogen.krateo.io)'),
+      expect.stringContaining('immutable once generated: identifiers (id, name)'),
+    ]))
+    // a fully valid draft carries NO problems key (the drawer shows no error Alert)
+    const valid = JSON.parse(JSON.stringify(restDefFixture)) as typeof restDefFixture
+    valid.spec.resource.verbsDescription[1].method = 'GET'
+    expect(buildRestDefPreviewPayload(valid).problems).toBeUndefined()
+  })
 })
