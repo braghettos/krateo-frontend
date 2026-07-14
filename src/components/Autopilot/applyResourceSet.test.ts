@@ -3,8 +3,8 @@
  * coverage (no RTL/jsdom), matching patchField.test.ts. Proves:
  *   - the isApplySetAllowed SET SAFETY KERNEL truth table (op-count cap at 10; group
  *     allowlist = *.krateo.io OR core ConfigMaps only; per-op shape requirements);
- *   - applyResourceSet compiles the ORDERED WriteOps (apiserver paths the W0-4 confirm
- *     parses) and dispatches EXACTLY ONCE through deps.handleActionSet → runRestSet,
+ *   - applyResourceSet compiles the ORDERED WriteOps (snowplow /call write paths the
+ *     W0-4 confirm parses) and dispatches EXACTLY ONCE through deps.handleActionSet → runRestSet,
  *     so the whole set ALWAYS flows through the ONE aggregated blast-radius gate;
  *   - a denied set (too many ops / out-of-scope group / malformed op) is a no-op
  *     (null, no dispatch) — the kernel gates BEFORE the W0-4 gate, never a bypass;
@@ -142,17 +142,23 @@ describe('isApplySetAllowed — the composed kernel (cap + all-or-nothing scope)
 })
 
 // ────────────────────────────────────────────────────────────────────────────
-// buildSetOpPath — the apiserver target (parsed by the W0-4 set confirm)
+// buildSetOpPath — the snowplow /call target (parsed by the W0-4 set confirm)
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('buildSetOpPath — namespaced apiserver URLs', () => {
-  it('builds /apis/<group>/<version>/namespaces/<ns>/<resource>/<name> for a named-group write', () => {
-    expect(buildSetOpPath(KRATEO_OP)).toBe('/apis/core.krateo.io/v1alpha1/namespaces/demo/compositiondefinitions/my-def')
+describe('buildSetOpPath — snowplow /call query-shape write paths', () => {
+  it('builds /call?apiVersion=<group>%2F<version>&resource=…&name=…&namespace=… for a named-group write', () => {
+    expect(buildSetOpPath(KRATEO_OP)).toBe('/call?apiVersion=core.krateo.io%2Fv1alpha1&resource=compositiondefinitions&name=my-def&namespace=demo')
   })
 
-  it('builds /api/<version>/… for the core group and the bare collection for a POST', () => {
-    expect(buildSetOpPath(CONFIGMAP_OP)).toBe('/api/v1/namespaces/demo/configmaps/my-config')
-    expect(buildSetOpPath(opOf({ verb: 'POST' }))).toBe('/apis/core.krateo.io/v1alpha1/namespaces/demo/compositiondefinitions')
+  it('uses the BARE version as apiVersion for the core group', () => {
+    expect(buildSetOpPath(CONFIGMAP_OP)).toBe('/call?apiVersion=v1&resource=configmaps&name=my-config&namespace=demo')
+  })
+
+  it('a POST targets the collection: name is the required-but-ignored placeholder', () => {
+    // snowplow validates a non-empty `name` on EVERY verb but ignores it when building a
+    // POST's apiserver URI (the create hits the collection).
+    expect(buildSetOpPath(opOf({ verb: 'POST' }))).toBe('/call?apiVersion=core.krateo.io%2Fv1alpha1&resource=compositiondefinitions&name=-&namespace=demo')
+    expect(buildSetOpPath(opOf({ name: undefined, verb: 'POST' }))).toBe('/call?apiVersion=core.krateo.io%2Fv1alpha1&resource=compositiondefinitions&name=-&namespace=demo')
   })
 })
 
@@ -170,12 +176,12 @@ describe('applyResourceSet — dispatch through the W0-4 gate', () => {
     const [ops] = handleActionSet.mock.calls[0] as [WriteOp[]]
     expect(ops).toEqual([
       {
-        path: '/apis/core.krateo.io/v1alpha1/namespaces/demo/compositiondefinitions/my-def',
+        path: '/call?apiVersion=core.krateo.io%2Fv1alpha1&resource=compositiondefinitions&name=my-def&namespace=demo',
         payload: KRATEO_OP.payload,
         verb: 'PATCH',
       },
-      { path: '/api/v1/namespaces/demo/configmaps/my-config', payload: CONFIGMAP_OP.payload, verb: 'PATCH' },
-      { path: '/apis/core.krateo.io/v1alpha1/namespaces/demo/compositiondefinitions/doomed', verb: 'DELETE' },
+      { path: '/call?apiVersion=v1&resource=configmaps&name=my-config&namespace=demo', payload: CONFIGMAP_OP.payload, verb: 'PATCH' },
+      { path: '/call?apiVersion=core.krateo.io%2Fv1alpha1&resource=compositiondefinitions&name=doomed&namespace=demo', verb: 'DELETE' },
     ])
 
     // The returned chip marks a MUTATION (readOnly:false).

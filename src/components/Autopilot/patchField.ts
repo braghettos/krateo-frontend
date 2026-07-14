@@ -23,6 +23,7 @@
  *      bypasses that gate; the scoping kernel is purely additive on top of it.
  */
 
+import { buildCallWritePath } from '../../hooks/callPath'
 import type { ResourceRef, ResourcesRefs, WidgetAction } from '../../types/Widget'
 
 /** The GVR (group/version/resource) the proposal targets — the on-page composition's, from context. */
@@ -116,14 +117,16 @@ export const isPatchAllowed = (gvr: PatchFieldGvr | undefined, field: string | u
   isCompositionGvr(gvr) && specKeyOf(field) !== null
 
 /**
- * Build the apiserver ResourceRef `path` for the target composition, in the exact
- * /apis/<group>/<version>/namespaces/<ns>/<resource>/<name> shape `parseTargetFromPath`
- * (W0-2 gate) and the page-context GVR parser both understand — so the blast-radius diff
- * shows the real object (GVR + namespace + name) the PATCH will hit. Mirrors how a
- * create-compdef / blueprint-install POST ref is shaped (a namespaced apiserver URL).
+ * Build the ResourceRef `path` for the target composition, in snowplow's `/call` query
+ * shape — /call?apiVersion=<group>%2F<version>&resource=<plural>&name=<name>&namespace=<ns>
+ * — the ONLY route snowplow serves writes on (it has NO raw /apis route; a raw apiserver
+ * path 404s). This is the SAME shape every real widget-action ref carries (snowplow's
+ * resourcesrefs resolver builds it server-side), and `parseTargetFromPath` (W0-2 gate)
+ * ALSO parses it, so the blast-radius diff still shows the real object (GVR + namespace +
+ * name) the PATCH will hit.
  */
 export const buildPatchRefPath = (gvr: PatchFieldGvr, namespace: string, name: string): string =>
-  `/apis/${gvr.group}/${gvr.version}/namespaces/${namespace}/${gvr.resource}/${name}`
+  buildCallWritePath({ group: gvr.group, name, namespace, resource: gvr.resource, version: gvr.version })
 
 /** The runtime handler injected by the bridge — the SAME real dispatcher a hand-clicked control uses. */
 export interface PatchFieldDeps {

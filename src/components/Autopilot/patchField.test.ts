@@ -123,13 +123,13 @@ describe('isPatchAllowed — the composed safety kernel truth table', () => {
 })
 
 // ────────────────────────────────────────────────────────────────────────────
-// buildPatchRefPath — the apiserver PATCH target (parsed by the W0-2 gate)
+// buildPatchRefPath — the snowplow /call PATCH target (parsed by the W0-2 gate)
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('buildPatchRefPath — namespaced apiserver URL the W0-2 gate parses', () => {
-  it('builds /apis/<group>/<version>/namespaces/<ns>/<resource>/<name>', () => {
+describe('buildPatchRefPath — snowplow /call query shape the W0-2 gate parses', () => {
+  it('builds /call?apiVersion=<group>%2F<version>&resource=<plural>&name=<name>&namespace=<ns>', () => {
     expect(buildPatchRefPath(COMPOSITION_GVR, 'demo-system', 'my-app')).toBe(
-      '/apis/fireworksapp.composition.krateo.io/v1alpha1/namespaces/demo-system/fireworksapps/my-app',
+      '/call?apiVersion=fireworksapp.composition.krateo.io%2Fv1alpha1&resource=fireworksapps&name=my-app&namespace=demo-system',
     )
   })
 })
@@ -153,12 +153,12 @@ describe('applyPatchField — builds the PATCH WidgetAction + merge-patch payloa
     expect(rest.headers).toContain('Content-Type: application/merge-patch+json')
 
     // The ResourceRef carries verb PATCH (runRest reads verb from the REF → W0-2 gate fires),
-    // the namespaced apiserver path, and the minimal { spec: { <key>: <value> } } merge-patch body.
+    // the snowplow /call write path, and the minimal { spec: { <key>: <value> } } merge-patch body.
     expect(refs.items).toHaveLength(1)
     const [ref] = refs.items
     expect(ref.verb).toBe('PATCH')
     expect(ref.id).toBe('autopilot-patch-field')
-    expect(ref.path).toBe('/apis/fireworksapp.composition.krateo.io/v1alpha1/namespaces/demo-system/fireworksapps/my-app')
+    expect(ref.path).toBe('/call?apiVersion=fireworksapp.composition.krateo.io%2Fv1alpha1&resource=fireworksapps&name=my-app&namespace=demo-system')
     expect(ref.payload).toEqual({ spec: { size: 'large' } })
 
     // The returned chip marks a MUTATION (readOnly:false).

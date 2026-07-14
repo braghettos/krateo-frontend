@@ -7,8 +7,12 @@
  *
  * SINK: the `audit.krateo.io/v1alpha1` namespaced AuditRecord CRD (ships separately in the
  * portal chart). The record is POSTed through the SAME fetch shape `runRest` uses (snowplow
- * base URL + Bearer auth) to /apis/audit.krateo.io/v1alpha1/namespaces/<ns>/auditrecords,
- * where <ns> is the WRITE's target namespace.
+ * base URL + Bearer auth) to snowplow's `/call` endpoint — the ONLY route snowplow serves
+ * writes on (it has NO raw /apis route; a raw apiserver path 404s). The target rides in
+ * the query, built by buildCallWritePath:
+ * /call?apiVersion=audit.krateo.io%2Fv1alpha1&resource=auditrecords&name=-&namespace=<ns>,
+ * where <ns> is the WRITE's target namespace and `name` is the required-but-ignored
+ * collection-POST placeholder (the record uses metadata.generateName).
  *
  * CONTRACT — STRICTLY BEST-EFFORT: emission is fire-and-forget (`void`, never awaited in
  * the user path) and ANY failure (CRD absent → 404, RBAC 403, network error) is swallowed
@@ -23,6 +27,7 @@
  */
 
 import type { BlastRadius, BlastRadiusSet, Gvr, MutatingVerb } from './blastRadius.types'
+import { buildCallWritePath } from './callPath'
 import { fetchWithTimeout } from './useHandleActions'
 
 export const AUDIT_API_GROUP = 'audit.krateo.io'
@@ -206,8 +211,16 @@ export const emitAuditRecord = async (record: AuditRecordBody, ctx: ProvenanceEm
       console.debug('provenance: AuditRecord skipped (no resolvable target namespace)')
       return
     }
+    // Collection POST through snowplow's /call query shape (see the module header). No
+    // `name` is passed: the record is created via metadata.generateName, so the builder
+    // sends the required-but-ignored placeholder.
     const res = await fetchWithTimeout(
-      `${ctx.apiBaseUrl}/apis/${AUDIT_API_GROUP}/${AUDIT_API_VERSION}/namespaces/${namespace}/auditrecords`,
+      ctx.apiBaseUrl + buildCallWritePath({
+        group: AUDIT_API_GROUP,
+        namespace,
+        resource: 'auditrecords',
+        version: AUDIT_API_VERSION,
+      }),
       {
         body: JSON.stringify(record),
         headers: {

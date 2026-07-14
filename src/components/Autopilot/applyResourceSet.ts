@@ -23,6 +23,7 @@
  */
 
 import type { MutatingVerb } from '../../hooks/blastRadius.types'
+import { buildCallWritePath } from '../../hooks/callPath'
 import type { WriteOp, WriteOpResult } from '../../hooks/runRestSet'
 import { isMutatingVerb } from '../BlastRadius/buildBlastRadius'
 
@@ -131,17 +132,24 @@ export const isApplySetAllowed = (ops: readonly ApplyResourceSetOp[] | undefined
   isOpArray(ops) && ops.length > 0 && ops.length <= MAX_APPLY_SET_OPS && ops.every((op) => isSetOpAllowed(op))
 
 /**
- * Build the op's apiserver path in the exact shape `parseTargetFromPath` (the W0-4
- * confirm) understands: core group under /api/<version>/…, named groups under
- * /apis/<group>/<version>/… — so the set confirm shows the real objects each call hits.
- * Mirrors patchField's buildPatchRefPath; a POST targets the collection (no name).
+ * Build the op's write path in snowplow's `/call` query shape — the ONLY route snowplow
+ * serves writes on (it has NO raw /apis route; a raw apiserver path 404s). apiVersion is
+ * `<group>/<version>` (URL-encoded), or the bare version for the core group — exactly how
+ * snowplow encodes its own widget-action refs. `parseTargetFromPath` (the W0-4 confirm)
+ * parses this shape too, so the set confirm still shows the real objects each call hits.
+ * Mirrors patchField's buildPatchRefPath; a POST targets the collection — its name is
+ * omitted here and the builder substitutes snowplow's required-but-ignored placeholder.
  */
 export const buildSetOpPath = (op: ApplyResourceSetOp): string => {
   const { gvr, name, namespace, verb } = op
-  const root = gvr.group ? `/apis/${gvr.group}/${gvr.version}` : `/api/${gvr.version}`
-  const collection = `${root}/namespaces/${namespace}/${gvr.resource}`
 
-  return verb === 'POST' || !name ? collection : `${collection}/${name}`
+  return buildCallWritePath({
+    group: gvr.group,
+    namespace,
+    resource: gvr.resource,
+    version: gvr.version,
+    ...(verb === 'POST' || !name ? {} : { name }),
+  })
 }
 
 /** The runtime handler injected by the bridge — the hook's REAL set dispatcher (→ runRestSet). */

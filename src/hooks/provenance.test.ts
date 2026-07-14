@@ -175,10 +175,13 @@ const patchRef = {
 }
 const restAction = { headers: [], id: 'a', resourceRefId: 'ref', type: 'rest' } as WidgetAction
 
-const AUDIT_URL = 'http://sp/apis/audit.krateo.io/v1alpha1/namespaces/demo/auditrecords'
+// The collection POST rides snowplow's /call query shape (snowplow has NO raw /apis
+// route): apiVersion=group%2Fversion, the plural, the required-but-ignored `name`
+// placeholder (the record uses metadata.generateName), and the write's target namespace.
+const AUDIT_URL = 'http://sp/call?apiVersion=audit.krateo.io%2Fv1alpha1&resource=auditrecords&name=-&namespace=demo'
 type FetchCall = [string, RequestInit]
 const auditCalls = (fetchMock: ReturnType<typeof vi.fn>): FetchCall[] =>
-  (fetchMock.mock.calls as FetchCall[]).filter(([url]) => String(url).includes('/auditrecords'))
+  (fetchMock.mock.calls as FetchCall[]).filter(([url]) => String(url).includes('resource=auditrecords'))
 const parseRecord = (call: FetchCall): AuditRecordBody => JSON.parse(call[1].body as string) as AuditRecordBody
 
 describe('runRest — ONE audit record per resolved gated write', () => {

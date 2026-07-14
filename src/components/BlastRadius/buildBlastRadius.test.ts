@@ -39,6 +39,55 @@ describe('parseTargetFromPath', () => {
     expect(parseTargetFromPath('')).toBeUndefined()
     expect(parseTargetFromPath(undefined)).toBeUndefined()
   })
+
+  // ── snowplow /call?… query shape — what EVERY real widget-action ref carries
+  // (snowplow builds them server-side) and what the /call write-path builders emit ──
+
+  it('parses a /call path with a name (the shape real widget actions carry)', () => {
+    expect(parseTargetFromPath('/call?apiVersion=composition.krateo.io%2Fv0-1-0&resource=clickhouseoperators&name=clickhouse-operator&namespace=krateo-system')).toEqual({
+      gvr: { group: 'composition.krateo.io', resource: 'clickhouseoperators', version: 'v0-1-0' },
+      name: 'clickhouse-operator',
+      namespace: 'krateo-system',
+    })
+  })
+
+  it('accepts an unencoded apiVersion slash and any query-param order (snowplow url.Values order)', () => {
+    expect(parseTargetFromPath('/call?apiVersion=core.krateo.io/v1alpha1&name=my-def&namespace=demo&resource=compositiondefinitions')).toEqual({
+      gvr: { group: 'core.krateo.io', resource: 'compositiondefinitions', version: 'v1alpha1' },
+      name: 'my-def',
+      namespace: 'demo',
+    })
+  })
+
+  it('parses a /call collection path (no name param) — a create ref before the client appends one', () => {
+    expect(parseTargetFromPath('/call?apiVersion=core.krateo.io%2Fv1alpha1&namespace=krateo-system&resource=compositiondefinitions')).toEqual({
+      gvr: { group: 'core.krateo.io', resource: 'compositiondefinitions', version: 'v1alpha1' },
+      name: undefined,
+      namespace: 'krateo-system',
+    })
+  })
+
+  it('maps the required-but-ignored collection-POST name placeholder back to "no name"', () => {
+    expect(parseTargetFromPath('/call?apiVersion=audit.krateo.io%2Fv1alpha1&resource=auditrecords&name=-&namespace=demo')).toEqual({
+      gvr: { group: 'audit.krateo.io', resource: 'auditrecords', version: 'v1alpha1' },
+      name: undefined,
+      namespace: 'demo',
+    })
+  })
+
+  it('parses a bare-version apiVersion as the core group', () => {
+    expect(parseTargetFromPath('/call?apiVersion=v1&resource=configmaps&name=cm&namespace=kube-system')).toEqual({
+      gvr: { group: '', resource: 'configmaps', version: 'v1' },
+      name: 'cm',
+      namespace: 'kube-system',
+    })
+  })
+
+  it('returns undefined for a /call path missing apiVersion or resource', () => {
+    expect(parseTargetFromPath('/call?resource=configmaps&name=cm&namespace=ns')).toBeUndefined()
+    expect(parseTargetFromPath('/call?apiVersion=v1&name=cm&namespace=ns')).toBeUndefined()
+    expect(parseTargetFromPath('/call')).toBeUndefined()
+  })
 })
 
 describe('isMutatingVerb', () => {

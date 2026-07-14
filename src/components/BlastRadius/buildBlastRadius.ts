@@ -10,14 +10,16 @@
  *   PATCH / PUT     → update diff:  before = current (if any), after = payload
  *   DELETE          → delete diff:  before = identity/current  (no after)
  *
- * Target (GVR + namespace + name) is parsed from the ResourceRef `path` (the /apis/… or
- * /api/… URL snowplow targets) — the SAME parse the Autopilot page-context uses — so the
- * gate shows exactly the object the request will hit. `cluster` is 'local' for a same-cluster
+ * Target (GVR + namespace + name) is parsed from the ResourceRef `path` — a raw /apis/…
+ * or /api/… apiserver URL (RESTAction refs), or snowplow's own /call?… query shape (the
+ * paths real widget actions and the /call write-path builders carry) — the SAME parse the
+ * Autopilot page-context uses — so the gate shows exactly the object the request will hit. `cluster` is 'local' for a same-cluster
  * write and the spoke name when the payload declares a hub→spoke target (W0-4 / W3-1).
  * `count` is 1 for a scalar write, or writeSet.length for an N-fan-out apply.
  */
 
 import type { BlastRadius, BlastRadiusDiff, BlastRadiusSet, Gvr, MutatingVerb } from '../../hooks/blastRadius.types'
+import { COLLECTION_POST_NAME } from '../../hooks/callPath'
 
 /** The apiserver verbs the gate governs. GET (read) never produces a BlastRadius. */
 const MUTATING_VERBS: readonly MutatingVerb[] = ['POST', 'PUT', 'PATCH', 'DELETE']
@@ -34,16 +36,50 @@ interface ParsedTarget {
 }
 
 /**
+ * Parse the query of a snowplow `/call?...` path into {gvr, namespace?, name?}. The target
+ * facts ride in the QUERY (apiVersion = `group/version`, or the bare version for the core
+ * group; resource = the plural; name/namespace) — the shape EVERY real widget-action ref
+ * carries (snowplow builds them server-side) and the shape the /call write-path builders
+ * emit. The COLLECTION_POST_NAME placeholder (required-but-ignored on a collection POST)
+ * maps back to "no name". Returns undefined when apiVersion/resource are missing.
+ */
+const parseCallQueryTarget = (query: string): ParsedTarget | undefined => {
+  const params = new URLSearchParams(query)
+  const apiVersion = params.get('apiVersion')
+  const resource = params.get('resource')
+  if (!apiVersion || !resource) {
+    return undefined
+  }
+  const slash = apiVersion.indexOf('/')
+  const group = slash === -1 ? '' : apiVersion.slice(0, slash)
+  const version = slash === -1 ? apiVersion : apiVersion.slice(slash + 1)
+  if (!version || version.includes('/')) {
+    return undefined
+  }
+  const rawName = params.get('name')
+  const name = rawName && rawName !== COLLECTION_POST_NAME ? rawName : undefined
+
+  return { gvr: { group, resource, version }, name, namespace: params.get('namespace') ?? undefined }
+}
+
+/**
  * Parse a ResourceRef `path` (…?query and trailing slash tolerated) into {gvr, namespace?, name?}.
  * Core group is served under /api/<version>/…; named groups under /apis/<group>/<version>/….
- * Returns undefined when the path is not a recognisable apiserver URL, so the caller can fall
- * back to an empty GVR rather than fabricate one.
+ * A snowplow `/call?...` path (the shape real widget actions and the /call write-path
+ * builders carry) is parsed from its QUERY instead — so the W0-2/W0-4 confirm shows full
+ * target facts for those too. Returns undefined when the path is not a recognisable
+ * apiserver or /call URL, so the caller can fall back to an empty GVR rather than
+ * fabricate one.
  */
 export const parseTargetFromPath = (path: string | undefined): ParsedTarget | undefined => {
   if (typeof path !== 'string' || !path) {
     return undefined
   }
-  const clean = path.split('?')[0].replace(/\/+$/, '')
+  const [rawPath, query = ''] = path.split('?')
+  const clean = rawPath.replace(/\/+$/, '')
+  if (clean.endsWith('/call')) {
+    return parseCallQueryTarget(query)
+  }
   const segments = clean.split('/').filter(Boolean)
   const prefix = segments.shift()
   let group: string
