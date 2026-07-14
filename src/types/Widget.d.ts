@@ -36,6 +36,12 @@ export interface Widget<WidgetDataType = unknown> {
     actions: WidgetActions
     widgetData: WidgetDataType
     resourcesRefs: ResourcesRefs
+    /**
+     * Opt-in staleness indicator: when true the widget shows the stale/refreshing
+     * dot overlay (exception states only). Absent/false = no badge ever (the
+     * default; healthy widgets stay unmarked).
+     */
+    freshness?: boolean
   }
   status:
     | {
