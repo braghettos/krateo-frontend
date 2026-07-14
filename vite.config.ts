@@ -1,6 +1,31 @@
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import svgr from 'vite-plugin-svgr'
+
+// Build-time provenance for the sider build footer (Shell.tsx). The app version comes from
+// package.json (the single source the app already versions itself by), NOT a hardcoded literal;
+// the build marker is the git short-SHA. Both resolve at build/serve start and are inlined as
+// compile-time constants (`__APP_VERSION__` / `__APP_BUILD__`). Each degrades to a safe fallback
+// (a container build with no `.git`, or a package.json without a real version, must not crash).
+const appVersion = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version?: string }
+    return pkg.version || '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+})()
+
+const appBuild = (() => {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return 'dev'
+  }
+})()
 
 // Plugin to print current config name during development
 const printConfigPlugin = () => ({
@@ -31,6 +56,10 @@ export default defineConfig({
         api: 'modern-compiler',
       },
     },
+  },
+  define: {
+    __APP_BUILD__: JSON.stringify(appBuild),
+    __APP_VERSION__: JSON.stringify(appVersion),
   },
   plugins: [
     react(),

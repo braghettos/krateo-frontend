@@ -62,6 +62,7 @@ const Layout = ({ resourcesRefs, widgetData }: WidgetProps<LayoutWidgetData>) =>
         width={sider.width}
       >
         <div className={styles.sider}>
+          {shell.siderHeader}
           <div className={styles.siderBody}>{slot(sider.resourceRefId, resourcesRefs)}</div>
           {shell.siderFooter}
         </div>
