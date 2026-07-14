@@ -3,8 +3,10 @@
  * mocked at the previewBus seam, so these tests assert exactly what each verb DOES:
  *   - all three are registered read-only entries (deny-by-default preserved);
  *   - malformed args are denied (null) with no fetch and no drawer;
- *   - previewBlueprint with NO renderBaseUrl → the graceful "unavailable" chip, ZERO
- *     network; with one → POST + drawer (objects, or the render error as content);
+ *   - previewBlueprint PREFERS the server-side `blueprint-render` RESTAction (snowplow
+ *     `/call`) and falls back to the direct RENDER_API_BASE_URL fetch; with NEITHER
+ *     transport → the graceful "unavailable" chip, ZERO network; either → drawer (objects,
+ *     or the render error as content);
  *   - previewPage / previewRestDef never touch the network at all.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,10 +21,20 @@ vi.mock('./previewBus', () => ({ openAutopilotPreview: vi.fn() }))
 
 const openPreviewMock = vi.mocked(openAutopilotPreview)
 
+/** Direct-fetch (legacy RENDER_API_BASE_URL) deps: only `renderBaseUrl`, no RA transport. */
 const makeDeps = (renderBaseUrl?: string): VerbDeps => ({
   handleAction: vi.fn((): Promise<void> => Promise.resolve()),
   routePatterns: [],
   ...(renderBaseUrl ? { renderBaseUrl } : {}),
+})
+
+/** RA-transport deps: snowplow base URL + the RA's frontend namespace (the PREFERRED path). */
+const makeRADeps = (overrides?: Partial<VerbDeps>): VerbDeps => ({
+  frontendNamespace: 'krateo-system',
+  handleAction: vi.fn((): Promise<void> => Promise.resolve()),
+  routePatterns: [],
+  snowplowBaseUrl: 'http://snowplow.local',
+  ...overrides,
 })
 
 const asProposal = (verb: string, extra: Record<string, unknown>): PortalActionProposal =>
@@ -60,16 +72,29 @@ describe('previewBlueprint', () => {
     expect(openPreviewMock).not.toHaveBeenCalled()
   })
 
-  it('returns the graceful "unavailable" chip when renderBaseUrl is unset — ZERO network', async () => {
+  it('returns the graceful "unavailable" chip when NEITHER transport is available — ZERO network', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
+    // no renderBaseUrl AND no snowplow RA transport
     const chip = await previewBlueprintSpec.apply(asProposal('previewBlueprint', { chart }), makeDeps())
     expect(chip).toEqual({ label: RENDER_UNAVAILABLE_LABEL, readOnly: true, verb: 'previewBlueprint' })
     expect(fetchMock).not.toHaveBeenCalled()
     expect(openPreviewMock).not.toHaveBeenCalled()
   })
 
-  it('happy path: POSTs to <base>/render and opens the drawer with the rendered objects', async () => {
+  it('unavailable when snowplowBaseUrl is set but frontendNamespace is not (RA needs both), no direct URL — ZERO network', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const chip = await previewBlueprintSpec.apply(
+      asProposal('previewBlueprint', { chart }),
+      makeRADeps({ frontendNamespace: undefined }),
+    )
+    expect(chip).toEqual({ label: RENDER_UNAVAILABLE_LABEL, readOnly: true, verb: 'previewBlueprint' })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(openPreviewMock).not.toHaveBeenCalled()
+  })
+
+  it('DIRECT fallback: POSTs to <base>/render and opens the drawer with the rendered objects', async () => {
     const fetchMock = vi.fn((..._args: unknown[]) => Promise.resolve({
       json: () => Promise.resolve({
         objects: [{ apiVersion: 'apps/v1', kind: 'Deployment', name: 'web', namespace: 'demo', yaml: 'kind: Deployment' }],
@@ -111,6 +136,68 @@ describe('previewBlueprint', () => {
       makeDeps('http://render.local'),
     )
     expect(chip?.label).toBe('previewed the VPC blueprint')
+  })
+})
+
+describe('previewBlueprint — server-side RESTAction transport (preferred)', () => {
+  const chart = { url: 'oci://ghcr.io/x/aws-vpc', version: '1.0.0' }
+
+  /** The RA path GETs snowplow /call?resource=restactions&name=blueprint-render&extras=<json>. */
+  const raResponse = (status: unknown, ok = true, httpStatus = 200) => vi.fn((..._args: unknown[]) =>
+    Promise.resolve({ json: () => Promise.resolve({ status }), ok, status: httpStatus }))
+
+  it('fetches the blueprint-render RESTAction via /call (GET, with the args in ?extras) and opens the drawer', async () => {
+    const fetchMock = raResponse({
+      objects: [{ apiVersion: 'ec2.services.k8s.aws/v1alpha1', kind: 'VPC', name: 'demo-vpc', namespace: 'demo-system', yaml: 'kind: VPC' }],
+      valuesSchema: { type: 'object' },
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const chip = await previewBlueprintSpec.apply(
+      asProposal('previewBlueprint', { chart, values: { cidr: '10.0.0.0/16' } }),
+      makeRADeps(),
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit | undefined]
+    const parsed = new URL(url)
+    expect(parsed.origin + parsed.pathname).toBe('http://snowplow.local/call')
+    expect(parsed.searchParams.get('resource')).toBe('restactions')
+    expect(parsed.searchParams.get('apiVersion')).toBe('templates.krateo.io/v1')
+    expect(parsed.searchParams.get('name')).toBe('blueprint-render')
+    expect(parsed.searchParams.get('namespace')).toBe('krateo-system')
+    // the exactly-one-of source + values ride in ?extras
+    expect(JSON.parse(parsed.searchParams.get('extras') ?? '{}')).toEqual({ chart, values: { cidr: '10.0.0.0/16' } })
+    // GET, not POST — the render service is never browser-hit; snowplow POSTs it in-cluster
+    expect(init?.method).toBeUndefined()
+    const payload = openedPayload()
+    expect(payload.title).toBe('Blueprint preview — aws-vpc')
+    expect(payload.error).toBeUndefined()
+    expect(payload.objects).toEqual([{ apiVersion: 'ec2.services.k8s.aws/v1alpha1', kind: 'VPC', name: 'demo-vpc', namespace: 'demo-system', yaml: 'kind: VPC' }])
+    expect(chip).toEqual({ label: 'preview aws-vpc (1 object)', readOnly: true, verb: 'previewBlueprint' })
+  })
+
+  it('reads the render {error} out of the RESTAction .status (a bad chart is data)', async () => {
+    vi.stubGlobal('fetch', raResponse({ error: 'chart: failed to pull oci://…:9.9.9: not found', objects: [] }))
+    const chip = await previewBlueprintSpec.apply(asProposal('previewBlueprint', { chart }), makeRADeps())
+    expect(openedPayload().error).toBe('chart: failed to pull oci://…:9.9.9: not found')
+    expect(chip).toEqual({ label: 'preview aws-vpc (render failed)', readOnly: true, verb: 'previewBlueprint' })
+  })
+
+  it('a non-2xx from snowplow (RA missing / RBAC) surfaces as content, never a throw', async () => {
+    vi.stubGlobal('fetch', raResponse(null, false, 403))
+    const chip = await previewBlueprintSpec.apply(asProposal('previewBlueprint', { chart }), makeRADeps())
+    expect(openedPayload().error).toBe('blueprint-render RESTAction responded 403')
+    expect(chip?.label).toBe('preview aws-vpc (render failed)')
+  })
+
+  it('PREFERS the RA over a direct renderBaseUrl when both are configured', async () => {
+    const fetchMock = raResponse({ objects: [] })
+    vi.stubGlobal('fetch', fetchMock)
+    await previewBlueprintSpec.apply(
+      asProposal('previewBlueprint', { chart }),
+      makeRADeps({ renderBaseUrl: 'http://render.local' }),
+    )
+    // the fetch went to snowplow /call, NOT the direct render service
+    expect(new URL(fetchMock.mock.calls[0][0] as string).pathname).toBe('/call')
   })
 })
 

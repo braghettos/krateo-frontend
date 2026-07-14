@@ -4,14 +4,18 @@
  *   - the three arg guards DENY malformed proposals (null) and accept the contract;
  *   - callHelmRender maps request→response and resolves EVERY failure mode into
  *     `{error}` content (an {error} body, a non-2xx status, an unreachable service);
+ *   - callBlueprintRenderRA (the server-side transport) GETs snowplow /call with the args
+ *     in ?extras and reads the render contract out of the RESTAction .status;
  *   - previewRestDef's summary extraction parses verbs/paths from a CR fixture.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { PortalActionProposal } from './actionBridge'
 import {
+  buildBlueprintRenderExtras,
   buildPagePreviewPayload,
   buildRestDefPreviewPayload,
+  callBlueprintRenderRA,
   callHelmRender,
   chartDisplayName,
   extractRestDefSummary,
@@ -185,6 +189,97 @@ describe('callHelmRender — the render-service transport seam', () => {
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect((init.headers as Record<string, string>).Authorization).toBeUndefined()
     expect((init.headers as Record<string, string>)['Content-Type']).toBe('application/json')
+  })
+})
+
+describe('buildBlueprintRenderExtras — the ?extras envelope', () => {
+  it('carries the chart source + values for the remote mode', () => {
+    expect(JSON.parse(buildBlueprintRenderExtras({ chart: { url: 'oci://x/aws-vpc', version: '1.0.0' }, values: { region: 'eu' } })))
+      .toEqual({ chart: { url: 'oci://x/aws-vpc', version: '1.0.0' }, values: { region: 'eu' } })
+  })
+
+  it('carries rawTemplates (NOT chart) for the inline-draft mode, defaulting values to {}', () => {
+    expect(JSON.parse(buildBlueprintRenderExtras({ rawTemplates: { 'Chart.yaml': 'apiVersion: v2\n' } })))
+      .toEqual({ rawTemplates: { 'Chart.yaml': 'apiVersion: v2\n' }, values: {} })
+  })
+})
+
+describe('callBlueprintRenderRA — the server-side RESTAction transport seam', () => {
+  const chartArgs = { chart: { url: 'oci://ghcr.io/x/aws-vpc', version: '1.0.0' }, values: { cidr: '10.0.0.0/16' } }
+
+  const stubFetch = (impl: (...args: unknown[]) => unknown) => {
+    const fetchMock = vi.fn(impl)
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('GETs /call?resource=restactions&name=blueprint-render with the args in ?extras and reads .status', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({
+      json: () => Promise.resolve({
+        // snowplow places a RESTAction's jq filter output DIRECTLY in .status (not .status.widgetData)
+        status: {
+          objects: [
+            { apiVersion: 'ec2.services.k8s.aws/v1alpha1', kind: 'VPC', name: 'demo-vpc', namespace: 'demo-system', yaml: 'kind: VPC' },
+            { name: 'anonymous' },
+          ],
+          valuesSchema: { type: 'object' },
+        },
+      }),
+      ok: true,
+      status: 200,
+    }))
+    const result = await callBlueprintRenderRA('http://snowplow.local/', 'krateo-system', chartArgs)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit | undefined]
+    const parsed = new URL(url)
+    expect(parsed.origin + parsed.pathname).toBe('http://snowplow.local/call')
+    expect(parsed.searchParams.get('resource')).toBe('restactions')
+    expect(parsed.searchParams.get('apiVersion')).toBe('templates.krateo.io/v1')
+    expect(parsed.searchParams.get('name')).toBe('blueprint-render')
+    expect(parsed.searchParams.get('namespace')).toBe('krateo-system')
+    expect(JSON.parse(parsed.searchParams.get('extras') ?? '{}')).toEqual({ chart: chartArgs.chart, values: chartArgs.values })
+    // GET (no method) — the browser never POSTs the ClusterIP-only render service directly
+    expect(init?.method).toBeUndefined()
+    expect(result.error).toBeUndefined()
+    expect(result.valuesSchema).toEqual({ type: 'object' })
+    expect(result.objects).toEqual([
+      { apiVersion: 'ec2.services.k8s.aws/v1alpha1', kind: 'VPC', name: 'demo-vpc', namespace: 'demo-system', yaml: 'kind: VPC' },
+      // a shapeless entry still previews: kind falls back, its own JSON becomes the YAML
+      { kind: 'Object', name: 'anonymous', yaml: toYamlString({ name: 'anonymous' }) },
+    ])
+  })
+
+  it('surfaces the render {error} from .status as content — a bad chart is data', async () => {
+    stubFetch(() => Promise.resolve({
+      json: () => Promise.resolve({ status: { error: 'chart: failed to pull oci://…:9.9.9: not found', objects: [] } }),
+      ok: true,
+      status: 200,
+    }))
+    const result = await callBlueprintRenderRA('http://snowplow.local', 'krateo-system', chartArgs)
+    expect(result.error).toContain('not found')
+    expect(result.objects).toEqual([])
+  })
+
+  it('a non-2xx (RA missing / RBAC-denied / snowplow 5xx) surfaces as content, not a throw', async () => {
+    stubFetch(() => Promise.resolve({ json: () => Promise.resolve(null), ok: false, status: 404 }))
+    const result = await callBlueprintRenderRA('http://snowplow.local', 'krateo-system', chartArgs)
+    expect(result.error).toBe('blueprint-render RESTAction responded 404')
+    expect(result.objects).toEqual([])
+  })
+
+  it('resolves (never rejects) when snowplow is unreachable', async () => {
+    stubFetch(() => Promise.reject(new TypeError('Failed to fetch')))
+    const result = await callBlueprintRenderRA('http://snowplow.local', 'krateo-system', chartArgs)
+    expect(result.error).toContain('blueprint-render RESTAction unreachable')
+    expect(result.error).toContain('Failed to fetch')
+    expect(result.objects).toEqual([])
+  })
+
+  it('treats a missing/empty .status as an empty (no-objects) result, never a crash', async () => {
+    stubFetch(() => Promise.resolve({ json: () => Promise.resolve({ metadata: { name: 'blueprint-render' } }), ok: true, status: 200 }))
+    const result = await callBlueprintRenderRA('http://snowplow.local', 'krateo-system', chartArgs)
+    expect(result.error).toBeUndefined()
+    expect(result.objects).toEqual([])
   })
 })
 
