@@ -270,6 +270,28 @@
   padding-left: 12px;
 }
 
+/* Progressive disclosure (FRM1): the "Advanced · N settings" collapse holding every OPTIONAL
+   property. A muted, understated container so required fields keep visual primacy — the header
+   reads as a category (mono, gray, uppercase-ish tracking), the panel body carries no antd
+   chrome so the connector-rail fields inside look identical to the up-front ones. */
+.advanced {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin: 20px 0 8px;
+}
+
+.advanced :global(.ant-collapse-header) {
+  color: var(--gray-color);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.advanced :global(.ant-collapse-content-box) {
+  padding-top: 4px;
+}
+
 /* ── Section navigator (SchemaForm) — a left rail of sections + the active section body ── */
 .sectioned {
   align-items: flex-start;
