@@ -21,6 +21,7 @@ import { GROUNDING_GUARDRAIL_PROMPT, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RU
 import { AgentDraftProvider } from './agentDraft'
 import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approval'
 import { createApprovalGovernor, summarizeApprovalTools } from './approval'
+import { AutopilotPreviewDrawer } from './previewSurface'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
@@ -409,6 +410,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     <AutopilotReactContext.Provider value={value}>
       <AgentDraftProvider value={{ draft: agentDraft, nonce: draftNonce }}>
         {children}
+        {/* Wave-4 preview surface: the read-only preview verbs (previewBlueprint /
+            previewPage / previewRestDef) render into this global drawer. */}
+        <AutopilotPreviewDrawer />
       </AgentDraftProvider>
     </AutopilotReactContext.Provider>
   )

@@ -25,8 +25,8 @@ const makeDeps = (): { deps: VerbDeps; handleAction: ReturnType<typeof vi.fn> } 
 }
 
 describe('READONLY_VERB_REGISTRY — seeded read verbs', () => {
-  it('seeds the four original read-only verbs + the two preview verbs, all sideEffect:read', () => {
-    for (const verb of ['navigate', 'setExtras', 'openDrawer', 'openModal', 'previewBlueprint', 'previewPage']) {
+  it('seeds the four original read-only verbs + the three preview verbs, all sideEffect:read', () => {
+    for (const verb of ['navigate', 'setExtras', 'openDrawer', 'openModal', 'previewBlueprint', 'previewPage', 'previewRestDef']) {
       expect(READONLY_VERB_REGISTRY[verb]).toBeDefined()
       expect(READONLY_VERB_REGISTRY[verb].sideEffect).toBe('read')
       expect(isReadOnlyVerb(verb)).toBe(true)

@@ -13,8 +13,8 @@
  * in this registry: it is a distinct, explicitly-gated branch (forces
  * requireConfirmation:true) owned by the bridge itself.
  *
- * Adding a read-only verb (e.g. the Wave-4 previewBlueprint / previewPage) is now a
- * one-line entry — see `previewHandlers.ts` for the seeded preview handlers.
+ * Adding a read-only verb (e.g. the Wave-4 previewBlueprint / previewPage /
+ * previewRestDef) is now a one-line entry — see `previewHandlers.ts`.
  */
 import { matchPath } from 'react-router'
 
@@ -39,6 +39,9 @@ export interface VerbDeps {
   handleAction: (action: WidgetAction, resourcesRefs: ResourcesRefs) => Promise<void>
   /** The registered route patterns (see collectRoutePatterns). Empty = table not ready yet. */
   routePatterns: string[]
+  /** Base URL of the Wave-4 helm-render dry-run service (config api.RENDER_API_BASE_URL).
+   * Absent = not configured — previewBlueprint degrades to a graceful "unavailable" chip. */
+  renderBaseUrl?: string
 }
 
 /** A declarative verb: its side-effect class, a shape guard, and its dispatch handler. */
@@ -133,8 +136,8 @@ const openModalSpec: VerbSpec = {
 /**
  * The read-only verb registry. Deny-by-default is a property of this table: only the
  * `read` verbs present here are ever executed via the bridge's registry path. Preview
- * verbs (previewBlueprint / previewPage) are appended from `previewHandlers.ts` to
- * avoid a circular import (that module imports the shared helpers from here).
+ * verbs (previewBlueprint / previewPage / previewRestDef) are appended from
+ * `previewHandlers.ts` to avoid a circular import (it imports shared helpers from here).
  */
 export const READONLY_VERB_REGISTRY: Record<string, VerbSpec> = {
   navigate: navigateSpec,

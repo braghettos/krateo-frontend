@@ -1,68 +1,116 @@
 /**
- * Wave-4 preview verb handlers (W0-1 extension seam). These are DENY-BY-DEFAULT
- * read-only registry entries — they mutate NOTHING and auto-apply like navigate.
- * Each is a one-line `VerbSpec` registered into the shared read-only registry, so
- * `isReadOnlyVerb()` resolves them and the bridge dispatches them through the same
- * registry path as the four seed verbs.
+ * Wave-4 preview verbs (W0-1 extension seam) — THREE deny-by-default, READ-ONLY
+ * registry entries that mutate NOTHING and auto-apply like navigate. Each shows the
+ * user exactly what a builder will produce BEFORE any write, in the shared preview
+ * drawer (previewSurface.tsx, opened via the previewBus event). The write that may
+ * follow still goes through useHandleAction + the blast-radius gate — never from here.
  *
- *   - previewBlueprint: navigate to the blueprint request/create form at
- *     `/blueprints/<ns>/<name>/new` WITHOUT any prefill (no agentDraft) — purely a
- *     validated route change so the user reviews the empty Configure form.
- *   - previewPage: a validated navigate reusing the SAME route-pattern validation as
- *     navigate; a hallucinated preview route (matching no real route) is dropped.
+ *   - previewBlueprint {chart:{url,version?,repo?}, values?}: POSTs to the helm-render
+ *     service (config api.RENDER_API_BASE_URL — the transport seam is designed ahead
+ *     of the service's deployment) and lists the rendered child objects. No
+ *     renderBaseUrl configured → a graceful "preview unavailable" chip, ZERO network.
+ *     A render error is CONTENT (a bad chart is data), shown in the drawer.
+ *   - previewPage {widgets:[<widget CR objects>]}: ZERO network — an honest SOURCE
+ *     preview (kind/name headline + collapsible YAML per proposed CR). Deliberately
+ *     NOT a live render: WidgetRenderer requires a SERVED widgetEndpoint
+ *     (useWidgetQuery fetches it), container widgets (Flex/Row/Col/Tabs…) resolve
+ *     children through further served endpoints, and a draft CR only has an
+ *     UNRESOLVED spec (snowplow compiles spec→status server-side: templates, apiRef
+ *     data, resourcesRefs). An in-memory "render" would either fetch (violating
+ *     read-only zero-network) or fake the resolution — so the fallback is honest
+ *     source, and live draft rendering is a documented follow-up.
+ *   - previewRestDef {restDefinition:<CR draft>}: pure client-side parsing — the
+ *     draft's YAML plus a summary of the mapped verbs/paths (action · METHOD path),
+ *     kind/group and identifiers. No network, no crdgen (v1 = structured source).
  *
- * NOTE: the proposal fields these read (`namespace`/`ns`, `name`, `route`) are declared
- * on PortalActionProposal in actionBridge.ts — no new verb string literals leak into
- * the shared types.ts (they live locally as the registry keys below).
+ * Malformed args are DENIED (argSchema false / apply → null), matching every other
+ * registry verb — never a crash, never a partial dispatch.
  */
-import { EMPTY_REFS, isKnownRoute, registerReadOnlyVerb, type VerbSpec } from './verbRegistry'
+import {
+  buildPagePreviewPayload,
+  buildRestDefPreviewPayload,
+  callHelmRender,
+  chartDisplayName,
+  parseBlueprintPreviewArgs,
+  parsePagePreviewArgs,
+  parseRestDefPreviewArgs,
+} from './previewBridge'
+import { openAutopilotPreview } from './previewBus'
+import { registerReadOnlyVerb, type VerbSpec } from './verbRegistry'
 
-/** The blueprint namespace + name from a preview proposal (accepts `ns` or `namespace`). */
-const blueprintTarget = (proposal: { namespace?: string; ns?: string; name?: string }): { ns: string; name: string } | null => {
-  const ns = proposal.namespace ?? proposal.ns
-  const { name } = proposal
-  return ns && name ? { name, ns } : null
-}
+/** The graceful-absence chip label when RENDER_API_BASE_URL is not configured. */
+export const RENDER_UNAVAILABLE_LABEL = 'preview unavailable — render service not configured'
 
 /**
- * previewBlueprint → navigate to `/blueprints/<ns>/<name>/new` with NO prefill. It is
- * a read-only route change (the empty Configure form), validated against the real
- * route table exactly like navigate; a missing ns/name or an unregistered route is a
- * no-op. It does NOT touch agentDraft — previewing is not drafting.
+ * previewBlueprint → helm-render the chart against the values and show the rendered
+ * child objects. Read-only end to end: the render service is a dry-run (no cluster
+ * write), and every failure mode resolves into drawer content or a chip — no throw.
  */
 export const previewBlueprintSpec: VerbSpec = {
   apply: async (proposal, deps) => {
-    const target = blueprintTarget(proposal)
-    if (!target) {
+    const args = parseBlueprintPreviewArgs(proposal)
+    if (!args) {
       return null
     }
-    const route = `/blueprints/${target.ns}/${target.name}/new`
-    if (!isKnownRoute(route, deps.routePatterns)) {
-      return null
+    if (!deps.renderBaseUrl) {
+      // Graceful absence: the render service is optional install surface. No fetch,
+      // no drawer — just an honest chip saying the preview cannot be produced here.
+      return { label: RENDER_UNAVAILABLE_LABEL, readOnly: true, verb: 'previewBlueprint' }
     }
-    await deps.handleAction({ id: 'autopilot-preview-blueprint', path: route, type: 'navigate' }, EMPTY_REFS)
-    return { label: proposal.label ?? `preview ${target.name}`, readOnly: true, verb: 'previewBlueprint' }
+    const name = chartDisplayName(args.chart.url)
+    const rendered = await callHelmRender(deps.renderBaseUrl, args)
+    openAutopilotPreview({
+      caption: 'helm-render dry run — nothing is applied to the cluster',
+      ...(rendered.error ? { error: rendered.error } : {}),
+      objects: rendered.objects,
+      title: `Blueprint preview — ${name}`,
+    })
+    const outcome = rendered.error
+      ? 'render failed'
+      : `${rendered.objects.length} object${rendered.objects.length === 1 ? '' : 's'}`
+    return { label: proposal.label ?? `preview ${name} (${outcome})`, readOnly: true, verb: 'previewBlueprint' }
   },
-  argSchema: (proposal) => blueprintTarget(proposal) !== null,
+  argSchema: (proposal) => parseBlueprintPreviewArgs(proposal) !== null,
   name: 'previewBlueprint',
   sideEffect: 'read',
 }
 
 /**
- * previewPage → a validated navigate reusing the existing route-pattern validation. A
- * hallucinated preview route (matching no registered route) is dropped, so the chat
- * can never narrate "previewing X" while opening a 404.
+ * previewPage → the honest SOURCE preview of the proposed widget CRs (see the module
+ * header for why this is not a live render). ZERO network by construction: the
+ * payload is built purely from the proposal and handed to the drawer.
  */
 export const previewPageSpec: VerbSpec = {
-  apply: async (proposal, deps) => {
-    if (!proposal.route || !isKnownRoute(proposal.route, deps.routePatterns)) {
-      return null
+  apply: (proposal) => {
+    const widgets = parsePagePreviewArgs(proposal)
+    if (!widgets) {
+      return Promise.resolve(null)
     }
-    await deps.handleAction({ id: 'autopilot-preview-page', path: proposal.route, type: 'navigate' }, EMPTY_REFS)
-    return { label: proposal.label ?? `preview ${proposal.route}`, readOnly: true, verb: 'previewPage' }
+    openAutopilotPreview(buildPagePreviewPayload(widgets))
+    const label = proposal.label ?? `preview page (${widgets.length} widget${widgets.length === 1 ? '' : 's'})`
+    return Promise.resolve({ label, readOnly: true, verb: 'previewPage' })
   },
-  argSchema: (proposal) => typeof proposal.route === 'string' && proposal.route.length > 0,
+  argSchema: (proposal) => parsePagePreviewArgs(proposal) !== null,
   name: 'previewPage',
+  sideEffect: 'read',
+}
+
+/**
+ * previewRestDef → the RestDefinition draft's YAML + a client-side summary of its
+ * mapped verbs/paths. Pure parsing, no network; v1 of the KOG-builder preview gate.
+ */
+export const previewRestDefSpec: VerbSpec = {
+  apply: (proposal) => {
+    const restDefinition = parseRestDefPreviewArgs(proposal)
+    if (!restDefinition) {
+      return Promise.resolve(null)
+    }
+    const payload = buildRestDefPreviewPayload(restDefinition)
+    openAutopilotPreview(payload)
+    return Promise.resolve({ label: proposal.label ?? payload.title, readOnly: true, verb: 'previewRestDef' })
+  },
+  argSchema: (proposal) => parseRestDefPreviewArgs(proposal) !== null,
+  name: 'previewRestDef',
   sideEffect: 'read',
 }
 
@@ -71,3 +119,4 @@ export const previewPageSpec: VerbSpec = {
 // before any apply() dispatch.
 registerReadOnlyVerb(previewBlueprintSpec)
 registerReadOnlyVerb(previewPageSpec)
+registerReadOnlyVerb(previewRestDefSpec)
