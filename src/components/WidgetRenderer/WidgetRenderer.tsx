@@ -225,10 +225,12 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
 
   const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)
 
-  // Overlay a tiny freshness DOT on the widget ONLY when its state is worth noticing —
-  // actively refreshing, or stale. The steady/fresh state (live or just-updated) is the
-  // assumed default and renders NO indicator at all: a marker on every widget, all the
-  // time, is noise not signal. So the dot appears only as an exception. Skipped entirely
+  // Overlay a tiny freshness DOT on the widget ONLY when (1) the widget CR OPTS IN via
+  // `spec.freshness: true` AND (2) its state is worth noticing — actively refreshing, or
+  // stale. The steady/fresh state (live or just-updated) is the assumed default and
+  // renders NO indicator at all: a marker on every widget, all the time, is noise not
+  // signal. So the dot appears only as an exception, and only where an author asked for
+  // it — the DEFAULT (no `freshness` in the spec) shows no badge ever. Skipped entirely
   // for invisible renders / live-refresh off.
   //
   // STRUCTURE STABILITY (issue #33): the wrapper `<div>` is rendered UNCONDITIONALLY
@@ -242,7 +244,9 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
       return content
     }
     const isRefreshing = isFetching && dataUpdatedAt > 0
-    const showBadge = isStale || isRefreshing
+    // Opt-in gate: the badge renders ONLY for widgets whose CR declares
+    // `spec.freshness: true` — and even then only for the exception states.
+    const showBadge = widget?.spec?.freshness === true && (isStale || isRefreshing)
     return (
       <div className={styles.freshnessWrap}>
         {content}

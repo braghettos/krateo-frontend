@@ -173,6 +173,29 @@ async function injectKeyExtras(crdPath: string): Promise<void> {
   await fs.writeFile(crdPath, yaml.dump(doc, { lineWidth: -1, noRefs: true }))
 }
 
+/**
+ * Inject `spec.freshness` into every widget CRD (opt-in staleness badge). The frontend's
+ * freshness/staleness indicator is exception-only AND opt-in PER WIDGET: `freshness: true`
+ * shows the subtle stale/refreshing dot overlay (exception states only); absent/false — the
+ * default — renders NO badge ever, so healthy widgets stay unmarked (status indicators are
+ * exception-only). Byte-for-byte mirror of `identityContext`/`keyExtras` (same optionality,
+ * same CRD post-process seam) EXCEPT the shape is a plain boolean. The apiserver PRUNES
+ * fields absent from a structural CRD schema, so the field MUST be declared here or an
+ * author's opt-in is silently dropped and the badge can never appear.
+ */
+async function injectFreshness(crdPath: string): Promise<void> {
+  const doc = yaml.load(await fs.readFile(crdPath, 'utf8')) as {
+    spec?: { versions?: Array<{ schema?: { openAPIV3Schema?: { properties?: { spec?: { properties?: Record<string, unknown> } } } } }> }
+  }
+  const specNode = doc.spec?.versions?.[0]?.schema?.openAPIV3Schema?.properties?.spec
+  if (!specNode?.properties || specNode.properties.freshness) { return }
+  specNode.properties.freshness = {
+    description: 'Opt-in staleness indicator: when true the widget shows the stale/refreshing dot overlay (exception states only). Absent/false = no badge ever (the default; healthy widgets stay unmarked).',
+    type: 'boolean',
+  }
+  await fs.writeFile(crdPath, yaml.dump(doc, { lineWidth: -1, noRefs: true }))
+}
+
 async function runKrateoctl(schemaPath: string) {
   const schemaName = basename(schemaPath)
   const widgetDir = dirname(schemaPath)
@@ -204,6 +227,8 @@ async function runKrateoctl(schemaPath: string) {
     await injectIdentityContext(destinationPath)
     // F6 (snowplow#130): every widget CRD carries the author-declared extras-variance field.
     await injectKeyExtras(destinationPath)
+    // Opt-in staleness badge: every widget CRD carries the `freshness` opt-in flag.
+    await injectFreshness(destinationPath)
 
     console.log(`✅ ${chalk.green(finalName)} moved to ${chalk.gray(OUTPUT_DIR)}${normalized ? chalk.yellow(' (union → x-kubernetes-int-or-string)') : ''}${mapsFixed ? chalk.yellow(' (typed maps → additionalProperties)') : ''}`)
     return true

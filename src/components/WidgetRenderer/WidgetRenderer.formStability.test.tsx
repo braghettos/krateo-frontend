@@ -112,8 +112,8 @@ const ENDPOINT = '/call?resource=forms&apiVersion=widgets.templates.krateo.io%2F
  * array field (`clusters`, items.enum) — the two field shapes the live incident hit.
  * Every call returns FRESH object identities (as a real refetch does).
  */
-const makeFormWidget = (opts: { clusterOptions?: string[]; initialValues?: Record<string, unknown> } = {}): Widget => {
-  const { clusterOptions = ['alpha', 'beta'], initialValues } = opts
+const makeFormWidget = (opts: { clusterOptions?: string[]; freshness?: boolean; initialValues?: Record<string, unknown> } = {}): Widget => {
+  const { clusterOptions = ['alpha', 'beta'], freshness, initialValues } = opts
   return {
     apiVersion: 'widgets.templates.krateo.io/v1beta1',
     kind: 'Form',
@@ -126,7 +126,7 @@ const makeFormWidget = (opts: { clusterOptions?: string[]; initialValues?: Recor
       resourceVersion: '1',
       uid: 'uid-form-1',
     },
-    spec: {} as never,
+    spec: (freshness === undefined ? {} : { freshness }) as never,
     status: {
       actions: {},
       resourcesRefs: { items: [] },
@@ -280,6 +280,32 @@ describe('Form widget survives a live-refresh refetch (issue #33)', () => {
     expect(getInput().value).toBe('mine')
   })
 
+  it('the freshness wrapper <div> stays mounted across a refetch cycle regardless of the spec.freshness opt-in (remount invariant)', async () => {
+    // The #33 fix: the wrapper div renders UNCONDITIONALLY — only the badge inside it
+    // toggles. With the badge now opt-in (spec.freshness), the wrapper must STILL be
+    // unconditional in BOTH cases, or the stale/refetch flip changes the subtree's root
+    // element type and remounts the Form (wiping user input).
+    const assertWrapperStable = async (freshness: boolean) => {
+      document.body.innerHTML = ''
+      await setQueryState({ data: makeFormWidget({ freshness }), dataUpdatedAt: Date.now(), isFetching: false, isStale: false })
+      const { unmount } = renderWidget()
+
+      fireEvent.change(getInput(), { target: { value: 'sticky' } })
+      const inputBefore = getInput()
+
+      await simulateRefetch(makeFormWidget({ freshness }))
+
+      // Same DOM node — the widget subtree was NOT remounted by the stale/refetch flip…
+      expect(getInput()).toBe(inputBefore)
+      // …and the typed value survived.
+      expect(getInput().value).toBe('sticky')
+      unmount()
+    }
+
+    await assertWrapperStable(false)
+    await assertWrapperStable(true)
+  })
+
   it('an Autopilot draft applies once per draft — a refetch does NOT re-clobber a user edit, a NEW draft does apply', async () => {
     await setQueryState({ data: makeFormWidget(), dataUpdatedAt: Date.now() })
     const { rerender } = renderWidget(
@@ -310,5 +336,30 @@ describe('Form widget survives a live-refresh refetch (issue #33)', () => {
       </MemoryRouter>,
     )
     await waitFor(() => { expect(getInput().value).toBe('drafted-2') })
+  })
+})
+
+describe('Freshness badge is OPT-IN via spec.freshness (default: no badge, ever)', () => {
+  const getBadge = () => document.querySelector('[data-testid="freshness-badge"]')
+
+  it('a STALE widget WITHOUT the opt-in renders NO badge (the default)', async () => {
+    await setQueryState({ data: makeFormWidget(), dataUpdatedAt: Date.now() - 60_000, isFetching: false, isStale: true })
+    renderWidget()
+    // The widget itself rendered fine…
+    expect(getInput()).toBeTruthy()
+    // …but no badge: staleness alone is not enough without the spec opt-in.
+    expect(getBadge()).toBeNull()
+  })
+
+  it('a STALE widget WITH spec.freshness=true renders the badge', async () => {
+    await setQueryState({ data: makeFormWidget({ freshness: true }), dataUpdatedAt: Date.now() - 60_000, isFetching: false, isStale: true })
+    renderWidget()
+    expect(getBadge()).toBeTruthy()
+  })
+
+  it('an opted-in widget in the healthy/fresh state still shows NO badge (exception-only)', async () => {
+    await setQueryState({ data: makeFormWidget({ freshness: true }), dataUpdatedAt: Date.now(), isFetching: false, isStale: false })
+    renderWidget()
+    expect(getBadge()).toBeNull()
   })
 })
