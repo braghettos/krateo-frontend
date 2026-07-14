@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PortalActionProposal } from './actionBridge'
 import type { AutopilotPreviewPayload } from './previewBus'
 import { openAutopilotPreview } from './previewBus'
-import { previewBlueprintSpec, previewPageSpec, previewRestDefSpec, RENDER_UNAVAILABLE_LABEL } from './previewHandlers'
+import { explainUpgradeImpactSpec, previewBlueprintSpec, previewPageSpec, previewRestDefSpec, RENDER_UNAVAILABLE_LABEL, UPGRADE_IMPACT_UNAVAILABLE_LABEL } from './previewHandlers'
 import { isReadOnlyVerb, READONLY_VERB_REGISTRY, type VerbDeps } from './verbRegistry'
 
 vi.mock('./previewBus', () => ({ openAutopilotPreview: vi.fn() }))
@@ -272,5 +272,63 @@ describe('previewRestDef — structured source preview, zero network', () => {
     expect(await previewRestDefSpec.apply(asProposal('previewRestDef', { restDefinition: 'kind: RestDefinition' }), deps)).toBeNull()
     expect(await previewRestDefSpec.apply(asProposal('previewRestDef', { restDefinition: {} }), deps)).toBeNull()
     expect(openPreviewMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('explainUpgradeImpact — the version-diff explain verb', () => {
+  const stubFetch = (impl: (...fetchArgs: unknown[]) => unknown) => {
+    const fetchMock = vi.fn(impl)
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+  const args = { name: 'aws-vpc', namespace: 'demo', toVersion: '1.2.0' }
+
+  it('is a registered read-only verb', () => {
+    expect(READONLY_VERB_REGISTRY.explainUpgradeImpact?.sideEffect).toBe('read')
+    expect(isReadOnlyVerb('explainUpgradeImpact')).toBe(true)
+  })
+
+  it('DENIES malformed args (missing toVersion) — null, no fetch, no drawer', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ json: () => Promise.resolve({}), ok: true, status: 200 }))
+    expect(await explainUpgradeImpactSpec.apply(asProposal('explainUpgradeImpact', { name: 'x', namespace: 'demo' }), makeRADeps())).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(openPreviewMock).not.toHaveBeenCalled()
+  })
+
+  it('unavailable chip (ZERO network) when the RA transport is not configured', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ json: () => Promise.resolve({}), ok: true, status: 200 }))
+    const chip = await explainUpgradeImpactSpec.apply(asProposal('explainUpgradeImpact', args), makeRADeps({ snowplowBaseUrl: undefined }))
+    expect(chip).toEqual({ label: UPGRADE_IMPACT_UNAVAILABLE_LABEL, readOnly: true, verb: 'explainUpgradeImpact' })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(openPreviewMock).not.toHaveBeenCalled()
+  })
+
+  it('fetches the RA and renders the shaped diff into the drawer', async () => {
+    stubFetch(() => Promise.resolve({
+      json: () => Promise.resolve({ status: {
+        from: '1.1.0',
+        rows: [{ change: 'modified', detail: 'changed: replicas', kind: 'Deployment', name: 'api', namespace: 'demo' }],
+        summary: '0 added · 0 removed · 1 modified · values schema changed',
+        to: '1.2.0',
+        valuesSchemaChanged: true,
+      } }),
+      ok: true,
+      status: 200,
+    }))
+    const chip = await explainUpgradeImpactSpec.apply(asProposal('explainUpgradeImpact', args), makeRADeps())
+    expect(chip?.verb).toBe('explainUpgradeImpact')
+    expect(chip?.readOnly).toBe(true)
+    expect(chip?.label).toContain('upgrade impact → 1.2.0')
+    const payload = openedPayload()
+    expect(payload.title).toBe('Upgrade impact — 1.1.0 → 1.2.0')
+    expect(payload.summary).toContain('~ Deployment demo/api — changed: replicas')
+    expect(payload.error).toBeUndefined()
+  })
+
+  it('renders a render/diff failure as drawer content (chip says diff failed)', async () => {
+    stubFetch(() => Promise.resolve({ json: () => Promise.resolve({ status: { error: 'chart: not found', from: '1.1.0', to: '1.2.0' } }), ok: true, status: 200 }))
+    const chip = await explainUpgradeImpactSpec.apply(asProposal('explainUpgradeImpact', args), makeRADeps())
+    expect(chip?.label).toContain('diff failed')
+    expect(openedPayload().error).toBe('chart: not found')
   })
 })

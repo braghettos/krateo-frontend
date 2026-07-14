@@ -15,14 +15,19 @@ import {
   buildBlueprintRenderExtras,
   buildPagePreviewPayload,
   buildRestDefPreviewPayload,
+  buildUpgradeImpactExtras,
+  buildUpgradeImpactPayload,
   callBlueprintRenderRA,
   callHelmRender,
+  callUpgradeImpactRA,
   chartDisplayName,
   extractRestDefSummary,
   parseBlueprintPreviewArgs,
   parsePagePreviewArgs,
   parseRestDefPreviewArgs,
+  parseUpgradeImpactArgs,
   toYamlString,
+  type UpgradeImpactResult,
 } from './previewBridge'
 
 const asProposal = (extra: Record<string, unknown>): PortalActionProposal =>
@@ -340,5 +345,119 @@ describe('previewRestDef summary — mapped verbs/paths parsed client-side', () 
     const valid = JSON.parse(JSON.stringify(restDefFixture)) as typeof restDefFixture
     valid.spec.resource.verbsDescription[1].method = 'GET'
     expect(buildRestDefPreviewPayload(valid).problems).toBeUndefined()
+  })
+})
+
+describe('parseUpgradeImpactArgs — {name, namespace, toVersion}', () => {
+  it('accepts a well-formed proposal (no chart source — the RA fetches the compdef)', () => {
+    expect(parseUpgradeImpactArgs(asProposal({ name: 'aws-vpc', namespace: 'demo', toVersion: '1.2.0' })))
+      .toEqual({ name: 'aws-vpc', namespace: 'demo', toVersion: '1.2.0' })
+  })
+
+  it('DENIES a missing or empty name / namespace / toVersion', () => {
+    expect(parseUpgradeImpactArgs(asProposal({ namespace: 'demo', toVersion: '1.2.0' }))).toBeNull()
+    expect(parseUpgradeImpactArgs(asProposal({ name: 'x', toVersion: '1.2.0' }))).toBeNull()
+    expect(parseUpgradeImpactArgs(asProposal({ name: 'x', namespace: 'demo' }))).toBeNull()
+    expect(parseUpgradeImpactArgs(asProposal({ name: 'x', namespace: '  ', toVersion: '1.2.0' }))).toBeNull()
+    expect(parseUpgradeImpactArgs(asProposal({ name: 'x', namespace: 'demo', toVersion: 5 as unknown as string }))).toBeNull()
+  })
+})
+
+describe('buildUpgradeImpactExtras — the ?extras envelope', () => {
+  it('maps the composition identity + target version to {namespace, name, to}', () => {
+    expect(JSON.parse(buildUpgradeImpactExtras({ name: 'aws-vpc', namespace: 'demo', toVersion: '1.2.0' })))
+      .toEqual({ name: 'aws-vpc', namespace: 'demo', to: '1.2.0' })
+  })
+})
+
+describe('callUpgradeImpactRA — the server-side upgrade-impact RESTAction transport', () => {
+  const args = { name: 'aws-vpc', namespace: 'demo', toVersion: '1.2.0' }
+  const stubFetch = (impl: (...fetchArgs: unknown[]) => unknown) => {
+    const fetchMock = vi.fn(impl)
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('GETs /call?name=upgrade-impact with {namespace,name,to} in ?extras and reads the shaped .status', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({
+      json: () => Promise.resolve({
+        status: {
+          from: '1.1.0',
+          rows: [{ change: 'modified', detail: 'changed: replicas', kind: 'Deployment', name: 'api', namespace: 'demo' }],
+          summary: '0 added · 0 removed · 1 modified · values schema changed',
+          to: '1.2.0',
+          valuesSchemaChanged: true,
+        },
+      }),
+      ok: true,
+      status: 200,
+    }))
+    const result = await callUpgradeImpactRA('http://snowplow.local/', 'krateo-system', args)
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit | undefined]
+    const parsed = new URL(url)
+    expect(parsed.origin + parsed.pathname).toBe('http://snowplow.local/call')
+    expect(parsed.searchParams.get('name')).toBe('upgrade-impact')
+    expect(parsed.searchParams.get('resource')).toBe('restactions')
+    expect(parsed.searchParams.get('namespace')).toBe('krateo-system')
+    expect(JSON.parse(parsed.searchParams.get('extras') ?? '{}')).toEqual({ name: 'aws-vpc', namespace: 'demo', to: '1.2.0' })
+    // GET (no method) — the browser never POSTs the ClusterIP-only render service directly
+    expect(init?.method).toBeUndefined()
+    expect(result.error).toBeUndefined()
+    expect(result.from).toBe('1.1.0')
+    expect(result.valuesSchemaChanged).toBe(true)
+    expect(result.rows).toEqual([{ change: 'modified', detail: 'changed: replicas', kind: 'Deployment', name: 'api', namespace: 'demo' }])
+  })
+
+  it('surfaces the RA .status.error as content — a render failure is data', async () => {
+    stubFetch(() => Promise.resolve({ json: () => Promise.resolve({ status: { error: 'chart: not found', from: '1.1.0', to: '1.2.0' } }), ok: true, status: 200 }))
+    const result = await callUpgradeImpactRA('http://snowplow.local', 'krateo-system', args)
+    expect(result.error).toBe('chart: not found')
+    expect(result.rows).toEqual([])
+  })
+
+  it('a non-2xx and an unreachable snowplow both resolve to {error}, never a throw', async () => {
+    stubFetch(() => Promise.resolve({ json: () => Promise.resolve(null), ok: false, status: 403 }))
+    expect((await callUpgradeImpactRA('http://snowplow.local', 'krateo-system', args)).error).toBe('upgrade-impact RESTAction responded 403')
+    stubFetch(() => Promise.reject(new TypeError('Failed to fetch')))
+    expect((await callUpgradeImpactRA('http://snowplow.local', 'krateo-system', args)).error).toContain('unreachable')
+  })
+
+  it('treats a missing .status as an error result, never a crash', async () => {
+    stubFetch(() => Promise.resolve({ json: () => Promise.resolve({ metadata: { name: 'upgrade-impact' } }), ok: true, status: 200 }))
+    expect((await callUpgradeImpactRA('http://snowplow.local', 'krateo-system', args)).error).toContain('no status')
+  })
+})
+
+describe('buildUpgradeImpactPayload — drawer content', () => {
+  it('renders a render error as the drawer error, never rows', () => {
+    const payload = buildUpgradeImpactPayload({ error: 'chart: not found', from: '1.1.0', rows: [], summary: '', to: '1.2.0', valuesSchemaChanged: false })
+    expect(payload.title).toBe('Upgrade impact — 1.1.0 → 1.2.0')
+    expect(payload.error).toBe('chart: not found')
+    expect(payload.summary).toBeUndefined()
+  })
+
+  it('renders the RA headline + one marked line per object (+ / - / ~)', () => {
+    const result: UpgradeImpactResult = {
+      from: '1.1.0',
+      rows: [
+        { change: 'added', detail: 'new object in 1.2.0', kind: 'ConfigMap', name: 'cfg', namespace: 'demo' },
+        { change: 'removed', detail: 'no longer rendered by 1.2.0', kind: 'Service', name: 'svc', namespace: 'demo' },
+        { change: 'modified', detail: 'changed: replicas', kind: 'Deployment', name: 'api', namespace: 'demo' },
+      ],
+      summary: '1 added · 1 removed · 1 modified · values schema changed',
+      to: '1.2.0',
+      valuesSchemaChanged: true,
+    }
+    expect(buildUpgradeImpactPayload(result).summary).toEqual([
+      '1 added · 1 removed · 1 modified · values schema changed',
+      '+ ConfigMap demo/cfg — new object in 1.2.0',
+      '- Service demo/svc — no longer rendered by 1.2.0',
+      '~ Deployment demo/api — changed: replicas',
+    ])
+  })
+
+  it('falls back to a no-changes line when there are no rows and no summary', () => {
+    expect(buildUpgradeImpactPayload({ from: '1.1.0', rows: [], summary: '', to: '1.2.0', valuesSchemaChanged: false }).summary)
+      .toEqual(['No changes between the two versions (chart defaults).'])
   })
 })
