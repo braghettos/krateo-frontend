@@ -38,6 +38,14 @@ export interface AutopilotPreviewPayload {
    * read-only "Create form preview" section via the production SchemaForm. Kept a
    * STRING (parsed client-side) so the draft's authoring order survives verbatim. */
   formSchema?: string
+  /** previewPage v2 (FE-P4, sandbox live preview): the ROOT draft's REAL served
+   * `widgetEndpoint` — the drawer mounts the portal's own WidgetRenderer on it
+   * ("Rendered (live)"), so snowplow compiles + serves the drafts exactly like a
+   * production page. Absent = the classic source-only drawer. */
+  liveEndpoint?: string
+  /** Invoked when the drawer CLOSES (the v2 teardown seam: best-effort sandbox
+   * DELETEs, epoch-guarded upstream so a stale close is a no-op). Optional. */
+  onClose?: () => void
 }
 
 /** Open the Autopilot preview drawer (mounted once by AutopilotProvider). */

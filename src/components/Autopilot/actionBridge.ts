@@ -16,7 +16,7 @@
  */
 
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { type RouteObject } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
@@ -36,6 +36,13 @@ import { applyPatchField, type PatchFieldProposal } from './patchField'
 // Import the preview handlers module for its side effect: it registers previewBlueprint /
 // previewPage into READONLY_VERB_REGISTRY on load, so they are present before any apply().
 import './previewHandlers'
+// previewPage v2 (FE-P4) — the SANDBOX live-preview branch. Config-gated: when
+// api.PREVIEW_SANDBOX_NAMESPACE is set, `previewPage` is intercepted BEFORE the
+// read-only registry (it APPLIES drafts to the quarantined sandbox and renders the
+// root's real widgetEndpoint); absent config the registry's v1 source preview runs
+// untouched. See previewPageV2.ts / previewSandbox.ts.
+import { applyPreviewPageV2 } from './previewPageV2'
+import { createPreviewPageSession } from './previewSandbox'
 import type { AutopilotActionChip } from './types'
 import { READONLY_VERB_REGISTRY } from './verbRegistry'
 
@@ -167,7 +174,7 @@ export const PORTAL_CAPABILITIES_PROMPT = [
   'CRITICAL — NEVER output a Kubernetes YAML manifest, a `cat <<EOF`/`kubectl apply` block, an `apiVersion:`/`kind:`/`spec:` snippet, or any "apply this / run this in your terminal" wording in the chat. The portal create FORM is the ONLY way compositions are made here, and the user provisions by clicking the form\'s Create button — there is no terminal step. This applies BOTH when you draft/prefill the form AND when the user approves creating it: describe the values in ONE short sentence and point them at the on-screen Create button — show NO manifest, NO code block, NO CLI command.',
   'To run a control ALREADY on the page (e.g. Sync, Pause/Resume, Edit, Delete), use verb "runAction" with the `widget` (its name) and `actionId` from the page context, e.g. {"verb":"runAction","widget":"composition-detail-pause","actionId":"toggle-pause","label":"Resume reconciliation"}. You drive the real control; a mutating action (PATCH/POST/PUT/DELETE) ALWAYS asks the user to confirm before it runs. Only run actions present in the page context — never invent a widget or actionId.',
   'DAY-2 FIX — CHANGE A SPEC FIELD: To change a SINGLE spec field of the composition on THIS page (a day-2 remediation, e.g. bump a size/replica/version parameter to fix a failing composition), emit verb "patchField": {"verb":"patchField","gvr":{"group":"...","version":"...","resource":"..."} (copy it VERBATIM from the on-page composition\'s `resource` in the page context),"namespace":"<its namespace>","name":"<its name>","field":"spec.<key>","value":<new value>,"label":"<short label>"}. HARD LIMITS: ONLY for a field whose CURRENT value you can SEE in the page context (so you can propose a real change, not a guess); ONLY the on-screen composition (its `resource` must be present in the page context); the change is applied as a merge-patch and the user confirms the EXACT diff (verb + GVR + namespace + before→after) in a blast-radius dialog before anything runs. NEVER patch a resource that is not the on-page composition, a field you cannot see the current value of, or anything outside spec (never metadata, status, or a deletion field). This is the ONLY way to propose a parameter change — you still never emit YAML or a kubectl command.',
-  'BUILDER/FLEET — APPLY AN ORDERED RESOURCE SET: When a builder or fleet task genuinely needs SEVERAL Krateo objects written as one unit (e.g. a CompositionDefinition plus its ConfigMap, or the same patch across a small fleet), emit verb "applyResourceSet": {"verb":"applyResourceSet","ops":[{"verb":"POST|PUT|PATCH|DELETE","gvr":{"group":"...","version":"...","resource":"..."},"namespace":"...","name":"..." (omit only for a POST create),"payload":{...} (omit for DELETE)},...],"label":"<short label>"}. Ops execute IN THE ORDER GIVEN and STOP at the first failure. HARD LIMITS: at most 10 ops; EVERY op\'s group must be Krateo-owned (end with .krateo.io) or be a core ConfigMap — never any other cluster resource (no Deployments, Secrets, RBAC, …); only objects/values you can see in the page context or the user gave you. The user confirms the ENTIRE set — every op, its target, and any irreversible delete — in ONE blast-radius dialog before anything runs; a decline dispatches NOTHING. For a single object, keep using patchField or the on-screen form — never wrap one write in a set. You still never emit YAML or a kubectl command.',
+  'BUILDER/FLEET — APPLY AN ORDERED RESOURCE SET: When a builder or fleet task genuinely needs SEVERAL Krateo objects written as one unit (e.g. a CompositionDefinition plus its ConfigMap, or the same patch across a small fleet), emit verb "applyResourceSet": {"verb":"applyResourceSet","ops":[{"verb":"POST|PUT|PATCH|DELETE","gvr":{"group":"...","version":"...","resource":"..."},"namespace":"...","name":"..." (omit only for a POST create),"payload":{...} (omit for DELETE)},...],"label":"<short label>"}. Ops execute IN THE ORDER GIVEN and STOP at the first failure. HARD LIMITS: at most 10 ops; EVERY op\'s group must be Krateo-owned (end with .krateo.io) or be a core ConfigMap — never any other cluster resource (no Deployments, Secrets, RBAC, …); NEVER widget CRs (widgets.templates.krateo.io) or restactions — widget CRs reach the cluster ONLY via the chart (such an op is DENIED; the portal\'s preview sandbox is managed by previewPage itself, not by you); only objects/values you can see in the page context or the user gave you. The user confirms the ENTIRE set — every op, its target, and any irreversible delete — in ONE blast-radius dialog before anything runs; a decline dispatches NOTHING. For a single object, keep using patchField or the on-screen form — never wrap one write in a set. You still never emit YAML or a kubectl command.',
   'PREVIEWS — three READ-ONLY preview verbs render into the portal\'s preview drawer (auto-applied, nothing is written): {"verb":"previewBlueprint","chart":{"url":"<chart url>","version":"<version>"},"values":{...},"label":"..."} helm-renders a blueprint chart as a dry run; {"verb":"previewPage","widgets":[<widget CR objects>],"label":"..."} shows proposed widget CRs as source; {"verb":"previewRestDef","restDefinition":{<full RestDefinition CR draft>},"label":"..."} shows a KOG API-mapping draft — its YAML, its mapped `action · METHOD path` lines, client-side validation errors, and the immutability warnings. ALWAYS preview before proposing the write that creates those objects; the draft is shown in the PREVIEW DRAWER, never as YAML in your prose.',
   'KOG BUILDER — EXPOSE AN EXTERNAL REST API AS A KUBERNETES KIND: when the user gives an OpenAPI document (pasted in the chat, or as an http(s) URL) and wants that API managed from the portal, you propose a RestDefinition mapping. Derive kind, resourceGroup, identifiers, and verbsDescription ONLY from the OpenAPI document the user actually gave — NEVER invent paths, parameters, or fields that are not in it. WORKFLOW: (1) PREVIEW — emit {"verb":"previewRestDef","restDefinition":{"apiVersion":"ogen.krateo.io/v1alpha1","kind":"RestDefinition","metadata":{"name":"<kind-lower>","namespace":"krateo-system"},"spec":{"oasPath":"<see below>","resourceGroup":"<group, e.g. mlflow.example.org>","resource":{"kind":"<CamelCase>","identifiers":["<id field>"],"verbsDescription":[{"action":"create|update|get|delete|findby","method":"GET|POST|PUT|DELETE|PATCH","path":"/api/...","requestFieldMapping":[{"inPath|inQuery|inBody":"<param>","inCustomResource":"spec.<field>"}] (only when the parameter name differs from the CR field)}]}}},"label":"..."} and iterate with a NEW previewRestDef after every user correction. ALWAYS tell the user that kind, resourceGroup, identifiers, configurationFields, additionalStatusFields, and excludedSpecFields are IMMUTABLE once the API is generated (a wrong first publish means delete + recreate). (2) PUBLISH — only when the user confirms a previewed draft; a publish whose kind+resourceGroup was never previewed in this thread is DENIED. Emit applyResourceSet: URL case (the user gave an http(s) URL) → ONE op [POST restdefinitions] with spec.oasPath set to that EXACT URL (no ConfigMap at all); PASTE case → TWO ordered ops [first POST configmaps {"gvr":{"group":"","version":"v1","resource":"configmaps"},"namespace":"krateo-system","name":"<kind-lower>-oas","payload":{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"<kind-lower>-oas","namespace":"krateo-system","labels":{"krateo.io/managed-by":"kog-builder"}},"data":{"openapi.yaml":{"$oasAttachment":true}}}}, then POST restdefinitions with spec.oasPath "configmap://krateo-system/<kind-lower>-oas/openapi.yaml"]. THE DOCUMENT IS HELD BY THE PORTAL: in the ConfigMap op you MUST write the token {"$oasAttachment":true} as the data value and NEVER inline, retype, or summarize the document itself — the portal substitutes the user\'s verbatim bytes at publish time. (3) VERIFY — after the publish chip lands, offer a portal-suggest chip to check the new API kind\'s readiness (its READY condition and generated kind/apiVersion appear on the RestDefinition\'s status).',
   'This drives the real UI (read-only) — it is NOT a platform change. Emit at most one portal-action block per reply (a portal-tour and/or portal-suggest MAY accompany it) and still explain briefly in prose. Only propose routes/entities/fields present in the page context.',
@@ -211,7 +218,7 @@ export const PORTAL_HOUSE_RULES = [
   '8. Page-load / render / responsiveness questions ("why is the page not loading / blank / frozen / slow?") are CLIENT-SIDE: answer from the page context\'s `pageStatus` and the widgets\' `loadState`/`large` only. NEVER blame them on unrelated cluster-workload health (a CrashLoopBackOff pod, a node down, an OOMKill). If no errored/loading/heavy widget is in context, say you cannot see the cause rather than inventing one.',
   '9. To FIX a failing composition, if a control on the page can remediate it (Resume a paused one, Sync a stuck one, Update an outdated one), proactively propose that ONE runAction — the user confirms it in a blast-radius dialog showing the exact change. Prefer the least-disruptive control; never propose Delete as a fix unless the user asked to remove it.',
   '10. To change a SINGLE spec field of the on-page composition (a day-2 fix), emit {"verb":"patchField","gvr":{...from the page-context `resource`...},"namespace":...,"name":...,"field":"spec.<key>","value":<new>}. ONLY a field whose current value you can SEE, ONLY the on-screen composition, ONLY under spec (never metadata/status/deletion, never a non-composition resource). The user confirms the exact merge-patch diff in a blast-radius dialog; never emit YAML or kubectl.',
-  '11. To write SEVERAL Krateo objects as one unit (builder/fleet flows), emit {"verb":"applyResourceSet","ops":[{"verb":...,"gvr":{...},"namespace":...,"name":...,"payload":{...}},...]}. At most 10 ops; every op\'s group must end with .krateo.io (or be a core ConfigMap) — never any other cluster resource; ops run IN ORDER and stop at the first failure. The user confirms the ENTIRE set (every op + any irreversible delete) in ONE blast-radius dialog; a decline dispatches nothing. Never wrap a single write in a set; never emit YAML or kubectl.',
+  '11. To write SEVERAL Krateo objects as one unit (builder/fleet flows), emit {"verb":"applyResourceSet","ops":[{"verb":...,"gvr":{...},"namespace":...,"name":...,"payload":{...}},...]}. At most 10 ops; every op\'s group must end with .krateo.io (or be a core ConfigMap) — never any other cluster resource, and NEVER widget CRs (widgets.templates.krateo.io) or restactions: those reach the cluster only via the chart, and previewPage manages the preview sandbox itself (such an op is DENIED); ops run IN ORDER and stop at the first failure. The user confirms the ENTIRE set (every op + any irreversible delete) in ONE blast-radius dialog; a decline dispatches nothing. Never wrap a single write in a set; never emit YAML or kubectl.',
   '12. KOG builder: ALWAYS {"verb":"previewRestDef","restDefinition":{...}} BEFORE publishing — an applyResourceSet that writes restdefinitions is DENIED unless the same kind+resourceGroup was previewed earlier in this thread. Derive the mapping ONLY from the user\'s OpenAPI document. Publishing: URL oasPath → ONE op (POST restdefinitions); pasted document → TWO ops (POST configmaps then POST restdefinitions) where the ConfigMap data value is EXACTLY the token {"$oasAttachment":true} — never the inlined document (the portal substitutes the verbatim bytes). Warn that kind, resourceGroup, identifiers, and the configuration/status/excluded field lists are IMMUTABLE once generated. Drafts ride in the preview drawer, never as YAML in chat.',
   '</house_rules>',
 ].join('\n')
@@ -427,6 +434,12 @@ export const useAutopilotActionBridge = () => {
   // and previewBlueprint degrades to a graceful "unavailable" chip (zero network).
   const { config } = useConfigContext()
   const renderBaseUrl = config?.api.RENDER_API_BASE_URL
+  // FE-P4: the quarantined preview sandbox. Absent/empty = previewPage v2 OFF (v1
+  // source preview) AND the applyResourceSet widgets/restactions carve-out fully closed.
+  const sandboxNamespace = config?.api.PREVIEW_SANDBOX_NAMESPACE
+  // The provider-scoped teardown session for the CURRENT live preview (epoch-guarded:
+  // a stale drawer-close never deletes a newer preview's drafts). One per bridge owner.
+  const [previewPageSession] = useState(createPreviewPageSession)
 
   // `origin` is the W0-3 provenance tag the provider passes at dispatch time (actor:'agent'
   // + its session id + the user's latest prompt). It is threaded into EVERY dispatch this
@@ -474,9 +487,27 @@ export const useAutopilotActionBridge = () => {
     // or on the human's decline — a denied set is a no-op, NEVER a bypass of the gate.
     if (proposal.verb === 'applyResourceSet') {
       // Same origin binding for the set fabric: the ONE per-set audit record (W0-3) carries
-      // actor:'agent' + the session/prompt context.
+      // actor:'agent' + the session/prompt context. `sandboxNamespace` arms the A.3
+      // carve-out: widget-CR / restactions ops are allowed ONLY into that exact
+      // namespace (absent config = they are always denied — never hand-applied).
       return applyResourceSet(proposal as unknown as ApplyResourceSetProposal, {
         handleActionSet: (ops) => handleActionSet(ops, origin),
+        ...(sandboxNamespace ? { sandboxNamespace } : {}),
+      })
+    }
+
+    // previewPage v2 (FE-P4): with a configured sandbox, previewPage becomes the LIVE
+    // preview — validate (ajv, co-located schemas) → rewrite to the sandbox → apply via
+    // the SAME runRestSet fabric (confirm skipped ONLY because every op is verified
+    // sandbox-confined; provenance still records) → drawer on the root draft's REAL
+    // widgetEndpoint → teardown on close. Absent config: falls through to the registry's
+    // v1 zero-network source preview, byte-identical to before this branch existed.
+    if (proposal.verb === 'previewPage' && sandboxNamespace) {
+      return applyPreviewPageV2(proposal, {
+        handleActionSet: (ops, options) => handleActionSet(ops, origin, options),
+        sandboxNamespace,
+        session: previewPageSession,
+        sessionId: origin?.agentSessionId ?? 'unattributed',
       })
     }
 
@@ -489,7 +520,7 @@ export const useAutopilotActionBridge = () => {
       return null
     }
     return spec.apply(proposal, { handleAction, renderBaseUrl, routePatterns })
-  }, [handleAction, handleActionSet, queryClient, renderBaseUrl, routePatterns])
+  }, [handleAction, handleActionSet, previewPageSession, queryClient, renderBaseUrl, routePatterns, sandboxNamespace])
 
   return { apply }
 }

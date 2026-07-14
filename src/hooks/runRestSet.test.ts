@@ -209,3 +209,91 @@ describe('runRestSet — honest partial-state reporting', () => {
     expect(ctx.invalidateQueries).not.toHaveBeenCalled()
   })
 })
+
+// ────────────────────────────────────────────────────────────────────────────
+// SetDispatchOptions — the previewPage-v2 SANDBOX relaxation (A.2.3)
+// ────────────────────────────────────────────────────────────────────────────
+
+/** /call-shaped sandbox write ops (the shape the preview flow compiles). */
+const SANDBOX_OPS: WriteOp[] = [
+  {
+    path: '/call?apiVersion=widgets.templates.krateo.io%2Fv1beta1&resource=flexes&name=-&namespace=krateo-preview',
+    payload: { kind: 'Flex', metadata: { name: 'preview-draft-root', namespace: 'krateo-preview' } },
+    verb: 'POST',
+  },
+  {
+    path: '/call?apiVersion=templates.krateo.io%2Fv1&resource=restactions&name=preview-projects&namespace=krateo-preview',
+    verb: 'DELETE',
+  },
+]
+
+describe('runRestSet — SetDispatchOptions (previewPage v2 sandbox relaxation)', () => {
+  it('skipConfirmForSandbox + ALL ops confined to it: confirm is SKIPPED, dispatch + invalidation run', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(fakeResponse(true, 201, '{"message":"created"}')))
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeCtx()
+
+    const results = await runRestSet(SANDBOX_OPS, ctx, undefined, { skipConfirmForSandbox: 'krateo-preview' })
+
+    expect(ctx.confirm).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(results).toHaveLength(2)
+    expect(ctx.invalidateQueries).toHaveBeenCalledTimes(1)
+  })
+
+  it('ANY op outside the named namespace falls back to the FULL gate (confirm runs; decline = nothing)', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(fakeResponse(true, 200)))
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeCtx({ confirm: vi.fn(() => Promise.resolve(false)) })
+
+    const mixed = [...SANDBOX_OPS, {
+      path: '/call?apiVersion=widgets.templates.krateo.io%2Fv1beta1&resource=paragraphs&name=x&namespace=krateo-system',
+      verb: 'DELETE' as const,
+    }]
+    const results = await runRestSet(mixed, ctx, undefined, { skipConfirmForSandbox: 'krateo-preview' })
+
+    expect(ctx.confirm).toHaveBeenCalledTimes(1)
+    expect(results).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('the confinement check reads each op\'s OWN path — an unparseable path can never skip the gate', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(fakeResponse(true, 200))))
+    const ctx = makeCtx()
+
+    await runRestSet([{ path: '/not-a-call-path', verb: 'POST' }], ctx, undefined, { skipConfirmForSandbox: 'krateo-preview' })
+
+    expect(ctx.confirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('silent: NO toasts on success or failure; results, invalidation and stop-on-error are intact', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(fakeResponse(true, 201, '{"message":"created"}'))
+      .mockResolvedValueOnce(fakeResponse(false, 409, '{"message":"conflict"}'))
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeCtx()
+
+    const results = await runRestSet(SANDBOX_OPS, ctx, undefined, { silent: true, skipConfirmForSandbox: 'krateo-preview' })
+
+    expect(ctx.notification.success).not.toHaveBeenCalled()
+    expect(ctx.notification.error).not.toHaveBeenCalled()
+    expect(results).toEqual([
+      { index: 0, message: 'created', ok: true, status: 201 },
+      { index: 1, message: 'conflict', ok: false, status: 409 },
+    ])
+    expect(ctx.invalidateQueries).toHaveBeenCalledTimes(1)
+  })
+
+  it('provenance is STILL emitted on a confirm-skipped sandbox set (audited, friction-light)', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(fakeResponse(true, 201, '{}')))
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeCtx({ provenanceEnabled: true })
+
+    await runRestSet(SANDBOX_OPS, ctx, { actor: 'agent', agentSessionId: 's_1' }, { silent: true, skipConfirmForSandbox: 'krateo-preview' })
+
+    // 2 sandbox writes + the fire-and-forget AuditRecord POST (audit.krateo.io).
+    const audit = fetchMock.mock.calls.map((call) => String((call as unknown[])[0])).filter((url) => url.includes('auditrecords'))
+    expect(audit).toHaveLength(1)
+    expect(ctx.confirm).not.toHaveBeenCalled()
+  })
+})

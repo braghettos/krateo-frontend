@@ -105,6 +105,12 @@ export const previewBlueprintSpec: VerbSpec = {
  * previewPage → the honest SOURCE preview of the proposed widget CRs (see the module
  * header for why this is not a live render). ZERO network by construction: the
  * payload is built purely from the proposal and handed to the drawer.
+ *
+ * FE-P4: when config api.PREVIEW_SANDBOX_NAMESPACE is set, the bridge intercepts
+ * `previewPage` BEFORE this registry entry and runs the v2 SANDBOX LIVE preview
+ * instead (previewPageV2.ts — drafts applied to the quarantined sandbox, rendered
+ * through the real widgetEndpoint). This v1 entry is the config-absent fallback and
+ * stays byte-identical: read-only, zero network, source drawer.
  */
 export const previewPageSpec: VerbSpec = {
   apply: (proposal) => {
