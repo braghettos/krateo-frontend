@@ -19,6 +19,8 @@ import { randomId } from '../../utils/utils'
 import type { PortalActionProposal, PortalTour } from './actionBridge'
 import { GROUNDING_GUARDRAIL_PROMPT, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
 import { AgentDraftProvider } from './agentDraft'
+import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approval'
+import { createApprovalGovernor, summarizeApprovalTools } from './approval'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
@@ -38,6 +40,12 @@ interface AutopilotContextValue {
   send: (text: string) => void
   /** Reset the thread: abort, clear transcript, new session id. */
   newThread: () => void
+  /** The kagent HITL approval pause awaiting a decision (null when none). */
+  pendingApproval: ApprovalPause | null
+  /** Approve the pending tool call(s) and resume the paused task. */
+  approvePending: () => void
+  /** Deny the pending tool call(s) — also the dismiss path (deny-by-default). */
+  denyPending: () => void
   /** Snapshot the live page context (for the rail's context strip). */
   collect: () => PageContextEnvelope
   /** Active guided spotlight tour, if one was proposed (null otherwise). */
@@ -73,8 +81,18 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // new draft re-applies (antd initialValues is mount-only).
   const [agentDraft, setAgentDraft] = useState<Record<string, unknown> | null>(null)
   const [draftNonce, setDraftNonce] = useState(0)
+  // kagent HITL (Phase 2): the current `input-required` approval pause, mirrored in
+  // state for the rail card and in a ref (with its deny-by-default governor) for the
+  // decision paths. Exactly one pause can be pending at a time — kagent aggregates all
+  // paused tool calls of a turn into one input-required task status.
+  const [pendingApproval, setPendingApproval] = useState<ApprovalPause | null>(null)
 
   const abortRef = useRef<(() => void) | null>(null)
+  const approvalRef = useRef<{ governor: ApprovalGovernor; pause: ApprovalPause } | null>(null)
+  // The governor's timeout closure calls back into dispatchDecision, which itself
+  // depends on applyFrame (which arms governors) — break the useCallback cycle with a
+  // ref kept current by the effect below.
+  const timeoutDenyRef = useRef((_pause: ApprovalPause): void => undefined)
   const sentFirstRef = useRef(false)
   // Guards the one-shot `?ask=` deep-link (below) so it fires a single turn per visit.
   const askHandledRef = useRef(false)
@@ -98,8 +116,12 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     [endpoint],
   )
 
-  // Abort any in-flight stream when the provider unmounts.
-  useEffect(() => () => abortRef.current?.(), [])
+  // Abort any in-flight stream when the provider unmounts; disarm (without deciding)
+  // any pending approval governor so its timer can't fire into an unmounted tree.
+  useEffect(() => () => {
+    abortRef.current?.()
+    approvalRef.current?.governor.dispose()
+  }, [])
 
   // On stream end: strip fenced `portal-action` blocks from the assistant text, then
   // auto-apply the read-only proposals (from tool_call frames + fenced blocks) through
@@ -210,13 +232,83 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       case 'done':
         void finalize(assistantId)
         break
-      case 'require_approval':
-        // Phase 3: HITL-gated mutations. Read-only phases ignore it.
+      case 'require_approval': {
+        // kagent paused on a `requireApproval` tool call (task → input-required).
+        // Store the pause for the rail card and arm DENY-BY-DEFAULT: an unattended
+        // approval self-denies after 5 minutes (via timeoutDenyRef, kept current below).
+        approvalRef.current?.governor.dispose()
+        const governor = createApprovalGovernor(() => timeoutDenyRef.current(frame.pause))
+        approvalRef.current = { governor, pause: frame.pause }
+        setPendingApproval(frame.pause)
         break
+      }
       default:
         break
     }
   }, [finalize])
+
+  // Send a HITL decision over A2A (the `{decision_type}` DataPart on the paused task —
+  // see approval.ts) and stream the agent's continuation into a NEW assistant bubble,
+  // stamped with a decision chip so the transcript records what was decided.
+  //
+  // PROVENANCE — assessed and SKIPPED (deliberately): the W0-3 fabric on this branch
+  // (recordProvenance) audits PORTAL writes and requires a BlastRadius (verb + GVR +
+  // namespace of the apiserver target) plus an HTTP outcome. A kagent approval carries
+  // only {toolName, args}; deriving a GVR/namespace would mean client-side parsing of
+  // the manifest string (against the server-side-computation rule, and a fabrication
+  // risk), and emitAuditRecord hard-skips records with no resolvable namespace anyway.
+  // Forcing the mapping would produce empty/false audit targets — the kagent task
+  // history already records the decision server-side. Revisit if the AuditRecord CRD
+  // grows a tool-approval action shape.
+  const dispatchDecision = useCallback((decision: ApprovalDecision, pause: ApprovalPause, chipLabel: string) => {
+    const assistantId = randomId()
+    setMessages((prev) => [
+      ...prev,
+      {
+        actions: [{ label: chipLabel, readOnly: decision.type === 'reject', verb: 'approval' }],
+        createdAt: Date.now(),
+        id: assistantId,
+        role: 'assistant',
+        streaming: true,
+        text: '',
+      },
+    ])
+    setStreaming(true)
+    abortRef.current = transport.respondToApproval(decision, pause, { onFrame: (frame) => applyFrame(assistantId, frame) })
+  }, [applyFrame, transport])
+
+  // Keep the governor-timeout path pointing at the CURRENT dispatchDecision (the
+  // governor closure is created inside applyFrame and must not go stale).
+  useEffect(() => {
+    timeoutDenyRef.current = (pause: ApprovalPause) => {
+      approvalRef.current = null
+      setPendingApproval(null)
+      dispatchDecision(
+        { reason: 'Auto-denied: no decision within 5 minutes (deny-by-default).', type: 'reject' },
+        pause,
+        `timed out — denied ${summarizeApprovalTools(pause)}`,
+      )
+    }
+  }, [dispatchDecision])
+
+  // User-driven decision (Approve / Deny / dismiss). The governor's settle() is the
+  // single-decision gate: false means the pause was already decided or timed out.
+  const resolveApproval = useCallback((decision: ApprovalDecision) => {
+    const active = approvalRef.current
+    if (!active || !active.governor.settle()) {
+      return
+    }
+    approvalRef.current = null
+    setPendingApproval(null)
+    const tools = summarizeApprovalTools(active.pause)
+    dispatchDecision(decision, active.pause, decision.type === 'approve' ? `approved ${tools}` : `denied ${tools}`)
+  }, [dispatchDecision])
+
+  const approvePending = useCallback(() => resolveApproval({ type: 'approve' }), [resolveApproval])
+  const denyPending = useCallback(
+    () => resolveApproval({ reason: 'Denied by the user in the Autopilot rail.', type: 'reject' }),
+    [resolveApproval],
+  )
 
   const send = useCallback((text: string) => {
     const trimmed = text.trim()
@@ -261,6 +353,19 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   const newThread = useCallback(() => {
     abortRef.current?.()
     abortRef.current = null
+    // DENY-BY-DEFAULT on thread reset: a pending approval is rejected (fire-and-forget,
+    // no-op handlers — the new thread does not render the released task's stream) so
+    // the paused kagent task is never left dangling toward an approve.
+    const active = approvalRef.current
+    if (active && active.governor.settle()) {
+      transport.respondToApproval(
+        { reason: 'Denied: the user started a new thread (deny-by-default).', type: 'reject' },
+        active.pause,
+        { onFrame: () => undefined },
+      )
+    }
+    approvalRef.current = null
+    setPendingApproval(null)
     sentFirstRef.current = false
     lastEnvelopeRef.current = undefined
     contextIdRef.current = undefined
@@ -275,7 +380,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     // Clear any pending form draft and re-key (bump nonce) so the form reverts to base.
     setAgentDraft(null)
     setDraftNonce((nonce) => nonce + 1)
-  }, [])
+  }, [transport])
 
   const toggle = useCallback(() => setOpen((prev) => !prev), [])
   const closeTour = useCallback(() => setTourOpen(false), [])
@@ -297,8 +402,8 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   }, [searchParams, enabled, send, setSearchParams])
 
   const value = useMemo<AutopilotContextValue>(() => ({
-    closeTour, collect, enabled, messages, newThread, open, send, setOpen, streaming, toggle, tour, tourOpen,
-  }), [closeTour, collect, enabled, messages, newThread, open, send, streaming, toggle, tour, tourOpen])
+    approvePending, closeTour, collect, denyPending, enabled, messages, newThread, open, pendingApproval, send, setOpen, streaming, toggle, tour, tourOpen,
+  }), [approvePending, closeTour, collect, denyPending, enabled, messages, newThread, open, pendingApproval, send, streaming, toggle, tour, tourOpen])
 
   return (
     <AutopilotReactContext.Provider value={value}>

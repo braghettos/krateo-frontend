@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { default as ReactMarkdown } from 'react-markdown'
 
+import type { ApprovalPause } from './approval'
 import { useAutopilot } from './AutopilotProvider'
 import styles from './AutopilotRail.module.css'
 import AutopilotTour from './AutopilotTour'
@@ -41,6 +42,39 @@ const MessageBubble = ({ message }: { message: AutopilotMessage }) => {
   )
 }
 
+/**
+ * The kagent HITL approval card (Phase 2) — the calm decision surface for a paused
+ * `requireApproval` tool call. BlastRadiusConfirm's language: an amber APPROVAL chip,
+ * the tool + owning agent as plain facts, the arguments (the manifest, for
+ * k8s_apply_manifest) as a mono block the human actually reads, then Approve (amber) /
+ * Deny. DENY-BY-DEFAULT: dismissing the card denies, and an unattended card self-denies
+ * after 5 minutes (the provider's governor).
+ */
+const ApprovalCard = ({ onApprove, onDeny, pause }: { onApprove: () => void; onDeny: () => void; pause: ApprovalPause }) => (
+  <div className={styles.apApproval} data-testid='autopilot-approval'>
+    <div className={styles.apApprovalHead}>
+      <span className={styles.apApprovalChip}>approval</span>
+      <span className={styles.apApprovalIntent}>the agent wants to run a write tool</span>
+      <span className={styles.apSpacer} />
+      <button aria-label='Dismiss (denies)' className={styles.apIc} onClick={onDeny} title='Dismiss (denies)' type='button'>×</button>
+    </div>
+    {pause.requests.map((request) => (
+      <div className={styles.apApprovalReq} key={request.requestId}>
+        <div className={styles.apApprovalTool}>
+          <span className={styles.apApprovalToolName}>{request.toolName}</span>
+          {request.agentName ? <span className={styles.apApprovalAgent}>{request.agentName}</span> : null}
+        </div>
+        <pre className={styles.apApprovalCode}>{request.argumentsPreview}</pre>
+      </div>
+    ))}
+    <div className={styles.apApprovalBtns}>
+      <button className={styles.apBtnApprove} onClick={onApprove} type='button'>Approve</button>
+      <button className={styles.apBtnDeny} onClick={onDeny} type='button'>Deny</button>
+    </div>
+    <div className={styles.apApprovalNote}>Deny is the default — dismissing, starting a new thread, or waiting 5 minutes denies.</div>
+  </div>
+)
+
 // Curated starter prompts shown in the empty rail (before turn 1), so a zero-knowledge user
 // has an obvious first move instead of a blank box. These are universal conversation openers —
 // the model answers each grounded on the live page context. Deliberately generic (not data), so
@@ -52,7 +86,7 @@ const STARTER_PROMPTS = [
 ]
 
 const AutopilotRail = () => {
-  const { collect, enabled, messages, newThread, open, send, setOpen, streaming } = useAutopilot()
+  const { approvePending, collect, denyPending, enabled, messages, newThread, open, pendingApproval, send, setOpen, streaming } = useAutopilot()
   const [draft, setDraft] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
   // Auto-scroll the transcript to the latest content as it streams — but only when the user is
@@ -65,7 +99,7 @@ const AutopilotRail = () => {
     if (el && stickToBottomRef.current) {
       el.scrollTop = el.scrollHeight
     }
-  }, [messages, streaming])
+  }, [messages, streaming, pendingApproval])
 
   if (!enabled) {
     return null
@@ -146,6 +180,10 @@ const AutopilotRail = () => {
           ) : (
             messages.map((message) => <MessageBubble key={message.id} message={message} />)
           )}
+
+          {pendingApproval ? (
+            <ApprovalCard onApprove={approvePending} onDeny={denyPending} pause={pendingApproval} />
+          ) : null}
 
           {lastSuggestions?.length ? (
             <div className={styles.apSuggest}>
