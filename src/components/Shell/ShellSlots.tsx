@@ -16,7 +16,9 @@ import { createContext, useContext, type ReactNode } from 'react'
 export interface ShellSlots {
   content?: ReactNode
   header?: ReactNode
-  /** User block pinned to the bottom of the Sider (avatar + name). */
+  /** Instrument-console eyebrow pinned to the TOP of the Sider, above the nav. */
+  siderHeader?: ReactNode
+  /** User block + build marker pinned to the bottom of the Sider. */
   siderFooter?: ReactNode
 }
 
