@@ -7,8 +7,15 @@ metadata:
 data:
   config.json: |
     {"api":{
+{{- /* Effective config: when the chart provisions the preview sandbox, PREVIEW_SANDBOX_NAMESPACE
+       is forced to previewSandbox.namespace so config and provisioning cannot drift.
+       Disabled (default): the plain values.config passes through (empty string = feature OFF). */ -}}
+{{- $config := deepCopy .Values.config -}}
+{{- if .Values.previewSandbox.enabled -}}
+{{- $_ := set $config "PREVIEW_SANDBOX_NAMESPACE" .Values.previewSandbox.namespace -}}
+{{- end -}}
 {{- $local := dict "first" true -}}
-{{- range $k, $v := .Values.config -}}
+{{- range $k, $v := $config -}}
 {{- if not $local.first -}},{{- end -}}
 {{- if kindIs "string" $v }}
   {{ quote $k | indent 6 }}: {{ quote $v }}

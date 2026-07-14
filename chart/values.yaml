@@ -126,3 +126,92 @@ config:
   # W0-3 provenance: "true" emits one AuditRecord (audit.krateo.io) per gated portal
   # write (human or agent). Default "" = OFF; needs the AuditRecord CRD (portal chart).
   PROVENANCE_ENABLED: ""
+  # Portal-builder live preview (previewPage v2): the namespace the frontend applies
+  # draft widget CRs into and renders them from through the real snowplow. Empty/absent
+  # = feature OFF (v1 source-only preview drawer). Do NOT set this by hand when
+  # previewSandbox.enabled is true: the chart then overrides this key in the rendered
+  # config.json with previewSandbox.namespace, so config and provisioning cannot drift.
+  PREVIEW_SANDBOX_NAMESPACE: ""
+
+# ── Preview sandbox (portal-builder live preview; w4 spec Addendum A) ─────────
+# Provisions the quarantined namespace where the portal-builder applies DRAFT
+# widget/RESTAction CRs so the REAL deployed snowplow compiles+serves them for
+# the in-drawer live preview (previewPage v2). Default OFF: zero artifacts are
+# rendered and config.json ships an empty PREVIEW_SANDBOX_NAMESPACE (the
+# frontend keeps the v1 source-only drawer).
+previewSandbox:
+  enabled: false
+  # The sandbox namespace: DURABLE chart-owned infra (quota + author RBAC +
+  # janitor live in it); only the draft CRs churn. Deliberately outside every
+  # composition's render target, so drafts can never orphan a Helm release.
+  namespace: krateo-preview
+  # Draft time-to-live: stamped on the namespace as the krateo.io/ttl label and
+  # consumed by the janitor CronJob (<n>h, <n>m, <n>s, or plain seconds).
+  ttl: 24h
+  # Per-kind object-count quota. Kubernetes has NO aggregate object count across
+  # a CRD group, so one count/<plural>.<group> entry is generated per widget
+  # plural listed below (modest defaults: runaway-agent bound, not capacity).
+  quota:
+    perWidgetKind: 200
+    restactions: 50
+  # The widget plurals (group widgets.templates.krateo.io) — mirrors the 42 CRDs
+  # in crds-subchart/templates. Drives the generated quota entries and the
+  # janitor sweep. A NEW widget kind => append its plural here (the author Role
+  # needs no change: it grants the whole group via resource wildcard '*').
+  widgetPlurals:
+    - alerts
+    - badges
+    - barcharts
+    - breadcrumbs
+    - buttongroups
+    - buttons
+    - cards
+    - checkboxes
+    - cols
+    - datepickers
+    - descriptions
+    - dividers
+    - filters
+    - flexes
+    - flowcharts
+    - forms
+    - images
+    - inputnumbers
+    - inputs
+    - layouts
+    - linecharts
+    - listies
+    - markdowns
+    - menus
+    - paragraphs
+    - piecharts
+    - progresses
+    - qrcodes
+    - radios
+    - rangepickers
+    - results
+    - rows
+    - selects
+    - sliders
+    - statistics
+    - steps
+    - switches
+    - tables
+    - tabs
+    - tags
+    - uploads
+    - yamlviewers
+  # RoleBinding subjects granted author rights (full CRUD on widget CRs and
+  # restactions) INSIDE the sandbox namespace only. Non-admin cohorts are
+  # fail-closed without an entry here (verified live: snowplow skips cohorts
+  # with no binding — prototype A.1.4). Default: the admins group.
+  authors:
+    - apiGroup: rbac.authorization.k8s.io
+      kind: Group
+      name: admins
+  # TTL janitor: hourly CronJob (namespace-local SA + Role) deleting draft CRs
+  # whose creationTimestamp is older than the TTL. The frontend's drawer-close
+  # delete is the fast path; this is the backstop for dead tabs.
+  janitor:
+    schedule: "0 * * * *"
+    image: bitnami/kubectl:latest

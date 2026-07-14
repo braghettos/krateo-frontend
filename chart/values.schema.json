@@ -270,6 +270,111 @@
       "title": "Affinity",
       "default": {}
     },
+    "previewSandbox": {
+      "type": "object",
+      "title": "Preview sandbox",
+      "description": "Portal-builder live preview (previewPage v2): provisions the quarantined namespace where draft widget/RESTAction CRs are applied and served by the real snowplow. Disabled by default: zero artifacts rendered, config.json ships an empty PREVIEW_SANDBOX_NAMESPACE. Object/array properties carry NO schema defaults on purpose (crdgen marker emission, krateo-core-provider#46); values.yaml is their authoritative default.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable preview sandbox",
+          "default": false
+        },
+        "namespace": {
+          "type": "string",
+          "title": "Sandbox namespace",
+          "description": "Chart-owned durable namespace for draft CRs (quota, author RBAC and TTL janitor live in it). When enabled, the rendered config.json PREVIEW_SANDBOX_NAMESPACE is forced to this value.",
+          "default": "krateo-preview"
+        },
+        "ttl": {
+          "type": "string",
+          "title": "Draft TTL",
+          "description": "Draft time-to-live (<n>h, <n>m, <n>s or plain seconds). Stamped as the namespace krateo.io/ttl label and enforced by the janitor CronJob.",
+          "default": "24h"
+        },
+        "quota": {
+          "type": "object",
+          "title": "Draft object-count quota",
+          "additionalProperties": false,
+          "properties": {
+            "perWidgetKind": {
+              "type": "integer",
+              "title": "Max drafts per widget kind",
+              "description": "Hard count/<plural>.widgets.templates.krateo.io per plural in widgetPlurals (k8s has no aggregate count across a CRD group).",
+              "default": 200
+            },
+            "restactions": {
+              "type": "integer",
+              "title": "Max draft RESTActions",
+              "default": 50
+            }
+          }
+        },
+        "widgetPlurals": {
+          "type": "array",
+          "title": "Widget plurals",
+          "description": "Plurals of the widgets.templates.krateo.io kinds (mirrors crds-subchart). Drives the generated quota entries and the janitor sweep; the author Role uses the group wildcard and needs no change for new kinds.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "authors": {
+          "type": "array",
+          "title": "Author subjects",
+          "description": "RoleBinding subjects granted full CRUD on widget CRs + restactions inside the sandbox namespace only. Non-admin cohorts are fail-closed without an entry.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiGroup": {
+                "type": "string",
+                "title": "Subject API group"
+              },
+              "kind": {
+                "type": "string",
+                "title": "Subject kind",
+                "enum": [
+                  "Group",
+                  "User",
+                  "ServiceAccount"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "title": "Subject name"
+              },
+              "namespace": {
+                "type": "string",
+                "title": "Subject namespace (ServiceAccount only)"
+              }
+            },
+            "required": [
+              "kind",
+              "name"
+            ]
+          }
+        },
+        "janitor": {
+          "type": "object",
+          "title": "TTL janitor",
+          "additionalProperties": false,
+          "properties": {
+            "schedule": {
+              "type": "string",
+              "title": "Cron schedule",
+              "default": "0 * * * *"
+            },
+            "image": {
+              "type": "string",
+              "title": "Janitor image",
+              "description": "kubectl-capable image used by the sweep CronJob.",
+              "default": "bitnami/kubectl:latest"
+            }
+          }
+        }
+      }
+    },
     "config": {
       "type": "object",
       "title": "Frontend runtime config",
@@ -313,13 +418,19 @@
           "title": "Otel Collector URL",
           "default": ""
         },
-        "PROVENANCE_ENABLED": {
-          "type": "string",
-          "description": "W0-3 provenance: 'true' emits one AuditRecord per gated portal write. Default '' = OFF."
-        },
         "SNOWPLOW_IDENTITY_INJECTION": {
           "type": "string",
           "title": "Snowplow Identity Injection",
+          "default": ""
+        },
+        "PROVENANCE_ENABLED": {
+          "type": "string",
+          "title": "Provenance Enabled",
+          "default": ""
+        },
+        "PREVIEW_SANDBOX_NAMESPACE": {
+          "type": "string",
+          "title": "Preview Sandbox Namespace",
           "default": ""
         }
       },
@@ -331,8 +442,9 @@
         "AUTOPILOT_API_BASE_URL": "/autopilot",
         "INIT": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system",
         "OTEL_COLLECTOR_URL": "",
+        "SNOWPLOW_IDENTITY_INJECTION": "",
         "PROVENANCE_ENABLED": "",
-        "SNOWPLOW_IDENTITY_INJECTION": ""
+        "PREVIEW_SANDBOX_NAMESPACE": ""
       }
     },
     "env": {
