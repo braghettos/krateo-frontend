@@ -1,5 +1,12 @@
 // Session helpers, shared by the UserMenu "Log out" action, the standalone `/logout`
-// recovery route, and the widget-fetch 401 handler.
+// recovery route, and the session-resume flow's fallback/logout paths.
+//
+// Wave-1 session resume: a 401 from a widget/API fetch now goes through
+// utils/sessionResume.raiseSessionExpired → the IN-PLACE SessionResumeModal
+// (components/SessionResume), which re-authenticates via the basic authn flow without
+// unmounting the app. `forceLogout` remains the DOCUMENTED FALLBACK for non-basic auth
+// strategies, for 401s raised with no modal surface mounted, and for the modal's explicit
+// "Log out" choice (`force: true`).
 //
 // The `/logout` route is the recovery escape hatch: when a stale token leaves the app in a
 // broken render state (e.g. "Widget fetch failed: 401 Unauthorized") there's no usable menu,
