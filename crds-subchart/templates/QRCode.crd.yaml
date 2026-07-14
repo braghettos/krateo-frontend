@@ -85,6 +85,7 @@ spec:
                                 format: int32
                                 type: integer
                             required:
+                              - page
                               - perPage
                             type: object
                           verb:
@@ -113,6 +114,7 @@ spec:
                           format: int32
                           type: integer
                       required:
+                        - page
                         - perPage
                       type: object
                   required:
@@ -185,6 +187,9 @@ spec:
                   items:
                     type: string
                   type: array
+                freshness:
+                  description: 'Opt-in staleness indicator: when true the widget shows the stale/refreshing dot overlay (exception states only). Absent/false = no badge ever (the default; healthy widgets stay unmarked).'
+                  type: boolean
               required:
                 - widgetData
               type: object
