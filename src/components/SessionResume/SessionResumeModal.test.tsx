@@ -87,7 +87,9 @@ const raiseAndOpen = async (): Promise<{ outcome: Promise<'logout' | 'resumed'> 
 }
 
 const submitCredentials = (username: string, password: string) => {
-  const [usernameInput, passwordInput] = Array.from(document.querySelectorAll<HTMLInputElement>('.ant-modal input'))
+  // The session-expired surface is a full-viewport role=dialog overlay (not an .ant-modal card),
+  // so query the inputs by the dialog role rather than the antd modal class.
+  const [usernameInput, passwordInput] = Array.from(document.querySelectorAll<HTMLInputElement>('[role="dialog"] input'))
   fireEvent.change(usernameInput, { target: { value: username } })
   fireEvent.change(passwordInput, { target: { value: password } })
   fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))

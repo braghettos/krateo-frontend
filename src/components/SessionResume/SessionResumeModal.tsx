@@ -20,9 +20,10 @@
  */
 
 import { useQueryClient } from '@tanstack/react-query'
-import { Alert, Button, Form, Input, Modal } from 'antd'
+import { Alert, Button, Form, Input, theme } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 
+import logo from '../../assets/images/logo_big.svg'
 import { useConfigContext } from '../../context/ConfigContext'
 import type { AuthModeType, AuthResponseType, LoginFormType } from '../../pages/Login/Login.types'
 import { invalidateAccessTokenCache } from '../../utils/getAccessToken'
@@ -32,6 +33,7 @@ import { registerSessionResumeSurface, SESSION_RESUME_EVENT, settleSessionResume
 const SessionResumeModal = () => {
   const { config } = useConfigContext()
   const queryClient = useQueryClient()
+  const { token } = theme.useToken()
 
   const [open, setOpen] = useState(false)
   const [basicStrategy, setBasicStrategy] = useState<AuthModeType | null>(null)
@@ -40,6 +42,9 @@ const SessionResumeModal = () => {
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const authBaseUrl = config?.api.AUTHN_API_BASE_URL
+  // Config-driven branding, mirroring the real Login page (falls back to the built-in logo).
+  const logoSrc = config?.login?.logoUrl || logo
+  const logoAlt = config?.login?.logoAlt ?? 'Krateo | PlatformOps'
 
   // Single app-level mount: open on the module-level event, and register this surface so
   // raiseSessionExpired knows an in-place resume is possible (otherwise it falls back).
@@ -129,59 +134,88 @@ const SessionResumeModal = () => {
     }
   }, [authBaseUrl, basicStrategy, queryClient])
 
+  // A background 401 must NOT leave the errored dashboard peeking through a floating modal
+  // (that read as "broken"). Instead this renders a FULL-VIEWPORT opaque login surface that
+  // fully covers the stale/errored content — visually a clean login page — while the in-place
+  // resume still preserves the route + state (queryClient.invalidateQueries on success, no nav).
+  if (!open) {
+    return null
+  }
   return (
-    <Modal
-      closable={false}
-      destroyOnHidden
-      footer={null}
-      keyboard={false}
-      maskClosable={false}
-      open={open}
-      title='Session expired'
-      zIndex={2000}
+    <div
+      aria-label='Session expired'
+      aria-modal='true'
+      role='dialog'
+      style={{
+        alignItems: 'center',
+        background: token.colorBgLayout,
+        display: 'flex',
+        inset: 0,
+        justifyContent: 'center',
+        overflow: 'auto',
+        padding: 24,
+        position: 'fixed',
+        zIndex: 2000,
+      }}
     >
-      <p>Your session has expired. Sign in to continue right where you left off.</p>
-      {strategiesError && (
-        <Alert
-          message='Unable to reach the authentication service. Retry in a moment, or log out.'
-          showIcon
-          style={{ marginBottom: 16 }}
-          type='error'
-        />
-      )}
-      {submitError && (
-        <Alert message={submitError} showIcon style={{ marginBottom: 16 }} type='error' />
-      )}
-      <Form
-        autoComplete='off'
-        disabled={submitting || !basicStrategy}
-        layout='vertical'
-        name='sessionResume'
-        onFinish={(values: LoginFormType) => { void onSubmit(values) }}
-        requiredMark={false}
+      <div
+        style={{
+          background: token.colorBgContainer,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          borderRadius: token.borderRadiusLG,
+          boxShadow: token.boxShadowSecondary,
+          maxWidth: 400,
+          padding: 32,
+          width: '100%',
+        }}
       >
-        <Form.Item
-          label='Username'
-          name='username'
-          rules={[{ message: 'Insert a username', required: true }]}
+        <img alt={logoAlt} src={logoSrc} style={{ display: 'block', height: 40, marginBottom: 24 }} />
+        <h2 style={{ color: token.colorText, marginBottom: 8, marginTop: 0 }}>Session expired</h2>
+        <p style={{ color: token.colorTextSecondary, marginBottom: 20, marginTop: 0 }}>
+          Your session has expired. Sign in to continue right where you left off.
+        </p>
+        {strategiesError && (
+          <Alert
+            message='Unable to reach the authentication service. Retry in a moment, or log out.'
+            showIcon
+            style={{ marginBottom: 16 }}
+            type='error'
+          />
+        )}
+        {submitError && (
+          <Alert message={submitError} showIcon style={{ marginBottom: 16 }} type='error' />
+        )}
+        <Form
+          autoComplete='off'
+          disabled={submitting || !basicStrategy}
+          layout='vertical'
+          name='sessionResume'
+          onFinish={(values: LoginFormType) => { void onSubmit(values) }}
+          requiredMark={false}
         >
-          <Input size='large' />
-        </Form.Item>
-        <Form.Item
-          label='Password'
-          name='password'
-          rules={[{ message: 'Insert a password', required: true }]}
-        >
-          <Input.Password size='large' />
-        </Form.Item>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <Button disabled={false} onClick={onLogout}>Log out</Button>
-          <Button htmlType='submit' loading={submitting} type='primary'>
-            Sign in
-          </Button>
-        </div>
-      </Form>
-    </Modal>
+          <Form.Item
+            label='Username'
+            name='username'
+            rules={[{ message: 'Insert a username', required: true }]}
+          >
+            <Input size='large' />
+          </Form.Item>
+          <Form.Item
+            label='Password'
+            name='password'
+            rules={[{ message: 'Insert a password', required: true }]}
+          >
+            <Input.Password size='large' />
+          </Form.Item>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <Button disabled={false} onClick={onLogout}>Log out</Button>
+            <Button htmlType='submit' loading={submitting} type='primary'>
+              Sign in
+            </Button>
+          </div>
+        </Form>
+      </div>
+    </div>
   )
 }
 
