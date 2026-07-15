@@ -28,7 +28,7 @@ import { draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
 import { createBlueprintDraftStore, substituteFileContent, type BlueprintDraftHeld, type BlueprintDraftStore } from './blueprintDraftStore'
 import { createBlueprintGate, type BlueprintGate } from './blueprintGate'
 import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, type OasAttachmentResult } from './oasAttachment'
-import { isPageDraft, pageDisplayName, pageDraftFiles } from './pageDraft'
+import { isPageDraft, pageDisplayName, pageDraftFiles, type NavHint } from './pageDraft'
 import { createPreviewGate } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { createEchoTransport, createKagentTransport } from './transport'
@@ -92,8 +92,13 @@ const heldDraftIdentity = (held: BlueprintDraftHeld | null): string | null => {
 /** FE-P2: hold an APPLIED previewPage's widget CRs as a {slug: yaml} page draft and arm the SHARED
  * preview gate for the page's identity — so a page publish is allowed ONLY after the SAME page was
  * previewed this thread (published bytes == previewed bytes). No-op on CRs that can't be serialized. */
-const recordPagePreview = (widgets: unknown[] | undefined, store: BlueprintDraftStore, gate: BlueprintGate): void => {
-  const pageFiles = pageDraftFiles(widgets ?? [])
+const recordPagePreview = (
+  widgets: unknown[] | undefined,
+  nav: NavHint | undefined,
+  store: BlueprintDraftStore,
+  gate: BlueprintGate,
+): void => {
+  const pageFiles = pageDraftFiles(widgets ?? [], nav)
   if (!pageFiles) {
     return
   }
@@ -330,7 +335,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
             // gate (recordPagePreview) — a page publish (RepoContent → krateo-portal-chart) is then
             // allowed ONLY after the SAME page was previewed this thread. FE-P1's ajv verdicts
             // (drawer) + CHART-P2's PR CI are the correctness gates; this is the preview gate.
-            recordPagePreview(proposal.widgets, blueprintStore, blueprintGate)
+            recordPagePreview(proposal.widgets, proposal.nav, blueprintStore, blueprintGate)
           }
         }
       }

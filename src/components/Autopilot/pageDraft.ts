@@ -19,13 +19,63 @@ import { dump } from 'js-yaml'
 /** The portal-chart file convention for a page's widget CRs: `<kind-lower>.<name>.yaml`. */
 export const pageDraftSlug = (kind: string, name: string): string => `${kind.toLowerCase()}.${name}.yaml`
 
+/** #106 — optional sidebar hint the model may pass on previewPage; every field defaults gracefully. */
+export interface NavHint {
+  label?: string
+  icon?: string
+  order?: number
+}
+
+/** The held-draft KEY (the `$fileContent` token) for a page's nav fragment. */
+export const pageNavFragmentSlug = (slug: string): string => `nav-fragment.${slug}.yaml`
+
+/** The portal-chart repo PATH the builder writes the nav fragment to (globbed by menu.sidebar-nav.yaml). */
+export const pageNavFragmentPath = (slug: string): string => `chart/files/nav-fragments/${slug}.yaml`
+
+/** The page slug from its `flex.page-<slug>.yaml` root, else null (no root flex → no route → no nav). */
+export const pageRootSlug = (files: Record<string, string>): string | null => {
+  const root = Object.keys(files).find((slug) => /^flex\.page-[a-z0-9-]+\.yaml$/i.test(slug))
+  const matched = root?.match(/^flex\.page-([a-z0-9-]+)\.yaml$/i)
+  return matched ? matched[1].toLowerCase() : null
+}
+
+/** Title-case a kebab/snake slug for a default sidebar label ("cost-report" → "Cost Report"). */
+const titleCaseSlug = (slug: string): string =>
+  slug
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+
+/**
+ * #106 — synthesize a page's nav fragment YAML: `item: { label, icon, order, path, page }`. Builder
+ * pages use the `page:<slug>` convention (resolves `flexes/page-<slug>`), so a fragment needs ONLY
+ * the `item` — no `resourcesRefs` entry. Label/icon/order come from the hint, else sensible defaults
+ * (title-cased slug / `fa-file` / 950 so authored pages sort AFTER the built-in nav).
+ */
+export const pageNavFragment = (slug: string, hint?: NavHint): string => {
+  const item = {
+    label: hint?.label?.trim() || titleCaseSlug(slug),
+    icon: hint?.icon?.trim() || 'fa-file',
+    order: typeof hint?.order === 'number' && Number.isFinite(hint.order) ? hint.order : 950,
+    path: `/${slug}`,
+    page: slug,
+  }
+  return dump({ item }, { lineWidth: -1, noRefs: true, sortKeys: false })
+}
+
 /**
  * A previewed page's widget CR objects → the `{slug: yaml}` file map the publish substitutes.
  * Refuses (null) a page whose any CR is missing `kind` or `metadata.name` — without both there
  * is no stable file path, and a page publish must not fabricate one. YAML is serialized here so
  * the model never has to reproduce the bytes at publish time (published == previewed).
+ *
+ * #106 — when the page has a `flex.page-<slug>.yaml` root, ALSO emit its nav fragment (keyed
+ * `nav-fragment.<slug>.yaml`) so the builder can publish the sidebar entry WITH the page (no manual
+ * menu edit). Derived from the SAME held files at record- and publish-time → part of the
+ * previewed==published byte set the gate enforces.
  */
-export const pageDraftFiles = (widgets: readonly unknown[]): Record<string, string> | null => {
+export const pageDraftFiles = (widgets: readonly unknown[], nav?: NavHint): Record<string, string> | null => {
   if (!Array.isArray(widgets) || widgets.length === 0) {
     return null
   }
@@ -43,7 +93,14 @@ export const pageDraftFiles = (widgets: readonly unknown[]): Record<string, stri
     }
     files[pageDraftSlug(kind, name)] = dump(cr, { lineWidth: -1, noRefs: true, sortKeys: false })
   }
-  return Object.keys(files).length ? files : null
+  if (!Object.keys(files).length) {
+    return null
+  }
+  const slug = pageRootSlug(files)
+  if (slug) {
+    files[pageNavFragmentSlug(slug)] = pageNavFragment(slug, nav)
+  }
+  return files
 }
 
 /**
