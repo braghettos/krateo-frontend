@@ -17,6 +17,20 @@
     height: 100%;
   }
 
+  /* When live-refresh is on, WidgetRenderer wraps each widget in a `.freshnessWrap`
+     div, pushing the card one level deeper than the rule above reaches — so sibling
+     stat cards whose content differs in height (e.g. the dashboard COMPOSITIONS card
+     whose delta wraps to two lines) no longer match. Stretch the wrapper's card child
+     too. Off-path when live-refresh is disabled (no `.freshnessWrap` is emitted). */
+  :global(.ant-row > div > [class*='freshnessWrap']) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.ant-row > div > [class*='freshnessWrap'] > .ant-card) {
+    height: 100%;
+  }
+
   .column {
     margin-bottom: var(--spacing-lg)
   }

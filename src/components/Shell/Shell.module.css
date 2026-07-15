@@ -3,7 +3,11 @@
 .headerLeft {
   align-items: center;
   display: flex;
-  flex: 1;
+  /* Size to content (not flex:1) so the tenant tag + project switcher hug the left
+     edge instead of being spread across the whole left zone. `.headerRight` still
+     pins right via the header's justify-content:space-between. min-width:0 keeps a
+     long tenant name truncating gracefully. */
+  flex: 0 1 auto;
   gap: var(--spacing-md);
   min-width: 0;
 }
