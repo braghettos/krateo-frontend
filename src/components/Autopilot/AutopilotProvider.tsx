@@ -68,7 +68,11 @@ const compilePublishOps = (
   if (!oasCompiled.ok) {
     return { denial: oasCompiled.error, ops: null }
   }
-  const fileCompiled = substituteFileContent(oasCompiled.ops, blueprintHeld)
+  // base64: every $fileContent token is a RepoContent `.spec.content` value (the BLUEPRINT
+  // BUILDER prompt is its sole emitter), and GitHub's create-or-update-file API requires the
+  // file bytes base64-encoded. Without this the chart files ship as raw text and GitHub 422s
+  // at publish (FE-BP5 — the git-provider CR shape is now verified: content = base64).
+  const fileCompiled = substituteFileContent(oasCompiled.ops, blueprintHeld, 'base64')
   if (!fileCompiled.ok) {
     return { denial: fileCompiled.error, ops: null }
   }
