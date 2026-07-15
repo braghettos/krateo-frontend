@@ -35,11 +35,13 @@
  * registry verb — never a crash, never a partial dispatch.
  */
 import { buildFormSchemaText, DRAFT_REJECTED_CAPTION, draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
+import { buildDescribeResourcePayload, crdNameFromArgs, extractCrdSpecFields, parseDescribeResourceArgs } from './describeResource'
 import {
   buildPagePreviewPayload,
   buildRestDefPreviewPayload,
   buildUpgradeImpactPayload,
   callBlueprintRenderRA,
+  callDescribeResourceCRD,
   callHelmRender,
   callUpgradeImpactRA,
   chartDisplayName,
@@ -203,6 +205,37 @@ export const explainUpgradeImpactSpec: VerbSpec = {
   sideEffect: 'read',
 }
 
+/** The graceful-absence chip when the CRD-read transport is unavailable (no snowplow base URL). */
+export const DESCRIBE_UNAVAILABLE_LABEL = 'schema check unavailable — snowplow not reachable'
+
+/**
+ * describeResource → CHECK THE LIVE CRD SCHEMA BEFORE GENERATING A CR. Reads the actual
+ * CRD from the cluster (snowplow /call GET, cluster-scoped) for the proposal's gvr and
+ * renders its real `spec` fields in the drawer, so the model generates the custom resource
+ * against the cluster's truth instead of a (possibly stale) prompt guess. Read-only, zero
+ * writes; a missing CRD / RBAC failure is shown AS content.
+ */
+export const describeResourceSpec: VerbSpec = {
+  apply: async (proposal, deps) => {
+    const args = parseDescribeResourceArgs(proposal)
+    if (!args) {
+      return null
+    }
+    if (!deps.snowplowBaseUrl) {
+      return { label: DESCRIBE_UNAVAILABLE_LABEL, readOnly: true, verb: 'describeResource' }
+    }
+    const crdName = crdNameFromArgs(args)
+    const { crd, error } = await callDescribeResourceCRD(deps.snowplowBaseUrl, crdName)
+    const extract = crd ? extractCrdSpecFields(crd, args.version) : null
+    openAutopilotPreview(buildDescribeResourcePayload(crdName, extract, error))
+    const outcome = error || !extract ? 'not found' : `${extract.fields.length} spec field${extract.fields.length === 1 ? '' : 's'}`
+    return { label: proposal.label ?? `schema: ${extract?.kind ?? crdName} (${outcome})`, readOnly: true, verb: 'describeResource' }
+  },
+  argSchema: (proposal) => parseDescribeResourceArgs(proposal) !== null,
+  name: 'describeResource',
+  sideEffect: 'read',
+}
+
 // Seed the preview verbs into the shared read-only registry (one-line entries). This
 // runs on module load; actionBridge.ts imports this module so the entries are present
 // before any apply() dispatch.
@@ -210,3 +243,4 @@ registerReadOnlyVerb(previewBlueprintSpec)
 registerReadOnlyVerb(previewPageSpec)
 registerReadOnlyVerb(previewRestDefSpec)
 registerReadOnlyVerb(explainUpgradeImpactSpec)
+registerReadOnlyVerb(describeResourceSpec)

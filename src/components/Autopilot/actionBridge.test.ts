@@ -20,6 +20,16 @@ describe('BLUEPRINT BUILDER prompt (FE-BP5)', () => {
   })
 })
 
+describe('describeResource / check-the-CRD-schema prompt', () => {
+  it('teaches describeResource + check-the-schema-before-generating-a-CR', () => {
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('describeResource')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('CHECK THE SCHEMA FIRST')
+    // the every-turn recap keeps the rule alive after the turn-1 prompt decays.
+    expect(PORTAL_HOUSE_RULES).toContain('CHECK THE CRD SCHEMA BEFORE GENERATING A CR')
+    expect(PORTAL_HOUSE_RULES).toContain('describeResource')
+  })
+})
+
 describe('parseAutopilotDirectives — fenced (baseline)', () => {
   it('parses + strips a fenced portal-action', () => {
     const text = 'Opening your blueprints.\n```portal-action\n{"verb":"navigate","route":"/blueprints","label":"open blueprints"}\n```'

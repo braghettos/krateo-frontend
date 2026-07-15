@@ -464,6 +464,31 @@ export const callUpgradeImpactRA = async (
   }
 }
 
+/**
+ * describeResource transport: GET the LIVE CRD via snowplow /call (cluster-scoped, so no
+ * namespace). Returns the CRD object for client-side spec-field extraction, or an error
+ * string AS content (a missing CRD / RBAC 403 / snowplow 5xx is data, never a throw).
+ */
+export const callDescribeResourceCRD = async (
+  snowplowBaseUrl: string,
+  crdName: string,
+): Promise<{ crd?: Record<string, unknown>; error?: string }> => {
+  try {
+    const url = new URL(`${snowplowBaseUrl.replace(/\/+$/, '')}/call`)
+    url.searchParams.set('resource', 'customresourcedefinitions')
+    url.searchParams.set('apiVersion', 'apiextensions.k8s.io/v1')
+    url.searchParams.set('name', crdName)
+    const response = await fetch(url.toString(), { headers: { ...authHeader() } })
+    if (!response.ok) {
+      return { error: `CRD ${crdName} lookup responded ${response.status} (it may not be installed)` }
+    }
+    const crd = asRecord(await response.json().catch(() => null))
+    return crd ? { crd } : { error: `CRD ${crdName} returned no object` }
+  } catch (error) {
+    return { error: `CRD ${crdName} unreachable — ${error instanceof Error ? error.message : String(error)}` }
+  }
+}
+
 export const UPGRADE_IMPACT_CAPTION
   = 'helm-render dry-run diff of CHART DEFAULTS — nothing is applied. Real composition values are not used, so a live instance may differ; the Update itself still goes through the gated confirm.'
 
