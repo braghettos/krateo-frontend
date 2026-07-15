@@ -1,6 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseAutopilotDirectives, sanitizeChatText } from './actionBridge'
+import { parseAutopilotDirectives, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, sanitizeChatText } from './actionBridge'
+
+describe('BLUEPRINT BUILDER prompt (FE-BP5)', () => {
+  it('teaches the two-step git-then-register publish with $fileContent + preview-first', () => {
+    // The turn-1 capabilities prompt teaches the full workflow...
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('BLUEPRINT BUILDER')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('previewBlueprint')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('$fileContent')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('gitrefs')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('repocontents')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('pullrequests')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('compositiondefinitions')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('configurationRef')
+    // ...and the every-turn recap keeps the preview-first + $fileContent invariants alive.
+    expect(PORTAL_HOUSE_RULES).toContain('Blueprint builder')
+    expect(PORTAL_HOUSE_RULES).toContain('DENIED unless the same chart')
+    expect(PORTAL_HOUSE_RULES).toContain('$fileContent')
+  })
+})
 
 describe('parseAutopilotDirectives — fenced (baseline)', () => {
   it('parses + strips a fenced portal-action', () => {

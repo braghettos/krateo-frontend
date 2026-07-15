@@ -20,14 +20,60 @@ import { randomId } from '../../utils/utils'
 import type { PortalActionProposal, PortalTour } from './actionBridge'
 import { GROUNDING_GUARDRAIL_PROMPT, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
 import { AgentDraftProvider } from './agentDraft'
+import type { ApplyResourceSetOp } from './applyResourceSet'
 import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approval'
 import { createApprovalGovernor, summarizeApprovalTools } from './approval'
-import { createOasAttachmentStore, substituteOasAttachment, type OasAttachmentResult } from './oasAttachment'
+import { stampAuthorship, type AuthorshipOrigin } from './authorship'
+import { draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
+import { createBlueprintDraftStore, substituteFileContent, type BlueprintDraftHeld } from './blueprintDraftStore'
+import { createBlueprintGate } from './blueprintGate'
+import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, type OasAttachmentResult } from './oasAttachment'
 import { createPreviewGate } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
+
+/** A preview-gate verdict shape (both the KOG and blueprint gates match this). */
+type GateVerdict = { allowed: true } | { allowed: false; reason: string }
+
+/** The compiled publish set, or the first denial reason (nothing dispatched). */
+interface PublishCompileResult {
+  denial: string | null
+  ops: ApplyResourceSetOp[] | null
+}
+
+/**
+ * The applyResourceSet publish-compile pipeline, factored out of finalize (flat early
+ * returns — the finalize branch is already 3 deep). Order: both preview gates, then the
+ * $oasAttachment + $fileContent substitutions (held bytes replace the tokens), then the
+ * host authorship stamp. Any gate/substitution failure short-circuits to a denial with
+ * NO compiled ops; success yields the stamped, ready-to-dispatch ops.
+ */
+const compilePublishOps = (
+  ops: readonly ApplyResourceSetOp[] | undefined,
+  kogVerdict: GateVerdict,
+  blueprintVerdict: GateVerdict,
+  oasAttachment: OasAttachment | null,
+  blueprintHeld: BlueprintDraftHeld | null,
+  origin: AuthorshipOrigin,
+): PublishCompileResult => {
+  if (!kogVerdict.allowed) {
+    return { denial: kogVerdict.reason, ops: null }
+  }
+  if (!blueprintVerdict.allowed) {
+    return { denial: blueprintVerdict.reason, ops: null }
+  }
+  const oasCompiled = substituteOasAttachment(ops ?? [], oasAttachment)
+  if (!oasCompiled.ok) {
+    return { denial: oasCompiled.error, ops: null }
+  }
+  const fileCompiled = substituteFileContent(oasCompiled.ops, blueprintHeld)
+  if (!fileCompiled.ok) {
+    return { denial: fileCompiled.error, ops: null }
+  }
+  return { denial: null, ops: stampAuthorship(fileCompiled.ops, origin) }
+}
 
 interface AutopilotContextValue {
   /** Whether Autopilot is configured/available (controls rail + toggle visibility). */
@@ -107,6 +153,14 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // collected context does not grow); `oasHeld` mirrors only its SIZE for the rail.
   const [oasStore] = useState(createOasAttachmentStore)
   const [oasHeld, setOasHeld] = useState<{ bytes: number } | null>(null)
+  // W4 BLUEPRINT-BUILDER: the thread-scoped BLUEPRINT preview gate (FE-BP2) records every
+  // previewed chart name and denies a blueprint publish (git-write CRs / a register
+  // CompositionDefinition) unless the CURRENTLY-HELD draft was previewed this thread; and
+  // the held previewed chart tree (FE-BP1), kept OUTSIDE the page-context path like
+  // oasStore — its bytes fill $fileContent tokens at publish-compile so published bytes ==
+  // previewed bytes. Both reset on newThread.
+  const [blueprintGate] = useState(createBlueprintGate)
+  const [blueprintStore] = useState(createBlueprintDraftStore)
 
   const abortRef = useRef<(() => void) | null>(null)
   const approvalRef = useRef<{ governor: ApprovalGovernor; pause: ApprovalPause } | null>(null)
@@ -192,24 +246,34 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         setDraftNonce((nonce) => nonce + 1)
         chips.push({ label: proposal.label ?? 'drafted the create form', readOnly: true, verb: 'prefillForm' })
       } else if (proposal.verb === 'applyResourceSet') {
-        // W4 KOG publish path, enforced HERE (finalize is the single entry point for
-        // model proposals). Two host-side checks BEFORE the bridge ever dispatches:
-        //  1. PREVIEW GATE (FE-K3): a set writing restdefinitions is denied unless a
-        //     matching (kind+resourceGroup) previewRestDef happened this thread.
-        //  2. $oasAttachment substitution (FE-K2): the held document replaces the
-        //     token at compile time — BEFORE the blast-radius confirm, so the human
-        //     confirms the REAL payload; token present with nothing held = refused.
-        // A denial is the standard denied chip: nothing dispatched, readOnly (honest).
-        const verdict = previewGate.evaluate(proposal.ops)
-        const compiled = verdict.allowed ? substituteOasAttachment(proposal.ops ?? [], oasStore.get()) : null
-        let denial: string | null = verdict.allowed ? null : verdict.reason
-        if (denial === null && compiled && !compiled.ok) {
-          denial = compiled.error
-        }
+        // Publish path, enforced HERE (finalize is the single entry point for model
+        // proposals). Host-side checks BEFORE the bridge ever dispatches — a denial is the
+        // standard denied chip (nothing dispatched, readOnly/honest):
+        //  1a. KOG PREVIEW GATE (FE-K3): a set writing restdefinitions needs a matching
+        //      (kind+resourceGroup) previewRestDef this thread.
+        //  1b. BLUEPRINT PREVIEW GATE (FE-BP2): a blueprint publish (git-write CRs / a
+        //      register CompositionDefinition) needs the CURRENTLY-HELD draft previewed.
+        //  2a. $oasAttachment substitution (FE-K2): the held OAS replaces the token.
+        //  2b. $fileContent substitution (FE-BP1): the held chart tree replaces per-file
+        //      tokens, so published bytes == previewed bytes.
+        //  3.  AUTHORSHIP stamp (FE-BP3): host-inject managed-by/authored-by/session/prompt
+        //      onto every authored object (ownership can't be omitted or spoofed).
+        // All at compile time — BEFORE the blast-radius confirm, so the human confirms the
+        // REAL, owned payload.
+        const held = blueprintStore.get()
+        const heldChartName = held ? draftDisplayName(held.files) : null
+        const { denial, ops: compiledOps } = compilePublishOps(
+          proposal.ops,
+          previewGate.evaluate(proposal.ops),
+          blueprintGate.evaluate(proposal.ops, heldChartName),
+          oasStore.get(),
+          held,
+          { prompt: lastUserTextRef.current, sessionId },
+        )
         if (denial !== null) {
           chips.push({ label: denial, readOnly: true, verb: 'applyResourceSet' })
-        } else if (compiled?.ok) {
-          const chip = await apply({ ...proposal, ops: compiled.ops }, origin)
+        } else if (compiledOps) {
+          const chip = await apply({ ...proposal, ops: compiledOps }, origin)
           if (chip) {
             chips.push(chip)
           }
@@ -222,6 +286,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
           // parseable draft) arms the preview gate for that draft's kind+resourceGroup.
           if (proposal.verb === 'previewRestDef') {
             previewGate.recordPreview(proposal.restDefinition)
+          } else if (proposal.verb === 'previewBlueprint' && proposal.rawTemplates && lintBlueprintDraft(proposal.rawTemplates).length === 0) {
+            // FE-BP1/BP2: an APPLIED, lint-clean inline-draft previewBlueprint HOLDS the
+            // previewed tree (so publish substitutes the SAME bytes) and arms the blueprint
+            // gate for its Chart.yaml name. A remote-chart preview (no rawTemplates) holds
+            // nothing — there is no authored tree to publish via git.
+            const draft = blueprintStore.set(proposal.rawTemplates)
+            if (draft.ok) {
+              blueprintGate.recordPreview(draftDisplayName(draft.held.files))
+            }
           }
         }
       }
@@ -243,7 +316,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       setTour(proposedTour)
       setTourOpen(true)
     }
-  }, [apply, oasStore, previewGate, sessionId])
+  }, [apply, blueprintGate, blueprintStore, oasStore, previewGate, sessionId])
 
   const applyFrame = useCallback((assistantId: string, frame: AutopilotFrame) => {
     switch (frame.kind) {
@@ -430,13 +503,16 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     // Clear any pending form draft and re-key (bump nonce) so the form reverts to base.
     setAgentDraft(null)
     setDraftNonce((nonce) => nonce + 1)
-    // W4 KOG: the preview gate is THREAD-scoped — a new thread forgets every recorded
-    // preview (publish is denied again until re-previewed), and the held OAS attachment
-    // is dropped with the conversation that produced it (deny-by-default posture).
+    // W4 KOG + BLUEPRINT: the preview gates are THREAD-scoped — a new thread forgets every
+    // recorded preview (publish is denied again until re-previewed), and the held OAS
+    // attachment + blueprint draft are dropped with the conversation that produced them
+    // (deny-by-default posture).
     previewGate.reset()
+    blueprintGate.reset()
     oasStore.clear()
+    blueprintStore.clear()
     setOasHeld(null)
-  }, [oasStore, previewGate, transport])
+  }, [blueprintGate, blueprintStore, oasStore, previewGate, transport])
 
   // W4 KOG (FE-K2): hold / drop a pasted OpenAPI document. The text lives ONLY in the
   // provider's store (never in the page-context envelope), mirrored as a byte count.
