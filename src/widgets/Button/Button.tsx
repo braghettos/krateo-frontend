@@ -12,7 +12,7 @@ import type { Button as WidgetType } from './Button.type'
 export type ButtonWidgetData = WidgetType['spec']['widgetData']
 
 const Button = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ButtonWidgetData>) => {
-  const { actions, block, clickActionId, color, danger, disabled, ghost, icon, iconColor, label, shape, size, type, variant } = widgetData
+  const { actions, ariaLabel, block, clickActionId, color, danger, disabled, ghost, icon, iconColor, label, shape, size, type, variant } = widgetData
 
   const { notification } = useApp()
   const { handleAction, isActionLoading } = useHandleAction()
@@ -43,9 +43,16 @@ const Button = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ButtonWi
     })
   }
 
+  // WCAG: icon-only buttons (icon set, no visible label) need an accessible name.
+  // Derive it from: 1) explicit ariaLabel field, 2) the matched action id.
+  // Buttons with a visible label already have an accessible name via their text content.
+  const isIconOnly = Boolean(icon) && !label
+  const computedAriaLabel = isIconOnly ? (ariaLabel ?? action?.id) : undefined
+
   return (
     <div>
       <AntdButton
+        aria-label={computedAriaLabel}
         block={block}
         color={color}
         danger={danger}

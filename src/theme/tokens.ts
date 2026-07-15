@@ -145,7 +145,20 @@ export const tokens = { color, elevation, motion, radius, spacing, typography } 
  * near-flat cards; the palette-derived bits (Progress=cyan, Table header fill)
  * follow the active mode. */
 const buildComponents = (palette: Record<keyof typeof color, string>, mode: ThemeMode): ThemeConfig['components'] => ({
-  Button: { borderRadius: radius.md, controlHeight: 32, fontWeight: typography.weight.bold, primaryShadow: 'none' },
+  Button: {
+    borderRadius: radius.md,
+    controlHeight: 32,
+    fontWeight: typography.weight.bold,
+    primaryShadow: 'none',
+    // WCAG AA contrast fix (light mode only): amber brand (#C0760B) as the primary
+    // button background with white text yields only ~3.60:1, failing AA (needs ≥4.5:1
+    // for normal-weight text at 14 px). Switching to dark-ink text (#131A22) on the same
+    // amber gives 4.87:1 — passes AA with margin while keeping the amber brand intact.
+    // antd token `colorTextLightSolid` is the label colour for solid/primary buttons
+    // (defaults to #fff in both modes). We override it to palette.dark in light mode only;
+    // dark mode keeps #fff (the lighter amber #F2A33C already pairs well with the void bg).
+    ...(mode === 'light' ? { colorTextLightSolid: palette.dark } : {}),
+  },
   Card: {
     borderRadiusLG: radius.lg,
     boxShadowTertiary: mode === 'dark' ? elevationDark.sm : elevation.sm,

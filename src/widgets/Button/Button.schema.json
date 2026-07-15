@@ -423,6 +423,10 @@
               "description": "the label of the button",
               "type": "string"
             },
+            "ariaLabel": {
+              "description": "WCAG accessible name for icon-only buttons (no visible label). When the button renders only an icon, the browser needs a text alternative for screen readers. Provide a short human-readable description (e.g. \"Delete\", \"Refresh\"). Falls back to the action id when omitted.",
+              "type": "string"
+            },
             "icon": {
               "description": "the icon of the button (font awesome icon name eg: `fa-inbox`)",
               "type": "string"

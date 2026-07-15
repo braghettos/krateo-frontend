@@ -268,6 +268,13 @@ export interface Button {
        */
       label?: string
       /**
+       * WCAG accessible name for icon-only buttons (no visible `label`). When the
+       * button renders only an icon, the browser needs a text alternative for screen
+       * readers. Provide a short human-readable description here (e.g. "Delete",
+       * "Refresh"). Falls back to the action id when omitted.
+       */
+      ariaLabel?: string
+      /**
        * the icon of the button (font awesome icon name eg: `fa-inbox`)
        */
       icon?: string
