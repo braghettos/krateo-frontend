@@ -25,9 +25,10 @@ import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approv
 import { createApprovalGovernor, summarizeApprovalTools } from './approval'
 import { stampAuthorship, type AuthorshipOrigin } from './authorship'
 import { draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
-import { createBlueprintDraftStore, substituteFileContent, type BlueprintDraftHeld } from './blueprintDraftStore'
-import { createBlueprintGate } from './blueprintGate'
+import { createBlueprintDraftStore, substituteFileContent, type BlueprintDraftHeld, type BlueprintDraftStore } from './blueprintDraftStore'
+import { createBlueprintGate, type BlueprintGate } from './blueprintGate'
 import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, type OasAttachmentResult } from './oasAttachment'
+import { isPageDraft, pageDisplayName, pageDraftFiles } from './pageDraft'
 import { createPreviewGate } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { createEchoTransport, createKagentTransport } from './transport'
@@ -77,6 +78,29 @@ const compilePublishOps = (
     return { denial: fileCompiled.error, ops: null }
   }
   return { denial: null, ops: stampAuthorship(fileCompiled.ops, origin) }
+}
+
+/** The held draft's preview-gate identity: a page draft (no Chart.yaml) is keyed by its page slug,
+ * a blueprint by its Chart.yaml name. One shared store+gate serve both (FE-P2 reuses FE-BP1/BP2). */
+const heldDraftIdentity = (held: BlueprintDraftHeld | null): string | null => {
+  if (!held) {
+    return null
+  }
+  return isPageDraft(held.files) ? pageDisplayName(held.files) : draftDisplayName(held.files)
+}
+
+/** FE-P2: hold an APPLIED previewPage's widget CRs as a {slug: yaml} page draft and arm the SHARED
+ * preview gate for the page's identity — so a page publish is allowed ONLY after the SAME page was
+ * previewed this thread (published bytes == previewed bytes). No-op on CRs that can't be serialized. */
+const recordPagePreview = (widgets: unknown[] | undefined, store: BlueprintDraftStore, gate: BlueprintGate): void => {
+  const pageFiles = pageDraftFiles(widgets ?? [])
+  if (!pageFiles) {
+    return
+  }
+  const draft = store.set(pageFiles)
+  if (draft.ok) {
+    gate.recordPreview(pageDisplayName(draft.held.files))
+  }
 }
 
 interface AutopilotContextValue {
@@ -265,7 +289,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         // All at compile time — BEFORE the blast-radius confirm, so the human confirms the
         // REAL, owned payload.
         const held = blueprintStore.get()
-        const heldChartName = held ? draftDisplayName(held.files) : null
+        // The held draft's identity for the preview-gate — page slug or blueprint chart name
+        // (heldDraftIdentity); the SAME store/gate/substitution serve both (FE-P2 reuses FE-BP1/BP2).
+        const heldChartName = heldDraftIdentity(held)
         const { denial, ops: compiledOps } = compilePublishOps(
           proposal.ops,
           previewGate.evaluate(proposal.ops),
@@ -299,6 +325,12 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
             if (draft.ok) {
               blueprintGate.recordPreview(draftDisplayName(draft.held.files))
             }
+          } else if (proposal.verb === 'previewPage') {
+            // FE-P2: an APPLIED previewPage holds its widget CRs as a page draft + arms the shared
+            // gate (recordPagePreview) — a page publish (RepoContent → krateo-portal-chart) is then
+            // allowed ONLY after the SAME page was previewed this thread. FE-P1's ajv verdicts
+            // (drawer) + CHART-P2's PR CI are the correctness gates; this is the preview gate.
+            recordPagePreview(proposal.widgets, blueprintStore, blueprintGate)
           }
         }
       }
