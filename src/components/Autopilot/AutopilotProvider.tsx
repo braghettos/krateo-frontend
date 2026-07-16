@@ -10,7 +10,7 @@
  * (endpoint configured, or the dev echo flag) — graceful absence otherwise.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
@@ -27,6 +27,7 @@ import { stampAuthorship, type AuthorshipOrigin } from './authorship'
 import { draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
 import { createBlueprintDraftStore, substituteFileContent, type BlueprintDraftHeld, type BlueprintDraftStore } from './blueprintDraftStore'
 import { createBlueprintGate, type BlueprintGate } from './blueprintGate'
+import { autopilotConversationStore } from './conversationStore'
 import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, type OasAttachmentResult } from './oasAttachment'
 import { isPageDraft, pageDisplayName, pageDraftFiles, type NavHint } from './pageDraft'
 import { createPreviewGate } from './previewGate'
@@ -149,8 +150,6 @@ interface AutopilotContextValue {
 
 const AutopilotReactContext = createContext<AutopilotContextValue | null>(null)
 
-const newSessionId = (): string => `s_${randomId()}`
-
 export const AutopilotProvider = ({ children }: { children: React.ReactNode }) => {
   const { config } = useConfigContext()
   const endpoint = config?.api.AUTOPILOT_API_BASE_URL
@@ -163,9 +162,21 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   const { apply } = useAutopilotActionBridge()
 
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<AutopilotMessage[]>([])
+  // The DURABLE conversation (transcript + thread identity) is held in a module-level
+  // store, NOT component state, so it survives a provider remount. AutopilotProvider is
+  // mounted under `<RouterProvider key={routerVersion}>`; a routerVersion bump (the
+  // routes-as-data reload) remounts this subtree and would reset any useState to its
+  // initial value — silently wiping the chat when navigating onto a freshly-registered
+  // route (e.g. a composition-detail page). Reading via useSyncExternalStore re-hydrates
+  // from the SURVIVING store on remount. The transcript is folded through the store's
+  // `setMessages` (same value-or-updater setState contract), called directly as a stable
+  // module member below — so it is NOT a hook dependency and the fold code is unchanged.
+  const { contextId, messages, sessionId } = useSyncExternalStore(
+    autopilotConversationStore.subscribe,
+    autopilotConversationStore.getSnapshot,
+  )
+  const { setMessages } = autopilotConversationStore
   const [streaming, setStreaming] = useState(false)
-  const [sessionId, setSessionId] = useState<string>(newSessionId)
   const [tour, setTour] = useState<PortalTour | null>(null)
   const [tourOpen, setTourOpen] = useState(false)
   // Autopilot form draft (Phase 3 gated form-fill). The nonce re-keys the Form so a
@@ -205,9 +216,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // Guards the one-shot `?ask=` deep-link (below) so it fires a single turn per visit.
   const askHandledRef = useRef(false)
   const lastEnvelopeRef = useRef<PageContextEnvelope | undefined>(undefined)
-  // A2A conversation id, assigned by the server on the first turn and replayed on
-  // follow-ups for thread continuity. Cleared on new-thread.
-  const contextIdRef = useRef<string | undefined>(undefined)
+  // A2A conversation id lives in the durable conversation store (alongside the
+  // transcript), so a provider remount does not drop thread continuity. Assigned by
+  // the server on the first turn, replayed on follow-ups, cleared on new-thread.
   // Accumulated raw assistant text + pending proposals per in-flight turn, used to
   // finalize (strip fenced proposals, auto-apply read-only actions) on `done`.
   const assistantTextRef = useRef<Map<string, string>>(new Map())
@@ -357,7 +368,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       setTour(proposedTour)
       setTourOpen(true)
     }
-  }, [apply, blueprintGate, blueprintStore, oasStore, previewGate, sessionId])
+  }, [apply, blueprintGate, blueprintStore, oasStore, previewGate, sessionId, setMessages])
 
   const applyFrame = useCallback((assistantId: string, frame: AutopilotFrame) => {
     switch (frame.kind) {
@@ -374,7 +385,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         break
       }
       case 'session':
-        contextIdRef.current = frame.contextId
+        autopilotConversationStore.setContextId(frame.contextId)
         break
       case 'tool_call':
         if (frame.name === 'propose_portal_action' && frame.args && typeof frame.args === 'object') {
@@ -409,7 +420,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       default:
         break
     }
-  }, [finalize])
+  }, [finalize, setMessages])
 
   // Send a HITL decision over A2A (the `{decision_type}` DataPart on the paused task —
   // see approval.ts) and stream the agent's continuation into a NEW assistant bubble,
@@ -439,7 +450,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     ])
     setStreaming(true)
     abortRef.current = transport.respondToApproval(decision, pause, { onFrame: (frame) => applyFrame(assistantId, frame) })
-  }, [applyFrame, transport])
+  }, [applyFrame, setMessages, transport])
 
   // Keep the governor-timeout path pointing at the CURRENT dispatchDecision (the
   // governor closure is created inside applyFrame and must not go stale).
@@ -509,10 +520,10 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     setStreaming(true)
 
     abortRef.current = transport.send(
-      { context: contextString, contextId: contextIdRef.current, firstTurn, sessionId, text: trimmed },
+      { context: contextString, contextId, firstTurn, sessionId, text: trimmed },
       { onFrame: (frame) => applyFrame(assistantId, frame) },
     )
-  }, [applyFrame, collect, sessionId, streaming, transport])
+  }, [applyFrame, collect, contextId, sessionId, setMessages, streaming, transport])
 
   const newThread = useCallback(() => {
     abortRef.current?.()
@@ -532,13 +543,13 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     setPendingApproval(null)
     sentFirstRef.current = false
     lastEnvelopeRef.current = undefined
-    contextIdRef.current = undefined
     assistantTextRef.current.clear()
     proposalsRef.current.clear()
     finalizedRef.current.clear()
-    setMessages([])
+    // Reset the durable conversation store in one shot: empty transcript, fresh session
+    // id, cleared A2A contextId (was setMessages([]) + setSessionId + contextIdRef clear).
+    autopilotConversationStore.reset()
     setStreaming(false)
-    setSessionId(newSessionId())
     setTour(null)
     setTourOpen(false)
     // Clear any pending form draft and re-key (bump nonce) so the form reverts to base.
