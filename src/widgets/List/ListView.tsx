@@ -10,6 +10,7 @@ import { WidgetEmpty } from '../../components/WidgetStates'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import { getColorCode } from '../../theme/palette'
 import type { ResourcesRefs, Widget, WidgetAction, WidgetActions } from '../../types/Widget'
+import { navigateOrExternal } from '../../utils/navigation'
 
 import { resolveRow, type ItemTemplate } from './itemTemplate'
 import styles from './ListView.module.css'
@@ -104,7 +105,7 @@ export const ListView = ({
             <AntdList.Item
               className={navPath ? styles.clickable : undefined}
               key={`${rowKey}-${index}`}
-              onClick={navPath ? () => { void navigate(navPath) } : undefined}
+              onClick={navPath ? () => navigateOrExternal(navigate, navPath) : undefined}
             >
               {child}
             </AntdList.Item>
@@ -137,7 +138,7 @@ export const ListView = ({
             <AntdList.Item className={styles.chipItem} key={`${rowKey}-${index}`}>
               <Button
                 className={styles.chip}
-                onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+                onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
                 size='small'
                 type={active ? 'primary' : 'default'}
                 variant={active ? 'filled' : 'outlined'}
@@ -156,7 +157,7 @@ export const ListView = ({
             <AntdList.Item
               className={`${styles.treeRow} ${row.navigateTo ? styles.clickable : ''}`}
               key={`${rowKey}-${index}`}
-              onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+              onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
             >
               <span className={styles.treeConnector}>└─</span>
               <span className={styles.treeDot} style={{ backgroundColor: colorCode, boxShadow: `0 0 5px 1px ${colorCode}` }} />
@@ -195,7 +196,7 @@ export const ListView = ({
               <Card
                 className={`${styles.tileCard} ${row.navigateTo ? styles.clickable : ''} ${isSpotlit ? styles.spotlight : ''}`}
                 hoverable={Boolean(row.navigateTo)}
-                onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+                onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
                 size='small'
               >
                 <div className={styles.cardTop}>
@@ -312,7 +313,7 @@ export const ListView = ({
                 : undefined
             }
             key={`${rowKey}-${index}`}
-            onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+            onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
           >
             {/* Reconciliation-rail aggregate band: no avatar/label → let the bar span full width
                 (a List.Item.Meta with empty title still claims ~half the row otherwise). */}

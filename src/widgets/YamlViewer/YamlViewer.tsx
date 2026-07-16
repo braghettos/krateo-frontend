@@ -40,7 +40,7 @@ const YamlViewer = ({ uid, widgetData }: WidgetProps<YamlViewerWidgetData>) => {
   if (isEmpty) {
     return (
       <div className={styles.container}>
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description='No data to display' image={Empty.PRESENTED_IMAGE_SIMPLE} />
       </div>
     )
   }

@@ -9,6 +9,7 @@ import { useFilter } from '../../components/FiltesProvider/FiltersProvider'
 import WidgetRenderer from '../../components/WidgetRenderer'
 import { getColorCode, getTagStyle } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
+import { navigateOrExternal } from '../../utils/navigation'
 import { formatISODate, formatRelativeTime, getEndpointUrl } from '../../utils/utils'
 
 import styles from './Table.module.css'
@@ -202,7 +203,7 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
         ? (row) => {
           const path = buildRowPath(row)
           return path
-            ? { onClick: () => { void navigate(path) }, style: { cursor: 'pointer' } }
+            ? { onClick: () => navigateOrExternal(navigate, path), style: { cursor: 'pointer' } }
             : {}
         }
         : undefined}

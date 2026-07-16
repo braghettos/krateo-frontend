@@ -11,6 +11,7 @@ import { useRoutesContext } from '../context/RoutesContext'
 import type { ResourceRef, ResourcesRefs, Widget, WidgetAction } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
 import { useResolveJqExpression } from '../utils/jq-expression'
+import { navigateOrExternal } from '../utils/navigation'
 import type { Payload, RestApiResponse } from '../utils/types'
 import { getHeadersObject, getResourceRef } from '../utils/utils'
 import { closeDrawer, openDrawer } from '../widgets/Drawer/Drawer'
@@ -713,7 +714,7 @@ export const useHandleAction = () => {
     // and everything else. Any widget may show the mutated resource, so refresh them all.
     invalidateQueries: () => queryClient.invalidateQueries({ queryKey: ['widgets'] }),
     message,
-    navigate: (path: string) => navigate(resolveNavigationTarget(path)),
+    navigate: (path: string) => navigateOrExternal(navigate, path, resolveNavigationTarget),
     notification,
     openDrawer,
     openModal,
