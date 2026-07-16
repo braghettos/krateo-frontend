@@ -229,6 +229,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // The user's latest message text — so finalize can gate a proposed tour on an EXPLICIT walk-me-through
   // request (the model still emits tours on direct actions despite the prompt; the host enforces it).
   const lastUserTextRef = useRef('')
+  // DIRECTIVE-ERROR TRAMPOLINE (Gemini reliability): the model intermittently FUNCTION-CALLS a portal
+  // verb (previewBlueprint / applyResourceSet / navigate / …) instead of emitting it as a fenced
+  // directive; kagent then returns "Tool '<verb>' not found" as agent text and nothing drives (the
+  // deployed prompt already forbids this — it is stochastic non-compliance, not a missing rule). When a
+  // turn ends having applied NO proposal but whose text carries that error, finalize auto-recovers ONCE:
+  // it re-prompts the model to re-issue the SAME action as fenced text. `sendRef` breaks the ordering
+  // (send is declared after finalize); `recoveryCountRef` caps retries so a persistently-off turn can't loop.
+  const sendRef = useRef<((text: string, opts?: { recovery?: boolean }) => void) | undefined>(undefined)
+  const recoveryCountRef = useRef(0)
 
   const transport: AutopilotTransport = useMemo(
     () => (endpoint && endpoint !== 'echo' ? createKagentTransport(endpoint) : createEchoTransport()),
@@ -355,6 +364,26 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       setMessages((prev) => prev.map((message) => (
         message.id === assistantId ? { ...message, actions: chips } : message
       )))
+    }
+
+    // DIRECTIVE-ERROR TRAMPOLINE (see sendRef/recoveryCountRef note above). No proposal was applied and
+    // the reply text carries a kagent "Tool '<portal verb>' not found" — the model function-called a
+    // directive instead of writing it as fenced text. Recover ONCE per user turn: hide the raw error and
+    // re-prompt for the SAME action as a fenced directive. Restricted to the KNOWN portal verbs so a real
+    // tool typo is never swallowed. Returns early (an errored turn proposes nothing to tour).
+    if (!proposal && recoveryCountRef.current < 1) {
+      const toolNotFound = /\bTool ['"`]?(navigate|setExtras|openDrawer|openModal|prefillForm|runAction|previewBlueprint|previewPage|previewRestDef|explainUpgradeImpact|describeResource|patchField|applyResourceSet)['"`]? (?:is |was )?not found/i.exec(cleanedText)
+      if (toolNotFound) {
+        recoveryCountRef.current += 1
+        const [, verb] = toolNotFound
+        setMessages((prev) => prev.map((message) => (
+          message.id === assistantId ? { ...message, text: '↻ One moment — re-issuing that step correctly…' } : message
+        )))
+        const nudge = `Your previous turn tried to CALL \`${verb}\` as a function — it failed with "tool not found". \`${verb}\` is NOT a tool; it is a portal directive you REQUEST by WRITING a fenced code block in your reply TEXT (per the portal capabilities protocol you were given). Re-issue the SAME action now as a fenced portal directive block — do not call any tool by that name.`
+        // Defer so finalize's state (streaming:false) commits before the recovery turn opens its bubble.
+        setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
+        return
+      }
     }
 
     // Start a guided spotlight tour AFTER applying the proposals, so a navigate/prefill in
@@ -485,12 +514,21 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     [resolveApproval],
   )
 
-  const send = useCallback((text: string) => {
+  const send = useCallback((text: string, opts?: { recovery?: boolean }) => {
     const trimmed = text.trim()
-    if (!trimmed || streaming) {
+    const recovery = opts?.recovery === true
+    // A user turn is blocked while a stream is in flight; an internal recovery turn is NOT (it fires from
+    // finalize, right after the errored turn ends, and must be allowed through to correct it).
+    if (!trimmed || (streaming && !recovery)) {
       return
     }
-    lastUserTextRef.current = trimmed
+    // Only a real user turn (re)sets the trusted "last prompt" used for write-provenance + the tour gate,
+    // and refills the recovery budget. A recovery turn must not overwrite the user's audited prompt nor
+    // grant itself more retries.
+    if (!recovery) {
+      lastUserTextRef.current = trimmed
+      recoveryCountRef.current = 0
+    }
 
     const envelope = collect()
     const firstTurn = !sentFirstRef.current
@@ -514,7 +552,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     const now = Date.now()
     setMessages((prev) => [
       ...prev,
-      { createdAt: now, id: randomId(), role: 'user', text: trimmed },
+      // A recovery turn carries no user bubble — the user never typed the nudge; they see only the
+      // corrected assistant reply that follows the "re-issuing…" note.
+      ...(recovery ? [] : [{ createdAt: now, id: randomId(), role: 'user' as const, text: trimmed }]),
       { createdAt: now, id: assistantId, role: 'assistant', streaming: true, text: '' },
     ])
     setStreaming(true)
@@ -524,6 +564,11 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       { onFrame: (frame) => applyFrame(assistantId, frame) },
     )
   }, [applyFrame, collect, contextId, sessionId, setMessages, streaming, transport])
+
+  // Keep the finalize-side recovery trampoline pointing at the CURRENT send closure.
+  useEffect(() => {
+    sendRef.current = send
+  }, [send])
 
   const newThread = useCallback(() => {
     abortRef.current?.()
@@ -542,6 +587,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     approvalRef.current = null
     setPendingApproval(null)
     sentFirstRef.current = false
+    recoveryCountRef.current = 0
     lastEnvelopeRef.current = undefined
     assistantTextRef.current.clear()
     proposalsRef.current.clear()
