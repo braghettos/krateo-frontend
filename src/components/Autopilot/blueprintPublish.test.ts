@@ -5,7 +5,8 @@ import { FILE_CONTENT_KEY, type BlueprintDraftHeld } from './blueprintDraftStore
 import { BLUEPRINTS_REPO_DEFAULTS, buildBlueprintPublishOps } from './blueprintPublish'
 
 const held = (files: Record<string, string>): BlueprintDraftHeld => ({ bytes: 1, files })
-const specOf = (op: { payload?: unknown }): Record<string, unknown> => (op.payload as { spec: Record<string, unknown> }).spec
+const payloadOf = (op: { payload?: unknown }): Record<string, unknown> => op.payload as Record<string, unknown>
+const specOf = (op: { payload?: unknown }): Record<string, unknown> => payloadOf(op).spec as Record<string, unknown>
 
 const CHART = 'aws-vpc'
 const TREE = held({
@@ -21,6 +22,26 @@ describe('buildBlueprintPublishOps', () => {
     expect(ops.every((op) => op.verb === 'POST')).toBe(true)
     expect(ops.every((op) => op.gvr.group === 'github.krateo.io' && op.gvr.version === 'v1alpha1')).toBe(true)
     expect(ops.every((op) => op.namespace === 'krateo-system')).toBe(true)
+  })
+
+  it('each op payload is a FULL CR object — apiVersion + kind + metadata.name + spec (no bare {spec})', () => {
+    const ops = buildBlueprintPublishOps({}, TREE, CHART)
+    const kinds = ops.map((op) => payloadOf(op).kind)
+    expect(kinds).toEqual(['GitRef', 'RepoContent', 'RepoContent', 'RepoContent', 'PullRequest'])
+    for (const op of ops) {
+      const pl = payloadOf(op)
+      expect(pl.apiVersion).toBe('github.krateo.io/v1alpha1')
+      expect(typeof pl.kind).toBe('string')
+      const md = pl.metadata as Record<string, unknown>
+      expect(typeof md.name).toBe('string')
+      expect((md.name as string).length).toBeGreaterThan(0)
+      expect(md.namespace).toBe('krateo-system')
+      expect(pl.spec).toBeTypeOf('object')
+    }
+    // RepoContent names are unique per file (chart-prefixed, DNS-1123 slug of the path).
+    const rcNames = ops.filter((op) => payloadOf(op).kind === 'RepoContent').map((op) => (payloadOf(op).metadata as { name: string }).name)
+    expect(new Set(rcNames).size).toBe(rcNames.length)
+    expect(rcNames).toContain('aws-vpc-templates-vpc-yaml')
   })
 
   it('creates the builder branch from the chart name and OMITS sha (provider auto-resolves)', () => {

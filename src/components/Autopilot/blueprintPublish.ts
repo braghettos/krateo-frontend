@@ -59,6 +59,9 @@ export interface BlueprintPublishRequest {
  * alphabetized (repo eslint sort-keys). The op count is 2 + files — the caller enforces the
  * MAX_APPLY_SET_OPS cap and surfaces a clear denial for an over-large tree.
  */
+/** DNS-1123-ish name segment from a file path (a RepoContent needs a unique metadata.name per file). */
+const pathNameSlug = (path: string): string => path.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
 export const buildBlueprintPublishOps = (
   req: BlueprintPublishRequest,
   held: BlueprintDraftHeld,
@@ -70,13 +73,24 @@ export const buildBlueprintPublishOps = (
   const namespace = req.namespace ?? BLUEPRINTS_REPO_DEFAULTS.namespace
   const configurationRef = { name: req.configurationRef ?? BLUEPRINTS_REPO_DEFAULTS.configurationRef }
   const branch = `builder/${chart}`
+  const apiVersion = `${GITHUB_KOG_GROUP}/${GITHUB_KOG_VERSION}`
   const gvr = (resource: string): ApplyResourceSetGvr => ({ group: GITHUB_KOG_GROUP, resource, version: GITHUB_KOG_VERSION })
+
+  // Each op's payload MUST be a FULL CR object — apiVersion + kind + metadata.name + spec — not a
+  // bare `{spec}`: the apiserver create rejects a body with no kind ("Object 'Kind' is missing").
+  // The host stamps managed-by/authored-by onto metadata after this (stampAuthorship).
+  const cr = (kind: string, name: string, spec: Record<string, unknown>): Record<string, unknown> => ({
+    apiVersion,
+    kind,
+    metadata: { name, namespace },
+    spec,
+  })
 
   const ops: ApplyResourceSetOp[] = [
     {
       gvr: gvr('gitrefs'),
       namespace,
-      payload: { spec: { configurationRef, owner, ref: `refs/heads/${branch}`, repo } },
+      payload: cr('GitRef', chart, { configurationRef, owner, ref: `refs/heads/${branch}`, repo }),
       verb: 'POST',
     },
   ]
@@ -85,17 +99,15 @@ export const buildBlueprintPublishOps = (
     ops.push({
       gvr: gvr('repocontents'),
       namespace,
-      payload: {
-        spec: {
-          branch,
-          configurationRef,
-          content: { [FILE_CONTENT_KEY]: path },
-          message: req.message ?? `feat(${chart}): add ${path}`,
-          owner,
-          path: `blueprints/${chart}/${path}`,
-          repo,
-        },
-      },
+      payload: cr('RepoContent', `${chart}-${pathNameSlug(path)}`, {
+        branch,
+        configurationRef,
+        content: { [FILE_CONTENT_KEY]: path },
+        message: req.message ?? `feat(${chart}): add ${path}`,
+        owner,
+        path: `blueprints/${chart}/${path}`,
+        repo,
+      }),
       verb: 'POST',
     })
   }
@@ -103,17 +115,15 @@ export const buildBlueprintPublishOps = (
   ops.push({
     gvr: gvr('pullrequests'),
     namespace,
-    payload: {
-      spec: {
-        base,
-        body: req.body ?? `Adds the ${chart} blueprint, authored end-to-end via the Blueprint Builder.`,
-        configurationRef,
-        head: branch,
-        owner,
-        repo,
-        title: req.title ?? `feat(${chart}): add ${chart} blueprint`,
-      },
-    },
+    payload: cr('PullRequest', chart, {
+      base,
+      body: req.body ?? `Adds the ${chart} blueprint, authored end-to-end via the Blueprint Builder.`,
+      configurationRef,
+      head: branch,
+      owner,
+      repo,
+      title: req.title ?? `feat(${chart}): add ${chart} blueprint`,
+    }),
     verb: 'POST',
   })
 
