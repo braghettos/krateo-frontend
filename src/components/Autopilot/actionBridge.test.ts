@@ -2,21 +2,21 @@ import { describe, expect, it } from 'vitest'
 
 import { parseAutopilotDirectives, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, sanitizeChatText } from './actionBridge'
 
-describe('BLUEPRINT BUILDER prompt (FE-BP5)', () => {
-  it('teaches the two-step git-then-register publish with $fileContent + preview-first', () => {
+describe('BLUEPRINT BUILDER prompt (FE-BP6)', () => {
+  it('teaches the two-step publish: a scalar publishBlueprint verb (host fans out the git-write), then register — preview-first', () => {
     // The turn-1 capabilities prompt teaches the full workflow...
     expect(PORTAL_CAPABILITIES_PROMPT).toContain('BLUEPRINT BUILDER')
     expect(PORTAL_CAPABILITIES_PROMPT).toContain('previewBlueprint')
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('$fileContent')
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('gitrefs')
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('repocontents')
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('pullrequests')
+    // STEP A is now a SINGLE scalar publishBlueprint verb — the host builds the gitrefs +
+    // repocontents + pullrequests set from the held tree (gemini-2.5-pro stalls hand-writing it).
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('publishBlueprint')
+    // STEP B (register) stays a compositiondefinitions write.
     expect(PORTAL_CAPABILITIES_PROMPT).toContain('compositiondefinitions')
     expect(PORTAL_CAPABILITIES_PROMPT).toContain('configurationRef')
-    // ...and the every-turn recap keeps the preview-first + $fileContent invariants alive.
+    // ...and the every-turn recap keeps the preview-first invariant + the publishBlueprint verb alive.
     expect(PORTAL_HOUSE_RULES).toContain('Blueprint builder')
     expect(PORTAL_HOUSE_RULES).toContain('DENIED unless the same chart')
-    expect(PORTAL_HOUSE_RULES).toContain('$fileContent')
+    expect(PORTAL_HOUSE_RULES).toContain('publishBlueprint')
   })
 })
 

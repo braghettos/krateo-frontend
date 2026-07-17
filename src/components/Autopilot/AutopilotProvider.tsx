@@ -21,12 +21,14 @@ import type { PortalActionProposal, PortalTour } from './actionBridge'
 import { GROUNDING_GUARDRAIL_PROMPT, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
 import { AgentDraftProvider } from './agentDraft'
 import type { ApplyResourceSetOp } from './applyResourceSet'
+import { MAX_APPLY_SET_OPS } from './applyResourceSet'
 import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approval'
 import { createApprovalGovernor, summarizeApprovalTools } from './approval'
 import { stampAuthorship, type AuthorshipOrigin } from './authorship'
 import { draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
 import { createBlueprintDraftStore, substituteFileContent, type BlueprintDraftHeld, type BlueprintDraftStore } from './blueprintDraftStore'
 import { createBlueprintGate, type BlueprintGate } from './blueprintGate'
+import { buildBlueprintPublishOps } from './blueprintPublish'
 import { autopilotConversationStore } from './conversationStore'
 import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, type OasAttachmentResult } from './oasAttachment'
 import { isPageDraft, pageDisplayName, pageDraftFiles, type NavHint } from './pageDraft'
@@ -298,6 +300,33 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         setAgentDraft(proposal.values ?? {})
         setDraftNonce((nonce) => nonce + 1)
         chips.push({ label: proposal.label ?? 'drafted the create form', readOnly: true, verb: 'prefillForm' })
+      } else if (proposal.verb === 'publishBlueprint') {
+        // FE-BP6 — frontend-constructs-ops. The model emits ONE scalar `publishBlueprint`
+        // verb (repo coords only); the HOST fans it out into the gitrefs + per-file
+        // repocontents + pullrequests set from the HELD previewed tree, because gemini-2.5-pro
+        // stalls hand-writing that heterogeneous multi-op payload (it narrates instead of
+        // emitting the fence). The built ops then flow through the SAME compilePublishOps
+        // pipeline ($fileContent → base64 + authorship) and the SAME blast-radius confirm as a
+        // model-emitted applyResourceSet — this branch only assembles the set.
+        const held = blueprintStore.get()
+        const chart = heldDraftIdentity(held)
+        const built = held && chart ? buildBlueprintPublishOps(proposal, held, chart) : null
+        let compiled: PublishCompileResult
+        if (!held || !chart || built === null) {
+          compiled = { denial: 'denied — no previewed blueprint to publish (draft + preview a chart first)', ops: null }
+        } else if (built.length > MAX_APPLY_SET_OPS) {
+          compiled = { denial: `denied — "${chart}" has ${Object.keys(held.files).length} files; a single publish tops out at ${MAX_APPLY_SET_OPS - 2} — trim the chart tree (large assets belong in a hosted values file).`, ops: null }
+        } else {
+          compiled = compilePublishOps(built, previewGate.evaluate(built), blueprintGate.evaluate(built, chart), oasStore.get(), held, { prompt: lastUserTextRef.current, sessionId })
+        }
+        if (compiled.denial !== null) {
+          chips.push({ label: compiled.denial, readOnly: true, verb: 'applyResourceSet' })
+        } else if (compiled.ops) {
+          const chip = await apply({ label: proposal.label, ops: compiled.ops, verb: 'applyResourceSet' }, origin)
+          if (chip) {
+            chips.push(chip)
+          }
+        }
       } else if (proposal.verb === 'applyResourceSet') {
         // Publish path, enforced HERE (finalize is the single entry point for model
         // proposals). Host-side checks BEFORE the bridge ever dispatches — a denial is the
@@ -397,7 +426,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         setMessages((prev) => prev.map((message) => (
           message.id === assistantId ? { ...message, text: '↻ One moment — opening the pull request…' } : message
         )))
-        const nudge = `You approved publishing \`${heldName}\` but your reply contained NO applyResourceSet fence, so nothing was proposed and no confirm dialog opened. Do NOT say the user "will be asked to confirm" — EMITTING the applyResourceSet fence is ITSELF what opens the blast-radius dialog. Re-issue STEP A NOW as a single fenced \`\`\`portal-action block in this reply: POST gitrefs (omit sha), one POST repocontents per previewed file with content {"$fileContent":"<path>"}, then POST pullrequests.`
+        const nudge = `You approved publishing \`${heldName}\` but your reply contained NO portal-action fence, so nothing was proposed and no confirm dialog opened. Do NOT say the user "will be asked to confirm" — EMITTING the fence is ITSELF what opens the blast-radius dialog. Re-issue STEP A NOW as a single fenced \`\`\`portal-action block containing ONLY this one scalar verb: {"verb":"publishBlueprint","owner":"braghettos","repo":"krateo-blueprints","base":"main","configurationRef":"github-blueprints-config","namespace":"krateo-system","title":"feat(${heldName}): add ${heldName} blueprint","body":"<one-line summary>"}. The portal fans that out into the gitrefs/repocontents/pullrequests set from the held tree — you do NOT write those ops yourself.`
         setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
         return
       }
