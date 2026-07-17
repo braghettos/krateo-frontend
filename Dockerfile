@@ -16,8 +16,9 @@ RUN rm -r dist/config
 
 # server environment — official upstream nginx (NOT bitnami/nginx, whose free Docker Hub images are
 # being sunset and which listens on 8080 as non-root; upstream listens on 80, matching the chart's
-# containerPort = service.port = 80).
-FROM nginx:1.27-alpine
+# containerPort = service.port = 80). Pin the current STABLE minor (1.30.x; even minor = stable in
+# nginx's scheme) — auto-picks patch releases on rebuild, never jumps minors. (Mainline is 1.31.x.)
+FROM nginx:1.30-alpine
 LABEL maintainer "Krateo <contact@krateo.io>"
 
 # The SPA build output. The chart mounts the runtime config.json at /app/config, so the doc root
