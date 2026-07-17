@@ -38,9 +38,34 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
   (value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null)
 
 /**
+ * Strip a code-fence / triple-quote wrapper the model may put around a WHOLE file body.
+ * gemini (and most LLMs) intermittently wrap a generated file in a markdown fence
+ * (```json … ```) or a python-style triple-quote ('''…''' / """…"""). Those bytes would be
+ * published verbatim into the chart AND break JSON.parse of values.schema.json (observed:
+ * `'''{ "title": … }'''` → the preview-gate refuses to publish). We already strip fences
+ * from CHAT text (transport.sanitizeChatText); drafted FILE bodies need the same. Only a
+ * SYMMETRIC wrapper around the entire trimmed body is removed (an optional opening language
+ * tag line too); genuine content — a values.yaml starting `replicaCount: 1`, a schema
+ * starting `{` — is never touched.
+ */
+export const stripCodeFence = (raw: string): string => {
+  const trimmed = raw.trim()
+  for (const marker of ['```', "'''", '"""'] as const) {
+    if (trimmed.length > marker.length * 2 && trimmed.startsWith(marker) && trimmed.endsWith(marker)) {
+      const inner = trimmed.slice(marker.length, trimmed.length - marker.length)
+      // drop an optional leading language tag line, e.g. ```json\n or '''yaml\n
+      return inner.replace(/^[a-zA-Z0-9_-]*\r?\n/, '').trim()
+    }
+  }
+  return raw
+}
+
+/**
  * The inline chart tree of a previewBlueprint proposal: a plain object mapping
  * non-empty relative paths to string contents. Anything else — empty map, non-object,
  * a non-string file body — is null (the proposal is denied, matching every arg guard).
+ * Each file body is de-fenced (see stripCodeFence) so an accidental model wrapper never
+ * corrupts the published chart or the schema lint.
  */
 export const parseRawTemplates = (value: unknown): Record<string, string> | null => {
   const record = asRecord(value)
@@ -51,12 +76,14 @@ export const parseRawTemplates = (value: unknown): Record<string, string> | null
   if (entries.length === 0) {
     return null
   }
+  const cleaned: Record<string, string> = {}
   for (const [path, content] of entries) {
     if (!path.trim() || typeof content !== 'string') {
       return null
     }
+    cleaned[path] = stripCodeFence(content)
   }
-  return record as Record<string, string>
+  return cleaned
 }
 
 /** Total UTF-8 bytes of the draft (paths + contents) — what the 512 KiB cap measures. */

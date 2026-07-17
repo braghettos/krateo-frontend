@@ -19,7 +19,31 @@ import {
   parseRawTemplates,
   RAW_TEMPLATES_MAX_BYTES,
   rawTemplatesByteSize,
+  stripCodeFence,
 } from './blueprintDraft'
+
+describe('stripCodeFence — de-fence a model-wrapped file body', () => {
+  const json = '{ "title": "AWS VPC", "type": "object" }'
+  it('strips a python-style triple-quote wrapper (the observed values.schema.json failure)', () => {
+    expect(stripCodeFence(`'''${json}'''`)).toBe(json)
+    expect(stripCodeFence(`"""${json}"""`)).toBe(json)
+  })
+  it('strips a markdown fence, including an opening language tag', () => {
+    expect(stripCodeFence('```json\n' + json + '\n```')).toBe(json)
+    expect(stripCodeFence('```\n' + json + '\n```')).toBe(json)
+  })
+  it('leaves genuine content untouched (no wrapper)', () => {
+    expect(stripCodeFence(json)).toBe(json)
+    expect(stripCodeFence('replicaCount: 1\nimage:\n  tag: latest')).toBe('replicaCount: 1\nimage:\n  tag: latest')
+  })
+  it('parseRawTemplates de-fences every file body so the schema then parses', () => {
+    const cleaned = parseRawTemplates({ 'values.schema.json': `'''${json}'''`, 'Chart.yaml': '```yaml\nname: x\n```' })
+    expect(cleaned).not.toBeNull()
+    expect(cleaned!['values.schema.json']).toBe(json)
+    expect(cleaned!['Chart.yaml']).toBe('name: x')
+    expect(() => JSON.parse(cleaned!['values.schema.json'])).not.toThrow()
+  })
+})
 
 /** The EXACT braghettos/krateo-core-provider#46 class: a helm-scaffold ingress.hosts
  * array default in values.schema.json → malformed +kubebuilder:default marker →
