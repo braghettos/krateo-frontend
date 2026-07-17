@@ -384,6 +384,23 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
         return
       }
+
+      // NARRATED-PUBLISH TRAMPOLINE: the model approved-published in PROSE but emitted no
+      // applyResourceSet fence (the exact rail-publish stall) — so nothing was proposed and no
+      // blast-radius dialog opened. If the user's last message was an approval AND a previewed
+      // blueprint draft is held, re-prompt ONCE to emit STEP A (emitting the fence IS the gate).
+      const held = blueprintStore.get()
+      const heldName = heldDraftIdentity(held)
+      const approvedPublish = /\b(publish|open the (?:pull request|pr)|go ahead|do it|approve|proceed|looks good|ship it)\b/i.test(lastUserTextRef.current)
+      if (heldName && approvedPublish) {
+        recoveryCountRef.current += 1
+        setMessages((prev) => prev.map((message) => (
+          message.id === assistantId ? { ...message, text: '↻ One moment — opening the pull request…' } : message
+        )))
+        const nudge = `You approved publishing \`${heldName}\` but your reply contained NO applyResourceSet fence, so nothing was proposed and no confirm dialog opened. Do NOT say the user "will be asked to confirm" — EMITTING the applyResourceSet fence is ITSELF what opens the blast-radius dialog. Re-issue STEP A NOW as a single fenced \`\`\`portal-action block in this reply: POST gitrefs (omit sha), one POST repocontents per previewed file with content {"$fileContent":"<path>"}, then POST pullrequests.`
+        setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
+        return
+      }
     }
 
     // Start a guided spotlight tour AFTER applying the proposals, so a navigate/prefill in
