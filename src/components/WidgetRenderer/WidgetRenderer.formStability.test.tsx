@@ -23,6 +23,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import type { Widget } from '../../types/Widget'
 import FormModule from '../../widgets/Form'
 import { registerWidget } from '../../widgets/registry'
+import type { WidgetModule } from '../../widgets/widget-module'
 import { AgentDraftProvider } from '../Autopilot/agentDraft'
 
 import WidgetRenderer from './WidgetRenderer'
@@ -103,7 +104,7 @@ const setQueryState = async (partial: Partial<MockQueryState>) => {
   act(() => { setter(partial) })
 }
 
-registerWidget(FormModule)
+registerWidget(FormModule as unknown as WidgetModule<unknown>)
 
 const ENDPOINT = '/call?resource=forms&apiVersion=widgets.templates.krateo.io%2Fv1beta1&name=test-form&namespace=test-ns'
 

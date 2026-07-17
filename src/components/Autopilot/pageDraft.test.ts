@@ -103,9 +103,9 @@ describe('pageDisplayName', () => {
 // blueprint invariant, so FE-P2 does not weaken the mutation-safety boundary.
 describe('page publish gate (safety)', () => {
   const pagePublishOps = [
-    { gvr: { group: 'github.krateo.io', resource: 'gitrefs', version: 'v1alpha1' }, verb: 'POST' as const },
-    { gvr: { group: 'github.krateo.io', resource: 'repocontents', version: 'v1alpha1' }, verb: 'POST' as const },
-    { gvr: { group: 'github.krateo.io', resource: 'pullrequests', version: 'v1alpha1' }, verb: 'POST' as const },
+    { gvr: { group: 'github.krateo.io', resource: 'gitrefs', version: 'v1alpha1' }, namespace: 'krateo-system', verb: 'POST' as const },
+    { gvr: { group: 'github.krateo.io', resource: 'repocontents', version: 'v1alpha1' }, namespace: 'krateo-system', verb: 'POST' as const },
+    { gvr: { group: 'github.krateo.io', resource: 'pullrequests', version: 'v1alpha1' }, namespace: 'krateo-system', verb: 'POST' as const },
   ]
 
   it('DENIES a page publish that was never previewed', () => {
