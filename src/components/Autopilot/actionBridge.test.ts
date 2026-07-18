@@ -20,6 +20,18 @@ describe('BLUEPRINT BUILDER prompt (FE-BP6)', () => {
   })
 })
 
+describe('PORTAL BUILDER prompt (FE-BP7)', () => {
+  it('teaches the page publish as a SINGLE scalar publishPage verb — no hand-written ops, no sha', () => {
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('PORTAL BUILDER')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('previewPage')
+    // PUBLISH is now the scalar publishPage verb — the host fans out gitrefs + per-file
+    // repocontents (widget CRs + nav fragment) + pullrequests from the held page draft.
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('publishPage')
+    // The old fragile shape is GONE: the model no longer hand-writes ops nor sources a sha.
+    expect(PORTAL_CAPABILITIES_PROMPT).not.toContain('main HEAD sha from page context')
+  })
+})
+
 describe('describeResource / check-the-CRD-schema prompt', () => {
   it('teaches describeResource + check-the-schema-before-generating-a-CR', () => {
     expect(PORTAL_CAPABILITIES_PROMPT).toContain('describeResource')

@@ -31,7 +31,8 @@ import { createBlueprintGate, type BlueprintGate } from './blueprintGate'
 import { buildBlueprintPublishOps } from './blueprintPublish'
 import { autopilotConversationStore } from './conversationStore'
 import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, type OasAttachmentResult } from './oasAttachment'
-import { isPageDraft, pageDisplayName, pageDraftFiles, type NavHint } from './pageDraft'
+import { isPageDraft, pageDisplayName, pageDraftFiles, pageRootSlug, type NavHint } from './pageDraft'
+import { buildPagePublishOps } from './pagePublish'
 import { createPreviewGate } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { createEchoTransport, createKagentTransport } from './transport'
@@ -327,6 +328,33 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
             chips.push(chip)
           }
         }
+      } else if (proposal.verb === 'publishPage') {
+        // FE-BP7 — frontend-constructs-ops, PAGE variant. The model emits ONE scalar `publishPage`
+        // verb (repo coords only); the HOST fans it out into the gitrefs + per-file repocontents
+        // (widget CRs → chart/templates, the nav fragment → chart/files/nav-fragments) + pullrequests
+        // set from the HELD previewed page draft — same reason as publishBlueprint (gemini-2.5-pro
+        // stalls hand-writing that heterogeneous multi-op payload → it narrates instead of emitting).
+        // Routes through the SAME compilePublishOps ($fileContent → base64 + authorship) and the SAME
+        // blast-radius confirm; the slug (branch/paths) is derived from the page's page-<slug> root.
+        const held = blueprintStore.get()
+        const slug = held && isPageDraft(held.files) ? pageRootSlug(held.files) : null
+        const built = held && slug ? buildPagePublishOps(proposal, held, slug) : null
+        let compiled: PublishCompileResult
+        if (!held || !slug || built === null) {
+          compiled = { denial: 'denied — no previewed portal page to publish (draft + preview a page-<slug> first)', ops: null }
+        } else if (built.length > MAX_APPLY_SET_OPS) {
+          compiled = { denial: `denied — "page-${slug}" has ${Object.keys(held.files).length} files; a single publish tops out at ${MAX_APPLY_SET_OPS - 2} — split the page across turns on the same branch.`, ops: null }
+        } else {
+          compiled = compilePublishOps(built, previewGate.evaluate(built), blueprintGate.evaluate(built, heldDraftIdentity(held)), oasStore.get(), held, { prompt: lastUserTextRef.current, sessionId })
+        }
+        if (compiled.denial !== null) {
+          chips.push({ label: compiled.denial, readOnly: true, verb: 'applyResourceSet' })
+        } else if (compiled.ops) {
+          const chip = await apply({ label: proposal.label, ops: compiled.ops, verb: 'applyResourceSet' }, origin)
+          if (chip) {
+            chips.push(chip)
+          }
+        }
       } else if (proposal.verb === 'applyResourceSet') {
         // Publish path, enforced HERE (finalize is the single entry point for model
         // proposals). Host-side checks BEFORE the bridge ever dispatches — a denial is the
@@ -421,12 +449,22 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       const held = blueprintStore.get()
       const heldName = heldDraftIdentity(held)
       const approvedPublish = /\b(publish|open the (?:pull request|pr)|go ahead|do it|approve|proceed|looks good|ship it)\b/i.test(lastUserTextRef.current)
-      if (heldName && approvedPublish) {
+      if (held && heldName && approvedPublish) {
         recoveryCountRef.current += 1
         setMessages((prev) => prev.map((message) => (
           message.id === assistantId ? { ...message, text: '↻ One moment — opening the pull request…' } : message
         )))
-        const nudge = `You approved publishing \`${heldName}\` but your reply contained NO portal-action fence, so nothing was proposed and no confirm dialog opened. Do NOT say the user "will be asked to confirm" — EMITTING the fence is ITSELF what opens the blast-radius dialog. Re-issue STEP A NOW as a single fenced \`\`\`portal-action block containing ONLY this one scalar verb: {"verb":"publishBlueprint","owner":"braghettos","repo":"krateo-blueprints","base":"main","configurationRef":"github-blueprints-config","namespace":"krateo-system","title":"feat(${heldName}): add ${heldName} blueprint","body":"<one-line summary>"}. The portal fans that out into the gitrefs/repocontents/pullrequests set from the held tree — you do NOT write those ops yourself.`
+        // Re-issue the scalar publish verb that matches the held draft: a page draft (no Chart.yaml)
+        // → publishPage (FE-BP7), a blueprint chart → publishBlueprint (FE-BP6). The host fans either
+        // out; the model must NEVER hand-write the multi-op payload (that is the stall we recover from).
+        const pageSlug = isPageDraft(held.files) ? pageRootSlug(held.files) : null
+        const scalarVerb = pageSlug
+          ? `{"verb":"publishPage","owner":"braghettos","repo":"krateo-portal-chart","base":"main","configurationRef":"github-blueprints-config","namespace":"krateo-system","title":"builder: page ${pageSlug}","body":"<one-line summary>"}`
+          : `{"verb":"publishBlueprint","owner":"braghettos","repo":"krateo-blueprints","base":"main","configurationRef":"github-blueprints-config","namespace":"krateo-system","title":"feat(${heldName}): add ${heldName} blueprint","body":"<one-line summary>"}`
+        const fanout = pageSlug
+          ? 'the gitrefs + per-file repocontents (widget CRs + the nav fragment) + pullrequests set from the held page'
+          : 'the gitrefs/repocontents/pullrequests set from the held tree'
+        const nudge = `You approved publishing \`${heldName}\` but your reply contained NO portal-action fence, so nothing was proposed and no confirm dialog opened. Do NOT say the user "will be asked to confirm" — EMITTING the fence is ITSELF what opens the blast-radius dialog. Re-issue the PUBLISH step NOW as a single fenced \`\`\`portal-action block containing ONLY this one scalar verb: ${scalarVerb}. The portal fans that out into ${fanout} — you do NOT write those ops yourself.`
         setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
         return
       }
