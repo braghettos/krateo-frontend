@@ -18,13 +18,14 @@ modelConfig:
 prompts:
   language: eng
 
-# Human-in-the-loop gate on k8s_apply_manifest. FALSE for this agent on purpose: the
-# frontend-agent uses k8s_apply_manifest ONLY as a server DRY-RUN validator (--dry-run=server,
-# writes nothing) and returns the authored CRs to the orchestrator — it never applies to the real
-# cluster. The meaningful human write gate is DOWNSTREAM at publishPage (the frontend's blast-radius
-# confirm on the git-write), which is unchanged. Gating the non-mutating dry-run only stalled the
-# author loop with a click per validation, so it is off here (the publish gate still protects writes).
-hitlApproval: false
+# kagent GRANULAR HITL — requireApproval is the exact list of tool NAMES that pause for human approval.
+# EMPTY here on purpose: the frontend-agent's only mutating-shaped tool, k8s_apply_manifest, is used
+# ONLY as a server DRY-RUN validator (--dry-run=server, writes nothing) and it returns the authored CRs
+# to the orchestrator — it never applies to the real cluster. The meaningful human write gate is
+# DOWNSTREAM at publishPage (the frontend's blast-radius confirm on the git-write). Gating the
+# non-mutating dry-run only stalled the author loop with a click per validation. To gate a REAL apply,
+# add its tool name (e.g. "k8s_apply_manifest") here. The installer can override this per-agent.
+requireApproval: []
 vertexAI:
   enabled: true
   projectID: ""

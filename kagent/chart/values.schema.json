@@ -7,9 +7,12 @@
     "namespace": {
       "type": "string"
     },
-    "hitlApproval": {
-      "type": "boolean",
-      "description": "HITL approval gate on the mutating k8s tools (k8s_apply_manifest) \u2014 kagent requireApproval: true = pause for human approval (safe); false = autonomous."
+    "requireApproval": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "kagent GRANULAR HITL gate: the exact list of tool names that pause for human approval (kagent requireApproval). Empty = nothing gated. This agent's only mutating-shaped tool, k8s_apply_manifest, is used ONLY as a server DRY-RUN validator (writes nothing), so the default is [] and the real human write gate stays downstream at publishPage (blast-radius). Set e.g. [k8s_apply_manifest] to gate a real apply."
     },
     "modelConfig": {
       "type": "object",

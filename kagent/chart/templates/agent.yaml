@@ -32,10 +32,12 @@ spec:
           name: kagent-tool-server
           kind: RemoteMCPServer
           apiGroup: kagent.dev
-{{- if .Values.hitlApproval }}
-          # HITL: mutating tools pause for human approval (kagent requireApproval)
+{{- with .Values.requireApproval }}
+          # kagent GRANULAR HITL: exactly these tools pause for human approval (requireApproval).
+          # Empty list (the default) gates NOTHING — the frontend-agent's k8s_apply_manifest is a
+          # non-mutating server dry-run validator; the real write gate is downstream at publishPage.
           requireApproval:
-            - k8s_apply_manifest
+{{ toYaml . | indent 12 }}
 {{- end }}
           toolNames:
             - k8s_get_resources
