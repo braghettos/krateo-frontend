@@ -18,7 +18,6 @@
           "type": "object",
           "required": [
             "allowedResources",
-            "data",
             "columns"
           ],
           "properties": {
