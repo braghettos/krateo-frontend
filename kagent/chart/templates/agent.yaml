@@ -9,7 +9,10 @@ metadata:
 spec:
   type: Declarative
   description: >-
-    The Krateo frontend expert: authors Composable Portal widget CRDs (Table, Page, Button, NavMenu, Route, Panel, ...) and knows the SPA. Knows braghettos/krateo-frontend + braghettos/krateo-frontend-chart.
+    Krateo frontend specialist that authors and server-dry-run-validates Composable Portal widget CRs
+    (widgets.templates.krateo.io/v1beta1 kinds Flex, Row, Col, Tabs, Paragraph, Markdown, Card, Statistic,
+    Table, Listy, Button) for portal pages and dashboards, grounded on braghettos/krateo-frontend-chart docs
+    and delegating any new RESTAction data source to the snowplow agent.
   declarative:
     deployment:
       env:
@@ -60,13 +63,27 @@ spec:
 {{- end }}
     a2aConfig:
       skills:
-        - id: portal-widgets
-          name: Compose Portal widgets
-          description: Author Composable Portal widget CRs (Table, Page, Button, NavMenu, ...), grounded in the widget CRDs + SPA source.
-          tags: [krateo, frontend, portal, widgets]
+        - id: compose-portal-pages
+          name: Compose Portal pages and dashboards
+          description: >-
+            Authors a validated set of Composable Portal widget CRs for a page/dashboard, rooted in a
+            Flex named page-<slug> that lists its children, then returns the ordered CR set.
+          tags: [krateo, frontend, portal, widgets, dashboard]
           examples:
-            - Create a Table widget with static data.
-            - Build a dashboard Page with a panel and a navmenu entry.
+            - Build a dashboard page with a heading paragraph and a table of compositions.
+            - Create a portal page with a Flex column containing a Card and a Statistic.
+            - Lay out a page using Tabs with a Table in each tab.
+        - id: author-widget-crs
+          name: Author and dry-run widget CRs
+          description: >-
+            Drafts individual widgets.templates.krateo.io/v1beta1 widget CRs (Table, Paragraph, Button,
+            Card, Statistic, Markdown, etc.) and self-validates each via server dry-run against the live
+            CRD before returning.
+          tags: [krateo, widgets, crd, dry-run, validation]
+          examples:
+            - Create a Table widget whose rows come from the compositions-list RESTAction via apiRef.
+            - Add a Button widget and a strong Paragraph heading to the page.
+            - Validate this Card widget CR against the cluster before we publish it.
     deployment:
       resources:
 {{- toYaml .Values.resources | nindent 8 }}
