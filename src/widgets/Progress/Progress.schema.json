@@ -151,7 +151,6 @@
                   }
                 },
                 "required": [
-                  "allowed",
                   "id"
                 ]
               }

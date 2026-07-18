@@ -189,7 +189,6 @@
                   }
                 },
                 "required": [
-                  "allowed",
                   "id"
                 ]
               }

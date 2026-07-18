@@ -268,10 +268,7 @@ export interface Button {
        */
       label?: string
       /**
-       * WCAG accessible name for icon-only buttons (no visible `label`). When the
-       * button renders only an icon, the browser needs a text alternative for screen
-       * readers. Provide a short human-readable description here (e.g. "Delete",
-       * "Refresh"). Falls back to the action id when omitted.
+       * WCAG accessible name for icon-only buttons (no visible label). When the button renders only an icon, the browser needs a text alternative for screen readers. Provide a short human-readable description (e.g. "Delete", "Refresh"). Falls back to the action id when omitted.
        */
       ariaLabel?: string
       /**
@@ -301,7 +298,7 @@ export interface Button {
     }
     resourcesRefs?: {
       items: {
-        allowed: boolean
+        allowed?: boolean
         apiVersion?: string
         id: string
         name?: string

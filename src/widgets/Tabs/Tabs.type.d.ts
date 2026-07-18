@@ -71,7 +71,7 @@ export interface Tabs {
     }
     resourcesRefs?: {
       items: {
-        allowed: boolean
+        allowed?: boolean
         apiVersion?: string
         id: string
         name?: string

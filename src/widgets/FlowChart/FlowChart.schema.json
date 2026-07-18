@@ -314,7 +314,6 @@
                   }
                 },
                 "required": [
-                  "allowed",
                   "id"
                 ]
               }
