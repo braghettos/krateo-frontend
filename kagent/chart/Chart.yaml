@@ -1,10 +1,13 @@
 apiVersion: v2
 name: krateo-frontend-agent
 description: >-
-  The Krateo frontend expert: authors Composable Portal widget CRDs (Table, Page, Button, NavMenu, Route, Panel, ...) and knows the SPA. Knows braghettos/krateo-frontend + braghettos/krateo-frontend-chart.
+  The Krateo frontend expert: authors Composable Portal widget CRs (Flex, Card, Table, Paragraph, Button, ...) and knows the SPA. Knows braghettos/krateo-frontend + braghettos/krateo-frontend-chart.
 type: application
-version: 0.1.7
-appVersion: CHART_VERSION
+# Standard placeholders (release-oci stamps them from the git tag): the chart version tracks
+# the repo release tag like the main + crd charts, and appVersion is the deployed frontend
+# image tag (APP_VERSION = latest braghettos/krateo-frontend tag). No independent 0.1.x stream.
+version: CHART_VERSION
+appVersion: APP_VERSION
 home: https://krateo.io
 icon: https://github.com/krateoplatformops/krateo/blob/main/docs/media/logo.svg
 keywords:

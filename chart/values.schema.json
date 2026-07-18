@@ -432,6 +432,16 @@
           "type": "string",
           "title": "Preview Sandbox Namespace",
           "default": ""
+        },
+        "AUTOPILOT_PORTAL_PROMPT": {
+          "type": "string",
+          "title": "Autopilot Portal Prompt",
+          "default": ""
+        },
+        "AUTOPILOT_PORTAL_HOUSE_RULES": {
+          "type": "string",
+          "title": "Autopilot Portal House Rules",
+          "default": ""
         }
       },
       "default": {
@@ -444,7 +454,9 @@
         "OTEL_COLLECTOR_URL": "",
         "SNOWPLOW_IDENTITY_INJECTION": "",
         "PROVENANCE_ENABLED": "",
-        "PREVIEW_SANDBOX_NAMESPACE": ""
+        "PREVIEW_SANDBOX_NAMESPACE": "",
+        "AUTOPILOT_PORTAL_PROMPT": "",
+        "AUTOPILOT_PORTAL_HOUSE_RULES": ""
       }
     },
     "env": {
