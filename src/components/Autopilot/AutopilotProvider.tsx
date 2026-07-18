@@ -628,9 +628,16 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     //  - Later turns: re-inject the tight HOUSE RULES recap instead — the full protocol decays as the
     //    thread grows, and create/diagnose/install all happen on later turns, exactly where the model
     //    was dropping the no-YAML / no-tour / no-invented-state guards.
+    // EXTERNALIZED (config-overridable): the turn-1 capabilities protocol and the every-turn house
+    // rules default to the baked-in constants, but an operator can override either via config.json
+    // (chart values → configmap) WITHOUT a frontend image rebuild — the orchestrator prompt is
+    // already an external ConfigMap, so this makes BOTH prompt layers configmap-managed. Absent/empty
+    // config falls back to the baked default (byte-identical to before this seam existed).
+    const capPrompt = config?.api.AUTOPILOT_PORTAL_PROMPT || PORTAL_CAPABILITIES_PROMPT
+    const houseRules = config?.api.AUTOPILOT_PORTAL_HOUSE_RULES || PORTAL_HOUSE_RULES
     const contextString = firstTurn
-      ? `${GROUNDING_GUARDRAIL_PROMPT}\n\n${PORTAL_CAPABILITIES_PROMPT}\n\n${baseContext}`
-      : `${GROUNDING_GUARDRAIL_PROMPT}\n\n${PORTAL_HOUSE_RULES}\n\n${baseContext}`
+      ? `${GROUNDING_GUARDRAIL_PROMPT}\n\n${capPrompt}\n\n${baseContext}`
+      : `${GROUNDING_GUARDRAIL_PROMPT}\n\n${houseRules}\n\n${baseContext}`
 
     const assistantId = randomId()
     const now = Date.now()
@@ -647,7 +654,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       { context: contextString, contextId, firstTurn, sessionId, text: trimmed },
       { onFrame: (frame) => applyFrame(assistantId, frame) },
     )
-  }, [applyFrame, collect, contextId, sessionId, setMessages, streaming, transport])
+  }, [applyFrame, collect, config?.api.AUTOPILOT_PORTAL_HOUSE_RULES, config?.api.AUTOPILOT_PORTAL_PROMPT, contextId, sessionId, setMessages, streaming, transport])
 
   // Keep the finalize-side recovery trampoline pointing at the CURRENT send closure.
   useEffect(() => {

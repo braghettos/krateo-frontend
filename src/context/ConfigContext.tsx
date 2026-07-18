@@ -13,6 +13,15 @@ export interface Config {
      * absent the Autopilot rail + header toggle do not render (graceful absence
      * for installs without autopilot deployed). */
     AUTOPILOT_API_BASE_URL?: string
+    /** EXTERNALIZED Autopilot prompt overrides (portal-builder). Optional: when set (from
+     * config.json, rendered by the frontend chart's `config:` values), they REPLACE the baked-in
+     * `PORTAL_CAPABILITIES_PROMPT` (turn-1 protocol) / `PORTAL_HOUSE_RULES` (every-turn recap) in
+     * components/Autopilot/actionBridge.ts — so the frontend's autopilot prompt becomes iterable via
+     * a chart-values change + redeploy, with NO frontend image rebuild. Absent/empty ⇒ the baked
+     * default (byte-identical to before this seam). The orchestrator prompt is already an external
+     * ConfigMap; these make BOTH prompt layers configmap-managed. */
+    AUTOPILOT_PORTAL_PROMPT?: string
+    AUTOPILOT_PORTAL_HOUSE_RULES?: string
     /** Kill-switch for snowplow's per-widget live-refresh SSE (`/refreshes`), which makes
      * widgets push-update when their backing cluster object changes (see hooks/refreshSse.ts).
      * **ON by default** (verified delivering on snowplow ≥1.5.13; older snowplow degrades to a
