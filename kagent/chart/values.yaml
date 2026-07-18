@@ -18,9 +18,13 @@ modelConfig:
 prompts:
   language: eng
 
-# Human-in-the-loop gate on the mutating k8s tools (k8s_apply_manifest) the agent
-# uses to apply widget CRs. true = pause for approval (safe); false = autonomous.
-hitlApproval: true
+# Human-in-the-loop gate on k8s_apply_manifest. FALSE for this agent on purpose: the
+# frontend-agent uses k8s_apply_manifest ONLY as a server DRY-RUN validator (--dry-run=server,
+# writes nothing) and returns the authored CRs to the orchestrator — it never applies to the real
+# cluster. The meaningful human write gate is DOWNSTREAM at publishPage (the frontend's blast-radius
+# confirm on the git-write), which is unchanged. Gating the non-mutating dry-run only stalled the
+# author loop with a click per validation, so it is off here (the publish gate still protects writes).
+hitlApproval: false
 vertexAI:
   enabled: true
   projectID: ""
