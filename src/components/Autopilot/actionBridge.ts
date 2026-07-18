@@ -273,6 +273,41 @@ export const GROUNDING_GUARDRAIL_PROMPT = [
   '</grounding_rules>',
 ].join('\n')
 
+/**
+ * Portal-Builder routing directive (DETERMINISTIC authoring gate). The frontend KNOWS from
+ * the live route when the user is on the Portal Builder page, so it ASSERTS — not guesses —
+ * that any build/author request there is a frontend-authoring task that must be delegated to
+ * the frontend specialist, never a telemetry/ops agent.
+ *
+ * Motivating incident: a "Build a portal page called 'Cluster Health'…" request was routed by
+ * the orchestrator model to the clickstack (telemetry) agent because of the word "Health";
+ * the model then called a SHORTENED tool name (`krateo_clickstack_agent`) which is not a
+ * registered tool, hard-crashing the orchestrator turn (ADK `ValueError: Tool … not found`).
+ * The orchestrator prompt already forbids both, but the model overrode it. This closes the gap
+ * from the FRONTEND side: it is injected (every turn) into the trusted preamble ONLY while the
+ * route is the Portal Builder — an authoritative, first-person routing instruction the model is
+ * far less likely to override than an ambient system rule. It only reduces (not eliminates) a
+ * model mis-route, but removes the common trigger deterministically.
+ */
+export const PORTAL_BUILDER_ROUTING_DIRECTIVE = [
+  '<portal_builder_routing>',
+  'AUTHORITATIVE ROUTING (the frontend asserts this from the live route — a fact, not a guess): the user is on the Portal Builder page. Any request to build / create / author / lay out / add / design / "make me" a page, dashboard, view, panel, table, chart, form, or widget is a FRONTEND AUTHORING task.',
+  'You MUST delegate it to the frontend authoring specialist (krateo-frontend-agent) by calling its EXACT registered tool name as it appears in your tool list — the fully-qualified `krateo_system__NS__krateo_frontend_agent` form (namespace `__NS__` prefix, underscores), NEVER a shortened or hyphenated form (a wrong tool name hard-fails the turn).',
+  'This holds REGARDLESS of the page\'s subject: a page ABOUT health, metrics, incidents, observability, costs, logs, or a failing workload is still a page to BUILD — its topic is its TITLE, not the task. NEVER route a Portal-Builder build request to a telemetry / troubleshooting / ops agent (clickstack, k8s, helm, code-analysis). Only a genuine "diagnose this / why is X failing / show me the logs" request goes to those — and a build request is never that.',
+  '</portal_builder_routing>',
+].join('\n')
+
+/** The Portal Builder route (page-<slug> convention). */
+export const PORTAL_BUILDER_ROUTE = '/portal-builder'
+
+/**
+ * True when the live route is the Portal Builder surface — the deterministic signal that a
+ * build/author request must be forced to the frontend specialist (see
+ * PORTAL_BUILDER_ROUTING_DIRECTIVE). Matches the exact route and any nested segment.
+ */
+export const isPortalBuilderRoute = (route: string | undefined): boolean =>
+  typeof route === 'string' && (route === PORTAL_BUILDER_ROUTE || route.startsWith(`${PORTAL_BUILDER_ROUTE}/`))
+
 /** One spotlight step in a guided tour: a semantic anchor + popover copy. */
 export interface AutopilotTourStep {
   /** Semantic anchor resolved to a DOM element (nav:<Label> / action:<Label> / text:<substring>). */

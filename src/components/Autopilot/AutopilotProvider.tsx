@@ -18,7 +18,7 @@ import type { WriteOrigin } from '../../hooks/provenance'
 import { randomId } from '../../utils/utils'
 
 import type { PortalActionProposal, PortalTour } from './actionBridge'
-import { GROUNDING_GUARDRAIL_PROMPT, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
+import { GROUNDING_GUARDRAIL_PROMPT, isPortalBuilderRoute, PORTAL_BUILDER_ROUTING_DIRECTIVE, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
 import { AgentDraftProvider } from './agentDraft'
 import type { ApplyResourceSetOp } from './applyResourceSet'
 import { MAX_APPLY_SET_OPS } from './applyResourceSet'
@@ -635,9 +635,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     // config falls back to the baked default (byte-identical to before this seam existed).
     const capPrompt = config?.api.AUTOPILOT_PORTAL_PROMPT || PORTAL_CAPABILITIES_PROMPT
     const houseRules = config?.api.AUTOPILOT_PORTAL_HOUSE_RULES || PORTAL_HOUSE_RULES
+    // DETERMINISTIC routing gate: on the Portal Builder route the frontend ASSERTS (from the live
+    // route in the collected envelope) that a build request is an authoring task for the frontend
+    // specialist — injected EVERY turn (a mis-route can happen on any turn), leading the caps/rules so
+    // it is the first thing after the grounding guard. Off every other route it is absent (empty), so
+    // the preamble is byte-identical to before. Closes the "Cluster Health"→clickstack mis-route+crash.
+    const routingDirective = isPortalBuilderRoute(envelope.route) ? `${PORTAL_BUILDER_ROUTING_DIRECTIVE}\n\n` : ''
     const contextString = firstTurn
-      ? `${GROUNDING_GUARDRAIL_PROMPT}\n\n${capPrompt}\n\n${baseContext}`
-      : `${GROUNDING_GUARDRAIL_PROMPT}\n\n${houseRules}\n\n${baseContext}`
+      ? `${GROUNDING_GUARDRAIL_PROMPT}\n\n${routingDirective}${capPrompt}\n\n${baseContext}`
+      : `${GROUNDING_GUARDRAIL_PROMPT}\n\n${routingDirective}${houseRules}\n\n${baseContext}`
 
     const assistantId = randomId()
     const now = Date.now()

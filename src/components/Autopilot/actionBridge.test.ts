@@ -1,6 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseAutopilotDirectives, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, sanitizeChatText } from './actionBridge'
+import { isPortalBuilderRoute, parseAutopilotDirectives, PORTAL_BUILDER_ROUTING_DIRECTIVE, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, sanitizeChatText } from './actionBridge'
+
+describe('Portal Builder routing directive (deterministic authoring gate)', () => {
+  it('forces a build request to the frontend specialist and bans telemetry routing + the short tool name', () => {
+    // The frontend-asserted directive that closes the "Cluster Health"→clickstack mis-route+crash.
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('AUTHORITATIVE ROUTING')
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('FRONTEND AUTHORING task')
+    // Must name the EXACT fully-qualified tool name and forbid the shortened form that crashed.
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('krateo_system__NS__krateo_frontend_agent')
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('NEVER a shortened or hyphenated form')
+    // Must forbid routing a build to telemetry/ops agents regardless of the page's subject.
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('clickstack')
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('REGARDLESS of the page')
+  })
+
+  it('isPortalBuilderRoute matches the builder route (and nested), not other routes', () => {
+    expect(isPortalBuilderRoute('/portal-builder')).toBe(true)
+    expect(isPortalBuilderRoute('/portal-builder/new')).toBe(true)
+    expect(isPortalBuilderRoute('/compositions')).toBe(false)
+    expect(isPortalBuilderRoute('/observability')).toBe(false)
+    expect(isPortalBuilderRoute('/portal-builder-ish')).toBe(false)
+    expect(isPortalBuilderRoute(undefined)).toBe(false)
+  })
+})
 
 describe('BLUEPRINT BUILDER prompt (FE-BP6)', () => {
   it('teaches the two-step publish: a scalar publishBlueprint verb (host fans out the git-write), then register — preview-first', () => {
