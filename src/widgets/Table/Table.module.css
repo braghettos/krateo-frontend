@@ -44,8 +44,8 @@
   bottom: -2px;
   right: 0;
   width: 2px;
-  background: var(--amber-color);
-  box-shadow: 0 0 5px 1px var(--amber-color);
+  background: var(--primary-color);
+  box-shadow: 0 0 5px 1px var(--primary-color);
 }
 
 /* `conditions` cell — the row's real status.conditions as small wrapping pills. */

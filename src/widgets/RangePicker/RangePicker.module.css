@@ -25,5 +25,5 @@
 .pill:hover,
 .pill:global(.ant-picker-focused) {
   border-style: dashed !important;
-  border-color: color-mix(in srgb, var(--amber-color) 50%, transparent) !important;
+  border-color: color-mix(in srgb, var(--primary-color) 50%, transparent) !important;
 }

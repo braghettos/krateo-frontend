@@ -206,7 +206,7 @@
 }
 
 .req {
-  color: var(--amber-color);
+  color: var(--primary-color);
 }
 
 .fieldDesc {
@@ -236,7 +236,7 @@
 }
 
 .field:focus-within {
-  border-left-color: var(--amber-color);
+  border-left-color: var(--primary-color);
 }
 
 .field :global(.ant-form-item-label) {
@@ -344,15 +344,15 @@
 }
 
 .secActive {
-  background: color-mix(in srgb, var(--amber-color) 9%, transparent);
-  color: var(--amber-color);
+  background: color-mix(in srgb, var(--primary-color) 9%, transparent);
+  color: var(--primary-color);
 }
 
 .secActive::before {
-  background: var(--amber-color);
+  background: var(--primary-color);
   border-radius: 2px;
   bottom: 6px;
-  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--amber-color) 55%, transparent);
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--primary-color) 55%, transparent);
   content: '';
   left: 0;
   position: absolute;

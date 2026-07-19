@@ -17,7 +17,7 @@
    flight-deck glow. Label sized to the mockup tab (12.5px / medium). Scoped to the
    Tabs widget, so every Tabs instance inherits the treatment. */
 .tabs :global(.ant-tabs-ink-bar) {
-  box-shadow: 0 0 6px 0 color-mix(in srgb, var(--amber-color) 55%, transparent);
+  box-shadow: 0 0 6px 0 color-mix(in srgb, var(--primary-color) 55%, transparent);
 }
 
 .tabs :global(.ant-tabs-tab-btn) {

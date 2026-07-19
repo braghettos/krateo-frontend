@@ -60,8 +60,8 @@
 }
 
 .apSpark {
-  color: var(--amber-color);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--amber-color) 55%, transparent));
+  color: var(--primary-color);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary-color) 55%, transparent));
 }
 
 .apLive {
@@ -465,7 +465,7 @@
 }
 
 .apInput:focus-within {
-  border-color: color-mix(in srgb, var(--amber-color) 45%, transparent);
+  border-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
 }
 
 .apTextarea {
@@ -490,9 +490,9 @@
   height: 28px;
   flex: none;
   border-radius: 7px;
-  background: color-mix(in srgb, var(--amber-color) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--amber-color) 45%, transparent);
-  color: var(--amber-color);
+  background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 45%, transparent);
+  color: var(--primary-color);
   display: flex;
   align-items: center;
   justify-content: center;

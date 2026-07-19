@@ -25,9 +25,9 @@
 }
 
 .checkBoxOn {
-  background-color: var(--amber-color);
-  border-color: var(--amber-color);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--amber-color) 70%, transparent);
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--primary-color) 70%, transparent);
 }
 
 .checkOptionLabel {
@@ -48,12 +48,12 @@
 .checkPopup :global(.ant-select-item-option-selected:not(.ant-select-item-option-disabled)) {
   background-color: transparent;
   font-weight: inherit;
-  color: var(--amber-color);
+  color: var(--primary-color);
 }
 
 /* keyboard/hover row → a faint amber wash instead of antd's default grey */
 .checkPopup :global(.ant-select-item-option-active:not(.ant-select-item-option-disabled)) {
-  background-color: color-mix(in srgb, var(--amber-color) 12%, transparent);
+  background-color: color-mix(in srgb, var(--primary-color) 12%, transparent);
 }
 
 /* ── the §02 switcher panel chrome (header → master row → [menu] → apply → footer) ── */
@@ -91,11 +91,11 @@
 }
 
 .masterRow:hover {
-  background-color: color-mix(in srgb, var(--amber-color) 12%, transparent);
+  background-color: color-mix(in srgb, var(--primary-color) 12%, transparent);
 }
 
 .masterOn {
-  color: var(--amber-color);
+  color: var(--primary-color);
 }
 
 .optionCount {
@@ -106,7 +106,7 @@
 }
 
 .masterOn .optionCount {
-  color: var(--amber-color);
+  color: var(--primary-color);
 }
 
 .panelApply {
@@ -142,8 +142,8 @@
 }
 
 .pinOn {
-  background-color: var(--amber-color);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--amber-color) 85%, transparent);
+  background-color: var(--primary-color);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--primary-color) 85%, transparent);
 }
 
 .pinAll {
@@ -158,9 +158,9 @@
   gap: 4px;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--amber-color);
-  background-color: color-mix(in srgb, var(--amber-color) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--amber-color) 32%, transparent);
+  color: var(--primary-color);
+  background-color: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 32%, transparent);
   border-radius: 3px;
   padding: 1px 5px;
   margin-inline-end: 4px;
@@ -183,7 +183,7 @@
   font-weight: 600;
   line-height: 1;
   color: var(--light-color);
-  background-color: var(--amber-color);
+  background-color: var(--primary-color);
   border-radius: 8px;
   padding: 2px 5px;
 }
