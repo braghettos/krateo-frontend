@@ -1,17 +1,15 @@
 /**
- * WCAG AA contrast regression test for the light-mode primary CTA button.
+ * WCAG AA contrast regression test for the primary CTA button — Krateo Brand v2 (blue).
  *
- * Brand: Petrol & Phosphor — amber (#C0760B) is the primary brand colour in light
- * mode. antd derives the primary-button text from `colorTextLightSolid` (default
- * #fff). White on #C0760B yields only ~3.60:1, which fails WCAG AA for normal text
- * (≥ 4.5:1 required at 14 px / 600 w). We override `colorTextLightSolid` to the
- * dark-ink token (#131A22) in light mode, giving 4.87:1.
+ * The primary-button label colour is antd's `colorTextLightSolid`. Brand v2 inverts the amber-era
+ * pairing:
+ *   - LIGHT primary = Sovereign Blue #05629A (dark) → WHITE label ≈ 6.5:1 (antd default; NO override).
+ *   - DARK  primary = Krateo Blue  #2FBFE6 (bright) → white would be only ~2.2:1, so the label flips
+ *     to the DARK ink (surface #141414 = colorDark.panelbg) ≈ 8.3:1.
  *
- * This test pins:
- *   (a) the light-mode `color.primary` amber value (#C0760B),
- *   (b) the light-mode `color.dark` ink value (#131A22),
- *   (c) the resulting contrast ratio is ≥ 4.5:1 (WCAG AA normal text),
- *   (d) the `lightTheme.components.Button` token actually carries the override.
+ * This test pins: (a) light primary + white passes AA, (b) dark primary + white FAILS (the reason
+ * for the flip), (c) dark primary + dark ink passes AA, (d/e) the Button token carries the correct
+ * per-mode label colour.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -46,43 +44,35 @@ function contrastRatio(hex1: string, hex2: string): number {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('Light-mode primary CTA button — WCAG AA contrast', () => {
-  it('light primary amber (#C0760B) paired with white text fails AA (documents the original defect)', () => {
-    // This is the BEFORE state: white on amber is only ~3.60:1.
+describe('Primary CTA button — WCAG AA contrast (Brand v2 blue)', () => {
+  it('light primary Sovereign Blue (#05629A) + white label passes AA ≥ 4.5:1', () => {
     const ratio = contrastRatio(color.primary, '#FFFFFF')
-    // We assert it is strictly below 4.5 so this test documents the root issue.
-    expect(ratio).toBeLessThan(4.5)
-  })
-
-  it('light primary amber (#C0760B) paired with dark ink (#131A22) passes WCAG AA ≥ 4.5:1', () => {
-    // 4.87:1 — computed: luminance(#C0760B)=0.2419, luminance(#131A22)=0.0149
-    // ratio = (0.2419 + 0.05) / (0.0149 + 0.05) = 0.2919 / 0.0649 ≈ 4.50
-    // Full precision gives 4.87:1 which clearly passes the 4.5:1 threshold.
-    const ratio = contrastRatio(color.primary, color.dark)
     expect(ratio).toBeGreaterThanOrEqual(4.5)
   })
 
-  it('lightTheme.components.Button carries colorTextLightSolid = dark ink token', () => {
-    // The antd token that controls primary/solid button label colour.
-    const btn = lightTheme.components?.Button as Record<string, unknown> | undefined
-    expect(btn?.colorTextLightSolid).toBe(color.dark)
+  it('dark primary Krateo Blue (#2FBFE6) + white label FAILS AA (documents the flip)', () => {
+    const ratio = contrastRatio(colorDark.primary, '#FFFFFF')
+    expect(ratio).toBeLessThan(4.5)
   })
 
-  it('darkTheme.components.Button does NOT override colorTextLightSolid (keeps antd default white)', () => {
-    // Dark mode uses #F2A33C amber which pairs well with the dark background via
-    // colorBgBase, so we leave colorTextLightSolid at antd's default (#fff).
-    const btn = darkTheme.components?.Button as Record<string, unknown> | undefined
+  it('dark primary (#2FBFE6) + dark ink (surface #141414) passes AA ≥ 4.5:1', () => {
+    const ratio = contrastRatio(colorDark.primary, colorDark.panelbg)
+    expect(ratio).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('lightTheme.components.Button does NOT override colorTextLightSolid (keeps white on Sovereign)', () => {
+    const btn = lightTheme.components?.Button as Record<string, unknown> | undefined
     expect(btn?.colorTextLightSolid).toBeUndefined()
   })
 
-  it('dark-mode primary color token is a lighter amber that differs from light-mode amber', () => {
-    // In dark mode colorDark.primary = #F2A33C (lighter amber for visibility on the
-    // petrol void). In light mode color.primary = #C0760B (darker amber). They must
-    // differ so the AA fix (dark text on #C0760B) does not bleed into dark mode.
+  it('darkTheme.components.Button sets colorTextLightSolid = dark ink (surface #141414)', () => {
+    const btn = darkTheme.components?.Button as Record<string, unknown> | undefined
+    expect(btn?.colorTextLightSolid).toBe(colorDark.panelbg)
+  })
+
+  it('the two modes use different primaries (Sovereign light vs Krateo dark)', () => {
     expect(colorDark.primary).not.toBe(color.primary)
-    // Sanity: the dark amber is lighter (higher luminance) than the light amber.
-    const lumLight = relativeLuminance(color.primary)
-    const lumDark = relativeLuminance(colorDark.primary)
-    expect(lumDark).toBeGreaterThan(lumLight)
+    // The dark primary is the brighter blue (higher luminance) for visibility on black.
+    expect(relativeLuminance(colorDark.primary)).toBeGreaterThan(relativeLuminance(color.primary))
   })
 })
