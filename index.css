@@ -97,3 +97,16 @@ body {
   background: var(--gray-color, #5b6675);
   border-radius: 3px;
 }
+
+/*
+ * Brand v2 focus ring (Tier-2 locked). Every KEYBOARD-focused interactive element gets a
+ * consistent 2px solid brand-blue outline with a 2px offset — closes the "custom buttons /
+ * clickable rows lack a visible focus indicator" a11y gap (WCAG 2.4.7 Focus Visible). The v2
+ * focus colour is the brand blue in BOTH modes (Sovereign #05629A light / Krateo #2FBFE6 dark),
+ * which is exactly --primary-color, so no separate focus token is needed. :focus-visible shows
+ * it on keyboard nav only (not mouse clicks); it rides ABOVE antd's own focus shadow.
+ */
+*:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
