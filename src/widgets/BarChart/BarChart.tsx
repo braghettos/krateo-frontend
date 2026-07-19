@@ -1,6 +1,7 @@
 import { Column } from '@ant-design/plots'
 import { Empty } from 'antd'
 
+import { getChartCatPalette } from '../../theme/chart-utils'
 import { getColorCode } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 
@@ -40,6 +41,7 @@ const BarChart = ({ uid, widgetData }: WidgetProps<BarChartWidgetData>) => {
         height={widgetData.height}
         key={uid}
         legend={widgetData.legend === false ? false : inkLegend()}
+        scale={{ color: { range: getChartCatPalette() } }}
         stack={widgetData.stack}
         title={widgetData.title}
         xField={widgetData.xField}

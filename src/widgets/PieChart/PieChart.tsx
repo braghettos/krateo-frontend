@@ -2,6 +2,7 @@ import { Pie } from '@ant-design/plots'
 import { Empty } from 'antd'
 
 import { useMeasuredWidth } from '../../hooks/useMeasuredWidth'
+import { getChartCatPalette } from '../../theme/chart-utils'
 import { getColorCode } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 
@@ -38,11 +39,13 @@ const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
-  // Optional semantic slice colors: map each colorField category to a palette color.
+  // Optional semantic slice colors: map each colorField category to a palette color. Without an
+  // operator colorMap, auto-assigned slices use the v2 categorical chart palette (mode-aware),
+  // not G2's default palette.
   const { colorMap } = widgetData
   const scale = colorMap
     ? { color: { domain: Object.keys(colorMap), range: Object.keys(colorMap).map((key) => getColorCode(colorMap[key])) } }
-    : undefined
+    : { color: { range: getChartCatPalette() } }
 
   return (
     <div className={styles.pieChart} ref={ref} style={{ height }}>
