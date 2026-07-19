@@ -78,6 +78,19 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
     })
   }
 
+  // a11y: a clickable Card (one with a clickActionId) must be keyboard-operable — focusable,
+  // announced as an actionable control, and activated by Enter/Space. A non-interactive card
+  // (no clickActionId) stays a plain, non-focusable container.
+  const isClickable = Boolean(clickActionId)
+  const onKeyDown = isClickable
+    ? (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        handleClick()
+      }
+    }
+    : undefined
+
   const panelHeader = (
     <div className={styles.bodyHeader}>
       <div>{headerLeft}</div>
@@ -140,8 +153,11 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       }
       key={uid}
       loading={isActionLoading}
-      onClick={handleClick}
+      onClick={isClickable ? handleClick : undefined}
+      onKeyDown={onKeyDown}
+      role={isClickable ? 'button' : undefined}
       size={size}
+      tabIndex={isClickable ? 0 : undefined}
       title={
         title
           ? (

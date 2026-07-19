@@ -202,9 +202,23 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
       onRow={rowNavigateTo
         ? (row) => {
           const path = buildRowPath(row)
-          return path
-            ? { onClick: () => navigateOrExternal(navigate, path), style: { cursor: 'pointer' } }
-            : {}
+          if (!path) { return {} }
+          const go = () => navigateOrExternal(navigate, path)
+          // a11y: a clickable row must be keyboard-operable — focusable (tabIndex),
+          // announced as an actionable control (role=button), and activated by Enter/Space
+          // (matching native button semantics). Previously mouse-click only.
+          return {
+            onClick: go,
+            onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                go()
+              }
+            },
+            role: 'button',
+            style: { cursor: 'pointer' },
+            tabIndex: 0,
+          }
         }
         : undefined}
       pagination={paginationProp}
