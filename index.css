@@ -33,14 +33,19 @@ body {
 
 /*
  * Brand-logo on the Sovereign gradient sider. The Krateo lockup (brand-logo Image widget)
- * ships dark; the sider is now the Sovereign Blue gradient in BOTH modes (issue #49 invariant),
- * so the lockup is flattened-then-inverted to a crisp monochrome-WHITE mark in BOTH modes (was
- * dark-only). The filter preserves the SVG's alpha, so only the glyph lightens, not a box.
- * Scoped to the Sider's only image so no other Image widget is touched.
+ * ships dark; the sider rail now equals colorBgContainer per mode (issue #52), so the lockup is
+ * flattened to a crisp MONOCHROME mark that follows the mode: WHITE on the dark-mode surface,
+ * BLACK on the light-mode surface (else a white mark vanishes on the light rail). The filter
+ * preserves the SVG's alpha, so only the glyph is recoloured, not a box. Scoped to the Sider's
+ * only image so no other Image widget is touched.
  */
 .ant-layout-sider .ant-image-img {
   filter: brightness(0) invert(1);
   opacity: 0.92;
+}
+
+:root[data-theme='light'] .ant-layout-sider .ant-image-img {
+  filter: brightness(0);
 }
 
 /*

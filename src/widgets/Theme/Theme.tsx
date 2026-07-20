@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 
 import { useThemeMode } from '../../context/ThemeModeContext'
-import { navGradientFrom } from '../../theme/tokens'
 import type { WidgetProps } from '../../types/Widget'
 
 import type { Theme as WidgetType } from './Theme.type'
@@ -51,23 +50,27 @@ const Theme = ({ widgetData }: WidgetProps<ThemeWidgetData>) => {
     }
 
     // Non-token chrome: sidebar rail gradient + nav-item colours.
-    // Precedence (issue #52): an explicit custom.sidebar wins; else, if the tenant overrode
-    // colorPrimary, RE-DERIVE the rail from THAT primary (same deep-pair ramp as the default),
-    // so the sidebar tracks the tenant brand instead of the built-in blue; else leave the default.
+    // Precedence (issue #52, per the maintainer's clarification): the DEFAULT rail equals
+    // colorBgContainer (blends with the app surface — emitted by cssVariables). Here:
+    //  1. an explicit custom.sidebar wins;
+    //  2. else if the tenant overrode token.colorBgContainer, the rail tracks THAT (it equals the
+    //     surface by design), so the rail stays in sync with the tenant's surface;
+    //  3. else leave the emitted default. colorPrimary does NOT drive the rail — a tenant who wants
+    //     that sets custom.sidebar explicitly (navGradientFrom is exported to compute such a value).
+    // NB the LOGIN panel's --menubgstart/end-color (Sovereign gradient) is intentionally not touched.
     if (custom?.sidebar) {
-      set('--krateo-nav-gradient-start', custom.sidebar.bgGradientStart); set('--menubgstart-color', custom.sidebar.bgGradientStart)
-      set('--krateo-nav-gradient-end', custom.sidebar.bgGradientEnd); set('--menubgend-color', custom.sidebar.bgGradientEnd)
-    } else if (token?.colorPrimary) {
-      const ng = navGradientFrom(token.colorPrimary, pinnedMode ?? mode)
-      set('--krateo-nav-gradient-start', ng.start); set('--menubgstart-color', ng.start)
-      set('--krateo-nav-gradient-end', ng.end); set('--menubgend-color', ng.end)
+      set('--krateo-nav-gradient-start', custom.sidebar.bgGradientStart)
+      set('--krateo-nav-gradient-end', custom.sidebar.bgGradientEnd)
+    } else if (token?.colorBgContainer) {
+      set('--krateo-nav-gradient-start', token.colorBgContainer)
+      set('--krateo-nav-gradient-end', token.colorBgContainer)
     }
     if (custom?.menu) {
       set('--menuitem-color', custom.menu.itemColor); set('--krateo-nav-item', custom.menu.itemColor)
       set('--menuitembg-color', custom.menu.itemSelectedBg)
       set('--krateo-nav-item-active', custom.menu.itemSelectedColor)
     }
-  }, [mode, pinnedMode, token, custom])
+  }, [mode, token, custom])
 
   return null
 }

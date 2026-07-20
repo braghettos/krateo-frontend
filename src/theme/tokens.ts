@@ -201,13 +201,13 @@ const KRATEO_BASE: Record<string, string> = {
 }
 
 /**
- * The DEFAULT sidebar rail gradient (issue #52) — derived from the active mode's `colorPrimary`,
- * NOT a hardcoded Sovereign Blue repeated in three places. `@ant-design/colors` generate() yields
- * a 10-shade ramp; we take a deep pair (dark enough for the light nav text), mode-aware: the light
- * primary (#05629A) is already dark so we take the darker end; the dark primary (#2FBFE6) is bright
- * so we take a deeper pair. A tenant Theme CR's `custom.sidebar` overrides this at runtime (the
- * Theme widget sets --krateo-nav-gradient-* inline, winning the cascade). SINGLE SOURCE of the
- * default gradient — referenced only from cssVariables().
+ * OPT-IN helper (issue #52): derive a sidebar gradient from a `colorPrimary`. This is NO LONGER the
+ * default rail appearance — per the issue maintainer's clarification the default rail equals
+ * colorBgContainer (see cssVariables), so the sidebar blends with the app surface and has no colour
+ * of its own. This helper stays exported for a tenant who *does* want the rail to track a custom
+ * `colorPrimary`: `@ant-design/colors` generate() yields a 10-shade ramp and we take a deep pair
+ * (dark enough for light nav text), mode-aware. Consumed by the Theme widget only when a tenant
+ * opts in; a tenant Theme CR's `custom.sidebar` remains the explicit override.
  */
 export const navGradientFrom = (primary: string, mode: ThemeMode): { start: string; end: string } => {
   const ramp = generate(primary)
@@ -479,10 +479,21 @@ export const cssVariables = (mode: ThemeMode = 'light') => {
   Object.entries(krateoSemantic).forEach(([key, value]) => root.style.setProperty(`--krateo-${key}`, value))
   Object.entries(krateoChart).forEach(([key, value]) => root.style.setProperty(`--krateo-${key}`, value))
 
-  // Sidebar rail gradient — DERIVED per-mode from colorPrimary (issue #52), emitted synchronously
-  // here so the first paint already varies by mode. A tenant Theme CR's custom.sidebar overrides
-  // these two vars at runtime (inline style wins).
-  const ng = navGradient(mode)
-  root.style.setProperty('--krateo-nav-gradient-start', ng.start)
-  root.style.setProperty('--krateo-nav-gradient-end', ng.end)
+  // Sidebar rail — issue #52 (per the maintainer's clarification on the issue): the DEFAULT rail
+  // has NO colour of its own; it equals colorBgContainer (the app surface = palette.panelbg),
+  // emitted flat (identical stops) so the two-stop shape is unchanged but renders flat and the rail
+  // blends into the rest of the app. Nav text follows the mode too — light text would vanish on the
+  // light-mode surface. The LOGIN marketing panel keeps the Sovereign gradient via the SEPARATE
+  // --menubgstart/end-color aliases (Login.module.css); those are deliberately left untouched here.
+  // A tenant Theme CR's custom.sidebar overrides the rail at runtime (inline style wins);
+  // navGradient()/navGradientFrom() stay exported as an OPT-IN helper for a tenant who wants the
+  // rail to track a custom colorPrimary (no longer the default — issue #52 comment).
+  const railBg = palette.panelbg
+  root.style.setProperty('--krateo-nav-gradient-start', railBg)
+  root.style.setProperty('--krateo-nav-gradient-end', railBg)
+  const navItem = mode === 'dark' ? 'rgba(255, 255, 255, 0.62)' : 'rgba(0, 0, 0, 0.62)'
+  const navItemActive = mode === 'dark' ? '#F5F5F5' : palette.text
+  root.style.setProperty('--menuitem-color', navItem)
+  root.style.setProperty('--krateo-nav-item', navItem)
+  root.style.setProperty('--krateo-nav-item-active', navItemActive)
 }

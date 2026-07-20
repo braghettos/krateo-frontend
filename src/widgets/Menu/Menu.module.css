@@ -35,11 +35,11 @@
     }
   }
 
-  /* The sider is ALWAYS the Sovereign Blue gradient (invariant across app modes, issue #49), so
-     nav text is light in BOTH modes — never the mode-dependent --primary-color/--text-color
-     (dark in light mode → invisible on the gradient). Near-white active/selected label + a bright
-     Krateo Blue accent bar (--blue-color #11B2E2, legible on the dark gradient in both modes).
-     Mirrors Login.module.css, which uses #ffffff on the same gradient. */
+  /* The rail equals colorBgContainer by default (issue #52), so nav text is MODE-AWARE: light on
+     the dark-mode surface, dark on the light-mode surface (--menuitem-color / --krateo-nav-item-active
+     are emitted per-mode by cssVariables). Selected label uses the strong per-mode text plus a bright
+     Krateo Blue accent bar (--blue-color #11B2E2, legible on either surface). A tenant custom.sidebar
+     that sets a dark branded rail can pair it with custom.menu light text. */
   :global(.ant-menu-item-selected) {
     background-color: var(--menuitembg-color);
     border-radius: 0;

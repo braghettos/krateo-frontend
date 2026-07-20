@@ -9,14 +9,15 @@
   padding: 26px 30px;
 }
 
-/* Sider: the rail gradient is DERIVED per-mode from colorPrimary (issue #52) — a deep pair off
-   the `@ant-design/colors` ramp of the active mode's primary, emitted as --krateo-nav-gradient-*
-   by cssVariables()/navGradient() (tokens.ts) and overridable by a tenant Theme CR's custom.sidebar.
-   NOT a hardcoded Sovereign invariant. Nav text/logo stay light (see Menu.module.css + index.css)
-   because both derived pairs are dark enough to carry light ink. */
+/* Sider: by default the rail equals colorBgContainer (the app surface), so it BLENDS into the app
+   and has no colour of its own (issue #52, per the maintainer's clarification). --krateo-nav-gradient-*
+   is emitted flat (identical stops = the surface colour) by cssVariables() (tokens.ts); nav text is
+   mode-aware (dark on the light-mode surface). A tenant Theme CR's custom.sidebar can still set a
+   distinct/branded two-stop gradient. The divider uses --border-color (not the now-invisible
+   gradient end) so there's a subtle separation from the content when the rail matches the surface. */
 .shell :global(.ant-layout-sider) {
   background: linear-gradient(180deg, var(--krateo-nav-gradient-start), var(--krateo-nav-gradient-end));
-  border-right: 1px solid var(--krateo-nav-gradient-end);
+  border-right: 1px solid var(--border-color);
 }
 
 /* Sider column: a scrollable body (the declarative brand logo + nav, both from
