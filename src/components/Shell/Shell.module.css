@@ -3,6 +3,7 @@
 .headerLeft {
   align-items: center;
   display: flex;
+
   /* Size to content (not flex:1) so the tenant tag + project switcher hug the left
      edge instead of being spread across the whole left zone. `.headerRight` still
      pins right via the header's justify-content:space-between. min-width:0 keeps a
@@ -30,7 +31,8 @@
    letter-spaced / muted graphite — mirrors the page-header eyebrow treatment (Breadcrumb.module.css
    / .paragraph.eyebrow). Horizontal padding matches the nav body (16px) so it aligns with the menu. */
 .siderEyebrow {
-  color: var(--gray-color);
+  /* On the Sovereign gradient sider (invariant both modes) — muted-light, not the dark graphite. */
+  color: rgb(255 255 255 / 45%);
   flex-shrink: 0;
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -45,7 +47,7 @@
 
 /* Bottom-of-Sider block: the user row above a subtle build marker, stacked. */
 .siderFooter {
-  border-top: 1px solid var(--line-color);
+  border-top: 1px solid rgb(255 255 255 / 12%);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -61,7 +63,7 @@
 }
 
 .siderFooterName {
-  color: var(--text-color);
+  color: #F5F5F5;
   font-size: var(--font-size-xxs);
   font-weight: var(--font-weight-medium);
   overflow: hidden;
@@ -71,7 +73,7 @@
 
 /* Build/version marker — muted graphite mono, one subtle line under the user row. */
 .siderBuild {
-  color: var(--gray-color);
+  color: rgb(255 255 255 / 40%);
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.04em;

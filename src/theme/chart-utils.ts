@@ -1,11 +1,13 @@
 /**
- * v2 categorical chart palette (Brand v2, issue #49 §1.5 — CVD-audited, DO NOT reorder).
- * Mode-aware: dark = bright on the void; light = deeper for legibility on paper. Chart series
- * are non-text FILLS (WCAG 3:1), so they stay vibrant in light mode even though the status
- * TEXT tokens use the darker AA `-text` variants.
+ * v2 categorical chart palette (Brand v2, issue #49 §1.5 / §6.1 — CVD-audited, DO NOT reorder).
+ * Reads the canonical `--krateo-chart-cat-NN` CSS custom properties (emitted mode-aware by
+ * cssVariables), so a tenant Theme override or a theme toggle is honoured with no code change.
+ * The inlined arrays are the fallback when getComputedStyle can't resolve the var (SSR / a var
+ * not yet emitted). Chart series are non-text FILLS (WCAG 3:1), so they stay vibrant in light
+ * mode even though the status TEXT tokens use the darker AA `-text` variants.
  *
  * Used for AUTO-assigned chart series (no operator colour). Operator-specified colours still go
- * through getColorCode(name) — that is intentional control and is not overridden.
+ * through getColorCode(name) — intentional control, not overridden.
  */
 
 const CHART_CAT_DARK = [
@@ -21,8 +23,18 @@ const CHART_CAT_LIGHT = [
 const isDark = (): boolean =>
   typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark'
 
+/** Read one `--krateo-chart-cat-NN` CSS var (1-based, zero-padded); '' if unavailable. */
+const readChartCatVar = (index: number): string => {
+  if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') { return '' }
+  const nn = String(index + 1).padStart(2, '0')
+  return getComputedStyle(document.documentElement).getPropertyValue(`--krateo-chart-cat-${nn}`).trim()
+}
+
 /** The full 10-colour categorical palette for the active theme (G2 `scale.color.range`). */
-export const getChartCatPalette = (): string[] => (isDark() ? [...CHART_CAT_DARK] : [...CHART_CAT_LIGHT])
+export const getChartCatPalette = (): string[] => {
+  const fallback: readonly string[] = isDark() ? CHART_CAT_DARK : CHART_CAT_LIGHT
+  return fallback.map((hex, i) => readChartCatVar(i) || hex)
+}
 
 /** One categorical colour by series index (wraps at 10). */
 export const getChartCatColor = (index: number): string => {

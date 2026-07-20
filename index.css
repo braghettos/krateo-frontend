@@ -16,9 +16,9 @@ body {
 /* Stat value: Barlow Condensed display numerals, tight, tabular so columns of telemetry align. */
 .ant-statistic-content-value {
   font-family: var(--font-display, "Barlow Condensed", Inter, sans-serif);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Data is machine-truth: tags and table cells render in JetBrains Mono with tabular figures. */
@@ -32,15 +32,13 @@ body {
 }
 
 /*
- * Brand-logo theme-adherence. The Krateo lockup (brand-logo Image widget) ships
- * dark — readable on the light "Paper" canvas, but near-invisible on the Petrol
- * dark void. On dark we flatten-then-invert it to a crisp monochrome-WHITE lockup
- * (matches the flight-deck wordmark language); light keeps the original mark. The
- * filter preserves the SVG's alpha, so only the glyph lightens, not a box. Scoped
- * to the Sider's only image so no other Image widget is touched. Swapping in a
- * real white asset later is a drop-in `src` change — this is the no-asset fix.
+ * Brand-logo on the Sovereign gradient sider. The Krateo lockup (brand-logo Image widget)
+ * ships dark; the sider is now the Sovereign Blue gradient in BOTH modes (issue #49 invariant),
+ * so the lockup is flattened-then-inverted to a crisp monochrome-WHITE mark in BOTH modes (was
+ * dark-only). The filter preserves the SVG's alpha, so only the glyph lightens, not a box.
+ * Scoped to the Sider's only image so no other Image widget is touched.
  */
-[data-theme="dark"] .ant-layout-sider .ant-image-img {
+.ant-layout-sider .ant-image-img {
   filter: brightness(0) invert(1);
   opacity: 0.92;
 }
@@ -62,14 +60,14 @@ body {
   color: var(--primary-color);
 }
 
-.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):hover,
-.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):focus-visible {
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled, .ant-btn-disabled):hover,
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled, .ant-btn-disabled):focus-visible {
   background: color-mix(in srgb, var(--primary-color) 22%, transparent);
   border-color: color-mix(in srgb, var(--primary-color) 62%, transparent);
   color: var(--primary-color);
 }
 
-.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):active {
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled, .ant-btn-disabled):active {
   background: color-mix(in srgb, var(--primary-color) 28%, transparent);
   border-color: color-mix(in srgb, var(--primary-color) 72%, transparent);
 }

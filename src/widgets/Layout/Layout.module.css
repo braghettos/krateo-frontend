@@ -9,12 +9,12 @@
   padding: 26px 30px;
 }
 
-/* Sider: a clean surface panel separated from content by a hairline border.
-   --panelbg-color is white in Enterprise and a translucent glass fill in dark
-   (where index.css adds the backdrop blur), matching the mockup's sidebar. */
+/* Sider: the Sovereign Blue gradient — a brand INVARIANT (issue #49): the sidebar is always
+   the Sovereign gradient (#005D8B → #002F46) in BOTH light and dark modes. Nav text/logo are
+   light (see Menu.module.css + index.css), not the mode-dependent surface tokens. */
 .shell :global(.ant-layout-sider) {
-  background: var(--panelbg-color);
-  border-right: 1px solid var(--border-color);
+  background: linear-gradient(180deg, var(--krateo-nav-gradient-start), var(--krateo-nav-gradient-end));
+  border-right: 1px solid var(--krateo-nav-gradient-end);
 }
 
 /* Sider column: a scrollable body (the declarative brand logo + nav, both from

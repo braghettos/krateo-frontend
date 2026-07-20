@@ -35,26 +35,31 @@
     }
   }
 
+  /* The sider is ALWAYS the Sovereign Blue gradient (invariant across app modes, issue #49), so
+     nav text is light in BOTH modes — never the mode-dependent --primary-color/--text-color
+     (dark in light mode → invisible on the gradient). Near-white active/selected label + a bright
+     Krateo Blue accent bar (--blue-color #11B2E2, legible on the dark gradient in both modes).
+     Mirrors Login.module.css, which uses #ffffff on the same gradient. */
   :global(.ant-menu-item-selected) {
     background-color: var(--menuitembg-color);
     border-radius: 0;
-    box-shadow: inset 2px 0 0 var(--primary-color);
-    color: var(--primary-color);
+    box-shadow: inset 2px 0 0 var(--blue-color);
+    color: var(--krateo-nav-item-active);
     font-weight: var(--font-weight-bold);
 
     svg {
       opacity: 1;
-      
+
       path {
-        fill: var(--primary-color);
-      }  
+        fill: var(--krateo-nav-item-active);
+      }
     }
   }
 
   :global(.ant-menu-item.ant-menu-item-active),
   :global(.ant-menu-item.ant-menu-item-active:hover) {
     background-color: transparent;
-    color: var(--text-color) !important;
+    color: var(--krateo-nav-item-active) !important;
 
     svg {
       opacity: 1;

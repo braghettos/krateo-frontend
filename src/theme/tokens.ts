@@ -14,8 +14,10 @@ import { theme as antdAlgorithms, type ThemeConfig } from 'antd'
  * "Autopilot/AI agent is EXECUTING" state ONLY (never a CTA/decoration/link). The sidebar is
  * ALWAYS the Sovereign gradient #005D8B→#002F46 in both modes; the focus ring is #2FBFE6
  * (dark) / #05629A (light). Values retargeted onto the fork's runtime emitter (this file →
- * `cssVariables` + antd bridge); the `--krateo-*` CSS-var RENAME is a separate follow-up (P1).
- * The key NAMES here are unchanged so the toggle, CSS vars, antd ConfigProvider and
+ * `cssVariables` + antd bridge). `cssVariables` now ALSO emits the canonical `--krateo-*` token
+ * set (issue #49 §1.2–1.5: base + mode-aware semantic + chart) alongside the legacy `--*-color`
+ * aliases; migrating component CSS from the aliases to `--krateo-*` is the deferred follow-up (§2).
+ * The legacy key NAMES are unchanged so the toggle, CSS vars, antd ConfigProvider and
  * `getColorCode()` keep working — only the values changed (amber Petrol → blue v2).
  */
 
@@ -147,6 +149,188 @@ export const typography = {
 
 export const motion = { fast: '0.12s', mid: '0.24s', slow: '0.4s' } as const
 
+/**
+ * Brand v2 canonical `--krateo-*` design tokens (issue #49 §1.2–1.5), emitted at runtime by
+ * `cssVariables()` alongside the legacy `--*-color` aliases (the component-CSS migration to
+ * `--krateo-*` is a deliberate follow-up per the issue §2 note). Mode-independent base tokens +
+ * mode-aware semantic + chart sets. Names/values are verbatim from the issue spec.
+ */
+const KRATEO_BASE: Record<string, string> = {
+  'space-1': '4px',
+  'space-2': '8px',
+  'space-3': '12px',
+  'space-4': '16px',
+  'space-6': '24px',
+  'space-8': '32px',
+  'space-12': '48px',
+  'space-16': '64px',
+  'space-24': '96px',
+  'radius-none': '0',
+  'radius-sm': '2px',
+  'radius-md': '4px',
+  'radius-lg': '8px',
+  'radius-full': '999px',
+  'motion-instant': '0ms',
+  'motion-fast': '120ms',
+  'motion-standard': '240ms',
+  'motion-deliberate': '400ms',
+  'motion-ease': 'cubic-bezier(0.16, 1, 0.3, 1)',
+  'font-display': '"Barlow Condensed", sans-serif',
+  'font-ui': 'Inter, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
+  'font-mono': '"JetBrains Mono", "Courier New", monospace',
+  'text-display': '64px',
+  'text-h1': '40px',
+  'text-h2': '30px',
+  'text-h3': '22px',
+  'text-h4': '17px',
+  'text-body-lg': '18px',
+  'text-body': '15px',
+  'text-body-sm': '13px',
+  'text-label': '13px',
+  'text-caption': '12px',
+  'text-code': '13px',
+  'text-metric': '28px',
+  // Navigation surface — Sovereign Blue gradient, invariant across modes.
+  'nav-gradient-start': '#005D8B',
+  'nav-gradient-end': '#002F46',
+  'nav-item': 'rgba(255, 255, 255, 0.50)',
+  'nav-item-active': '#F5F5F5',
+}
+
+const KRATEO_SEMANTIC_DARK: Record<string, string> = {
+  'color-background-base': '#000000',
+  'color-background-surface': '#141414',
+  'color-background-elevated': '#1C1C1C',
+  'color-background-selected': 'rgba(17, 178, 226, 0.16)',
+  'color-background-hover': 'rgba(255, 255, 255, 0.06)',
+  'color-border-subtle': '#2A2A2A',
+  'color-border-strong': '#414141',
+  'color-border-focus': '#2FBFE6',
+  'color-text-default': '#FFFFFF',
+  'color-text-secondary': '#A0A0A0',
+  'color-text-muted': '#7A7A7A',
+  'color-text-inverse': '#141414',
+  'color-text-link': '#5CCDEB',
+  'color-text-link-hover': '#8FDDF2',
+  'color-action-primary': '#2FBFE6',
+  'color-action-primary-hover': '#5CCDEB',
+  'color-action-primary-active': '#11B2E2',
+  'color-action-on-primary': '#141414',
+  'color-agent-signal': '#E8FF00',
+  'color-agent-signal-fill': '#E8FF00',
+  'color-agent-on-signal': '#141414',
+  'color-status-success': '#00D690',
+  'color-status-success-subtle': '#003323',
+  'color-status-success-border': '#00744E',
+  'color-status-success-text': '#3EE0A6',
+  'color-status-warning': '#FFAA00',
+  'color-status-warning-subtle': '#3D2900',
+  'color-status-warning-border': '#8A5C00',
+  'color-status-warning-text': '#FFC240',
+  'color-status-error': '#F84C4C',
+  'color-status-error-subtle': '#401010',
+  'color-status-error-border': '#8F2424',
+  'color-status-error-text': '#F97A7A',
+  'color-status-info': '#2FBFE6',
+  'color-status-info-subtle': '#043F5F',
+  'color-status-info-border': '#0A7194',
+  'color-status-info-text': '#5CCDEB',
+}
+
+const KRATEO_SEMANTIC_LIGHT: Record<string, string> = {
+  'color-background-base': '#F5F5F5',
+  'color-background-surface': '#FBFBFB',
+  'color-background-elevated': '#FFFFFF',
+  'color-background-selected': '#E6F7FC',
+  'color-background-hover': 'rgba(2, 47, 74, 0.05)',
+  'color-border-subtle': '#E1E3E8',
+  'color-border-strong': '#C9CCD3',
+  'color-border-focus': '#05629A',
+  'color-text-default': '#141414',
+  'color-text-secondary': '#5C5C5C',
+  'color-text-muted': '#7A7A7A',
+  'color-text-inverse': '#FFFFFF',
+  'color-text-link': '#0A7194',
+  'color-text-link-hover': '#05629A',
+  'color-action-primary': '#05629A',
+  'color-action-primary-hover': '#04517F',
+  'color-action-primary-active': '#034064',
+  'color-action-on-primary': '#FFFFFF',
+  'color-agent-signal': '#879500',
+  'color-agent-signal-fill': '#E8FF00',
+  'color-agent-on-signal': '#141414',
+  'color-status-success': '#009765',
+  'color-status-success-subtle': '#E3FBF2',
+  'color-status-success-border': '#7DEBC2',
+  'color-status-success-text': '#00744E',
+  'color-status-warning': '#FFAA00',
+  'color-status-warning-subtle': '#FFF6E0',
+  'color-status-warning-border': '#FFD87F',
+  'color-status-warning-text': '#8A5C00',
+  'color-status-error': '#DE3B3B',
+  'color-status-error-subtle': '#FEECEC',
+  'color-status-error-border': '#FBA6A6',
+  'color-status-error-text': '#B92F2F',
+  'color-status-info': '#05629A',
+  'color-status-info-subtle': '#E6F7FC',
+  'color-status-info-border': '#8FDDF2',
+  'color-status-info-text': '#0A7194',
+}
+
+const KRATEO_CHART_DARK: Record<string, string> = {
+  'chart-cat-01': '#11B2E2',
+  'chart-cat-02': '#FFAA00',
+  'chart-cat-03': '#00D690',
+  'chart-cat-04': '#9350DB',
+  'chart-cat-05': '#F84C4C',
+  'chart-cat-06': '#2CC5B9',
+  'chart-cat-07': '#E060A8',
+  'chart-cat-08': '#AEC000',
+  'chart-cat-09': '#8496AD',
+  'chart-cat-10': '#A0A0A0',
+  'chart-seq-1': '#043F5F',
+  'chart-seq-2': '#05629A',
+  'chart-seq-3': '#0A7194',
+  'chart-seq-4': '#0E93BB',
+  'chart-seq-5': '#2FBFE6',
+  'chart-seq-6': '#5CCDEB',
+  'chart-seq-7': '#8FDDF2',
+  'chart-div-1': '#F84C4C',
+  'chart-div-2': '#C4504B',
+  'chart-div-3': '#7A4441',
+  'chart-div-4': '#414141',
+  'chart-div-5': '#2A6076',
+  'chart-div-6': '#1A89AE',
+  'chart-div-7': '#11B2E2',
+}
+
+const KRATEO_CHART_LIGHT: Record<string, string> = {
+  'chart-cat-01': '#0E93BB',
+  'chart-cat-02': '#DB9200',
+  'chart-cat-03': '#009765',
+  'chart-cat-04': '#722ED1',
+  'chart-cat-05': '#DE3B3B',
+  'chart-cat-06': '#0E9488',
+  'chart-cat-07': '#C13B7E',
+  'chart-cat-08': '#879500',
+  'chart-cat-09': '#5F7285',
+  'chart-cat-10': '#7A7A7A',
+  'chart-seq-1': '#E6F7FC',
+  'chart-seq-2': '#C2ECF8',
+  'chart-seq-3': '#8FDDF2',
+  'chart-seq-4': '#5CCDEB',
+  'chart-seq-5': '#2FBFE6',
+  'chart-seq-6': '#0E93BB',
+  'chart-seq-7': '#05629A',
+  'chart-div-1': '#B92F2F',
+  'chart-div-2': '#DE3B3B',
+  'chart-div-3': '#F97A7A',
+  'chart-div-4': '#E1E3E8',
+  'chart-div-5': '#5CCDEB',
+  'chart-div-6': '#0E93BB',
+  'chart-div-7': '#05629A',
+}
+
 export const tokens = { color, elevation, motion, radius, spacing, typography } as const
 
 /** Per-component overrides. Tight density (32px controls), v2 radii, near-flat cards. */
@@ -253,6 +437,8 @@ export const cssVariables = (mode: ThemeMode = 'light') => {
   const palette = mode === 'dark' ? colorDark : color
   const elevationSet = mode === 'dark' ? elevationDark : elevation
 
+  // Legacy `--*-color` / `--spacing-*` / … aliases (kept so existing component CSS works; the
+  // migration of component CSS to `--krateo-*` is a follow-up per issue #49 §2).
   Object.entries(palette).forEach(([key, value]) => root.style.setProperty(`--${key}-color`, value))
   Object.entries(spacing).forEach(([key, value]) => root.style.setProperty(`--spacing-${key}`, `${value}px`))
   Object.entries(radius).forEach(([key, value]) => root.style.setProperty(`--radius-${key}`, `${value}px`))
@@ -263,4 +449,13 @@ export const cssVariables = (mode: ThemeMode = 'light') => {
   root.style.setProperty('--font-family', typography.family)
   root.style.setProperty('--font-display', typography.display)
   root.style.setProperty('--font-mono', typography.mono)
+
+  // Canonical Brand v2 `--krateo-*` tokens (issue #49 §1.2–1.5): base (mode-independent) +
+  // mode-aware semantic + chart. `data-theme` is set by ThemeModeContext; these are emitted
+  // imperatively so a tenant Theme CR can re-emit overrides at runtime.
+  const krateoSemantic = mode === 'dark' ? KRATEO_SEMANTIC_DARK : KRATEO_SEMANTIC_LIGHT
+  const krateoChart = mode === 'dark' ? KRATEO_CHART_DARK : KRATEO_CHART_LIGHT
+  Object.entries(KRATEO_BASE).forEach(([key, value]) => root.style.setProperty(`--krateo-${key}`, value))
+  Object.entries(krateoSemantic).forEach(([key, value]) => root.style.setProperty(`--krateo-${key}`, value))
+  Object.entries(krateoChart).forEach(([key, value]) => root.style.setProperty(`--krateo-${key}`, value))
 }
