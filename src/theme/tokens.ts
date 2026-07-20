@@ -190,9 +190,12 @@ const KRATEO_BASE: Record<string, string> = {
   'text-caption': '12px',
   'text-code': '13px',
   'text-metric': '28px',
-  // Navigation surface — Sovereign Blue gradient, invariant across modes.
-  'nav-gradient-start': '#005D8B',
-  'nav-gradient-end': '#002F46',
+  // Navigation surface — a flat dark rail (#141414) in BOTH modes; the full Sovereign gradient
+  // read too heavy at telemetry density. Nav text/logo stay light (Menu/Shell), so a dark rail
+  // reads cleanly against a light OR dark workspace. (The login marketing panel keeps the
+  // Sovereign gradient via --menubgstart/end — a separate token.)
+  'nav-gradient-start': '#141414',
+  'nav-gradient-end': '#141414',
   'nav-item': 'rgba(255, 255, 255, 0.50)',
   'nav-item-active': '#F5F5F5',
 }
