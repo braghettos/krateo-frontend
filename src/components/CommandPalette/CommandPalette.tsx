@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Input, Modal } from 'antd'
 import type { InputRef } from 'antd'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 
 import styles from './CommandPalette.module.css'
@@ -20,6 +21,7 @@ const shortcutHint = isMac ? '⌘K' : 'Ctrl K'
  * widget, like the rest of HeaderChrome.
  */
 const CommandPalette = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [term, setTerm] = useState('')
@@ -51,9 +53,9 @@ const CommandPalette = () => {
 
   return (
     <>
-      <button aria-label={`Search (${shortcutHint})`} className={styles.trigger} onClick={() => setOpen(true)} type='button'>
+      <button aria-label={t('chrome.commandPalette.searchAria', { hint: shortcutHint })} className={styles.trigger} onClick={() => setOpen(true)} type='button'>
         <FontAwesomeIcon className={styles.triggerIcon} icon={['fas', 'magnifying-glass'] as IconProp}/>
-        <span className={styles.triggerLabel}>Search resources, blueprints…</span>
+        <span className={styles.triggerLabel}>{t('chrome.commandPalette.placeholder')}</span>
         <kbd className={styles.kbd}>{shortcutHint}</kbd>
       </button>
 
@@ -70,15 +72,15 @@ const CommandPalette = () => {
           allowClear
           onChange={(event) => setTerm(event.target.value)}
           onPressEnter={submit}
-          placeholder='Search resources, blueprints…'
+          placeholder={t('chrome.commandPalette.placeholder')}
           prefix={<FontAwesomeIcon className={styles.modalIcon} icon={['fas', 'magnifying-glass'] as IconProp}/>}
           ref={inputRef}
           size='large'
           value={term}
         />
         <div className={styles.hintRow}>
-          <span><kbd className={styles.kbdInline}>Enter</kbd> to search</span>
-          <span><kbd className={styles.kbdInline}>Esc</kbd> to close</span>
+          <span><kbd className={styles.kbdInline}>Enter</kbd> {t('chrome.commandPalette.enterHint')}</span>
+          <span><kbd className={styles.kbdInline}>Esc</kbd> {t('chrome.commandPalette.escHint')}</span>
         </div>
       </Modal>
     </>

@@ -1,6 +1,9 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 import React, { createContext, useContext } from 'react'
+
+import type { ThemeOverride } from '../theme/tokens'
+
 export interface Config {
   api: {
     AUTHN_API_BASE_URL: string
@@ -57,6 +60,18 @@ export interface Config {
      * form or mailto). Krateo has no self-signup, so the link only renders when an
      * install sets this — no dead link by default. */
     requestAccountUrl?: string
+  }
+  /** Optional runtime theming override — per-install (Org/Tenant) branding through the
+   * SAME ConfigMap-mounted `config.json` path that serves the login branding, so a tenant
+   * portal re-brands at runtime with NO rebuild. `primaryColor` rewrites the brand accent
+   * (buttons/links/nav/focus) in both color modes — semantic status colors stay intact;
+   * `palette.light`/`palette.dark` allow token-level fine-tuning. Absent → the built-in
+   * design tokens (src/theme/tokens.ts) apply unchanged. */
+  theme?: ThemeOverride
+  /** Optional i18n defaults. `defaultLocale` is the Org/install default ('en' | 'it');
+   * an explicit user choice (persisted locally, later per-user preference) always wins. */
+  i18n?: {
+    defaultLocale?: string
   }
 }
 

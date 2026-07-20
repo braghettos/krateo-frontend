@@ -2,6 +2,7 @@ import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Badge, Button, Drawer, Skeleton } from 'antd'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useGetEvents } from '../../hooks/useGetEvents'
 import type { ItemTemplate } from '../../widgets/List/itemTemplate'
@@ -25,6 +26,7 @@ const NOTIFICATION_ITEM_TEMPLATE: ItemTemplate = {
 }
 
 const Notifications = ({ topic = 'krateo' }: { topic?: string } = {}) => {
+  const { t } = useTranslation()
   const [drawerVisible, setDrawerVisible] = useState(false)
 
   const { data: notifications, isLoading } = useGetEvents({ registerToSSE: drawerVisible, topic })
@@ -38,7 +40,7 @@ const Notifications = ({ topic = 'krateo' }: { topic?: string } = {}) => {
         <Button className={styles.icon} icon={<FontAwesomeIcon icon={['fas', 'bell'] as IconProp} />} onClick={() => setDrawerVisible(true)} shape='circle' type='text' />
       </Badge>
 
-      <Drawer className={styles.drawer} onClose={() => setDrawerVisible(false)} open={drawerVisible} title='Notifications' width={550}>
+      <Drawer className={styles.drawer} onClose={() => setDrawerVisible(false)} open={drawerVisible} title={t('chrome.notifications.title')} width={550}>
         {isLoading ? <Skeleton active /> : <ListView itemTemplate={NOTIFICATION_ITEM_TEMPLATE} items={notifications ?? []} rowKey='notification' />}
       </Drawer>
     </>

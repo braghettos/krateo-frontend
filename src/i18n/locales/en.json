@@ -1,0 +1,32 @@
+{
+  "chrome": {
+    "commandPalette": {
+      "enterHint": "to search",
+      "escHint": "to close",
+      "placeholder": "Search resources, blueprints…",
+      "searchAria": "Search ({{hint}})"
+    },
+    "notifications": {
+      "title": "Notifications"
+    },
+    "theme": {
+      "toDark": "Switch to dark mode",
+      "toLight": "Switch to light mode",
+      "toggleAria": "Toggle color theme"
+    },
+    "userMenu": {
+      "language": "Language",
+      "logout": "Logout",
+      "profile": "Profile"
+    },
+    "widget": {
+      "loadError": "There has been an error while fetching the widget: {{message}}",
+      "notFound": "The widget does not exist",
+      "unreachable": "Couldn't reach the server. It may still be starting up."
+    }
+  },
+  "locales": {
+    "en": "English",
+    "it": "Italiano"
+  }
+}
