@@ -565,7 +565,12 @@ const runRest = async (
         : successMessage
     }
 
-    ctx.notification.success({ description, message: jsonResponse.message, placement: 'bottomLeft' })
+    // The notification title (antd `message`) MUST be present — a successful k8s write returns the
+    // OBJECT (no `.message` field), so `jsonResponse.message` is usually undefined, and antd renders
+    // a title-less (effectively invisible) toast. Fall back to a verb-aware headline so every widget
+    // action reliably shows a titled success toast.
+    const successTitle = jsonResponse.message || `Successfully ${actionName}`
+    ctx.notification.success({ description, message: successTitle, placement: 'bottomLeft' })
   }
 
   await ctx.invalidateQueries()
