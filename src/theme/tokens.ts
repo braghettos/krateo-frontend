@@ -141,6 +141,53 @@ export const motion = { fast: '0.1s', mid: '0.2s', slow: '0.3s' } as const
 
 export const tokens = { color, elevation, motion, radius, spacing, typography } as const
 
+/**
+ * Runtime (per-install / per-Org/Tenant) theme override, delivered through the same
+ * ConfigMap-mounted `config.json` that already serves the login branding — so a tenant
+ * portal re-brands at runtime with NO rebuild. Absent → the built-in tokens above apply
+ * unchanged (they remain the single fallback source of truth).
+ *
+ * - `primaryColor` rewrites the BRAND keys only (primary/link/nav accent) in both color
+ *   modes; the four-colour SEMANTIC status language (success/error/warning/drift) is
+ *   deliberately left intact so status stays readable under any brand.
+ * - `palette.light` / `palette.dark` allow token-level fine-tuning per mode for installs
+ *   that need more than a primary swap.
+ */
+export interface ThemeOverride {
+  palette?: Partial<Record<ThemeMode, Partial<Record<keyof typeof color, string>>>>
+  primaryColor?: string
+}
+
+/** The palette keys that carry the BRAND (not semantic status) — what `primaryColor` rewrites. */
+const BRAND_KEYS: ReadonlyArray<keyof typeof color> = ['primary', 'blue', 'info', 'darkBlue', 'menubgstart', 'menubgend']
+
+/**
+ * Resolve the effective palette for a mode: built-in tokens, overlaid with the runtime
+ * override (primaryColor → brand keys + derived soft tint, then per-mode palette entries).
+ * Returns the built-in palette object untouched when there is nothing to override.
+ */
+export const resolvePalette = (mode: ThemeMode, override?: ThemeOverride): Record<keyof typeof color, string> => {
+  const base = mode === 'dark' ? colorDark : color
+  if (!override?.primaryColor && !override?.palette?.[mode]) {
+    return base
+  }
+
+  const resolved: Record<keyof typeof color, string> = { ...base }
+  if (override.primaryColor) {
+    BRAND_KEYS.forEach((key) => { resolved[key] = override.primaryColor! })
+    // Soft brand tint (hover/selected fills) derived from the override — CSS-var only
+    // (color-mix is fine in stylesheets; antd tokens below use the plain hex).
+    resolved.accentSoft = `color-mix(in srgb, ${override.primaryColor} ${mode === 'dark' ? '16%' : '10%'}, transparent)`
+    if (mode === 'light') {
+      // Light nav-item fill is a brand tint (dark uses the neutral bezel — leave it).
+      resolved.menuitembg = `color-mix(in srgb, ${override.primaryColor} 10%, transparent)`
+    }
+  }
+  Object.assign(resolved, override.palette?.[mode])
+
+  return resolved
+}
+
 /** Per-component overrides. Tight instrument density (32px controls), 6px radii,
  * near-flat cards; the palette-derived bits (Progress=cyan, Table header fill)
  * follow the active mode. */
@@ -168,82 +215,74 @@ const buildComponents = (palette: Record<keyof typeof color, string>, mode: Them
   Tag: { borderRadiusSM: radius.sm },
 })
 
-/** Light "Paper" antd theme. compactAlgorithm = the instrument-panel density pass: tighter
- * paddings/margins/gaps across every component (cards/tables/lists/descriptions/forms), fonts
- * unchanged — closes the cross-page "more compact, match the static render" gap (D5/O1). */
-export const lightTheme: ThemeConfig = {
-  algorithm: [antdAlgorithms.defaultAlgorithm, antdAlgorithms.compactAlgorithm],
-  token: {
-    borderRadius: radius.md,
-    boxShadow: elevation.md,
-    boxShadowSecondary: elevation.lg,
-    colorBgBase: color.panelbg,
-    // Pin the bg/border MAP tokens (see the dark theme note): white card on a #F6F8FA page,
-    // not antd's derived near-white layout. colorBgLayout = the cool paper background.
-    colorBgContainer: color.panelbg,
-    colorBgElevated: color.light,
-    colorBgLayout: color.background,
-    colorBorder: color.border,
-    colorBorderSecondary: color.border,
-    colorError: color.error,
-    colorInfo: color.info,
-    colorLink: color.primary,
-    colorPrimary: color.primary,
-    colorSuccess: color.success,
-    colorTextBase: color.text,
-    colorWarning: color.warning,
-    colorWhite: color.light,
-    controlHeight: 32,
-    fontFamily: typography.family,
-    motionDurationMid: motion.mid,
-    motionDurationSlow: motion.slow,
-  },
-  components: buildComponents(color, 'light'),
+/** Build the antd ThemeConfig for a mode from a (possibly override-resolved) palette.
+ * Light = "Paper" (default+compact algorithms); dark = "Petrol" (dark+compact).
+ * compactAlgorithm = the instrument-panel density pass: tighter paddings/margins/gaps across
+ * every component (cards/tables/lists/descriptions/forms), fonts unchanged (D5/O1).
+ * Dark note: the bg/border MAP tokens are PINNED to the exact palette values — antd otherwise
+ * DERIVES them from the blue-leaning void base + dark algorithm, producing a lighter
+ * blue-tinted container (#0d1f35) and a blue border (#183962) instead of the neutral bezel.
+ * colorBgContainer = card/input fill (bezel), colorBgElevated = popover/dropdown/modal
+ * (bezel-2), colorBgLayout = page (void); colorBorderSecondary = the card's hairline. */
+const buildAntdTheme = (palette: Record<keyof typeof color, string>, mode: ThemeMode): ThemeConfig => {
+  const elevationSet = mode === 'dark' ? elevationDark : elevation
+  return {
+    algorithm: mode === 'dark'
+      ? [antdAlgorithms.darkAlgorithm, antdAlgorithms.compactAlgorithm]
+      : [antdAlgorithms.defaultAlgorithm, antdAlgorithms.compactAlgorithm],
+    token: {
+      borderRadius: radius.md,
+      boxShadow: elevationSet.md,
+      boxShadowSecondary: elevationSet.lg,
+      colorBgBase: mode === 'dark' ? palette.background : palette.panelbg,
+      colorBgContainer: palette.panelbg,
+      colorBgElevated: palette.light,
+      colorBgLayout: palette.background,
+      colorBorder: palette.border,
+      colorBorderSecondary: palette.border,
+      colorError: palette.error,
+      colorInfo: palette.info,
+      colorLink: palette.primary,
+      colorPrimary: palette.primary,
+      colorSuccess: palette.success,
+      colorTextBase: palette.text,
+      colorWarning: palette.warning,
+      ...(mode === 'light' ? { colorWhite: palette.light } : {}),
+      controlHeight: 32,
+      fontFamily: typography.family,
+      motionDurationMid: motion.mid,
+      motionDurationSlow: motion.slow,
+    },
+    components: buildComponents(palette, mode),
+  }
 }
 
+/** Light "Paper" antd theme (built-in tokens, no runtime override). */
+export const lightTheme: ThemeConfig = buildAntdTheme(color, 'light')
+
 /** Dark "Petrol" antd theme — antd dark + compact algorithms + amber-brand / cyan-status overrides. */
-export const darkTheme: ThemeConfig = {
-  algorithm: [antdAlgorithms.darkAlgorithm, antdAlgorithms.compactAlgorithm],
-  token: {
-    borderRadius: radius.md,
-    boxShadow: elevationDark.md,
-    boxShadowSecondary: elevationDark.lg,
-    colorBgBase: colorDark.background,
-    // Pin the bg/border MAP tokens to the exact Petrol values — antd otherwise DERIVES them from
-    // the blue-leaning void base + dark algorithm, producing a lighter blue-tinted container
-    // (#0d1f35) and a blue border (#183962) instead of the neutral bezel. colorBgContainer = card/
-    // input fill (bezel), colorBgElevated = popover/dropdown/modal (bezel-2), colorBgLayout = page
-    // (void); colorBorderSecondary = the card's hairline.
-    colorBgContainer: colorDark.panelbg,
-    colorBgElevated: colorDark.light,
-    colorBgLayout: colorDark.background,
-    colorBorder: colorDark.border,
-    colorBorderSecondary: colorDark.border,
-    colorError: colorDark.error,
-    colorInfo: colorDark.info,
-    colorLink: colorDark.primary,
-    colorPrimary: colorDark.primary,
-    colorSuccess: colorDark.success,
-    colorTextBase: colorDark.text,
-    colorWarning: colorDark.warning,
-    controlHeight: 32,
-    fontFamily: typography.family,
-    motionDurationMid: motion.mid,
-    motionDurationSlow: motion.slow,
-  },
-  components: buildComponents(colorDark, 'dark'),
-}
+export const darkTheme: ThemeConfig = buildAntdTheme(colorDark, 'dark')
 
 /** Back-compat alias (was the single light theme). */
 export const antdTheme = lightTheme
 
-/** Resolve the antd theme for a mode. */
-export const getAntdTheme = (mode: ThemeMode): ThemeConfig => (mode === 'dark' ? darkTheme : lightTheme)
+/** Resolve the antd theme for a mode, applying the runtime per-tenant override when present.
+ * Without an override this returns the prebuilt (referentially stable) theme objects. */
+export const getAntdTheme = (mode: ThemeMode, override?: ThemeOverride): ThemeConfig => {
+  const base = mode === 'dark' ? colorDark : color
+  const palette = resolvePalette(mode, override)
+  if (palette === base) {
+    return mode === 'dark' ? darkTheme : lightTheme
+  }
 
-/** Inject every token as a CSS custom property on `:root` for the given mode. */
-export const cssVariables = (mode: ThemeMode = 'light') => {
+  return buildAntdTheme(palette, mode)
+}
+
+/** Inject every token as a CSS custom property on `:root` for the given mode, applying the
+ * runtime per-tenant override when present (S8/D20 path — same vars, new values, no rebuild). */
+export const cssVariables = (mode: ThemeMode = 'light', override?: ThemeOverride) => {
   const root = document.documentElement
-  const palette = mode === 'dark' ? colorDark : color
+  const palette = resolvePalette(mode, override)
   const elevationSet = mode === 'dark' ? elevationDark : elevation
 
   Object.entries(palette).forEach(([key, value]) => root.style.setProperty(`--${key}-color`, value))

@@ -1,8 +1,10 @@
 import { Suspense, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import useCatchError from '../../hooks/useCatchError'
 import { useWidgetQuery } from '../../hooks/useWidgetQuery'
 import type { Widget } from '../../types/Widget'
+import { resolveWidgetStrings } from '../../utils/i18n-widget'
 import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
@@ -36,8 +38,12 @@ const parseWidget = (
   const {
     kind,
     metadata,
-    status: { resourcesRefs, widgetData },
+    status: { resourcesRefs, widgetData: rawWidgetData },
   } = widget
+
+  // Second-layer localization (X2/D23): CR-authored strings prefixed `i18n:` resolve
+  // against the locale catalogs; plain strings pass through untouched.
+  const widgetData = resolveWidgetStrings(rawWidgetData)
 
   const props = {
     resourcesRefs: { ...resourcesRefs, items: resourcesRefs?.items?.filter(({ allowed }) => allowed) ?? [] },
@@ -77,6 +83,9 @@ const parseWidget = (
 }
 
 const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndpoint, wrapper }: WidgetRendererProps) => {
+  // Also subscribes this renderer to locale changes, so `i18n:`-keyed widget strings
+  // (resolved in parseWidget) re-render on language switch.
+  const { t } = useTranslation()
   const { isWidgetFilteredByProps } = useFilter()
   const { catchError } = useCatchError()
 
@@ -104,13 +113,13 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     console.error(error)
     const failedToFetch = error instanceof Error && (error instanceof TypeError || error.message.includes('Failed to fetch'))
     const subtitle = failedToFetch
-      ? "Couldn't reach the server. It may still be starting up."
-      : `There has been an error while fetching the widget: ${error instanceof Error ? error.message : 'unknown error'}`
+      ? t('chrome.widget.unreachable')
+      : t('chrome.widget.loadError', { message: error instanceof Error ? error.message : 'unknown error' })
     return <WidgetError onRetry={() => { void refetch() }} subtitle={subtitle} />
   }
 
   if (!widget) {
-    return invisible ? null : <WidgetError subtitle={'The widget does not exist'} />
+    return invisible ? null : <WidgetError subtitle={t('chrome.widget.notFound')} />
   }
 
   const { code, kind, message, status } = widget

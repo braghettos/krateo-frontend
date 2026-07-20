@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client'
 
 import App from './App.tsx'
 import { ThemeModeProvider } from './context/ThemeModeContext.tsx'
+// Initialize the i18n runtime (locale catalogs + react-i18next binding) before React
+// mounts, so the very first chrome render already resolves translated strings.
+import './i18n'
 
 /**
  * Optionally bootstrap browser-side OTel tracing BEFORE React mounts, so the

@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { App as AntdApp, Spin } from 'antd'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 
 import '../index.css'
@@ -17,7 +17,9 @@ import styles from './App.module.css'
 import FiltersProvider from './components/FiltesProvider/FiltersProvider'
 import { ConfigProvider, useConfigContext } from './context/ConfigContext'
 import { RoutesProvider, useRoutesContext } from './context/RoutesContext'
+import { useThemeMode } from './context/ThemeModeContext'
 import { useLiveRefreshFirehose } from './hooks/useLiveRefresh'
+import { applyOrgDefaultLocale } from './i18n'
 
 library.add(fab, fas, far)
 
@@ -30,6 +32,25 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+/** Bridges runtime `config.json` concerns into the app once fetched: the per-tenant theme
+ * override (S8/D20 — pushed up into ThemeModeProvider so antd theme + CSS vars re-derive)
+ * and the Org default locale (X2/D23 — applied only when the user has no stored choice).
+ * Renders nothing; both are no-ops while config is loading or when the keys are absent. */
+const RuntimeConfigBridge: React.FC = () => {
+  const { config } = useConfigContext()
+  const { setThemeOverride } = useThemeMode()
+
+  useEffect(() => {
+    setThemeOverride(config?.theme)
+  }, [config?.theme, setThemeOverride])
+
+  useEffect(() => {
+    applyOrgDefaultLocale(config?.i18n?.defaultLocale)
+  }, [config?.i18n?.defaultLocale])
+
+  return null
+}
 
 const AppInitializer: React.FC = () => {
   const { isLoading: isRoutesLoading, routerVersion, routes } = useRoutesContext()
@@ -58,6 +79,7 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider>
+        <RuntimeConfigBridge />
         <RoutesProvider>
           <AntdApp className={styles.app}>
             <FiltersProvider>

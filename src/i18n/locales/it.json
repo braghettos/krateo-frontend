@@ -1,0 +1,32 @@
+{
+  "chrome": {
+    "commandPalette": {
+      "enterHint": "per cercare",
+      "escHint": "per chiudere",
+      "placeholder": "Cerca risorse, blueprint…",
+      "searchAria": "Cerca ({{hint}})"
+    },
+    "notifications": {
+      "title": "Notifiche"
+    },
+    "theme": {
+      "toDark": "Passa al tema scuro",
+      "toLight": "Passa al tema chiaro",
+      "toggleAria": "Cambia tema colore"
+    },
+    "userMenu": {
+      "language": "Lingua",
+      "logout": "Esci",
+      "profile": "Profilo"
+    },
+    "widget": {
+      "loadError": "Si è verificato un errore durante il caricamento del widget: {{message}}",
+      "notFound": "Il widget non esiste",
+      "unreachable": "Impossibile raggiungere il server. Potrebbe essere ancora in fase di avvio."
+    }
+  },
+  "locales": {
+    "en": "English",
+    "it": "Italiano"
+  }
+}

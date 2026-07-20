@@ -1,7 +1,7 @@
 import { ConfigProvider } from 'antd'
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { cssVariables, getAntdTheme, type ThemeMode } from '../theme/tokens'
+import { cssVariables, getAntdTheme, type ThemeMode, type ThemeOverride } from '../theme/tokens'
 
 const STORAGE_KEY = 'krateo-theme-mode'
 
@@ -17,6 +17,10 @@ const getInitialMode = (): ThemeMode => {
 interface ThemeModeContextValue {
   mode: ThemeMode
   setMode: (mode: ThemeMode) => void
+  /** Apply (or clear, with `undefined`) the runtime per-tenant theme override from
+   * `config.json` (S8/D20). Set once by the config bridge after the runtime config loads;
+   * both the antd theme and the `:root` CSS variables re-derive from it. */
+  setThemeOverride: (override: ThemeOverride | undefined) => void
   toggle: () => void
 }
 
@@ -40,10 +44,14 @@ export const useThemeMode = (): ThemeModeContextValue => {
  */
 export const ThemeModeProvider = ({ children }: { children: ReactNode }) => {
   const [mode, setMode] = useState<ThemeMode>(getInitialMode)
+  // Runtime per-tenant theme override (S8/D20): starts empty (built-in tokens = the
+  // fallback), populated by the config bridge once `config.json` is fetched. `undefined`
+  // keeps the pre-override render byte-identical, so first paint never flashes off-brand.
+  const [themeOverride, setThemeOverride] = useState<ThemeOverride | undefined>(undefined)
 
   // Apply synchronously (matches the prior cssVariables()-in-render pattern) so
   // the variables/attribute are set before children read them — no FOUC.
-  cssVariables(mode)
+  cssVariables(mode, themeOverride)
   document.documentElement.dataset.theme = mode
 
   useEffect(() => {
@@ -53,12 +61,17 @@ export const ThemeModeProvider = ({ children }: { children: ReactNode }) => {
   const value: ThemeModeContextValue = {
     mode,
     setMode,
+    setThemeOverride,
     toggle: () => setMode((current) => (current === 'dark' ? 'light' : 'dark')),
   }
 
+  // Stable antd theme identity per (mode, override) so antd doesn't recompute styles
+  // on unrelated provider re-renders.
+  const antdTheme = useMemo(() => getAntdTheme(mode, themeOverride), [mode, themeOverride])
+
   return (
     <ThemeModeContext.Provider value={value}>
-      <ConfigProvider theme={getAntdTheme(mode)}>
+      <ConfigProvider theme={antdTheme}>
         {children}
       </ConfigProvider>
     </ThemeModeContext.Provider>
