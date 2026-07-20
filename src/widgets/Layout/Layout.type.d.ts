@@ -23,6 +23,10 @@ export interface Layout {
        */
       footer?: string
       /**
+       * resourceRefIds of side-effect widgets (e.g. Theme) rendered invisibly: they set global state (CSS custom properties, etc.) and produce no UI. Use for app-wide concerns mounted once on the shell.
+       */
+      effects?: string[]
+      /**
        * antd Layout.Sider region
        */
       sider?: {
