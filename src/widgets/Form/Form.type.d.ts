@@ -345,6 +345,23 @@ export interface Form {
        * optional id of an action fired by a 'Save draft' button that captures the CURRENT field values WITHOUT running form validation (so an incomplete form can be persisted). Pair with buttonConfig.draft to show the button.
        */
       draftActionId?: string
+      /**
+       * optional field-conditional submit routing: when present, the submit action is chosen at submit time from the value of the named field. Routes one form to different create targets (e.g. a 'target cluster' select where 'local' posts the blueprint instance and a remote spoke posts a RemoteInstall). Falls back to `default` (or `submitActionId`) when the field value has no mapping.
+       */
+      submitActionSelector?: {
+        /**
+         * form field whose current value selects the submit action
+         */
+        field: string
+        /**
+         * map of field-value → action id
+         */
+        map: Record<string, string>
+        /**
+         * action id used when the field value is not present in `map`
+         */
+        default?: string
+      }
     }
     apiRef?: {
       name: string

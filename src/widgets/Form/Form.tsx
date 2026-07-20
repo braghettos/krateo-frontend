@@ -166,7 +166,7 @@ const ReviewSummary = ({ schema, values }: { schema?: JSONSchema4; values: Recor
  * button runs the same submit action. Default (flag off) is unchanged.
  */
 const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>) => {
-  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, stringSchema, submitActionId, submitDisabledWhenPristine } = widgetData
+  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, stringSchema, submitActionId, submitActionSelector, submitDisabledWhenPristine } = widgetData
   // Prefer `stringSchema` (the schema as a raw JSON STRING) when present: `JSON.parse`
   // preserves the object's key insertion order, so a server that hands us the blueprint's
   // values.schema.json verbatim (e.g. from the per-blueprint jsonschema ConfigMap, which
@@ -329,9 +329,25 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     }
   }, [buttonConfig, formId, insideDrawer, isActionLoading, setDrawerData])
 
-  const action = Object.values(actions)
-    .flat()
-    .find(({ id }) => id === submitActionId)
+  const allActions = Object.values(actions).flat()
+  const action = allActions.find(({ id }) => id === submitActionId)
+
+  // Field-conditional submit routing: when `submitActionSelector` is set, the effective submit
+  // action is chosen at submit time from the value of the named field (e.g. a "target cluster"
+  // Select where "local" posts the blueprint instance and a remote spoke posts a RemoteInstall).
+  // Falls back to the selector's `default`, then the static `submitActionId`, then `action`.
+  const resolveSubmitAction = (formValues: Record<string, unknown>) => {
+    if (submitActionSelector?.field) {
+      const rawValue = formValues?.[submitActionSelector.field]
+      // The selector field is an enum Select — its value is a string. Non-string values have no
+      // mapping and fall through to `default` / `submitActionId`.
+      const key = typeof rawValue === 'string' ? rawValue : ''
+      const id = submitActionSelector.map?.[key] ?? submitActionSelector.default ?? submitActionId
+      const picked = allActions.find((candidate) => candidate.id === id)
+      if (picked) { return picked }
+    }
+    return action
+  }
 
   // "Save draft" — persist the current field values WITHOUT validation to localStorage (NO
   // backend). getFieldsValue(true) returns the entire form store (including values seeded via
@@ -353,7 +369,9 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     : undefined
 
   const onSubmit = async (formValues: Record<string, unknown>) => {
-    if (!action) {
+    const effectiveAction = resolveSubmitAction(formValues)
+
+    if (!effectiveAction) {
       notification.error({
         description: `The widget definition does not include an action (ID: ${submitActionId})`,
         message: 'Error while executing the action',
@@ -363,7 +381,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       return
     }
 
-    if (action.type !== 'rest') {
+    if (effectiveAction.type !== 'rest') {
       notification.error({
         description: 'Submit action type is not "rest"',
         message: 'Error while executing the action',
@@ -373,13 +391,13 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       return
     }
 
-    if (action.onEventNavigateTo) {
+    if (effectiveAction.onEventNavigateTo) {
       setDrawerData({ extra: <FormExtra buttonConfig={buttonConfig} disabled form={formId} loading={isActionLoading} /> })
     }
 
     const values = convertDayjsToISOString(formValues)
 
-    await handleAction(action, resourcesRefs, values, widget)
+    await handleAction(effectiveAction, resourcesRefs, values, widget)
   }
 
   // On a validated submit: with review-before-submit on and still editing, capture the
