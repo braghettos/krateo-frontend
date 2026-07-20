@@ -42,6 +42,12 @@ fetch:
 github:
   enabled: false
   mcpServer: github-mcp-server
+# The RestAction domain expert, wired in as a delegatable sub-agent. The frontend-agent OWNS widget
+# authoring and DELEGATES any new server-side data source (a RestAction) to snowplow-agent; without
+# this Agent tool the delegation is impossible and the agent stalls authoring external-RA pages.
+snowplowAgent:
+  enabled: true
+  name: krateo-snowplow-agent
 resources:
   requests:
     cpu: 100m

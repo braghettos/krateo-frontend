@@ -98,6 +98,19 @@
         }
       }
     },
+    "snowplowAgent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "description": "The RestAction domain expert wired in as a delegatable Agent tool so the frontend-agent can hand off new server-side data sources (RestActions) to snowplow-agent instead of authoring them itself."
+    },
     "fetch": {
       "type": "object",
       "additionalProperties": false,

@@ -63,6 +63,15 @@ spec:
             - get_file_contents
             - search_code
 {{- end }}
+{{- if .Values.snowplowAgent.enabled }}
+      # RestAction domain expert. The frontend-agent OWNS widget authoring but its prompt DELEGATES
+      # any NEW server-side data source (a RestAction) to the snowplow specialist — this Agent tool
+      # is what makes that delegation possible. Without it the agent has to author the RA itself and
+      # Gemini stalls out empty on the combined page (the reason external-RA pages never rendered).
+      - type: Agent
+        agent:
+          name: {{ .Values.snowplowAgent.name }}
+{{- end }}
     a2aConfig:
       skills:
         - id: compose-portal-pages
