@@ -9,9 +9,11 @@
   padding: 26px 30px;
 }
 
-/* Sider: the Sovereign Blue gradient — a brand INVARIANT (issue #49): the sidebar is always
-   the Sovereign gradient (#005D8B → #002F46) in BOTH light and dark modes. Nav text/logo are
-   light (see Menu.module.css + index.css), not the mode-dependent surface tokens. */
+/* Sider: the rail gradient is DERIVED per-mode from colorPrimary (issue #52) — a deep pair off
+   the `@ant-design/colors` ramp of the active mode's primary, emitted as --krateo-nav-gradient-*
+   by cssVariables()/navGradient() (tokens.ts) and overridable by a tenant Theme CR's custom.sidebar.
+   NOT a hardcoded Sovereign invariant. Nav text/logo stay light (see Menu.module.css + index.css)
+   because both derived pairs are dark enough to carry light ink. */
 .shell :global(.ant-layout-sider) {
   background: linear-gradient(180deg, var(--krateo-nav-gradient-start), var(--krateo-nav-gradient-end));
   border-right: 1px solid var(--krateo-nav-gradient-end);

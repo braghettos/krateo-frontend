@@ -1,5 +1,6 @@
 /* eslint-disable sort-keys/sort-keys-fix */
 // Token scales are ordered semantically (xs → xl, token before components), not alphabetically.
+import { generate } from '@ant-design/colors'
 import { theme as antdAlgorithms, type ThemeConfig } from 'antd'
 
 /**
@@ -11,8 +12,8 @@ import { theme as antdAlgorithms, type ThemeConfig } from 'antd'
  * Interaction blue: Krateo Blue #11B2E2 (dark primary #2FBFE6) / Sovereign Blue #05629A
  * (light primary + nav surface). Status is a Tier-2-locked semantic set: green #00D690,
  * amber #FFAA00, red #F84C4C, info blue. Signal Yellow #E8FF00 is RESERVED for the
- * "Autopilot/AI agent is EXECUTING" state ONLY (never a CTA/decoration/link). The sidebar is
- * ALWAYS the Sovereign gradient #005D8B→#002F46 in both modes; the focus ring is #2FBFE6
+ * "Autopilot/AI agent is EXECUTING" state ONLY (never a CTA/decoration/link). The sidebar rail
+ * gradient is DERIVED per-mode from colorPrimary (issue #52, navGradient()); the focus ring is #2FBFE6
  * (dark) / #05629A (light). Values retargeted onto the fork's runtime emitter (this file →
  * `cssVariables` + antd bridge). `cssVariables` now ALSO emits the canonical `--krateo-*` token
  * set (issue #49 §1.2–1.5: base + mode-aware semantic + chart) alongside the legacy `--*-color`
@@ -48,7 +49,8 @@ export const color = {
   light: '#FFFFFF',
   lightgray: '#F5F5F5',
   line: '#E1E3E8',
-  // Nav surface — ALWAYS the Sovereign Blue gradient (invariant across modes); text is light.
+  // Sovereign gradient — used by the LOGIN marketing panel only (Login.module.css). The APP
+  // sidebar rail no longer uses these; it derives per-mode from colorPrimary (issue #52).
   menubgend: '#002F46',
   menubgstart: '#005D8B',
   menuitem: 'rgba(255,255,255,0.50)',
@@ -190,14 +192,27 @@ const KRATEO_BASE: Record<string, string> = {
   'text-caption': '12px',
   'text-code': '13px',
   'text-metric': '28px',
-  // Navigation surface — a flat dark rail (#141414) in BOTH modes; the full Sovereign gradient
-  // read too heavy at telemetry density. Nav text/logo stay light (Menu/Shell), so a dark rail
-  // reads cleanly against a light OR dark workspace. (The login marketing panel keeps the
-  // Sovereign gradient via --menubgstart/end — a separate token.)
-  'nav-gradient-start': '#141414',
-  'nav-gradient-end': '#141414',
+  // Nav-item colours are mode-independent (light text on the dark rail). The rail GRADIENT is
+  // NOT hardcoded here — it is derived per-mode from colorPrimary (issue #52: the sidebar default
+  // must FOLLOW the active theme, not be a mode-invariant hardcode); see navGradient() + its emit
+  // in cssVariables().
   'nav-item': 'rgba(255, 255, 255, 0.50)',
   'nav-item-active': '#F5F5F5',
+}
+
+/**
+ * The DEFAULT sidebar rail gradient (issue #52) — derived from the active mode's `colorPrimary`,
+ * NOT a hardcoded Sovereign Blue repeated in three places. `@ant-design/colors` generate() yields
+ * a 10-shade ramp; we take a deep pair (dark enough for the light nav text), mode-aware: the light
+ * primary (#05629A) is already dark so we take the darker end; the dark primary (#2FBFE6) is bright
+ * so we take a deeper pair. A tenant Theme CR's `custom.sidebar` overrides this at runtime (the
+ * Theme widget sets --krateo-nav-gradient-* inline, winning the cascade). SINGLE SOURCE of the
+ * default gradient — referenced only from cssVariables().
+ */
+export const navGradient = (mode: ThemeMode): { start: string; end: string } => {
+  const primary = mode === 'dark' ? colorDark.primary : color.primary
+  const ramp = generate(primary)
+  return mode === 'dark' ? { start: ramp[7], end: ramp[9] } : { start: ramp[6], end: ramp[8] }
 }
 
 const KRATEO_SEMANTIC_DARK: Record<string, string> = {
@@ -461,4 +476,11 @@ export const cssVariables = (mode: ThemeMode = 'light') => {
   Object.entries(KRATEO_BASE).forEach(([key, value]) => root.style.setProperty(`--krateo-${key}`, value))
   Object.entries(krateoSemantic).forEach(([key, value]) => root.style.setProperty(`--krateo-${key}`, value))
   Object.entries(krateoChart).forEach(([key, value]) => root.style.setProperty(`--krateo-${key}`, value))
+
+  // Sidebar rail gradient — DERIVED per-mode from colorPrimary (issue #52), emitted synchronously
+  // here so the first paint already varies by mode. A tenant Theme CR's custom.sidebar overrides
+  // these two vars at runtime (inline style wins).
+  const ng = navGradient(mode)
+  root.style.setProperty('--krateo-nav-gradient-start', ng.start)
+  root.style.setProperty('--krateo-nav-gradient-end', ng.end)
 }
