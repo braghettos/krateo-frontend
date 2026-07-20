@@ -165,7 +165,7 @@ previewSandbox:
   quota:
     perWidgetKind: 200
     restactions: 50
-  # The widget plurals (group widgets.templates.krateo.io) — mirrors the 42 CRDs
+  # The widget plurals (group widgets.templates.krateo.io) — mirrors the 43 CRDs
   # in crds-subchart/templates. Drives the generated quota entries and the
   # janitor sweep. A NEW widget kind => append its plural here (the author Role
   # needs no change: it grants the whole group via resource wildcard '*').
@@ -210,6 +210,7 @@ previewSandbox:
     - tables
     - tabs
     - tags
+    - themes
     - uploads
     - yamlviewers
   # RoleBinding subjects granted author rights (full CRUD on widget CRs and
