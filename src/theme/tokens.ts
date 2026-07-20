@@ -209,11 +209,13 @@ const KRATEO_BASE: Record<string, string> = {
  * Theme widget sets --krateo-nav-gradient-* inline, winning the cascade). SINGLE SOURCE of the
  * default gradient — referenced only from cssVariables().
  */
-export const navGradient = (mode: ThemeMode): { start: string; end: string } => {
-  const primary = mode === 'dark' ? colorDark.primary : color.primary
+export const navGradientFrom = (primary: string, mode: ThemeMode): { start: string; end: string } => {
   const ramp = generate(primary)
   return mode === 'dark' ? { start: ramp[7], end: ramp[9] } : { start: ramp[6], end: ramp[8] }
 }
+
+export const navGradient = (mode: ThemeMode): { start: string; end: string } =>
+  navGradientFrom(mode === 'dark' ? colorDark.primary : color.primary, mode)
 
 const KRATEO_SEMANTIC_DARK: Record<string, string> = {
   'color-background-base': '#000000',
