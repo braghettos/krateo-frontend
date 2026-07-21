@@ -19,6 +19,7 @@ import { getAccessToken } from '../../utils/getAccessToken'
 import type { PortalActionProposal } from './actionBridge'
 import { parseRawTemplates } from './blueprintDraft'
 import { restDefImmutabilityWarnings, validateRestDefinitionDraft } from './kogMapping'
+import { pageDraftSlug } from './pageDraft'
 import type { AutopilotPreviewPayload, PreviewObjectEntry } from './previewBus'
 
 /** The chart coordinates previewBlueprint sends to the render service. */
@@ -271,12 +272,19 @@ export const PAGE_PREVIEW_CAPTION
 
 export const buildPagePreviewPayload = (widgets: Record<string, unknown>[]): AutopilotPreviewPayload => ({
   caption: PAGE_PREVIEW_CAPTION,
+  // The write-set a publish commits: each widget CR at its portal-chart destination path (the
+  // SAME chart/templates/<kind>.<name>.yaml the publishPage git-write targets — see pageDraft.ts).
+  files: widgets.map((widget) => ({
+    content: toYamlString(widget),
+    path: `chart/templates/${pageDraftSlug(String(widget.kind), String(metadataOf(widget).name ?? ''))}`,
+  })),
   objects: widgets.map((widget) => ({
     kind: String(widget.kind),
     ...metadataOf(widget),
     ...(typeof widget.apiVersion === 'string' && widget.apiVersion ? { apiVersion: widget.apiVersion } : {}),
     yaml: toYamlString(widget),
   })),
+  publishTarget: { base: 'main', repo: 'krateo-portal-chart' },
   title: `Page preview — ${widgets.length} proposed widget${widgets.length === 1 ? '' : 's'}`,
 })
 

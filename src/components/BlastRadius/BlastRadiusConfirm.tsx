@@ -15,7 +15,7 @@
  * multi-class Typography.
  */
 
-import type { BlastRadius, BlastRadiusDiff, BlastRadiusSet, Gvr } from '../../hooks/blastRadius.types'
+import type { BlastRadius, BlastRadiusDiff, BlastRadiusSet, BlastRadiusSetOp, Gvr } from '../../hooks/blastRadius.types'
 
 import styles from './BlastRadiusConfirm.module.css'
 
@@ -83,6 +83,34 @@ const previewOf = (value: unknown): string => {
   return text.length > 140 ? `${text.slice(0, 140)}…` : text
 }
 
+/** A plain-language line for what a git-write op ACTUALLY does — the "N writes" a publish makes are
+ *  file commits / a branch / a PR, not opaque JSON. Returns null for other kinds (raw preview shown). */
+const humanizeOp = (op: BlastRadiusSetOp): string | null => {
+  const rec = (value: unknown): Record<string, unknown> | undefined =>
+    (value && typeof value === 'object' ? value as Record<string, unknown> : undefined)
+  const payload = rec(op.payloadPreview)
+  const spec = rec(payload?.spec) ?? payload
+  const str = (value: unknown): string | undefined => (typeof value === 'string' && value ? value : undefined)
+  switch (op.gvr.resource) {
+    case 'compositiondefinitions':
+      return op.name ? `Register blueprint “${op.name}”` : 'Register a blueprint'
+    case 'gitrefs': {
+      const ref = str(spec?.ref)
+      return ref ? `Create branch ${ref.replace(/^refs\/heads\//, '')}` : 'Create a branch'
+    }
+    case 'pullrequests': {
+      const title = str(spec?.title)
+      return title ? `Open pull request — “${title}”` : 'Open a pull request'
+    }
+    case 'repocontents': {
+      const path = str(spec?.path)
+      return path ? `Create file ${path}` : 'Commit a file'
+    }
+    default:
+      return null
+  }
+}
+
 /** True when the radius is the aggregated W0-4 set shape (vs a scalar write). */
 const isSetRadius = (radius: BlastRadius | BlastRadiusSet): radius is BlastRadiusSet => 'ops' in radius
 
@@ -120,21 +148,27 @@ const SetView = ({ radius }: { radius: BlastRadiusSet }) => {
       </dl>
 
       <ol className={styles.opList}>
-        {radius.ops.map((op, index) => (
+        {radius.ops.map((op, index) => {
           // The index IS the op identity (dispatch order) — a set radius is immutable once built.
-          <li className={styles.opRow} data-testid='blast-radius-set-op' key={index}>
-            <div className={styles.opHead}>
-              <span className={styles.opIndex}>{index + 1}</span>
-              <span className={styles.verb} data-verb={op.verb}>{op.verb}</span>
-              <span className={styles.target}>{formatGvr(op.gvr)}{op.name ? ` · ${op.name}` : ''}</span>
-              <span className={styles.opNs}>{op.namespace || '—'}</span>
-              {op.irreversible && <span className={styles.irreversible}>irreversible</span>}
-            </div>
-            {op.payloadPreview !== undefined && (
-              <div className={styles.opPreview}>{previewOf(op.payloadPreview)}</div>
-            )}
-          </li>
-        ))}
+          const human = humanizeOp(op)
+          return (
+            <li className={styles.opRow} data-testid='blast-radius-set-op' key={index}>
+              <div className={styles.opHead}>
+                <span className={styles.opIndex}>{index + 1}</span>
+                <span className={styles.verb} data-verb={op.verb}>{op.verb}</span>
+                <span className={styles.target}>{formatGvr(op.gvr)}{op.name ? ` · ${op.name}` : ''}</span>
+                <span className={styles.opNs}>{op.namespace || '—'}</span>
+                {op.irreversible && <span className={styles.irreversible}>irreversible</span>}
+              </div>
+              {/* #5 — a plain-language line for the git-write kinds ("Create file …", "Open PR …")
+                  so the write-set reads as WHAT it does, not raw JSON; raw preview only as fallback. */}
+              {human && <div className={styles.opHuman} data-testid='blast-radius-op-human'>{human}</div>}
+              {!human && op.payloadPreview !== undefined && (
+                <div className={styles.opPreview}>{previewOf(op.payloadPreview)}</div>
+              )}
+            </li>
+          )
+        })}
       </ol>
     </div>
   )

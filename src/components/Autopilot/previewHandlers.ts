@@ -109,6 +109,10 @@ export const previewBlueprintSpec: VerbSpec = {
     openAutopilotPreview({
       caption: 'helm-render dry run — nothing is applied to the cluster',
       ...(rendered.error ? { error: rendered.error } : {}),
+      // The authored chart tree IS the write-set a publishBlueprint commits — the unified "Files"
+      // tab (a catalog dry-run of an already-published chart has no rawTemplates, so no Files/target).
+      ...(args.rawTemplates ? { files: Object.entries(args.rawTemplates).map(([path, content]) => ({ content, path })) } : {}),
+      ...(args.rawTemplates ? { publishTarget: { base: 'main', repo: 'krateo-blueprints' } } : {}),
       ...(formSchema ? { formSchema } : {}),
       objects: rendered.objects,
       title: `Blueprint preview — ${name}`,

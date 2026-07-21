@@ -194,3 +194,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* #5 — the plain-language "what this write does" line (Create file … / Open PR …). More prominent
+   than the raw .opPreview it replaces for the git-write kinds. */
+.opHuman {
+  font-size: 13px;
+  margin-top: 2px;
+  opacity: 0.95;
+  padding-left: 28px;
+}

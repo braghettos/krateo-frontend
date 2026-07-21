@@ -43,6 +43,14 @@ export interface AutopilotPreviewPayload {
    * ("Rendered (live)"), so snowplow compiles + serves the drafts exactly like a
    * production page. Absent = the classic source-only drawer. */
   liveEndpoint?: string
+  /** The SOURCE tree that a publish commits, each file with its repo-relative destination path —
+   * the unified "Files" tab shared by BOTH builders (a page's widget CRs at chart/templates/… , a
+   * blueprint's chart tree). Both are the same shape: a manifest tree → PR to a git repo, so both
+   * surface it identically (and it IS the write-set the blast-radius later confirms). */
+  files?: { content: string; path: string }[]
+  /** Where a publish writes — a one-line header on the drawer. Page → krateo-portal-chart, blueprint
+   * → krateo-blueprints; both open a PR into `base`. Absent for non-publishable previews (restdef). */
+  publishTarget?: { base?: string; repo: string }
   /** Invoked when the drawer CLOSES (the v2 teardown seam: best-effort sandbox
    * DELETEs, epoch-guarded upstream so a stale close is a no-op). Optional. */
   onClose?: () => void
