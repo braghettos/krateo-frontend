@@ -68,11 +68,24 @@ data:
       set `widgetData.vertical: true` for a column, `gap`), Row, Col, Tabs.
     - Content: **Paragraph** (widgetData.text [+ strong/type/level]), **Markdown**
       (widgetData.markdown), **Card**, **Statistic**, **Table**, **Listy**, **Button**.
+    - Charts (@ant-design/plots via AntV G2 -- the data is a FLAT array of record rows built
+      SERVER-SIDE by spec.apiRef + widgetDataTemplate -> `data`, NOT the Table `dataSource` cell
+      shape): **PieChart** (data + angleField + colorField), **LineChart** (data + xField +
+      yField), **BarChart** (data + xField + yField). Plurals: piecharts, linecharts, barcharts.
+      Charts ARE authorable + placeable in a page Flex -- prefer them for "chart"/"pie"/"breakdown"
+      /"over time" requests; only fall back to Table/Listy if the user asks for a list.
     Per-kind REQUIRED widgetData:
     - Flex: `allowedResources` (array of child plurals) + `items` (array of {resourceRefId}).
     - Paragraph: `text`.
     - Table: `allowedResources` (array; use `[]`) + `columns` (array of {valueKey, title}); the row
       data comes from spec.apiRef + widgetDataTemplate -> `dataSource`.
+    - PieChart: `data` (array of flat rows) + `angleField` (row-key for the numeric slice value) +
+      `colorField` (row-key for the category); rows come from spec.apiRef + widgetDataTemplate ->
+      `data` (each row carries the angleField + colorField keys). Optional `colorMap`
+      {category: paletteColorName}, `innerRadius` (0-100 donut hole), `legendPosition`.
+    - LineChart / BarChart: `data` (array of flat rows) + `xField` + `yField`; rows via spec.apiRef
+      + widgetDataTemplate -> `data`. Multi-series is a `colorField` KEY on each row, NOT a nested
+      series array (BarChart = vertical bars / G2 Column).
 
     # CANONICAL COMPLETE PAGE -- a heading + a LIVE compositions table (copy + adapt this shape)
     # Data reuses the EXISTING `compositions-list` RESTAction via apiRef (its rows expose
@@ -121,6 +134,34 @@ data:
           - { id: cost-report-table, apiVersion: widgets.templates.krateo.io/v1beta1, resource: tables, name: cost-report-table, namespace: krateo-system, verb: GET }
     ---
     # To adapt: rename the page slug + heading text + columns, keep the exact shapes, dry-run each, return them.
+
+    # CANONICAL CHART -- a status-breakdown PieChart bound to the EXISTING compositions-list RESTAction
+    # via apiRef. Chart data is a FLAT array of rows written to widgetData.data by widgetDataTemplate
+    # (forPath: data) -- NOT the Table `dataSource` cell shape. Each row carries the angleField
+    # (numeric slice value) + colorField (category) keys. resourcesRefs is {items: []}.
+    ---
+    apiVersion: widgets.templates.krateo.io/v1beta1
+    kind: PieChart
+    metadata: { name: comp-status-pie, namespace: krateo-system }
+    spec:
+      apiRef: { name: compositions-list, namespace: krateo-system }
+      widgetData:
+        data: []
+        angleField: count
+        colorField: status
+        colorMap: { Healthy: green, Failed: red }
+        innerRadius: 60
+        legendPosition: right
+      resourcesRefs: { items: [] }
+      widgetDataTemplate:
+        - forPath: data
+          expression: >-
+            ${ [ .filtered[]? | (((.conditions // []) | map(select(.type=="Ready")) | (.[0].status // "?"))) ]
+            | group_by(.) | map({ status: .[0], count: length }) }
+    ---
+    # To adapt to LineChart/BarChart: keep spec.apiRef + `forPath: data`, but emit rows with the
+    # xField+yField keys (e.g. { t: <epoch>, v: <n> }) + set widgetData.xField/yField instead of
+    # angleField/colorField. Multi-series = a colorField KEY on each row. Dry-run before returning.
 
     ## Grounding
     Ground in the VERSION-CORRECT docs via the tokenless `fetch` tool (public raw URL, pinned to your

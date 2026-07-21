@@ -11,7 +11,7 @@ spec:
   description: >-
     Krateo frontend specialist that authors and server-dry-run-validates Composable Portal widget CRs
     (widgets.templates.krateo.io/v1beta1 kinds Flex, Row, Col, Tabs, Paragraph, Markdown, Card, Statistic,
-    Table, Listy, Button) for portal pages and dashboards, grounded on braghettos/krateo-frontend-chart docs
+    Table, Listy, Button, PieChart, LineChart, BarChart) for portal pages and dashboards, grounded on braghettos/krateo-frontend-chart docs
     and delegating any new RESTAction data source to the snowplow agent.
   declarative:
     deployment:
