@@ -371,6 +371,17 @@ export const buildSandboxWidgetEndpoint = (root: DraftTarget, sandboxNamespace: 
     resource: root.gvr.resource,
   })
 
+/** The child ref ids the ROOT draft declares (spec.resourcesRefs.items[].id) — what the
+ * A.2.35 warm-up gate requires the SERVED root to have RESOLVED before the drawer opens. */
+export const rootChildRefIdsOf = (rootDraft: Record<string, unknown> | undefined): string[] => {
+  const items = asRecord(asRecord(asRecord(rootDraft ?? {})?.spec)?.resourcesRefs)?.items
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  return items.map((item) => asRecord(item)?.id).filter(isNonEmptyString)
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // The teardown session (provider-scoped, like the KOG preview gate)
 // ────────────────────────────────────────────────────────────────────────────

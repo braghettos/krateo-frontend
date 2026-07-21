@@ -25,6 +25,7 @@
  */
 
 import type { SetDispatchOptions, WriteOp, WriteOpResult } from '../../hooks/runRestSet'
+import { getAccessToken } from '../../utils/getAccessToken'
 
 import type { PortalActionProposal } from './actionBridge'
 import { type ApplyResourceSetOp, buildSetOpPath, isApplySetAllowed } from './applyResourceSet'
@@ -39,6 +40,7 @@ import {
   draftTargetsOf,
   type PreviewPageSession,
   rewriteDraftsForSandbox,
+  rootChildRefIdsOf,
   rootDraftTargetOf,
   validatePageDrafts,
 } from './previewSandbox'
@@ -53,6 +55,51 @@ export interface PreviewPageV2Deps {
   /** The provider-scoped teardown session (epoch-guarded drawer-close deletes). */
   session: PreviewPageSession
   handleActionSet: (ops: readonly WriteOp[], options?: SetDispatchOptions) => Promise<WriteOpResult[] | null>
+  /** snowplow base URL for the A.2.35 warm-up gate (absent → the gate is skipped). */
+  snowplowBaseUrl?: string
+}
+
+/**
+ * A.2.35 — the sandbox INFORMER WARM-UP GATE. snowplow serves widgets from its informer
+ * cache: opening the drawer the instant the sandbox POSTs land RACES the ingest, and a
+ * PARTIAL root serve (some children not yet resolved into status.resourcesRefs) gets
+ * react-query-cached — the page then renders partially FOREVER (the silent "only the
+ * first widget shows" page). Poll the root's REAL serve until every declared child id is
+ * resolved, or the bounded timeout passes (then open anyway — the renderer's own
+ * error/Retry surface is the fallback). Returns whether the serve warmed up in time.
+ */
+export const awaitSandboxWarmup = async (
+  snowplowBaseUrl: string,
+  root: DraftTarget,
+  expectedChildIds: readonly string[],
+  sandboxNamespace: string,
+  timeoutMs = 20000,
+): Promise<boolean> => {
+  const url = `${snowplowBaseUrl.replace(/\/+$/, '')}${buildSandboxWidgetEndpoint(root, sandboxNamespace)}`
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    try {
+      // eslint-disable-next-line no-await-in-loop -- a poll loop is sequential by nature
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${getAccessToken()}` } })
+      if (response.ok) {
+        // eslint-disable-next-line no-await-in-loop -- poll loop
+        const body = await response.json() as { status?: { resourcesRefs?: { items?: { id?: unknown }[] } } }
+        const served = new Set((body.status?.resourcesRefs?.items ?? [])
+          .map((item) => (typeof item.id === 'string' ? item.id : ''))
+          .filter(Boolean))
+        if (expectedChildIds.every((id) => served.has(id))) {
+          return true
+        }
+      }
+    } catch {
+      // transient — the poll loop IS the retry
+    }
+    if (Date.now() >= deadline) {
+      return false
+    }
+    // eslint-disable-next-line no-await-in-loop -- poll loop
+    await new Promise((resolve) => { setTimeout(resolve, 1500) })
+  }
 }
 
 /** The drawer caption of a LIVE sandbox preview (A.2.4). */
@@ -165,6 +212,13 @@ export const applyPreviewPageV2 = async (
     })
 
     return { label: `preview apply failed — ${failure}`, readOnly: false, verb: 'previewPage' }
+  }
+
+  // 3b. A.2.35 WARM-UP — hold the drawer until the ROOT serves with every child resolved
+  // (see awaitSandboxWarmup: an instant open races the informer and CACHES a partial page).
+  if (deps.snowplowBaseUrl) {
+    const rootDraft = rewritten[targets.indexOf(root)]
+    await awaitSandboxWarmup(deps.snowplowBaseUrl, root, rootChildRefIdsOf(rootDraft), deps.sandboxNamespace)
   }
 
   // 4-5. RENDER + arm the epoch-guarded drawer-close teardown.

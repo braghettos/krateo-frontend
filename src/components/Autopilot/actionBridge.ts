@@ -575,6 +575,8 @@ export const useAutopilotActionBridge = () => {
         sandboxNamespace,
         session: previewPageSession,
         sessionId: origin?.agentSessionId ?? 'unattributed',
+        // A.2.35 warm-up gate: hold the drawer until the root's serve resolves all children.
+        ...(snowplowBaseUrl ? { snowplowBaseUrl } : {}),
       })
     }
 
