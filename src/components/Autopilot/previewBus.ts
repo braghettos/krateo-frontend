@@ -56,6 +56,21 @@ export interface AutopilotPreviewPayload {
   onClose?: () => void
 }
 
+/** The LAST previewPage's validation verdicts — held here so the CONTEXT COLLECTOR can
+ * surface them to the model (page context `previewProblems`): Autopilot SEES its own
+ * rejected preview and self-corrects without the user asking. Cleared on a live preview. */
+let lastPreviewProblems: string[] | null = null
+
+export const setPreviewProblems = (problems: string[] | null): void => {
+  lastPreviewProblems = problems && problems.length ? [...problems] : null
+}
+
+export const getPreviewProblems = (): string[] | null => lastPreviewProblems
+
+/** The hidden recovery-turn prompt fired by the provider's PREVIEW-VALIDATION TRAMPOLINE when a
+ * previewPage was ajv-rejected — pairs with the every-turn PREVIEW SELF-CORRECTION directive. */
+export const PREVIEW_SELF_CORRECTION_NUDGE = 'Your previewed page was REJECTED by validation — the EXACT schema errors are in your page context under `previewProblems` (one line per failing field). Fix exactly those errors in the affected CRs (re-delegate to the frontend specialist with the lines verbatim if it authored them) and re-emit the FULL corrected previewPage fence now.'
+
 /** Open the Autopilot preview drawer (mounted once by AutopilotProvider). */
 export const openAutopilotPreview = (payload: AutopilotPreviewPayload): void => {
   window.dispatchEvent(new CustomEvent(AUTOPILOT_PREVIEW_EVENT, { detail: payload }))

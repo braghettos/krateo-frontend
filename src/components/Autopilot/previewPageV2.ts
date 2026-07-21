@@ -30,7 +30,7 @@ import { getAccessToken } from '../../utils/getAccessToken'
 import type { PortalActionProposal } from './actionBridge'
 import { type ApplyResourceSetOp, buildSetOpPath, isApplySetAllowed } from './applyResourceSet'
 import { buildPagePreviewPayload, parsePagePreviewArgs } from './previewBridge'
-import { openAutopilotPreview } from './previewBus'
+import { openAutopilotPreview, setPreviewProblems } from './previewBus'
 import {
   buildSandboxApplyOps,
   buildSandboxTeardownOps,
@@ -146,6 +146,8 @@ export const applyPreviewPageV2 = async (
   // 1. VALIDATE — any failure: source drawer with the verdicts, NOTHING applied.
   const problems = await validatePageDrafts(widgets)
   if (problems.length) {
+    // Surface the verdicts to the CONTEXT COLLECTOR — the model self-corrects from these.
+    setPreviewProblems(problems)
     openAutopilotPreview({
       ...buildPagePreviewPayload(widgets),
       caption: 'Validation failed — nothing was applied to the sandbox. Fix the drafts and preview again.',
@@ -220,6 +222,9 @@ export const applyPreviewPageV2 = async (
     const rootDraft = rewritten[targets.indexOf(root)]
     await awaitSandboxWarmup(deps.snowplowBaseUrl, root, rootChildRefIdsOf(rootDraft), deps.sandboxNamespace)
   }
+
+  // A live preview supersedes any earlier rejection — clear the self-correction signal.
+  setPreviewProblems(null)
 
   // 4-5. RENDER + arm the epoch-guarded drawer-close teardown.
   const epoch = deps.session.record(buildSandboxTeardownOps(applied, deps.sandboxNamespace))

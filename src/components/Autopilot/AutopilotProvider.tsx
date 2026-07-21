@@ -33,6 +33,7 @@ import { autopilotConversationStore } from './conversationStore'
 import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, type OasAttachmentResult } from './oasAttachment'
 import { isPageDraft, pageDisplayName, pageDraftFiles, pageRootSlug, type NavHint } from './pageDraft'
 import { buildPagePublishOps } from './pagePublish'
+import { PREVIEW_SELF_CORRECTION_NUDGE } from './previewBus'
 import { createPreviewGate } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { askPublishDestination, PublishTargetFormHost } from './publishTargetForm'
@@ -291,10 +292,18 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       // user's latest chat message (the prompt that produced this proposal). If a write
       // is reached (a mutating runAction / patchField / applyResourceSet), its audit
       // record carries actor:'agent' + this context; read-only verbs never record.
-      const origin: WriteOrigin = {
-        actor: 'agent',
-        agentSessionId: sessionId,
-        ...(lastUserTextRef.current ? { prompt: lastUserTextRef.current } : {}),
+      const origin: WriteOrigin = { actor: 'agent', agentSessionId: sessionId, ...(lastUserTextRef.current ? { prompt: lastUserTextRef.current } : {}) }
+      // Shared tail of BOTH publish branches: a denial becomes a read-only chip; built ops flow
+      // through the SAME apply (blast-radius confirm) as any model-emitted applyResourceSet.
+      const pushPublishOutcome = async (compiled: PublishCompileResult, label: string | undefined) => {
+        if (compiled.denial !== null) {
+          chips.push({ label: compiled.denial, readOnly: true, verb: 'applyResourceSet' })
+        } else if (compiled.ops) {
+          const chip = await apply({ label, ops: compiled.ops, verb: 'applyResourceSet' }, origin)
+          if (chip) {
+            chips.push(chip)
+          }
+        }
       }
       if (proposal.verb === 'prefillForm') {
         // prefillForm sets provider state (not a dispatcher action): the mounted Form merges these into
@@ -312,8 +321,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         // model-emitted applyResourceSet — this branch only assembles the set.
         const held = blueprintStore.get()
         const chart = heldDraftIdentity(held)
-        // The DESTINATION is user-owned: ask it in a proper form (the fence coords are only
-        // prefills). Cancel → the publish is denied, nothing assembled.
+        // The DESTINATION is user-owned: a proper form asks (fence coords are prefills); cancel → denied.
         const blueprintTarget = await askPublishDestination(proposal, 'blueprint', 'krateo-blueprints')
         const targetedBlueprint = blueprintTarget ? { ...proposal, ...blueprintTarget } : proposal
         const built = blueprintTarget && held && chart ? buildBlueprintPublishOps(targetedBlueprint, held, chart) : null
@@ -327,26 +335,16 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         } else {
           compiled = compilePublishOps(built, previewGate.evaluate(built), blueprintGate.evaluate(built, chart), oasStore.get(), held, { prompt: lastUserTextRef.current, sessionId })
         }
-        if (compiled.denial !== null) {
-          chips.push({ label: compiled.denial, readOnly: true, verb: 'applyResourceSet' })
-        } else if (compiled.ops) {
-          const chip = await apply({ label: proposal.label, ops: compiled.ops, verb: 'applyResourceSet' }, origin)
-          if (chip) {
-            chips.push(chip)
-          }
-        }
+        await pushPublishOutcome(compiled, proposal.label)
       } else if (proposal.verb === 'publishPage') {
         // FE-BP7 — frontend-constructs-ops, PAGE variant. The model emits ONE scalar `publishPage`
-        // verb (repo coords only); the HOST fans it out into the gitrefs + per-file repocontents
-        // (widget CRs → chart/templates, the nav fragment → chart/files/nav-fragments) + pullrequests
-        // set from the HELD previewed page draft — same reason as publishBlueprint (gemini-2.5-pro
-        // stalls hand-writing that heterogeneous multi-op payload → it narrates instead of emitting).
-        // Routes through the SAME compilePublishOps ($fileContent → base64 + authorship) and the SAME
-        // blast-radius confirm; the slug (branch/paths) is derived from the page's page-<slug> root.
+        // verb; the HOST fans it out into gitrefs + per-file repocontents (widget CRs → chart/templates,
+        // the nav fragment → chart/files/nav-fragments) + pullrequests from the HELD previewed page —
+        // same rationale as publishBlueprint above. Routes through the SAME compilePublishOps and the
+        // SAME blast-radius confirm; the slug (branch/paths) derives from the page's page-<slug> root.
         const held = blueprintStore.get()
         const slug = held && isPageDraft(held.files) ? pageRootSlug(held.files) : null
-        // The DESTINATION is user-owned: ask it in a proper form (the fence coords are only
-        // prefills). Cancel → the publish is denied, nothing assembled.
+        // The DESTINATION is user-owned: a proper form asks (fence coords are prefills); cancel → denied.
         const pageTarget = await askPublishDestination(proposal, 'page', 'krateo-portal-chart')
         const targetedPage = pageTarget ? { ...proposal, ...pageTarget } : proposal
         const built = pageTarget && held && slug ? buildPagePublishOps(targetedPage, held, slug) : null
@@ -360,14 +358,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         } else {
           compiled = compilePublishOps(built, previewGate.evaluate(built), blueprintGate.evaluate(built, heldDraftIdentity(held)), oasStore.get(), held, { prompt: lastUserTextRef.current, sessionId })
         }
-        if (compiled.denial !== null) {
-          chips.push({ label: compiled.denial, readOnly: true, verb: 'applyResourceSet' })
-        } else if (compiled.ops) {
-          const chip = await apply({ label: proposal.label, ops: compiled.ops, verb: 'applyResourceSet' }, origin)
-          if (chip) {
-            chips.push(chip)
-          }
-        }
+        await pushPublishOutcome(compiled, proposal.label)
       } else if (proposal.verb === 'applyResourceSet') {
         // Publish path, enforced HERE (finalize is the single entry point for model
         // proposals). Host-side checks BEFORE the bridge ever dispatches — a denial is the
@@ -434,6 +425,14 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       setMessages((prev) => prev.map((message) => (
         message.id === assistantId ? { ...message, actions: chips } : message
       )))
+    }
+
+    // PREVIEW-VALIDATION TRAMPOLINE (FE-P5): an ajv-rejected previewPage self-corrects WITHOUT the human
+    // asking — ONE hidden recovery turn; the every-turn PREVIEW SELF-CORRECTION directive drives the re-emit.
+    if (chips.some((chip) => /^preview blocked — \d+ validation error/.test(chip.label)) && recoveryCountRef.current < 1) {
+      recoveryCountRef.current += 1
+      setTimeout(() => sendRef.current?.(PREVIEW_SELF_CORRECTION_NUDGE, { recovery: true }), 0)
+      return
     }
 
     // DIRECTIVE-ERROR TRAMPOLINE (see sendRef/recoveryCountRef note above). No proposal was applied and

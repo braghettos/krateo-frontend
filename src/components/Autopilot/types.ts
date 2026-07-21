@@ -134,6 +134,10 @@ export interface PageContextEnvelope {
   identity?: AutopilotIdentity
   /** The live on-screen widget inventory. */
   widgets: WidgetInventoryEntry[]
+  /** The LAST previewPage's validation verdicts — present ONLY while the draft set is
+   * REJECTED. The model must fix these exact errors and re-emit the full corrected
+   * previewPage fence (see the PREVIEW SELF-CORRECTION routing rule). */
+  previewProblems?: string[]
   /** A one-line kind-aware summary of the focused surface. */
   focus?: string
   /** When this snapshot was taken (ms epoch) — lets the model reason about freshness. */

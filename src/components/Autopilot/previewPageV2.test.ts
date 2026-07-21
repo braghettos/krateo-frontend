@@ -24,7 +24,7 @@ import type { AutopilotPreviewPayload } from './previewBus'
 import { applyPreviewPageV2, type PreviewPageV2Deps } from './previewPageV2'
 import { createPreviewPageSession, WIDGETS_API_VERSION } from './previewSandbox'
 
-vi.mock('./previewBus', () => ({ openAutopilotPreview: vi.fn() }))
+vi.mock('./previewBus', () => ({ openAutopilotPreview: vi.fn(), setPreviewProblems: vi.fn() }))
 
 const openPreviewMock = vi.mocked(openAutopilotPreview)
 

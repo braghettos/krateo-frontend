@@ -12,6 +12,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
+import { getPreviewProblems } from './previewBus'
 import { redactAutopilotContext } from './redact'
 import type { AutopilotIdentity, PageContextEnvelope, WidgetInventoryEntry } from './types'
 
@@ -517,12 +518,16 @@ export const useAutopilotContext = () => {
       .slice(0, MAX_WIDGETS)
 
     const route = window.location.pathname
+    const previewProblems = getPreviewProblems()
     return {
       capturedAt: Date.now(),
       extras: collectExtras(window.location.search),
       focus: focusFromRoute(route),
       identity: collectIdentity(),
       pageStatus: derivePageStatus(widgets),
+      // Autopilot SEES its own rejected preview — the exact verdicts ride the context so the
+      // model self-corrects (fix + re-emit the fence) without the user relaying errors.
+      ...(previewProblems?.length ? { previewProblems: previewProblems.slice(0, 8) } : {}),
       route,
       widgets,
     }
