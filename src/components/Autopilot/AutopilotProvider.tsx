@@ -35,6 +35,7 @@ import { isPageDraft, pageDisplayName, pageDraftFiles, pageRootSlug, type NavHin
 import { buildPagePublishOps } from './pagePublish'
 import { createPreviewGate } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
+import { askPublishDestination, PublishTargetFormHost } from './publishTargetForm'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
@@ -311,9 +312,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         // model-emitted applyResourceSet — this branch only assembles the set.
         const held = blueprintStore.get()
         const chart = heldDraftIdentity(held)
-        const built = held && chart ? buildBlueprintPublishOps(proposal, held, chart) : null
+        // The DESTINATION is user-owned: ask it in a proper form (the fence coords are only
+        // prefills). Cancel → the publish is denied, nothing assembled.
+        const blueprintTarget = await askPublishDestination(proposal, 'blueprint', 'krateo-blueprints')
+        const targetedBlueprint = blueprintTarget ? { ...proposal, ...blueprintTarget } : proposal
+        const built = blueprintTarget && held && chart ? buildBlueprintPublishOps(targetedBlueprint, held, chart) : null
         let compiled: PublishCompileResult
-        if (!held || !chart || built === null) {
+        if (!blueprintTarget) {
+          compiled = { denial: 'publish cancelled — destination not confirmed', ops: null }
+        } else if (!held || !chart || built === null) {
           compiled = { denial: 'denied — no previewed blueprint to publish (draft + preview a chart first)', ops: null }
         } else if (built.length > MAX_APPLY_SET_OPS) {
           compiled = { denial: `denied — "${chart}" has ${Object.keys(held.files).length} files; a single publish tops out at ${MAX_APPLY_SET_OPS - 2} — trim the chart tree (large assets belong in a hosted values file).`, ops: null }
@@ -338,9 +345,15 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         // blast-radius confirm; the slug (branch/paths) is derived from the page's page-<slug> root.
         const held = blueprintStore.get()
         const slug = held && isPageDraft(held.files) ? pageRootSlug(held.files) : null
-        const built = held && slug ? buildPagePublishOps(proposal, held, slug) : null
+        // The DESTINATION is user-owned: ask it in a proper form (the fence coords are only
+        // prefills). Cancel → the publish is denied, nothing assembled.
+        const pageTarget = await askPublishDestination(proposal, 'page', 'krateo-portal-chart')
+        const targetedPage = pageTarget ? { ...proposal, ...pageTarget } : proposal
+        const built = pageTarget && held && slug ? buildPagePublishOps(targetedPage, held, slug) : null
         let compiled: PublishCompileResult
-        if (!held || !slug || built === null) {
+        if (!pageTarget) {
+          compiled = { denial: 'publish cancelled — destination not confirmed', ops: null }
+        } else if (!held || !slug || built === null) {
           compiled = { denial: 'denied — no previewed portal page to publish (draft + preview a page-<slug> first)', ops: null }
         } else if (built.length > MAX_APPLY_SET_OPS) {
           compiled = { denial: `denied — "page-${slug}" has ${Object.keys(held.files).length} files; a single publish tops out at ${MAX_APPLY_SET_OPS - 2} — split the page across turns on the same branch.`, ops: null }
@@ -754,6 +767,8 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         {/* Wave-4 preview surface: the read-only preview verbs (previewBlueprint /
             previewPage / previewRestDef) render into this global drawer. */}
         <AutopilotPreviewDrawer />
+        {/* The publish-destination form (user-owned owner/repo/base, asked at every publish). */}
+        <PublishTargetFormHost />
       </AgentDraftProvider>
     </AutopilotReactContext.Provider>
   )

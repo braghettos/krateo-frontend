@@ -180,6 +180,8 @@ export const AutopilotPreviewDrawer = () => {
             <Tag color='geekblue'>Publishes to</Tag>
             <Typography.Text code>{payload.publishTarget.repo}</Typography.Text>
             {payload.publishTarget.base ? <Typography.Text type='secondary'>· PR into {payload.publishTarget.base}</Typography.Text> : null}
+            {/* The destination is user-owned: these are DEFAULTS — a proper form asks at publish. */}
+            <Typography.Text type='secondary'>· you confirm the destination at publish</Typography.Text>
           </div>
         ) : null}
         <Tabs defaultActiveKey={tabs[0]?.key} items={tabs} />
