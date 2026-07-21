@@ -101,8 +101,10 @@ export const PublishTargetFormHost = () => {
     >
       <div data-testid='publish-target-form'>
         <Typography.Paragraph type='secondary'>
-          Autopilot publishes as a pull request into the base branch — nothing merges without your
-          review. Confirm the destination, or point it somewhere else.
+          {pending?.req.kind === 'blueprint'
+            // Name the artifact at the write gate: what a blueprint publish actually commits.
+            ? 'The Helm chart tree (Chart.yaml, values.schema.json, templates/) is opened as a pull request into the base branch — merged, CI publishes it as a versioned OCI chart. Nothing merges without your review.'
+            : 'Autopilot publishes as a pull request into the base branch — nothing merges without your review. Confirm the destination, or point it somewhere else.'}
         </Typography.Paragraph>
         <Form form={form} layout='vertical'>
           <Form.Item label='Repository owner' name='owner' rules={[{ message: 'the GitHub owner/org is required', required: true }]}>

@@ -152,7 +152,7 @@ export const AutopilotPreviewDrawer = () => {
       // (templates, apiRef data, children) like any page; its own loading/error states are honest.
       ? [{ children: <div className={styles.live}><WidgetRenderer widgetEndpoint={payload.liveEndpoint} /></div>, key: 'live', label: 'Rendered (live)' }]
       : []),
-    ...(filesBody ? [{ children: filesBody, key: 'files', label: 'Files' }] : []),
+    ...(filesBody ? [{ children: filesBody, key: 'files', label: payload.filesLabel ?? 'Files' }] : []),
     { children: sourceBody, key: 'source', label: 'Source' },
   ]
 
@@ -180,6 +180,7 @@ export const AutopilotPreviewDrawer = () => {
             <Tag color='geekblue'>Publishes to</Tag>
             <Typography.Text code>{payload.publishTarget.repo}</Typography.Text>
             {payload.publishTarget.base ? <Typography.Text type='secondary'>· PR into {payload.publishTarget.base}</Typography.Text> : null}
+            {payload.publishTarget.note ? <Typography.Text type='secondary'>· {payload.publishTarget.note}</Typography.Text> : null}
             {/* The destination is user-owned: these are DEFAULTS — a proper form asks at publish. */}
             <Typography.Text type='secondary'>· you confirm the destination at publish</Typography.Text>
           </div>

@@ -48,9 +48,13 @@ export interface AutopilotPreviewPayload {
    * blueprint's chart tree). Both are the same shape: a manifest tree → PR to a git repo, so both
    * surface it identically (and it IS the write-set the blast-radius later confirms). */
   files?: { content: string; path: string }[]
+  /** Label for the files tab. A blueprint names it "Chart files" — the tree IS a Helm chart and
+   * the tab is where the user sees that; a page keeps the generic "Files". */
+  filesLabel?: string
   /** Where a publish writes — a one-line header on the drawer. Page → krateo-portal-chart, blueprint
-   * → krateo-blueprints; both open a PR into `base`. Absent for non-publishable previews (restdef). */
-  publishTarget?: { base?: string; repo: string }
+   * → krateo-blueprints; both open a PR into `base`. `note` qualifies WHAT ships after the merge
+   * (a blueprint: a versioned OCI Helm chart). Absent for non-publishable previews (restdef). */
+  publishTarget?: { base?: string; note?: string; repo: string }
   /** Invoked when the drawer CLOSES (the v2 teardown seam: best-effort sandbox
    * DELETEs, epoch-guarded upstream so a stale close is a no-op). Optional. */
   onClose?: () => void

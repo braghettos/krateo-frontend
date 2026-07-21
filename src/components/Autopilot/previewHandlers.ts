@@ -107,12 +107,14 @@ export const previewBlueprintSpec: VerbSpec = {
     // payload and mounts as a read-only SchemaForm section in the drawer.
     const formSchema = buildFormSchemaText(args.rawTemplates, rendered.valuesSchema, rendered.error)
     openAutopilotPreview({
-      caption: 'helm-render dry run — nothing is applied to the cluster',
+      // Name the artifact: a blueprint IS a Helm chart, and this caption + the "Chart files"
+      // tab are where the user learns that (the #1 what-am-I-publishing question).
+      caption: 'This blueprint is a Helm chart — Chart files is the tree the pull request commits; Source is its helm-rendered objects (dry run, nothing applied to the cluster)',
       ...(rendered.error ? { error: rendered.error } : {}),
-      // The authored chart tree IS the write-set a publishBlueprint commits — the unified "Files"
+      // The authored chart tree IS the write-set a publishBlueprint commits — the unified files
       // tab (a catalog dry-run of an already-published chart has no rawTemplates, so no Files/target).
-      ...(args.rawTemplates ? { files: Object.entries(args.rawTemplates).map(([path, content]) => ({ content, path })) } : {}),
-      ...(args.rawTemplates ? { publishTarget: { base: 'main', repo: 'krateo-blueprints' } } : {}),
+      ...(args.rawTemplates ? { files: Object.entries(args.rawTemplates).map(([path, content]) => ({ content, path })), filesLabel: 'Chart files' } : {}),
+      ...(args.rawTemplates ? { publishTarget: { base: 'main', note: 'merged, CI publishes it as a versioned OCI Helm chart', repo: 'krateo-blueprints' } } : {}),
       ...(formSchema ? { formSchema } : {}),
       objects: rendered.objects,
       title: `Blueprint preview — ${name}`,
