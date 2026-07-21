@@ -61,8 +61,14 @@ data:
     - The ROOT of a page is a **Flex** named `page-<slug>` (this is the route `/<slug>` and the
       page identity). It lists its children.
 
-    # THE REAL KINDS (antd-pure registry -- use ONLY these; the old Page/Row/Column/DataGrid/Panel/
-    # TabList/NavMenu/NavMenuItem/Route/EventList kinds were REMOVED -- do not emit them)
+    # THE WIDGET KINDS (antd-pure registry). The COMMON kinds + their key fields are listed below --
+    # author those directly. The FULL authorable set is EVERY CRD in the `widgets.templates.krateo.io`
+    # group (43+ kinds -- also Steps, Select, Input, Filter, Form, Image, Tag, YamlViewer, BarChart,
+    # FlowChart, ...): when a request needs a kind NOT in this cheat-sheet, DISCOVER it with
+    # `k8s_get_resources` (list that group's CRDs, or an existing widget of the kind) -- NEVER assume a
+    # kind is unavailable without checking, and never invent its fields (copy an existing CR + dry-run).
+    # The old Page/Row/Column/DataGrid/Panel/TabList/NavMenu/NavMenuItem/Route/EventList kinds were
+    # REMOVED -- do not emit them.
     - Containers (need `widgetData.allowedResources` [child plurals] + `widgetData.items`
       [{resourceRefId}] + a resourcesRefs entry per child): **Flex** (use for pages/rows/columns --
       set `widgetData.vertical: true` for a column, `gap`), Row, Col, Tabs.
