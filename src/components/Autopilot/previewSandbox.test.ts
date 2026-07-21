@@ -41,7 +41,7 @@ const SESSION = 's_abc123'
 const flexRoot = (): Record<string, unknown> => ({
   apiVersion: WIDGETS_API_VERSION,
   kind: 'Flex',
-  metadata: { name: 'preview-draft-root', namespace: 'krateo-system' },
+  metadata: { name: 'page-preview-draft', namespace: 'krateo-system' },
   spec: {
     resourcesRefs: {
       items: [
@@ -143,7 +143,7 @@ describe('rewriteDraftsForSandbox — the A.2.2 rewrite', () => {
     const [root] = rewriteDraftsForSandbox([flexRoot()], SANDBOX, SESSION)
     const metadata = root.metadata as { namespace: string; labels: Record<string, string>; name: string }
     expect(metadata.namespace).toBe(SANDBOX)
-    expect(metadata.name).toBe('preview-draft-root')
+    expect(metadata.name).toBe('page-preview-draft')
     expect(metadata.labels[PREVIEW_PURPOSE_LABEL]).toBe(PREVIEW_PURPOSE_VALUE)
     expect(metadata.labels[PREVIEW_SESSION_LABEL]).toBe(SESSION)
   })
@@ -194,7 +194,7 @@ describe('op builders — ordered POSTs, teardown DELETEs, chunks, root endpoint
   it('teardown = one DELETE per applied target (no payloads)', () => {
     const ops = buildSandboxTeardownOps(targets, SANDBOX)
     expect(ops.map((op) => op.verb)).toEqual(['DELETE', 'DELETE', 'DELETE'])
-    expect(ops.map((op) => op.name)).toEqual(['preview-projects', 'preview-draft-root', 'preview-draft-title'])
+    expect(ops.map((op) => op.name)).toEqual(['preview-projects', 'page-preview-draft', 'preview-draft-title'])
     expect(ops.every((op) => op.payload === undefined)).toBe(true)
   })
 
@@ -208,16 +208,22 @@ describe('op builders — ordered POSTs, teardown DELETEs, chunks, root endpoint
     expect(chunks[1][1].name).toBe('p-11')
   })
 
-  it('the ROOT is the FIRST widget-kind draft (RESTActions are data, not a page root)', () => {
-    expect(rootDraftTargetOf(targets)?.name).toBe('preview-draft-root')
+  it('the ROOT is the page-<slug> Flex — the page ENTRY (its INIT), never inferred from order', () => {
+    expect(rootDraftTargetOf(targets)?.name).toBe('page-preview-draft')
+    // a child listed FIRST never becomes the entry — the page-* Flex wins regardless of order
+    const childFirst = draftTargetsOf(rewriteDraftsForSandbox([paragraph('heading-first'), flexRoot()], SANDBOX, SESSION))
+    expect(rootDraftTargetOf(childFirst)?.name).toBe('page-preview-draft')
+    // no page-* root Flex → NO entry: never guess (a lone child/RESTAction set has no page to mount)
     const dataOnly = draftTargetsOf(rewriteDraftsForSandbox([restAction()], SANDBOX, SESSION))
     expect(rootDraftTargetOf(dataOnly)).toBeNull()
+    const noPageRoot = draftTargetsOf(rewriteDraftsForSandbox([paragraph('heading-only')], SANDBOX, SESSION))
+    expect(rootDraftTargetOf(noPageRoot)).toBeNull()
   })
 
   it('builds the root\'s REAL /call widgetEndpoint exactly like resourcesRefs paths', () => {
     const root = rootDraftTargetOf(targets)
     expect(root && buildSandboxWidgetEndpoint(root, SANDBOX)).toBe(
-      '/call?resource=flexes&apiVersion=widgets.templates.krateo.io/v1beta1&name=preview-draft-root&namespace=krateo-preview',
+      '/call?resource=flexes&apiVersion=widgets.templates.krateo.io/v1beta1&name=page-preview-draft&namespace=krateo-preview',
     )
   })
 })

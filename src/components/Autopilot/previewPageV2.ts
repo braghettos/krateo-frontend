@@ -162,10 +162,10 @@ export const applyPreviewPageV2 = async (
   if (!root) {
     openAutopilotPreview({
       ...buildPagePreviewPayload(rewritten),
-      caption: 'The draft set has no widget to render as the page root (only RESTActions) — nothing was applied.',
+      caption: 'The draft set has no `page-<slug>` root Flex — the page ENTRY (its INIT) is undefined, so nothing was applied. Author the root Flex named page-<slug> listing the children and preview again.',
     })
 
-    return blockedChip('preview blocked — no widget draft to render as the page root')
+    return blockedChip('preview blocked — no page-<slug> root Flex (the page entry) in the draft set')
   }
 
   // 3. SWEEP + APPLY. Defensive kernel pass FIRST (all-or-nothing, before any write):

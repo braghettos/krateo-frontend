@@ -32,7 +32,7 @@ const SANDBOX = 'krateo-preview'
 
 const flexRoot = (): Record<string, unknown> => ({
   kind: 'Flex',
-  metadata: { name: 'preview-draft-root', namespace: 'krateo-system' },
+  metadata: { name: 'page-preview-draft', namespace: 'krateo-system' },
   spec: {
     resourcesRefs: {
       items: [{ allowed: true, apiVersion: WIDGETS_API_VERSION, id: 'p1', name: 'preview-draft-title', namespace: 'krateo-system', resource: 'paragraphs', verb: 'GET' }],
@@ -98,7 +98,7 @@ describe('previewPage v2 — deny + validation gates (nothing applied)', () => {
     const chip = await applyPreviewPageV2(proposalOf([ra]), deps)
 
     expect(handleActionSet).not.toHaveBeenCalled()
-    expect(chip?.label).toBe('preview blocked — no widget draft to render as the page root')
+    expect(chip?.label).toBe('preview blocked — no page-<slug> root Flex (the page entry) in the draft set')
     expect(openedPayload().liveEndpoint).toBeUndefined()
   })
 })
@@ -125,7 +125,7 @@ describe('previewPage v2 — the happy path (apply → live drawer → teardown 
     // The drawer renders the ROOT draft's REAL served endpoint + the rewritten source.
     const payload = openedPayload()
     expect(payload.liveEndpoint).toBe(
-      `/call?resource=flexes&apiVersion=widgets.templates.krateo.io/v1beta1&name=preview-draft-root&namespace=${SANDBOX}`,
+      `/call?resource=flexes&apiVersion=widgets.templates.krateo.io/v1beta1&name=page-preview-draft&namespace=${SANDBOX}`,
     )
     expect(payload.title).toContain('Page preview (live)')
     expect(payload.objects).toHaveLength(2)
@@ -145,7 +145,7 @@ describe('previewPage v2 — the happy path (apply → live drawer → teardown 
     expect(handleActionSet).toHaveBeenCalledTimes(2)
     const [teardown, options] = handleActionSet.mock.calls[1] as [WriteOp[], unknown]
     expect(teardown.map((op) => op.verb)).toEqual(['DELETE', 'DELETE'])
-    expect(teardown[0].path).toContain('name=preview-draft-root')
+    expect(teardown[0].path).toContain('name=page-preview-draft')
     expect(teardown[1].path).toContain('name=preview-draft-title')
     expect(options).toEqual({ silent: true, skipConfirmForSandbox: SANDBOX })
 
@@ -176,7 +176,7 @@ describe('previewPage v2 — the happy path (apply → live drawer → teardown 
 
   it('honors the proposal label on the chip', async () => {
     const { deps } = makeDeps()
-    const chip = await applyPreviewPageV2(proposalOf([paragraph()], 'preview the postgres page'), deps)
+    const chip = await applyPreviewPageV2(proposalOf([flexRoot()], 'preview the postgres page'), deps)
     expect(chip?.label).toBe('preview the postgres page')
   })
 })
@@ -189,7 +189,7 @@ describe('previewPage v2 — apply failure (graceful, rolled back, never a crash
 
     // Only the apply dispatch — nothing landed, so nothing to tear down.
     expect(handleActionSet).toHaveBeenCalledTimes(1)
-    expect(chip?.label).toBe('preview apply failed — Flex/preview-draft-root: admission webhook denied')
+    expect(chip?.label).toBe('preview apply failed — Flex/page-preview-draft: admission webhook denied')
     expect(chip?.readOnly).toBe(false)
     const payload = openedPayload()
     expect(payload.error).toContain('admission webhook denied')
@@ -211,13 +211,13 @@ describe('previewPage v2 — apply failure (graceful, rolled back, never a crash
     const [rollback] = handleActionSet.mock.calls[1] as [WriteOp[]]
     expect(rollback).toHaveLength(1)
     expect(rollback[0].verb).toBe('DELETE')
-    expect(rollback[0].path).toContain('name=preview-draft-root')
+    expect(rollback[0].path).toContain('name=page-preview-draft')
     expect(openedPayload().error).toContain('quota exceeded')
   })
 
   it('a null dispatch result (not dispatched) is a graceful failure chip, never a throw', async () => {
     const { deps } = makeDeps(() => null)
-    const chip = await applyPreviewPageV2(proposalOf([paragraph()]), deps)
+    const chip = await applyPreviewPageV2(proposalOf([flexRoot()]), deps)
     expect(chip?.label).toBe('preview apply failed — the write set was not dispatched')
     expect(openedPayload().error).toBe('the write set was not dispatched')
   })

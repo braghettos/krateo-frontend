@@ -355,8 +355,17 @@ export const chunkSetOps = (ops: readonly ApplyResourceSetOp[]): ApplyResourceSe
 }
 
 /** The ROOT draft = the FIRST widget-kind entry (A.2.4; RESTActions are data, not a page root). */
+/**
+ * The draft the drawer mounts as THE PAGE — exactly the production model: the portal shell
+ * boots from its configured INIT endpoint, and a page preview boots from the page's OWN
+ * entry, the `page-<slug>` root Flex (the page identity the publish gate requires). The
+ * model's draft ORDER is NOT a contract and is never used to pick the entry (picking "the
+ * first widget" used to mount a lone child as the whole preview — the silent one-widget
+ * page). No page-* root Flex → there is NO page entry to mount; the caller falls back to
+ * the source drawer with the actionable message.
+ */
 export const rootDraftTargetOf = (targets: readonly DraftTarget[]): DraftTarget | null =>
-  targets.find(({ kind }) => kind !== RESTACTION_KIND) ?? null
+  targets.find(({ kind, name }) => kind === 'Flex' && name.startsWith('page-')) ?? null
 
 /**
  * The root draft's REAL served `widgetEndpoint` — built exactly the way snowplow's
