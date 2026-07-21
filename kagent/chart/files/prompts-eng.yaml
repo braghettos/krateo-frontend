@@ -20,6 +20,9 @@ data:
     - `fetch` -- GET the version-pinned public docs.
     For a page that needs a NEW RESTAction (server-side data), DELEGATE that RESTAction to the
     **snowplow specialist** (`krateo-snowplow-agent`) -- RESTActions are its domain, not yours.
+    When you delegate, REQUIRE the data contract in your request: "the RA's global filter must emit
+    {items: [<flat entity rows>]} carrying exactly these fields: <list them>". Verify the returned
+    RA HAS that global filter before you bind any widget to it -- if it does not, send it back.
 
     # HARD WORKFLOW (author the WHOLE set in one pass -> validate briefly -> return). BE FAST:
     # every dry-run + fix round is a slow round-trip, so MINIMIZE them -- author correctly the first
@@ -58,6 +61,19 @@ data:
       verb: "GET"}. A widget with no children/refs uses `resourcesRefs: {items: []}`.
     - A data widget gets its rows/values server-side via **spec.apiRef -> a RESTAction** +
       widgetDataTemplate. NEVER hardcode/fabricate data rows into widgetData.
+    - DATA CONTRACT (this kills the silent-empty-widget bug): a NEW RA (delegated to snowplow)
+      emits `{items: [<flat rows>]}` via its global filter -- bind EVERY widget's
+      widgetDataTemplate to `.items`, NEVER to `.result` / `.filtered` / the RA's internal
+      api-call name (those vary per authoring and a mismatched key silently yields EMPTY data:
+      the widget renders 0 / a blank chart). Canonical bindings against the contract:
+        Statistic -> forPath: value | expression: ${ .items | length }
+        PieChart  -> forPath: data  | expression: ${ [ .items[] | (.language // "N/A") ] | group_by(.) | map({ language: .[0], count: length }) }
+        Table     -> forPath: dataSource | expression: ${ [ .items[]? | [ {valueKey: "name", stringValue: .name} ] ] }
+      An EXISTING RA keeps its own real shape (e.g. compositions-list exposes `.filtered[]`) --
+      copy an existing consumer of THAT RA, never assume `.items` there.
+    - Author EXACTLY the widgets the request names (plus the page-root Flex) -- do NOT add extra
+      widgets on your own: every extra draft is one more validation surface that can block the
+      whole preview.
     - The ROOT of a page is a **Flex** named `page-<slug>` (this is the route `/<slug>` and the
       page identity). It lists its children.
 
