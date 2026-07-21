@@ -114,44 +114,79 @@ const humanizeOp = (op: BlastRadiusSetOp): string | null => {
 /** True when the radius is the aggregated W0-4 set shape (vs a scalar write). */
 const isSetRadius = (radius: BlastRadius | BlastRadiusSet): radius is BlastRadiusSet => 'ops' in radius
 
+/** The github.krateo.io write kinds whose SET is really "open a pull request": repocontents = a file
+ *  commit, gitrefs = a branch, pullrequests = the PR itself. When EVERY op is one of these, we present
+ *  the set AS a pull request (plain-language lines), not a raw "apply N objects" transaction. */
+const GIT_PUBLISH_KINDS = new Set(['gitrefs', 'repocontents', 'pullrequests'])
+
 /**
- * The W0-4 SET decision surface: the total object count + the ORDERED op list, each op a
- * calm one-liner (verb chip + target + namespace + irreversible badge + body preview).
- * Ops run in the order shown and stop at the first failure — the human confirms ONCE
- * for the whole set.
+ * The W0-4 SET decision surface. For a git-publish set (the Portal/Blueprint builder's write path)
+ * it reads as a PULL REQUEST: a plain "Open a pull request" summary (branch/files/PR counts) + one
+ * plain-language line per op ("Create file …", "Open pull request — …"), with the raw GVR dropped —
+ * the human decides on WHAT it does, not on kubernetes resource strings. Any other set keeps the
+ * generic verb-chip + GVR + namespace op list. One confirm for the whole ordered set (stops at the
+ * first failure).
  */
 const SetView = ({ radius }: { radius: BlastRadiusSet }) => {
   const irreversibleCount = radius.ops.filter((op) => op.irreversible).length
+  const isGitPublish = radius.ops.length > 0 && radius.ops.every((op) => GIT_PUBLISH_KINDS.has(op.gvr.resource))
+  const branches = radius.ops.filter((op) => op.gvr.resource === 'gitrefs').length
+  const files = radius.ops.filter((op) => op.gvr.resource === 'repocontents').length
+  const prs = radius.ops.filter((op) => op.gvr.resource === 'pullrequests').length
+  const gitMeta = [
+    branches ? `${branches} branch` : '',
+    files ? `${files} file${files === 1 ? '' : 's'}` : '',
+    prs ? `${prs} pull request` : '',
+  ].filter(Boolean).join(' · ')
 
   return (
     <div className={styles.root} data-testid='blast-radius-confirm'>
-      <div className={styles.headline}>
-        <span className={styles.verb} data-verb='SET'>SET</span>
-        <span className={styles.intent}>apply {radius.count} objects, in order</span>
-      </div>
-
-      <dl className={styles.facts}>
-        <div className={styles.factRow}>
-          <dt className={styles.factKey}>Objects</dt>
-          <dd className={styles.factVal} data-testid='blast-radius-count'>{radius.count}</dd>
+      {isGitPublish ? (
+        <div className={styles.gitCard}>
+          <div className={styles.gitHeadline}>Open a pull request</div>
+          <div className={styles.gitMeta}>{gitMeta} · nothing merges without your review</div>
         </div>
-        <div className={styles.factRow}>
-          <dt className={styles.factKey}>Order</dt>
-          <dd className={styles.factVal}>sequential — stops at the first failure</dd>
-        </div>
-        {irreversibleCount > 0 && (
-          <div className={styles.factRow}>
-            <dt className={styles.factKey}>Irreversible</dt>
-            <dd className={styles.factVal}>{irreversibleCount} delete{irreversibleCount === 1 ? '' : 's'}</dd>
+      ) : (
+        <>
+          <div className={styles.headline}>
+            <span className={styles.verb} data-verb='SET'>SET</span>
+            <span className={styles.intent}>apply {radius.count} objects, in order</span>
           </div>
-        )}
-      </dl>
+          <dl className={styles.facts}>
+            <div className={styles.factRow}>
+              <dt className={styles.factKey}>Objects</dt>
+              <dd className={styles.factVal} data-testid='blast-radius-count'>{radius.count}</dd>
+            </div>
+            <div className={styles.factRow}>
+              <dt className={styles.factKey}>Order</dt>
+              <dd className={styles.factVal}>sequential — stops at the first failure</dd>
+            </div>
+            {irreversibleCount > 0 && (
+              <div className={styles.factRow}>
+                <dt className={styles.factKey}>Irreversible</dt>
+                <dd className={styles.factVal}>{irreversibleCount} delete{irreversibleCount === 1 ? '' : 's'}</dd>
+              </div>
+            )}
+          </dl>
+        </>
+      )}
 
       <ol className={styles.opList}>
         {radius.ops.map((op, index) => {
           // The index IS the op identity (dispatch order) — a set radius is immutable once built.
           const human = humanizeOp(op)
-          return (
+          // Humanized (git-write) ops read as a PLAIN-LANGUAGE line — the raw GVR is dropped (it's noise
+          // for the human decision, and the full CR is in the preview drawer's Files tab). Non-humanized
+          // ops keep the technical one-liner + body preview so nothing is ever hidden.
+          return human ? (
+            <li className={styles.opRow} data-testid='blast-radius-set-op' key={index}>
+              <div className={styles.opHumanRow} data-testid='blast-radius-op-human'>
+                <span className={styles.opIndex}>{index + 1}</span>
+                <span className={styles.opHumanText}>{human}</span>
+                {op.irreversible && <span className={styles.irreversible}>irreversible</span>}
+              </div>
+            </li>
+          ) : (
             <li className={styles.opRow} data-testid='blast-radius-set-op' key={index}>
               <div className={styles.opHead}>
                 <span className={styles.opIndex}>{index + 1}</span>
@@ -160,10 +195,7 @@ const SetView = ({ radius }: { radius: BlastRadiusSet }) => {
                 <span className={styles.opNs}>{op.namespace || '—'}</span>
                 {op.irreversible && <span className={styles.irreversible}>irreversible</span>}
               </div>
-              {/* #5 — a plain-language line for the git-write kinds ("Create file …", "Open PR …")
-                  so the write-set reads as WHAT it does, not raw JSON; raw preview only as fallback. */}
-              {human && <div className={styles.opHuman} data-testid='blast-radius-op-human'>{human}</div>}
-              {!human && op.payloadPreview !== undefined && (
+              {op.payloadPreview !== undefined && (
                 <div className={styles.opPreview}>{previewOf(op.payloadPreview)}</div>
               )}
             </li>

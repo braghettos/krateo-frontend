@@ -203,3 +203,40 @@
   opacity: 0.95;
   padding-left: 28px;
 }
+
+/* Git-publish summary card — the SET reads as ONE pull request (cyan=create/POST), not N raw objects. */
+.gitCard {
+  background: color-mix(in srgb, var(--cyan-color) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cyan-color) 28%, transparent);
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+}
+
+.gitHeadline {
+  color: var(--text-color);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 600;
+}
+
+.gitMeta {
+  color: color-mix(in srgb, var(--text-color) 62%, transparent);
+  font-size: var(--font-size-xs);
+}
+
+/* A git-write op as a PLAIN-LANGUAGE line: index + the human sentence (primary), no raw GVR. */
+.opHumanRow {
+  align-items: baseline;
+  color: var(--text-color);
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  line-height: 1.45;
+}
+
+.opHumanText {
+  flex: 1;
+  word-break: break-word;
+}
