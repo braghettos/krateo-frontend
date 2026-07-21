@@ -68,7 +68,7 @@ data:
       the widget renders 0 / a blank chart). Canonical bindings against the contract:
         Statistic -> forPath: value | expression: ${ .items | length }
         PieChart  -> forPath: data  | expression: ${ [ .items[] | (.language // "N/A") ] | group_by(.) | map({ language: .[0], count: length }) }
-        Table     -> forPath: dataSource | expression: ${ [ .items[]? | [ {valueKey: "name", stringValue: .name} ] ] }
+        Table     -> forPath: dataSource | expression: ${ [ .items[]? | [ {valueKey: "name", kind: "jsonSchemaType", type: "string", stringValue: .name} ] ] }
       An EXISTING RA keeps its own real shape (e.g. compositions-list exposes `.filtered[]`) --
       copy an existing consumer of THAT RA, never assume `.items` there.
     - Author EXACTLY the widgets the request names (plus the page-root Flex) -- do NOT add extra
@@ -100,7 +100,10 @@ data:
     - Flex: `allowedResources` (array of child plurals) + `items` (array of {resourceRefId}).
     - Paragraph: `text`.
     - Table: `allowedResources` (array; use `[]`) + `columns` (array of {valueKey, title}); the row
-      data comes from spec.apiRef + widgetDataTemplate -> `dataSource`.
+      data comes from spec.apiRef + widgetDataTemplate -> `dataSource`. EVERY dataSource cell
+      REQUIRES `valueKey` AND `kind` -- a plain value is kind: "jsonSchemaType" + type: "string"
+      (+ stringValue; numbers via tostring). A cell missing `kind` makes snowplow REJECT the whole
+      widget serve (400) and the table silently never renders -- this is the #1 Table bug.
     - PieChart: `data` (array of flat rows) + `angleField` (row-key for the numeric slice value) +
       `colorField` (row-key for the category); rows come from spec.apiRef + widgetDataTemplate ->
       `data` (each row carries the angleField + colorField keys). Optional `colorMap`
@@ -135,9 +138,9 @@ data:
       widgetDataTemplate:
         - forPath: dataSource
           expression: >-
-            ${ [ .filtered[]? | [ {valueKey:"name",stringValue:.name},
-            {valueKey:"ns",stringValue:.ns},
-            {valueKey:"status",stringValue:(((.conditions // []) | map(select(.type=="Ready")) | (.[0].status // "?")))} ] ] }
+            ${ [ .filtered[]? | [ {valueKey:"name",kind:"jsonSchemaType",type:"string",stringValue:.name},
+            {valueKey:"ns",kind:"jsonSchemaType",type:"string",stringValue:.ns},
+            {valueKey:"status",kind:"jsonSchemaType",type:"string",stringValue:(((.conditions // []) | map(select(.type=="Ready")) | (.[0].status // "?")))} ] ] }
     ---
     apiVersion: widgets.templates.krateo.io/v1beta1
     kind: Flex
