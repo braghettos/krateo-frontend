@@ -52,6 +52,77 @@
   color: var(--faint-color);
 }
 
+/* Inline typeahead results under the palette input (UX audit #22). */
+.results {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--spacing-sm);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* One result row: title + optional subtitle on the left, the hit type on the right. */
+.resultRow {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: 6px var(--spacing-xs);
+  text-align: left;
+  width: 100%;
+}
+
+.resultActive {
+  background: var(--lightgray-color);
+}
+
+.resultText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.resultTitle {
+  color: var(--text-color);
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultSubtitle {
+  color: var(--faint-color);
+  font-size: var(--font-size-xxs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The hit's entity type (composition / blueprint / cluster / incident). */
+.resultType {
+  color: var(--gray-color);
+  flex-shrink: 0;
+  font-size: var(--font-size-xxs);
+  text-transform: capitalize;
+}
+
+/* Settled-empty state: honest, and points at the unchanged full-search path. */
+.noMatches {
+  color: var(--faint-color);
+  font-size: var(--font-size-xxs);
+  margin-top: var(--spacing-sm);
+  padding: 0 var(--spacing-xs);
+}
+
+/* Subtle in-flight cue in the hint row. */
+.searching {
+  color: var(--faint-color);
+}
+
 /* Enter / Esc hint row under the palette input. */
 .hintRow {
   color: var(--faint-color);
