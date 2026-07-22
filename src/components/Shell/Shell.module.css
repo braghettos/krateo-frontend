@@ -32,7 +32,7 @@
    / .paragraph.eyebrow). Horizontal padding matches the nav body (16px) so it aligns with the menu. */
 .siderEyebrow {
   /* On the Sovereign gradient sider (invariant both modes) — muted-light, not the dark graphite. */
-  color: rgb(255 255 255 / 45%);
+  color: color-mix(in srgb, var(--text-color) 55%, transparent);
   flex-shrink: 0;
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -63,7 +63,7 @@
 }
 
 .siderFooterName {
-  color: #F5F5F5;
+  color: var(--text-color);
   font-size: var(--font-size-xxs);
   font-weight: var(--font-weight-medium);
   overflow: hidden;
@@ -73,7 +73,7 @@
 
 /* Build/version marker — muted graphite mono, one subtle line under the user row. */
 .siderBuild {
-  color: rgb(255 255 255 / 40%);
+  color: color-mix(in srgb, var(--text-color) 50%, transparent);
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.04em;
