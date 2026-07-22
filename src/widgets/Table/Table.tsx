@@ -15,6 +15,7 @@ import { formatISODate, formatRelativeTime, getEndpointUrl } from '../../utils/u
 import styles from './Table.module.css'
 import type { Table as WidgetType } from './Table.type'
 import { computeTablePagination, shouldVirtualize, VIRTUAL_SCROLL_Y } from './tablePagination'
+import { getColumnSortProps } from './tableSorting'
 
 export type TableWidgetData = WidgetType['spec']['widgetData']
 
@@ -77,6 +78,11 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
     <AntdTable
       bordered={bordered}
       columns={columns?.map(({ color, title, valueKey }, index) => ({
+        // UX #13: inferred client-side sorting — an automatic `sorter` comparing
+        // the RAW dataSource values (numeric / kubectl-age / ISO-date / string,
+        // sniffed per column) + `align: 'right'` for numeric/age columns. No
+        // default sortOrder: the server's jq order stays until a header click.
+        ...getColumnSortProps(dataTable, valueKey),
         dataIndex: valueKey,
         key: `${uid}-col-${index}`,
         render: (_: unknown, row: NonNullable<TableWidgetData['dataSource']>[number]) => {
