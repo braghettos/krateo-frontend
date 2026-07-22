@@ -34,7 +34,7 @@ import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, 
 import { isPageDraft, pageDisplayName, pageDraftFiles, pageRootSlug, type NavHint } from './pageDraft'
 import { buildPagePublishOps } from './pagePublish'
 import { PREVIEW_SELF_CORRECTION_NUDGE } from './previewBus'
-import { buildKogPublishNudge, createPreviewGate } from './previewGate'
+import { buildKogPublishNudge, createPreviewGate, hydrateRestDefinitionOps } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { askPublishDestination, PublishTargetFormHost } from './publishTargetForm'
 import { createEchoTransport, createKagentTransport } from './transport'
@@ -382,7 +382,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         // (heldDraftIdentity); the SAME store/gate/substitution serve both (FE-P2 reuses FE-BP1/BP2).
         const heldChartName = heldDraftIdentity(held)
         const { denial, ops: compiledOps } = compilePublishOps(
-          proposal.ops,
+          hydrateRestDefinitionOps(proposal.ops, previewGate.lastDraft()),
           previewGate.evaluate(proposal.ops),
           blueprintGate.evaluate(proposal.ops, heldChartName),
           oasStore.get(),

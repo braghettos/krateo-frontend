@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ApplyResourceSetOp } from './applyResourceSet'
-import { createPreviewGate, restDefIdentityOf } from './previewGate'
+import { createPreviewGate, hydrateRestDefinitionOps, restDefIdentityOf } from './previewGate'
 
 const draft = (kind: string, group: string): Record<string, unknown> => ({
   apiVersion: 'ogen.krateo.io/v1alpha1',
@@ -115,5 +115,50 @@ describe('the preview gate — PREVIEW-BEFORE-PUBLISH, enforced on the host', ()
     const gate = createPreviewGate()
     gate.recordPreview({ spec: { resource: {} } })
     expect(gate.evaluate([restDefOp(draft('Experiment', 'mlflow.example.org'))]).allowed).toBe(false)
+  })
+})
+
+describe('hydrateRestDefinitionOps — published bytes == previewed bytes (KOG)', () => {
+  const draft = {
+    apiVersion: 'ogen.krateo.io/v1alpha1',
+    kind: 'RestDefinition',
+    metadata: { name: 'refund', namespace: 'krateo-system' },
+    spec: {
+      oasPath: 'https://example.com/openapi.yaml',
+      resource: {
+        identifiers: ['refundId'],
+        kind: 'Refund',
+        verbsDescription: [{ action: 'create', method: 'POST', path: '/refunds' }],
+      },
+      resourceGroup: 'billing.acme.io',
+    },
+  }
+  const abbreviatedOp = {
+    gvr: { group: 'ogen.krateo.io', resource: 'restdefinitions', version: 'v1alpha1' },
+    namespace: 'krateo-system',
+    payload: {
+      apiVersion: 'ogen.krateo.io/v1alpha1',
+      kind: 'RestDefinition',
+      metadata: { name: 'refund', namespace: 'krateo-system' },
+      // the live 422: the model re-composed the CR WITHOUT verbsDescription
+      spec: { oasPath: 'configmap://krateo-system/refund-oas/openapi.yaml', resource: { kind: 'Refund' }, resourceGroup: 'billing.acme.io' },
+    },
+    verb: 'POST' as const,
+  }
+
+  it('fills the omitted verbsDescription from the previewed draft; the op oasPath wins', () => {
+    const [hydrated] = hydrateRestDefinitionOps([abbreviatedOp], draft) ?? []
+    const { spec } = (hydrated?.payload as { spec?: { oasPath?: string; resource?: { identifiers?: string[]; verbsDescription?: unknown[] } } })
+    expect(spec?.resource?.verbsDescription).toHaveLength(1)
+    expect(spec?.resource?.identifiers).toEqual(['refundId'])
+    expect(spec?.oasPath).toBe('configmap://krateo-system/refund-oas/openapi.yaml')
+  })
+
+  it('leaves a different-identity op and non-restdefinitions ops untouched', () => {
+    const otherOp = { ...abbreviatedOp, payload: { ...abbreviatedOp.payload, spec: { resource: { kind: 'Other' }, resourceGroup: 'x.io' } } }
+    const cmOp = { gvr: { group: '', resource: 'configmaps', version: 'v1' }, namespace: 'krateo-system', payload: { data: {} }, verb: 'POST' as const }
+    const result = hydrateRestDefinitionOps([otherOp, cmOp], draft) ?? []
+    expect(result[0]).toBe(otherOp)
+    expect(result[1]).toBe(cmOp)
   })
 })
