@@ -2,6 +2,9 @@ FROM node:24.2.0-alpine3.22 as react-build
 LABEL maintainer "Krateo <contact@krateo.io>"
 
 ARG VERSION
+# release commit sha for the footer's build stamp — the image has no .git for vite's fallback
+ARG APP_BUILD
+ENV APP_BUILD=$APP_BUILD
 
 WORKDIR /app
 COPY . ./

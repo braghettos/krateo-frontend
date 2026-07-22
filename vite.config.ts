@@ -20,6 +20,10 @@ const appVersion = (() => {
 })()
 
 const appBuild = (() => {
+  // CI image builds have no .git — the release workflow passes the commit as APP_BUILD instead
+  if (process.env.APP_BUILD) {
+    return process.env.APP_BUILD.slice(0, 7)
+  }
   try {
     return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
   } catch {

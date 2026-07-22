@@ -50,6 +50,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # the sidebar footer's "build <version> · <sha>" — without these the image
+          # ships package.json's 0.0.0 and a git-less 'dev' fallback
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            APP_BUILD=${{ github.sha }}
 
       - name: Inspect image
         run: docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ steps.meta.outputs.version }}
