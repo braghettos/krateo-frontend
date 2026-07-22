@@ -52,6 +52,19 @@ export interface Listy {
        */
       footer?: string
       /**
+       * antd List pagination (serializable subset); presence enables client-side paging of the delivered dataSource (e.g. the ~400-card Marketplace grid). Server-side facet/search filters (?extras) shrink the array BEFORE it reaches the widget, so paging composes with them: antd clamps the current page into the filtered range, and a single-page result hides the pager entirely (exception-only chrome). Absent = antd default (no pagination).
+       */
+      pagination?: {
+        /**
+         * antd pagination.pageSize — items per page
+         */
+        pageSize: number
+        /**
+         * antd List pagination.position (default bottom)
+         */
+        position?: 'top' | 'bottom' | 'both'
+      }
+      /**
        * antd List dataSource. Each element is a data object (rendered via itemTemplate) or { resourceRefId } (rendered as a child widget).
        */
       dataSource?: {
