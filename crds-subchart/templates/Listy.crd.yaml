@@ -85,7 +85,6 @@ spec:
                                 format: int32
                                 type: integer
                             required:
-                              - page
                               - perPage
                             type: object
                           verb:
@@ -114,7 +113,6 @@ spec:
                           format: int32
                           type: integer
                       required:
-                        - page
                         - perPage
                       type: object
                   required:
@@ -597,6 +595,23 @@ spec:
                       description: max items kept when streaming (Krateo extension, default 200)
                       format: int32
                       type: integer
+                    pagination:
+                      description: 'antd List pagination (serializable subset); presence enables client-side paging of the delivered dataSource (e.g. the ~400-card Marketplace grid). Server-side facet/search filters (?extras) shrink the array BEFORE it reaches the widget, so paging composes with them: antd clamps the current page into the filtered range, and a single-page result hides the pager entirely (exception-only chrome). Absent = antd default (no pagination).'
+                      properties:
+                        pageSize:
+                          description: antd pagination.pageSize — items per page
+                          format: int32
+                          type: integer
+                        position:
+                          description: antd List pagination.position (default bottom)
+                          enum:
+                            - top
+                            - bottom
+                            - both
+                          type: string
+                      required:
+                        - pageSize
+                      type: object
                     prefix:
                       description: Filters prefix (Krateo extension)
                       type: string

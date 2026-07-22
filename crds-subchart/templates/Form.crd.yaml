@@ -85,7 +85,6 @@ spec:
                                 format: int32
                                 type: integer
                             required:
-                              - page
                               - perPage
                             type: object
                           verb:
@@ -114,7 +113,6 @@ spec:
                           format: int32
                           type: integer
                       required:
-                        - page
                         - perPage
                       type: object
                   required:
@@ -501,6 +499,24 @@ spec:
                     submitActionId:
                       description: the id of the action to be called when the form is submitted
                       type: string
+                    submitActionSelector:
+                      description: 'optional field-conditional submit routing: when present, the submit action is chosen at submit time from the value of the named field. Routes one form to different create targets (e.g. a ''target cluster'' select where ''local'' posts the blueprint instance and a remote spoke posts a RemoteInstall). Falls back to `default` (or `submitActionId`) when the field value has no mapping.'
+                      properties:
+                        default:
+                          description: action id used when the field value is not present in `map`
+                          type: string
+                        field:
+                          description: form field whose current value selects the submit action
+                          type: string
+                        map:
+                          description: map of field-value → action id
+                          type: object
+                          additionalProperties:
+                            type: string
+                      required:
+                        - field
+                        - map
+                      type: object
                     submitDisabledWhenPristine:
                       description: when true, the primary (submit) button stays disabled until at least one field differs from its initial value (initialValues overlaid on schema defaults). Use for update forms where submitting an unchanged value is a no-op — e.g. a version picker pre-set to the currently-installed version.
                       type: boolean

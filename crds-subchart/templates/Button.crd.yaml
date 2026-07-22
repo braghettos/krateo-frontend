@@ -85,7 +85,6 @@ spec:
                                 format: int32
                                 type: integer
                             required:
-                              - page
                               - perPage
                             type: object
                           verb:
@@ -114,7 +113,6 @@ spec:
                           format: int32
                           type: integer
                       required:
-                        - page
                         - perPage
                       type: object
                   required:
@@ -396,6 +394,9 @@ spec:
                             type: object
                           type: array
                       type: object
+                    ariaLabel:
+                      description: WCAG accessible name for icon-only buttons (no visible label). When the button renders only an icon, the browser needs a text alternative for screen readers. Provide a short human-readable description (e.g. "Delete", "Refresh"). Falls back to the action id when omitted.
+                      type: string
                     block:
                       description: antd Button block (full width)
                       type: boolean
