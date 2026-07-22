@@ -167,7 +167,15 @@ export const previewRestDefSpec: VerbSpec = {
     }
     const payload = buildRestDefPreviewPayload(restDefinition)
     openAutopilotPreview(payload)
-    return Promise.resolve({ label: proposal.label ?? payload.title, readOnly: true, verb: 'previewRestDef' })
+    // FE-P5 for KOG: a problems-carrying draft yields the page-path's "preview blocked" chip
+    // convention — the provider's preview-validation trampoline + the every-turn directive
+    // then drive an autonomous re-preview of a CORRECTED draft (previewProblems rides the
+    // page context via previewBridge's setPreviewProblems).
+    const problemCount = payload.problems?.length ?? 0
+    const label = problemCount
+      ? `preview blocked — ${problemCount} validation error${problemCount === 1 ? '' : 's'}`
+      : proposal.label ?? payload.title
+    return Promise.resolve({ label, readOnly: true, verb: 'previewRestDef' })
   },
   argSchema: (proposal) => parseRestDefPreviewArgs(proposal) !== null,
   name: 'previewRestDef',

@@ -17,7 +17,7 @@ import { openAutopilotPreview } from './previewBus'
 import { explainUpgradeImpactSpec, previewBlueprintSpec, previewPageSpec, previewRestDefSpec, RENDER_UNAVAILABLE_LABEL, UPGRADE_IMPACT_UNAVAILABLE_LABEL } from './previewHandlers'
 import { isReadOnlyVerb, READONLY_VERB_REGISTRY, type VerbDeps } from './verbRegistry'
 
-vi.mock('./previewBus', () => ({ openAutopilotPreview: vi.fn() }))
+vi.mock('./previewBus', () => ({ openAutopilotPreview: vi.fn(), setPreviewProblems: vi.fn() }))
 
 const openPreviewMock = vi.mocked(openAutopilotPreview)
 
@@ -236,6 +236,7 @@ describe('previewRestDef — structured source preview, zero network', () => {
     kind: 'RestDefinition',
     metadata: { name: 'gh-repo', namespace: 'krateo-system' },
     spec: {
+      oasPath: 'https://example.com/gh.yaml',
       resource: {
         kind: 'Repo',
         verbsDescription: [
@@ -263,6 +264,14 @@ describe('previewRestDef — structured source preview, zero network', () => {
     ])
     expect(payload.objects?.[0].yaml).toContain('kind: RestDefinition')
     expect(chip).toEqual({ label: 'RestDefinition preview — gh-repo', readOnly: true, verb: 'previewRestDef' })
+  })
+
+  it('FE-P5 (KOG): a problems-carrying draft yields the "preview blocked" chip convention', async () => {
+    const { spec, ...rest } = restDefinition
+    const { oasPath, ...specNoPath } = spec
+    void oasPath
+    const chip = await previewRestDefSpec.apply(asProposal('previewRestDef', { restDefinition: { ...rest, spec: specNoPath } }), makeDeps())
+    expect(chip?.label).toMatch(/^preview blocked — \d+ validation error/)
   })
 
   it('denies malformed args (missing / non-object / empty draft): null, no drawer', async () => {

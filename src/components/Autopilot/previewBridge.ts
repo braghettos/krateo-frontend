@@ -20,7 +20,7 @@ import type { PortalActionProposal } from './actionBridge'
 import { parseRawTemplates } from './blueprintDraft'
 import { restDefImmutabilityWarnings, validateRestDefinitionDraft } from './kogMapping'
 import { pageDraftSlug } from './pageDraft'
-import type { AutopilotPreviewPayload, PreviewObjectEntry } from './previewBus'
+import { setPreviewProblems, type AutopilotPreviewPayload, type PreviewObjectEntry } from './previewBus'
 
 /** The chart coordinates previewBlueprint sends to the render service. */
 export interface BlueprintChartRef {
@@ -339,6 +339,9 @@ export const buildRestDefPreviewPayload = (restDefinition: Record<string, unknow
   // so validation errors ("this would be rejected") and immutability warnings ("you
   // cannot change these later") belong HERE, before the gated write is even proposed.
   const problems = validateRestDefinitionDraft(restDefinition)
+  // FE-P5 channel: the collector surfaces these in the page context (`previewProblems`)
+  // so the model SEES its rejected mapping and self-corrects without the user asking.
+  setPreviewProblems(problems.length ? problems : null)
   const warnings = restDefImmutabilityWarnings(restDefinition)
   return {
     caption: REST_DEF_PREVIEW_CAPTION,
