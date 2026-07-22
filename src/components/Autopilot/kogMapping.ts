@@ -19,12 +19,21 @@
  *      draft matches the live CRD shape and is publishable).
  *   2. restDefImmutabilityWarnings — the CEL-immutable fields PRESENT in the draft,
  *      as warning lines (a wrong first publish means delete + recreate).
- *   3. buildKogPublishOps — the URL-first publish plan: ONE op (POST restdefinitions,
- *      oasPath = http(s) URL) or TWO ordered ops (POST configmaps carrying the
- *      `{"$oasAttachment": true}` substitution token, then POST restdefinitions with
+ *   3. buildKogPublishOps — LEGACY the URL-first DIRECT-WRITE publish plan: ONE op (POST
+ *      restdefinitions, oasPath = http(s) URL) or TWO ordered ops (POST configmaps carrying
+ *      the `{"$oasAttachment": true}` substitution token, then POST restdefinitions with
  *      oasPath = configmap://…) in the applyResourceSet ops[] shape. The OAS document
  *      itself is NEVER built here — FE-K2 substitutes the held verbatim bytes at
  *      publish-payload compile time, so the doc never round-trips the model.
+ *
+ * NOTE ON buildKogPublishOps (item #30): the KOG builder's PRIMARY publish path is now the
+ * git PR (kogPublish.ts / buildKogPublishAsPrOps + the `publishRestDef` verb), consistent with
+ * the blueprint/page builders — the generated kind waits for a PR to merge, it does not land
+ * live. buildKogPublishOps (this direct 2-op cluster write) is RETAINED as a defense-in-depth
+ * fallback: the model is now prompted to emit `publishRestDef`, but if it still emits the old
+ * direct-write applyResourceSet on restdefinitions, finalize's applyResourceSet branch (KOG
+ * preview gate + hydrateRestDefinitionOps) still handles it correctly. It is no longer the
+ * demoed path. Its unit tests stay green as a shape contract.
  */
 
 import type { ApplyResourceSetOp } from './applyResourceSet'

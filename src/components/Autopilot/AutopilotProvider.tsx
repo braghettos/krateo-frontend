@@ -19,100 +19,28 @@ import { randomId } from '../../utils/utils'
 import type { PortalActionProposal, PortalTour } from './actionBridge'
 import { GROUNDING_GUARDRAIL_PROMPT, isPortalBuilderRoute, PORTAL_BUILDER_ROUTING_DIRECTIVE, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
 import { AgentDraftProvider } from './agentDraft'
-import type { ApplyResourceSetOp } from './applyResourceSet'
 import { MAX_APPLY_SET_OPS } from './applyResourceSet'
 import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approval'
 import { createApprovalGovernor, summarizeApprovalTools } from './approval'
 import { useAskDeepLink } from './askDeepLink'
-import { stampAuthorship, type AuthorshipOrigin } from './authorship'
 import { draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
-import { createBlueprintDraftStore, substituteFileContent, type BlueprintDraftHeld, type BlueprintDraftStore } from './blueprintDraftStore'
-import { createBlueprintGate, type BlueprintGate } from './blueprintGate'
+import { createBlueprintDraftStore } from './blueprintDraftStore'
+import { createBlueprintGate } from './blueprintGate'
 import { buildBlueprintPublishOps } from './blueprintPublish'
 import { autopilotConversationStore } from './conversationStore'
-import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, type OasAttachmentResult } from './oasAttachment'
-import { isPageDraft, pageDisplayName, pageDraftFiles, pageRootSlug, type NavHint } from './pageDraft'
+import { REST_DEFINITION_GVR } from './kogMapping'
+import { buildKogPublishAsPrOps, resolveKogPublishDraft } from './kogPublish'
+import { createOasAttachmentStore, type OasAttachmentResult } from './oasAttachment'
+import { isPageDraft, pageRootSlug } from './pageDraft'
 import { buildPagePublishOps } from './pagePublish'
 import { PREVIEW_SELF_CORRECTION_NUDGE } from './previewBus'
 import { buildKogPublishNudge, createPreviewGate, hydrateRestDefinitionOps } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
+import { compileKogPublishOps, compilePublishOps, heldDraftIdentity, recordPagePreview, type PublishCompileResult } from './publishCompile'
 import { askPublishDestination, PublishTargetFormHost } from './publishTargetForm'
 import { createEchoTransport, createKagentTransport } from './transport'
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, PageContextEnvelope } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
-
-/** A preview-gate verdict shape (both the KOG and blueprint gates match this). */
-type GateVerdict = { allowed: true } | { allowed: false; reason: string }
-
-/** The compiled publish set, or the first denial reason (nothing dispatched). */
-interface PublishCompileResult {
-  denial: string | null
-  ops: ApplyResourceSetOp[] | null
-}
-
-/**
- * The applyResourceSet publish-compile pipeline, factored out of finalize (flat early
- * returns — the finalize branch is already 3 deep). Order: both preview gates, then the
- * $oasAttachment + $fileContent substitutions (held bytes replace the tokens), then the
- * host authorship stamp. Any gate/substitution failure short-circuits to a denial with
- * NO compiled ops; success yields the stamped, ready-to-dispatch ops.
- */
-const compilePublishOps = (
-  ops: readonly ApplyResourceSetOp[] | undefined,
-  kogVerdict: GateVerdict,
-  blueprintVerdict: GateVerdict,
-  oasAttachment: OasAttachment | null,
-  blueprintHeld: BlueprintDraftHeld | null,
-  origin: AuthorshipOrigin,
-): PublishCompileResult => {
-  if (!kogVerdict.allowed) {
-    return { denial: kogVerdict.reason, ops: null }
-  }
-  if (!blueprintVerdict.allowed) {
-    return { denial: blueprintVerdict.reason, ops: null }
-  }
-  const oasCompiled = substituteOasAttachment(ops ?? [], oasAttachment)
-  if (!oasCompiled.ok) {
-    return { denial: oasCompiled.error, ops: null }
-  }
-  // base64: every $fileContent token is a RepoContent `.spec.content` value (the BLUEPRINT
-  // BUILDER prompt is its sole emitter), and GitHub's create-or-update-file API requires the
-  // file bytes base64-encoded. Without this the chart files ship as raw text and GitHub 422s
-  // at publish (FE-BP5 — the git-provider CR shape is now verified: content = base64).
-  const fileCompiled = substituteFileContent(oasCompiled.ops, blueprintHeld, 'base64')
-  if (!fileCompiled.ok) {
-    return { denial: fileCompiled.error, ops: null }
-  }
-  return { denial: null, ops: stampAuthorship(fileCompiled.ops, origin) }
-}
-
-/** The held draft's preview-gate identity: a page draft (no Chart.yaml) is keyed by its page slug,
- * a blueprint by its Chart.yaml name. One shared store+gate serve both (FE-P2 reuses FE-BP1/BP2). */
-const heldDraftIdentity = (held: BlueprintDraftHeld | null): string | null => {
-  if (!held) {
-    return null
-  }
-  return isPageDraft(held.files) ? pageDisplayName(held.files) : draftDisplayName(held.files)
-}
-
-/** FE-P2: hold an APPLIED previewPage's widget CRs as a {slug: yaml} page draft and arm the SHARED
- * preview gate for the page's identity — so a page publish is allowed ONLY after the SAME page was
- * previewed this thread (published bytes == previewed bytes). No-op on CRs that can't be serialized. */
-const recordPagePreview = (
-  widgets: unknown[] | undefined,
-  nav: NavHint | undefined,
-  store: BlueprintDraftStore,
-  gate: BlueprintGate,
-): void => {
-  const pageFiles = pageDraftFiles(widgets ?? [], nav)
-  if (!pageFiles) {
-    return
-  }
-  const draft = store.set(pageFiles)
-  if (draft.ok) {
-    gate.recordPreview(pageDisplayName(draft.held.files))
-  }
-}
 
 interface AutopilotContextValue {
   /** Whether Autopilot is configured/available (controls rail + toggle visibility). */
@@ -358,6 +286,39 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
           compiled = { denial: `denied — "page-${slug}" has ${Object.keys(held.files).length} files; a single publish tops out at ${MAX_APPLY_SET_OPS - 2} — split the page across turns on the same branch.`, ops: null }
         } else {
           compiled = compilePublishOps(built, previewGate.evaluate(built), blueprintGate.evaluate(built, heldDraftIdentity(held)), oasStore.get(), held, { prompt: lastUserTextRef.current, sessionId })
+        }
+        await pushPublishOutcome(compiled, proposal.label)
+      } else if (proposal.verb === 'publishRestDef') {
+        // FE-KOG-PR (item #30) — the KOG builder now publishes via a git PR, like the blueprint/page
+        // builders, INSTEAD of the old direct 2-op cluster write. The model emits ONE scalar
+        // `publishRestDef` verb; the HOST fans it into gitrefs + repocontents (apis/<kind>/restdefinition.yaml,
+        // + configmaps/<kind>-oas.yaml in the paste case) + pullrequests from the LAST previewed
+        // RestDefinition (previewGate) and the HELD OAS document (oasStore). The kind no longer lands
+        // live on publish — it waits for the PR to merge + the KOG provider to reconcile (see the
+        // publishTargetForm blurb + demoImpact). Same destination form + blast-radius confirm as the
+        // other builders; the KOG preview gate (not the blueprint gate) enforces preview-before-publish.
+        const lastRestDef = previewGate.lastDraft()
+        const resolution = resolveKogPublishDraft(lastRestDef, oasStore.get()?.text ?? null)
+        // The DESTINATION is user-owned: a proper form asks (fence coords are prefills); cancel → denied.
+        const restDefTarget = await askPublishDestination(proposal, 'restdef', 'krateo-oas')
+        const targetedRestDef = restDefTarget ? { ...proposal, ...restDefTarget } : proposal
+        const built = restDefTarget && resolution.held ? buildKogPublishAsPrOps(targetedRestDef, resolution.held) : null
+        // Probe the KOG preview gate against the RESOLVED draft (the git-write ops write no
+        // restdefinitions op, so the gate must see the draft directly via a synthetic probe op).
+        const gateProbe = resolution.held
+          ? [{ gvr: { ...REST_DEFINITION_GVR }, namespace: 'krateo-system', payload: resolution.held.draft, verb: 'POST' as const }]
+          : undefined
+        let compiled: PublishCompileResult
+        if (!restDefTarget) {
+          compiled = { denial: 'publish cancelled — destination not confirmed', ops: null }
+        } else if (resolution.missingOasDocument) {
+          compiled = { denial: 'denied — the previewed mapping uses a configmap:// oasPath but no OpenAPI document is attached; paste the document in the rail first (it is held client-side and committed at publish), or preview a URL oasPath.', ops: null }
+        } else if (!resolution.held || built === null) {
+          compiled = { denial: 'denied — no previewed RestDefinition to publish (previewRestDef a mapping first)', ops: null }
+        } else if (built.length > MAX_APPLY_SET_OPS) {
+          compiled = { denial: `denied — the KOG publish set has ${built.length} ops, over the ${MAX_APPLY_SET_OPS}-op cap.`, ops: null }
+        } else {
+          compiled = compileKogPublishOps(built, previewGate.evaluate(gateProbe), { prompt: lastUserTextRef.current, sessionId })
         }
         await pushPublishOutcome(compiled, proposal.label)
       } else if (proposal.verb === 'applyResourceSet') {

@@ -20,8 +20,22 @@ export interface PublishTarget {
 }
 
 export interface PublishTargetRequest extends PublishTarget {
-  /** What is being published — labels the form (a page vs a blueprint chart). */
-  kind: 'page' | 'blueprint'
+  /** What is being published — labels the form (a page, a blueprint chart, or a KOG API mapping). */
+  kind: 'page' | 'blueprint' | 'restdef'
+}
+
+/** Human noun for the artifact kind (form title). Keep in sync with the kind union. */
+const KIND_NOUN: Record<PublishTargetRequest['kind'], string> = {
+  blueprint: 'blueprint',
+  page: 'page',
+  restdef: 'API mapping',
+}
+
+/** The write-gate blurb for the artifact kind — what a publish of THIS kind actually commits. */
+const KIND_BLURB: Record<PublishTargetRequest['kind'], string> = {
+  blueprint: 'The Helm chart tree (Chart.yaml, values.schema.json, templates/) is opened as a pull request into the base branch — merged, CI publishes it as a versioned OCI chart. Nothing merges without your review.',
+  page: 'Autopilot publishes as a pull request into the base branch — nothing merges without your review. Confirm the destination, or point it somewhere else.',
+  restdef: 'The RestDefinition (and, for a pasted spec, its OpenAPI ConfigMap) is opened as a pull request into the base branch — merged, the KOG provider reconciles it and the new API kind becomes available. The kind no longer lands live on publish; it waits for the PR to merge. Nothing merges without your review.',
 }
 
 type PendingResolve = (target: PublishTarget | null) => void
@@ -97,14 +111,12 @@ export const PublishTargetFormHost = () => {
         void form.validateFields().then((values) => close(values)).catch(() => { /* invalid — stay open */ })
       }}
       open={pending !== null}
-      title={`Where should this ${pending?.req.kind === 'blueprint' ? 'blueprint' : 'page'} be committed?`}
+      title={`Where should this ${pending ? KIND_NOUN[pending.req.kind] : 'page'} be committed?`}
     >
       <div data-testid='publish-target-form'>
         <Typography.Paragraph type='secondary'>
-          {pending?.req.kind === 'blueprint'
-            // Name the artifact at the write gate: what a blueprint publish actually commits.
-            ? 'The Helm chart tree (Chart.yaml, values.schema.json, templates/) is opened as a pull request into the base branch — merged, CI publishes it as a versioned OCI chart. Nothing merges without your review.'
-            : 'Autopilot publishes as a pull request into the base branch — nothing merges without your review. Confirm the destination, or point it somewhere else.'}
+          {/* Name the artifact at the write gate: what a publish of THIS kind actually commits. */}
+          {pending ? KIND_BLURB[pending.req.kind] : KIND_BLURB.page}
         </Typography.Paragraph>
         <Form form={form} layout='vertical'>
           <Form.Item label='Repository owner' name='owner' rules={[{ message: 'the GitHub owner/org is required', required: true }]}>
