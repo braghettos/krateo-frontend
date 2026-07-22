@@ -3,11 +3,14 @@ import type { BreadcrumbItemType, BreadcrumbSeparatorType } from 'antd/es/breadc
 import { useEffect, useState } from 'react'
 import { Link, useMatches } from 'react-router'
 
+import { useRoutesContext } from '../../context/RoutesContext'
+
 import styles from './Breadcrumb.module.css'
 
 const Breadcrumb = () => {
   const [items, setItems] = useState<Partial<BreadcrumbItemType & BreadcrumbSeparatorType>[]>()
   const matches = useMatches()
+  const { menuRoutes } = useRoutesContext()
 
   useEffect(() => {
     const path = matches.filter(({ pathname }) => pathname !== '/')[0]?.pathname?.replace('/', '')
@@ -19,6 +22,15 @@ const Breadcrumb = () => {
       splitPath.forEach((pathElement, index) => {
         const isLast = index === splitPath.length - 1
         const className = `${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`
+        // The section crumb shows the route's NAV LABEL, not the raw slug (/kog-builder
+        // reads "API Builder", matching the sidebar item and the page H1). The label comes
+        // from the same chart nav CR that feeds the sidebar, so they cannot drift; routes
+        // without a labelled nav entry fall back to the slug. Deeper segments stay verbatim
+        // on purpose — they are Kubernetes resource names.
+        const sectionLabel = index === 0
+          ? menuRoutes.find((route) => route.path === `/${pathElement}`)?.title
+          : undefined
+        const crumbText = sectionLabel ?? pathElement
         // The first crumb (the section) links to its list route. On a composition
         // detail route (/compositions/:namespace/:name) the namespace crumb links to
         // the per-namespace list /compositions/:namespace. Other intermediate segments
@@ -34,10 +46,10 @@ const Breadcrumb = () => {
 
         items.push({
           title: (
-            <Typography.Text className={className} title={pathElement}>
+            <Typography.Text className={className} title={crumbText}>
               {to
-                ? <Link className={styles.link} to={to}>{pathElement}</Link>
-                : pathElement}
+                ? <Link className={styles.link} to={to}>{crumbText}</Link>
+                : crumbText}
             </Typography.Text>
           ),
         })
@@ -47,7 +59,7 @@ const Breadcrumb = () => {
     } else {
       setItems([{ title: '' }])
     }
-  }, [matches])
+  }, [matches, menuRoutes])
 
   return <AntdBreadcrumb items={items}/>
 }
