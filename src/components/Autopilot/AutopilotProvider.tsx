@@ -11,7 +11,6 @@
  */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
 import type { WriteOrigin } from '../../hooks/provenance'
@@ -24,6 +23,7 @@ import type { ApplyResourceSetOp } from './applyResourceSet'
 import { MAX_APPLY_SET_OPS } from './applyResourceSet'
 import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approval'
 import { createApprovalGovernor, summarizeApprovalTools } from './approval'
+import { useAskDeepLink } from './askDeepLink'
 import { stampAuthorship, type AuthorshipOrigin } from './authorship'
 import { draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
 import { createBlueprintDraftStore, substituteFileContent, type BlueprintDraftHeld, type BlueprintDraftStore } from './blueprintDraftStore'
@@ -218,8 +218,6 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // ref kept current by the effect below.
   const timeoutDenyRef = useRef((_pause: ApprovalPause): void => undefined)
   const sentFirstRef = useRef(false)
-  // Guards the one-shot `?ask=` deep-link (below) so it fires a single turn per visit.
-  const askHandledRef = useRef(false)
   const lastEnvelopeRef = useRef<PageContextEnvelope | undefined>(undefined)
   // A2A conversation id lives in the durable conversation store (alongside the
   // transcript), so a provider remount does not drop thread continuity. Assigned by
@@ -747,21 +745,12 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   const toggle = useCallback(() => setOpen((prev) => !prev), [])
   const closeTour = useCallback(() => setTourOpen(false), [])
 
-  // Deep-link seed: a widget can start an Autopilot turn via `?ask=<prompt>` (e.g. an
-  // alert's "Troubleshoot with Autopilot" button navigates here with the prompt). Open the
-  // rail, send it once (guarded so a refresh doesn't re-ask), then strip the param. The
-  // context collector already carries the page's telemetry, so the analysis is grounded.
-  const [searchParams, setSearchParams] = useSearchParams()
-  useEffect(() => {
-    const ask = searchParams.get('ask')
-    if (!ask || !enabled || askHandledRef.current) { return }
-    askHandledRef.current = true
+  // The `?ask=` deep-link (Diagnose / Troubleshoot buttons): enabled → open the rail
+  // and seed one turn; disabled → honest UX-19 notice. All in useAskDeepLink.
+  useAskDeepLink(enabled, useCallback((ask: string) => {
     setOpen(true)
     send(ask)
-    const next = new URLSearchParams(searchParams)
-    next.delete('ask')
-    setSearchParams(next, { replace: true })
-  }, [searchParams, enabled, send, setSearchParams])
+  }, [send]))
 
   const value = useMemo<AutopilotContextValue>(() => ({
     approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasAttachment: oasHeld, open, pendingApproval, send, setOpen, streaming, toggle, tour, tourOpen,
