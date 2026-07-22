@@ -185,14 +185,19 @@
   text-transform: uppercase;
 }
 
-.opPreview {
-  color: color-mix(in srgb, var(--text-color) 70%, transparent);
-  font-family: var(--font-mono);
+/* Full-body YAML for a confirm op/diff — scroll-bounded so a large object (e.g. a pasted
+   OpenAPI ConfigMap) stays confirmable without burying the modal. */
+.yamlBlock {
+  border: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent);
+  border-radius: 6px;
   font-size: var(--font-size-xxs);
-  overflow: hidden;
-  padding-left: 22px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin: 6px 0 4px 22px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.yamlBlock pre {
+  margin: 0 !important;
 }
 
 /* #5 — the plain-language "what this write does" line (Create file … / Open PR …). More prominent

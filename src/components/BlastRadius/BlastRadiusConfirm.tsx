@@ -15,6 +15,12 @@
  * multi-class Typography.
  */
 
+import { dump } from 'js-yaml'
+import SyntaxHighlighter from 'react-syntax-highlighter'
+import atomOneDark from 'react-syntax-highlighter/dist/esm/styles/hljs/atom-one-dark.js'
+import lightfair from 'react-syntax-highlighter/dist/esm/styles/hljs/lightfair.js'
+
+import { useThemeMode } from '../../context/ThemeModeContext'
 import type { BlastRadius, BlastRadiusDiff, BlastRadiusSet, BlastRadiusSetOp, Gvr } from '../../hooks/blastRadius.types'
 
 import styles from './BlastRadiusConfirm.module.css'
@@ -33,24 +39,37 @@ const formatGvr = (gvr: Gvr): string => {
   return gvr.version ? `${head}/${gvr.version}` : head
 }
 
-/** Stable pretty-print for the diff bodies (mono block). Non-throwing on cyclic/odd values. */
-const stringify = (value: unknown): string => {
+/** Stable YAML for the confirm bodies — the human confirms Kubernetes OBJECTS, so render
+ * them the way Kubernetes writes them. Non-throwing on cyclic/odd values. */
+const toYaml = (value: unknown): string => {
   if (value === undefined) {
     return ''
   }
   try {
-    return JSON.stringify(value, null, 2)
+    return dump(value, { lineWidth: 120, noRefs: true })
   } catch {
-    // A value JSON.stringify can't serialise (cyclic ref, BigInt, …) has no meaningful text form.
+    // A value the dumper can't serialise (cyclic ref, BigInt, …) has no meaningful text form.
     return '[unserialisable value]'
   }
+}
+
+/** Syntax-highlighted, scroll-bounded YAML of ONE full body (same highlighter family as the
+ * preview drawer — one look for "here is the object" everywhere). */
+const YamlBlock = ({ value }: { value: unknown }) => {
+  const { mode } = useThemeMode()
+  const style = (mode === 'dark' ? atomOneDark : lightfair) as { [key: string]: React.CSSProperties }
+  return (
+    <div className={styles.yamlBlock}>
+      <SyntaxHighlighter language='yaml' style={style} wrapLines wrapLongLines>{toYaml(value)}</SyntaxHighlighter>
+    </div>
+  )
 }
 
 /** One labelled mono code block (a diff side); omitted by the caller when its value is absent. */
 const DiffBlock = ({ label, tone, value }: { label: string; tone: 'before' | 'after'; value: unknown }) => (
   <div className={styles.diffSide}>
     <div className={tone === 'before' ? styles.diffLabelBefore : styles.diffLabelAfter}>{label}</div>
-    <pre className={styles.code}>{stringify(value)}</pre>
+    <YamlBlock value={value} />
   </div>
 )
 
@@ -69,18 +88,6 @@ const DiffView = ({ diff }: { diff: BlastRadiusDiff }) => {
       <DiffBlock label='After' tone='after' value={diff.after} />
     </div>
   )
-}
-
-/** Compact single-line body preview for a set-op row (full diff bodies stay scalar-confirm territory). */
-const previewOf = (value: unknown): string => {
-  let text: string
-  try {
-    text = JSON.stringify(value) ?? String(value)
-  } catch {
-    text = '[unserialisable value]'
-  }
-
-  return text.length > 140 ? `${text.slice(0, 140)}…` : text
 }
 
 /** A plain-language line for what a git-write op ACTUALLY does — the "N writes" a publish makes are
@@ -196,7 +203,7 @@ const SetView = ({ radius }: { radius: BlastRadiusSet }) => {
                 {op.irreversible && <span className={styles.irreversible}>irreversible</span>}
               </div>
               {op.payloadPreview !== undefined && (
-                <div className={styles.opPreview}>{previewOf(op.payloadPreview)}</div>
+                <YamlBlock value={op.payloadPreview} />
               )}
             </li>
           )
