@@ -31,6 +31,13 @@ interface ListViewProps {
   loading?: boolean
   header?: ReactNode
   footer?: ReactNode
+  /**
+   * antd List pagination (serializable subset): presence enables client-side paging of the
+   * delivered items (e.g. the ~400-card Marketplace grid). Server-side facet/search filters
+   * shrink the array before it gets here, so antd clamps the current page into the filtered
+   * range; a single-page result hides the pager (exception-only chrome).
+   */
+  pagination?: { pageSize: number; position?: 'top' | 'bottom' | 'both' }
   /** When there are no items, render nothing instead of the antd Empty placeholder (conditional-section gate). */
   hideWhenEmpty?: boolean
   /** The widget's action map (widgetData.actions); per-row `rowActions` reference ids in it. */
@@ -48,7 +55,7 @@ interface ListViewProps {
  * `Notifications`.
  */
 export const ListView = ({
-  actions, bordered, footer, grid, header, hideWhenEmpty, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, resourcesRefs, rowKey, size, split, widget,
+  actions, bordered, footer, grid, header, hideWhenEmpty, itemLayout = 'horizontal', itemTemplate, items, loading, pagination, renderChild, resourcesRefs, rowKey, size, split, widget,
 }: ListViewProps) => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -94,6 +101,10 @@ export const ListView = ({
       header={header}
       itemLayout={itemLayout}
       loading={loading}
+      // hideOnSinglePage: when a facet/search filter shrinks the result under one page, a lone
+      // "1" pager is pure noise — chrome is exception-only. undefined keeps the antd default
+      // (no pagination), so existing lists are untouched.
+      pagination={pagination ? { hideOnSinglePage: true, pageSize: pagination.pageSize, position: pagination.position } : undefined}
       renderItem={(item, index) => {
         const child = renderChild?.(item, index)
         if (child) {
