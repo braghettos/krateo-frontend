@@ -34,7 +34,7 @@ import { createOasAttachmentStore, substituteOasAttachment, type OasAttachment, 
 import { isPageDraft, pageDisplayName, pageDraftFiles, pageRootSlug, type NavHint } from './pageDraft'
 import { buildPagePublishOps } from './pagePublish'
 import { PREVIEW_SELF_CORRECTION_NUDGE } from './previewBus'
-import { createPreviewGate } from './previewGate'
+import { buildKogPublishNudge, createPreviewGate } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { askPublishDestination, PublishTargetFormHost } from './publishTargetForm'
 import { createEchoTransport, createKagentTransport } from './transport'
@@ -295,6 +295,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       const origin: WriteOrigin = { actor: 'agent', agentSessionId: sessionId, ...(lastUserTextRef.current ? { prompt: lastUserTextRef.current } : {}) }
       // Shared tail of BOTH publish branches: a denial becomes a read-only chip; built ops flow
       // through the SAME apply (blast-radius confirm) as any model-emitted applyResourceSet.
+      const pushChip = (chip: AutopilotActionChip | null) => {
+        if (chip) { chips.push(chip) }
+      }
       const pushPublishOutcome = async (compiled: PublishCompileResult, label: string | undefined) => {
         if (compiled.denial !== null) {
           chips.push({ label: compiled.denial, readOnly: true, verb: 'applyResourceSet' })
@@ -389,10 +392,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         if (denial !== null) {
           chips.push({ label: denial, readOnly: true, verb: 'applyResourceSet' })
         } else if (compiledOps) {
-          const chip = await apply({ ...proposal, ops: compiledOps }, origin)
-          if (chip) {
-            chips.push(chip)
-          }
+          pushChip(await apply({ ...proposal, ops: compiledOps }, origin))
         }
       } else {
         const chip = await apply(proposal, origin)
@@ -445,9 +445,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       if (toolNotFound) {
         recoveryCountRef.current += 1
         const [, verb] = toolNotFound
-        setMessages((prev) => prev.map((message) => (
-          message.id === assistantId ? { ...message, text: '↻ One moment — re-issuing that step correctly…' } : message
-        )))
+        setMessages((prev) => prev.map((message) => (message.id === assistantId ? { ...message, text: '↻ One moment — re-issuing that step correctly…' } : message)))
         const nudge = `Your previous turn tried to CALL \`${verb}\` as a function — it failed with "tool not found". \`${verb}\` is NOT a tool; it is a portal directive you REQUEST by WRITING a fenced code block in your reply TEXT (per the portal capabilities protocol you were given). Re-issue the SAME action now as a fenced portal directive block — do not call any tool by that name.`
         // Defer so finalize's state (streaming:false) commits before the recovery turn opens its bubble.
         setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
@@ -463,9 +461,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       const approvedPublish = /\b(publish|open the (?:pull request|pr)|go ahead|do it|approve|proceed|looks good|ship it)\b/i.test(lastUserTextRef.current)
       if (held && heldName && approvedPublish) {
         recoveryCountRef.current += 1
-        setMessages((prev) => prev.map((message) => (
-          message.id === assistantId ? { ...message, text: '↻ One moment — opening the pull request…' } : message
-        )))
+        setMessages((prev) => prev.map((message) => (message.id === assistantId ? { ...message, text: '↻ One moment — opening the pull request…' } : message)))
         // Re-issue the scalar publish verb that matches the held draft: a page draft (no Chart.yaml)
         // → publishPage (FE-BP7), a blueprint chart → publishBlueprint (FE-BP6). The host fans either
         // out; the model must NEVER hand-write the multi-op payload (that is the stall we recover from).
@@ -478,6 +474,18 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
           : 'the gitrefs/repocontents/pullrequests set from the held tree'
         const nudge = `You approved publishing \`${heldName}\` but your reply contained NO portal-action fence, so nothing was proposed and no confirm dialog opened. Do NOT say the user "will be asked to confirm" — EMITTING the fence is ITSELF what opens the blast-radius dialog. Re-issue the PUBLISH step NOW as a single fenced \`\`\`portal-action block containing ONLY this one scalar verb: ${scalarVerb}. The portal fans that out into ${fanout} — you do NOT write those ops yourself.`
         setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
+        return
+      }
+
+      // NARRATED-KOG-PUBLISH TRAMPOLINE: same stall class, RestDefinition variant — a previewed
+      // API mapping was approved in prose but no applyResourceSet fence followed. The gate holds
+      // the previewed draft; the nudge (previewGate.buildKogPublishNudge) rebuilds the exact op
+      // shape (2-op $oasAttachment paste case / 1-op URL case) so the re-prompt is mechanical.
+      const lastRestDef = previewGate.lastDraft()
+      if (lastRestDef && approvedPublish) {
+        recoveryCountRef.current += 1
+        setMessages((prev) => prev.map((message) => (message.id === assistantId ? { ...message, text: '↻ One moment — opening the confirm…' } : message)))
+        setTimeout(() => sendRef.current?.(buildKogPublishNudge(lastRestDef, Boolean(oasStore.get())), { recovery: true }), 0)
         return
       }
     }
