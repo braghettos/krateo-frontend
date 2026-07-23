@@ -51,4 +51,34 @@ describe('Menu navModel', () => {
     const { routes } = buildNavModel([{ label: 'Home', path: '/home', resourceRefId: 'home-page' }], resourcesRefs, 'krateo-system')
     expect(routes[0].endpoint).toBe('/call?resource=flexes&name=home')
   })
+
+  it('RBAC: hides a sidebar entry whose resourceRefId ref is allowed:false, keeps allowed ones (route still registered)', () => {
+    const rbacRefs: ResourcesRefs = {
+      items: [
+        { allowed: true, id: 'home-page', path: '/call?resource=flexes&name=home', payload: {}, verb: 'GET' },
+        { allowed: false, id: 'settings-page', path: '/call?resource=flexes&name=settings', payload: {}, verb: 'GET' },
+      ],
+    }
+    const items = [
+      { icon: 'fa-home', label: 'Home', order: 10, path: '/home', resourceRefId: 'home-page' },
+      { icon: 'fa-gear', label: 'Settings', order: 20, path: '/settings', resourceRefId: 'settings-page' },
+    ]
+    const { entries, routes } = buildNavModel(items, rbacRefs)
+    // denied 'Settings' entry is dropped from the sider; 'Home' stays
+    expect(entries.map((entry) => entry.label)).toEqual(['Home'])
+    // routes are NOT RBAC-filtered — the deep-link still resolves (page /call 403s at the content layer)
+    expect(routes.map((route) => route.path)).toEqual(['/home', '/settings'])
+  })
+
+  it('RBAC fail-open: keeps entries with no resourceRefId (convention page) and refs snowplow did not return', () => {
+    const { entries } = buildNavModel(
+      [
+        { label: 'Marketplace', order: 1, path: '/marketplace' }, // no resourceRefId → not gated
+        { label: 'Ghost', order: 2, path: '/ghost', resourceRefId: 'missing' }, // ref absent → fail-open
+      ],
+      { items: [] },
+      'krateo-system',
+    )
+    expect(entries.map((entry) => entry.label)).toEqual(['Marketplace', 'Ghost'])
+  })
 })
