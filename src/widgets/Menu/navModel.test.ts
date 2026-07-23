@@ -52,11 +52,13 @@ describe('Menu navModel', () => {
     expect(routes[0].endpoint).toBe('/call?resource=flexes&name=home')
   })
 
-  it('RBAC: hides a sidebar entry whose resourceRefId ref is allowed:false, keeps allowed ones (route still registered)', () => {
+  it('RBAC: hides a sidebar entry whose ref was dropped (allowed:false → WidgetRenderer removes it → absent), keeps present ones', () => {
+    // WidgetRenderer pre-filters allowed:false refs OUT before the Menu sees them,
+    // so a DENIED page is represented by its ref being ABSENT (not present-with-allowed:false).
     const rbacRefs: ResourcesRefs = {
       items: [
         { allowed: true, id: 'home-page', path: '/call?resource=flexes&name=home', payload: {}, verb: 'GET' },
-        { allowed: false, id: 'settings-page', path: '/call?resource=flexes&name=settings', payload: {}, verb: 'GET' },
+        // 'settings-page' was allowed:false -> removed by WidgetRenderer -> absent here
       ],
     }
     const items = [
@@ -64,21 +66,21 @@ describe('Menu navModel', () => {
       { icon: 'fa-gear', label: 'Settings', order: 20, path: '/settings', resourceRefId: 'settings-page' },
     ]
     const { entries, routes } = buildNavModel(items, rbacRefs)
-    // denied 'Settings' entry is dropped from the sider; 'Home' stays
+    // denied 'Settings' (ref absent) is dropped from the sider; 'Home' (ref present) stays
     expect(entries.map((entry) => entry.label)).toEqual(['Home'])
     // routes are NOT RBAC-filtered — the deep-link still resolves (page /call 403s at the content layer)
     expect(routes.map((route) => route.path)).toEqual(['/home', '/settings'])
   })
 
-  it('RBAC fail-open: keeps entries with no resourceRefId (convention page) and refs snowplow did not return', () => {
+  it('fail-open ONLY for no-resourceRefId (convention pages); a resourceRefId whose ref is absent (denied/removed) is HIDDEN', () => {
     const { entries } = buildNavModel(
       [
-        { label: 'Marketplace', order: 1, path: '/marketplace' }, // no resourceRefId → not gated
-        { label: 'Ghost', order: 2, path: '/ghost', resourceRefId: 'missing' }, // ref absent → fail-open
+        { label: 'Marketplace', order: 1, path: '/marketplace' }, // no resourceRefId → convention page → shown
+        { label: 'Ghost', order: 2, path: '/ghost', resourceRefId: 'missing' }, // ref absent → denied/removed → hidden
       ],
       { items: [] },
       'krateo-system',
     )
-    expect(entries.map((entry) => entry.label)).toEqual(['Marketplace', 'Ghost'])
+    expect(entries.map((entry) => entry.label)).toEqual(['Marketplace'])
   })
 })

@@ -52,21 +52,24 @@ export const resolveContentEndpoint = (
 /**
  * RBAC visibility gate for a sidebar entry. snowplow resolves each nav item's
  * page widget AS THE USER and stamps `allowed` on the matching `resourcesRefs`
- * entry; `allowed: false` means the user was denied that page. We hide such
- * entries so the sider reflects the user's actual access — mirroring how
- * WidgetRenderer already filters CONTENT (`resourcesRefs.items.filter(allowed)`).
- * This is what makes a namespaced, RBAC-scoped multi-audience portal work: the
- * SAME Menu widget renders a different sider per user (admin sees every page; a
- * tenant sees only the pages whose flexes their Role can `get`).
- * FAIL-OPEN: an item with no `resourceRefId` (route-only / convention `page-<slug>`
- * pages) or whose ref snowplow did not return is left visible — so RBAC-driven
- * nav requires each gated page to carry a `resourceRefId`, and an older snowplow
- * that omits `allowed` never over-hides.
+ * entry; `allowed: false` means the user was denied that page.
+ *
+ * CRUCIAL: by the time this Menu widget receives `resourcesRefs`, WidgetRenderer
+ * has ALREADY dropped every `allowed: false` ref
+ * (`resourcesRefs.items.filter(({ allowed }) => allowed)`). So a denied page's ref
+ * is not present-with-`allowed:false` — it is simply ABSENT. Therefore a menu item
+ * that carries a `resourceRefId` is allowed IFF that ref SURVIVED that filter, i.e.
+ * is still present. (An earlier version checked `ref.allowed !== false`, which never
+ * fired — the denied refs were already gone, so it fell through to fail-open and
+ * showed every admin page. This is the fix for that.)
+ * FAIL-OPEN only for items with NO `resourceRefId` (route-only / convention
+ * `page-<slug>` pages) — those carry no ref to gate on and stay visible; RBAC-driven
+ * nav therefore requires each gated page to carry a `resourceRefId`.
  */
 const isNavEntryAllowed = (item: InlineNavItem, resourcesRefs: ResourcesRefs): boolean => {
   if (!item.resourceRefId) { return true }
-  const ref = resourcesRefs?.items?.find(({ id }) => id === item.resourceRefId)
-  return ref ? ref.allowed !== false : true
+  // ref present == survived WidgetRenderer's allowed-filter == user may GET the page.
+  return !!resourcesRefs?.items?.some(({ id }) => id === item.resourceRefId)
 }
 
 /**
