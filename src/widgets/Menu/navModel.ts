@@ -50,12 +50,35 @@ export const resolveContentEndpoint = (
 }
 
 /**
+ * RBAC visibility gate for a sidebar entry. snowplow resolves each nav item's
+ * page widget AS THE USER and stamps `allowed` on the matching `resourcesRefs`
+ * entry; `allowed: false` means the user was denied that page. We hide such
+ * entries so the sider reflects the user's actual access — mirroring how
+ * WidgetRenderer already filters CONTENT (`resourcesRefs.items.filter(allowed)`).
+ * This is what makes a namespaced, RBAC-scoped multi-audience portal work: the
+ * SAME Menu widget renders a different sider per user (admin sees every page; a
+ * tenant sees only the pages whose flexes their Role can `get`).
+ * FAIL-OPEN: an item with no `resourceRefId` (route-only / convention `page-<slug>`
+ * pages) or whose ref snowplow did not return is left visible — so RBAC-driven
+ * nav requires each gated page to carry a `resourceRefId`, and an older snowplow
+ * that omits `allowed` never over-hides.
+ */
+const isNavEntryAllowed = (item: InlineNavItem, resourcesRefs: ResourcesRefs): boolean => {
+  if (!item.resourceRefId) { return true }
+  const ref = resourcesRefs?.items?.find(({ id }) => id === item.resourceRefId)
+  return ref ? ref.allowed !== false : true
+}
+
+/**
  * Build the antd-Menu entries + app routes from inline nav items.
  * - ROUTES: every item with a `path` (label OPTIONAL → a label-less item is a
  *   route-only/hidden route, e.g. /search, detail, create). Content endpoint via
  *   `resolveContentEndpoint` (explicit → resourceRefId → convention `flexes/page-<slug>`),
  *   so the INIT nav is the single, param-capable route source — no routes-loader.
- * - ENTRIES: only items with a `label` (the visible sidebar). Both sorted by `order`.
+ *   Routes are NOT RBAC-filtered: a hidden entry's deep-link still resolves, and
+ *   the page's own content `/call` returns 403 (defense stays at the content layer).
+ * - ENTRIES: only items with a `label` (the visible sidebar) AND that the user is
+ *   `allowed` (isNavEntryAllowed). Both sorted by `order`.
  */
 export const buildNavModel = (
   items: readonly InlineNavItem[],
@@ -76,6 +99,7 @@ export const buildNavModel = (
 
   const entries: NavEntry[] = sorted
     .filter((item): item is InlineNavItem & { label: string; path: string } => !!item.label && !!item.path)
+    .filter((item) => isNavEntryAllowed(item, resourcesRefs))
     .map((item) => ({ iconName: item.icon, key: item.path, label: item.label }))
 
   return { entries, routes }
