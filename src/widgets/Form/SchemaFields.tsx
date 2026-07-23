@@ -117,15 +117,21 @@ export const SchemaFields = ({ hide = [], namePath = [], schema }: SchemaFieldsP
         }
 
         return (
+          // The label is a stacked name + (wrapping) description meant to sit ABOVE the control.
+          // Force full-width label/wrapper columns so that stays true even when the Form's
+          // `layout` is 'horizontal' — otherwise antd puts the label beside the control and a long
+          // description crowds/overlaps it. A no-op for vertical/inline layouts (already stacked).
           <AntdForm.Item
             className={styles.field}
             colon={false}
             hasFeedback={required.has(key) && node.type !== 'boolean'}
             key={path.join('.')}
             label={fieldHeader(key, node, required.has(key))}
+            labelCol={{ span: 24 }}
             name={path}
             rules={required.has(key) ? [{ message: `${key} is required`, required: true }] : undefined}
             valuePropName={node.type === 'boolean' ? 'checked' : undefined}
+            wrapperCol={{ span: 24 }}
           >
             {controlFor(node)}
           </AntdForm.Item>
