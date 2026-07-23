@@ -27,6 +27,11 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
 
   // Optional row → route navigation. `rowNavigateTo` is a path with `{valueKey}`
   // placeholders filled from that row's cells (e.g. "/compositions/{ns}/{name}").
+  // When the WHOLE template is a single `{key}` placeholder, the cell holds a complete
+  // pre-built route (the server precomputed a per-row branch — e.g. composition rows →
+  // /compositions/.., others → /resources/..) so it's used VERBATIM, without encoding its
+  // slashes. Multi-segment templates keep encoding each interpolated value as before.
+  const wholeIsPlaceholder = /^\{[^}]+\}$/.test(rowNavigateTo ?? '')
   const buildRowPath = (row: NonNullable<TableWidgetData['dataSource']>[number]): string | undefined => {
     if (!rowNavigateTo) { return undefined }
     let missing = false
@@ -36,7 +41,7 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
         missing = true
         return ''
       }
-      return encodeURIComponent(value)
+      return wholeIsPlaceholder ? value : encodeURIComponent(value)
     })
     return missing ? undefined : path
   }
