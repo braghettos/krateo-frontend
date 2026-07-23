@@ -119,15 +119,21 @@ function renderEntry(key: string, node: JSONSchema4, hide: string[], namePath: s
   }
 
   return (
+    // The label is a stacked name + (wrapping) description meant to sit ABOVE the control. Force
+    // full-width label/wrapper columns so that stays true even under a Form `layout='horizontal'`
+    // (otherwise antd puts the label beside the control and a long description crowds/overlaps it).
+    // A no-op for vertical/inline layouts (already stacked). #54 §0.4 / #57 #5.
     <AntdForm.Item
       className={styles.field}
       colon={false}
       hasFeedback={isRequired && node.type !== 'boolean'}
       key={path.join('.')}
       label={fieldHeader(key, node, isRequired)}
+      labelCol={{ span: 24 }}
       name={path}
       rules={isRequired ? [{ message: `${key} is required`, required: true }] : undefined}
       valuePropName={node.type === 'boolean' ? 'checked' : undefined}
+      wrapperCol={{ span: 24 }}
     >
       {controlFor(node)}
     </AntdForm.Item>
