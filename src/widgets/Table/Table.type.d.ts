@@ -118,7 +118,7 @@ export interface Table {
        */
       bordered?: boolean
       /**
-       * antd Table size
+       * antd Table size. Defaults to 'middle' when omitted (matching Button), so an unset value has a documented, Brand-consistent density rather than antd's raw default
        */
       size?: 'large' | 'middle' | 'small'
       /**
