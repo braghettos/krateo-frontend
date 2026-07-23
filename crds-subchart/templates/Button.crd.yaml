@@ -279,6 +279,9 @@ spec:
                               errorMessage:
                                 description: a message that will be displayed inside a toast in case of error
                                 type: string
+                              fanOutPath:
+                                description: 'name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action'
+                                type: string
                               headers:
                                 description: 'array of headers as strings, format ''key: value'''
                                 items:
@@ -320,6 +323,36 @@ spec:
                               onSuccessNavigateTo:
                                 description: url to navigate to after successful execution
                                 type: string
+                              ops:
+                                description: 'ordered list of DISTINCT writes applied as ONE gated set (e.g. one Form submit creating a Role AND its RoleBinding): each op resolves its OWN resourceRefId (verb + path + payload base) and builds its OWN payload/payloadToOverride against the SAME submitted values. The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics). Mutually exclusive with fanOutPath; onEventNavigateTo is not supported on a multi-op action. The action''s own top-level payload/payloadToOverride are IGNORED when ops is present and its top-level resourceRefId is ignored for dispatch (it must still name a valid resource ref — point it at the first op''s)'
+                                items:
+                                  properties:
+                                    payload:
+                                      description: static payload sent with this op's request
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                    payloadToOverride:
+                                      description: list of this op's payload fields to override dynamically (values interpolate against the same submitted values as every other op)
+                                      items:
+                                        properties:
+                                          name:
+                                            description: name of the field to override
+                                            type: string
+                                          value:
+                                            description: value to use for overriding the field
+                                            type: string
+                                        required:
+                                          - name
+                                          - value
+                                        type: object
+                                      type: array
+                                    resourceRefId:
+                                      description: 'the identifier of the resource ref this op targets: its verb (must be mutating), path and payload base'
+                                      type: string
+                                  required:
+                                    - resourceRefId
+                                  type: object
+                                type: array
                               payload:
                                 description: static payload sent with the request
                                 type: object
@@ -361,6 +394,9 @@ spec:
                             type: object
                           type: array
                       type: object
+                    ariaLabel:
+                      description: WCAG accessible name for icon-only buttons (no visible label). When the button renders only an icon, the browser needs a text alternative for screen readers. Provide a short human-readable description (e.g. "Delete", "Refresh"). Falls back to the action id when omitted.
+                      type: string
                     block:
                       description: antd Button block (full width)
                       type: boolean
@@ -458,6 +494,14 @@ spec:
                       - groups
                     type: string
                   type: array
+                keyExtras:
+                  description: 'F6 (snowplow#130): the request-extras keys (route params / URL query folded into ?extras=) whose values this widget''s resolution depends on. Only declared keys partition the widget cache cell. Absent/empty = the widget does not vary by any request extra (chrome/layout default).'
+                  items:
+                    type: string
+                  type: array
+                freshness:
+                  description: 'Opt-in staleness indicator: when true the widget shows the stale/refreshing dot overlay (exception states only). Absent/false = no badge ever (the default; healthy widgets stay unmarked).'
+                  type: boolean
               required:
                 - widgetData
               type: object

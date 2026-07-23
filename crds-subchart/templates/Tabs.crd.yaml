@@ -238,6 +238,14 @@ spec:
                       - groups
                     type: string
                   type: array
+                keyExtras:
+                  description: 'F6 (snowplow#130): the request-extras keys (route params / URL query folded into ?extras=) whose values this widget''s resolution depends on. Only declared keys partition the widget cache cell. Absent/empty = the widget does not vary by any request extra (chrome/layout default).'
+                  items:
+                    type: string
+                  type: array
+                freshness:
+                  description: 'Opt-in staleness indicator: when true the widget shows the stale/refreshing dot overlay (exception states only). Absent/false = no badge ever (the default; healthy widgets stay unmarked).'
+                  type: boolean
               required:
                 - widgetData
               type: object

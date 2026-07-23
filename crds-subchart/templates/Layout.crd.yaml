@@ -154,6 +154,11 @@ spec:
                     content:
                       description: resourceRefId of the widget rendered in antd Layout.Content
                       type: string
+                    effects:
+                      description: 'resourceRefIds of side-effect widgets (e.g. Theme) rendered invisibly: they set global state (CSS custom properties, etc.) and produce no UI. Use for app-wide concerns mounted once on the shell.'
+                      items:
+                        type: string
+                      type: array
                     footer:
                       description: resourceRefId of the widget rendered in antd Layout.Footer
                       type: string
@@ -220,6 +225,14 @@ spec:
                       - groups
                     type: string
                   type: array
+                keyExtras:
+                  description: 'F6 (snowplow#130): the request-extras keys (route params / URL query folded into ?extras=) whose values this widget''s resolution depends on. Only declared keys partition the widget cache cell. Absent/empty = the widget does not vary by any request extra (chrome/layout default).'
+                  items:
+                    type: string
+                  type: array
+                freshness:
+                  description: 'Opt-in staleness indicator: when true the widget shows the stale/refreshing dot overlay (exception states only). Absent/false = no badge ever (the default; healthy widgets stay unmarked).'
+                  type: boolean
               required:
                 - widgetData
               type: object

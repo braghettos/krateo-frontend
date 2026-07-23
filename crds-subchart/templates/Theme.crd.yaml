@@ -3,17 +3,17 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: images.widgets.templates.krateo.io
+  name: themes.widgets.templates.krateo.io
 spec:
   group: widgets.templates.krateo.io
   names:
     categories:
       - widgets
       - krateo
-    kind: Image
-    listKind: ImageList
-    plural: images
-    singular: image
+    kind: Theme
+    listKind: ThemeList
+    plural: themes
+    singular: theme
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
@@ -150,79 +150,74 @@ spec:
                     type: object
                   type: array
                 widgetData:
+                  description: 'Tenant Theme overrides (Brand v2, issue #49 §7). Every field is optional — a Theme overrides any SUBSET. Tier-2 tokens (status/agent/focus ring/chart palette) are intentionally NOT here: they are locked and cannot be overridden by a tenant.'
                   properties:
-                    alt:
-                      description: alternative text (antd Image `alt`)
-                      type: string
-                    crossOrigin:
-                      description: CORS setting for the request (native img `crossOrigin`)
+                    custom:
+                      description: non-token brand chrome overrides (sidebar + nav)
+                      properties:
+                        menu:
+                          description: sidebar nav-item colours (→ --menuitem-color / --menuitembg-color / --krateo-nav-item*)
+                          properties:
+                            itemColor:
+                              type: string
+                            itemHoverColor:
+                              type: string
+                            itemSelectedBg:
+                              type: string
+                            itemSelectedColor:
+                              type: string
+                          type: object
+                        sidebar:
+                          description: sidebar rail gradient stops (→ --krateo-nav-gradient-* / --menubgstart/end-color)
+                          properties:
+                            bgGradientEnd:
+                              type: string
+                            bgGradientStart:
+                              type: string
+                          type: object
+                      type: object
+                    logo:
+                      description: tenant brand logo (used on the login panel; sider brand is chart-driven)
+                      properties:
+                        alt:
+                          description: logo alt text
+                          type: string
+                        url:
+                          description: logo image URL
+                          type: string
+                      type: object
+                    mode:
+                      description: when set, PIN the color mode (overrides the user's light/dark toggle preference for this tenant)
                       enum:
-                        - anonymous
-                        - use-credentials
+                        - dark
+                        - light
                       type: string
-                    decoding:
-                      description: image decoding hint (native img `decoding`)
-                      enum:
-                        - async
-                        - auto
-                        - sync
-                      type: string
-                    draggable:
-                      description: whether the image is draggable (native img `draggable`)
-                      type: boolean
-                    fallback:
-                      description: image src to show if `src` fails to load (antd Image `fallback`)
-                      type: string
-                    height:
-                      description: image height in px (number) or any CSS length (string) — antd Image `height`
-                      x-kubernetes-int-or-string: true
-                    loading:
-                      description: native lazy/eager loading hint (antd Image `loading`)
-                      enum:
-                        - eager
-                        - lazy
-                      type: string
-                    placeholder:
-                      description: show the default blurred placeholder while loading (antd Image `placeholder`)
-                      type: boolean
-                    preview:
-                      description: whether clicking the image opens the zoom/preview overlay (antd Image `preview`); set false for decorative images such as logos
-                      type: boolean
-                    referrerPolicy:
-                      description: referrer policy for the request (native img `referrerPolicy`)
-                      enum:
-                        - ;no-referrer
-                        - no-referrer-when-downgrade
-                        - origin
-                        - origin-when-cross-origin
-                        - same-origin
-                        - strict-origin
-                        - strict-origin-when-cross-origin
-                        - unsafe-url
-                      type: string
-                    rootClassName:
-                      description: class name on the image wrapper (antd Image `rootClassName`)
-                      type: string
-                    sizes:
-                      description: responsive sizes hint (native img `sizes`)
-                      type: string
-                    src:
-                      description: the image source URL (antd Image `src`)
-                      type: string
-                    srcSet:
-                      description: responsive source set (native img `srcSet`)
-                      type: string
-                    title:
-                      description: native title tooltip (native img `title`)
-                      type: string
-                    useMap:
-                      description: name of an image map (native img `useMap`)
-                      type: string
-                    width:
-                      description: image width in px (number) or any CSS length (string) — antd Image `width`
-                      x-kubernetes-int-or-string: true
-                  required:
-                    - src
+                    token:
+                      description: overridable Tier-1 design tokens. Applied as CSS custom properties (--krateo-* / legacy --*-color) at runtime, so CSS-module and index.css styling re-tint. Only these named tokens are overridable.
+                      properties:
+                        colorBgContainer:
+                          description: card/panel surface → --panelbg-color + --krateo-color-background-surface
+                          type: string
+                        colorBgLayout:
+                          description: page background → --background-color + --krateo-color-background-base
+                          type: string
+                        colorBorder:
+                          description: hairline border → --border-color + --krateo-color-border-subtle
+                          type: string
+                        colorPrimary:
+                          description: brand/interaction colour → --primary-color + --krateo-color-action-primary
+                          type: string
+                        colorText:
+                          description: default text → --text-color + --krateo-color-text-default
+                          type: string
+                        fontFamily:
+                          description: UI font stack → --font-family + --krateo-font-ui
+                          type: string
+                        fontSize:
+                          description: base font size in px
+                          format: int32
+                          type: integer
+                      type: object
                   type: object
                 widgetDataTemplate:
                   items:

@@ -266,6 +266,10 @@ spec:
                     pagination:
                       description: antd Table pagination config (subproperties mirror antd).
                       properties:
+                        current:
+                          description: 'server-side pagination: the 1-based current page (controlled). Usually driven by the request `page` param, not the CR.'
+                          format: int32
+                          type: integer
                         defaultPageSize:
                           description: default page size
                           format: int32
@@ -292,6 +296,10 @@ spec:
                         simple:
                           description: use the simple pager
                           type: boolean
+                        total:
+                          description: 'server-side pagination: the TOTAL row count across all pages (the widget''s `dataSource` holds only the current page/window). Set by the widgetDataTemplate from the full list length so the pager renders the correct number of pages. When present, the Table uses controlled server-side pagination (each page fetched on demand) instead of client-side slicing of dataSource.'
+                          format: int32
+                          type: integer
                       type: object
                     prefix:
                       description: it's the filters prefix to get right values
@@ -347,6 +355,14 @@ spec:
                       - groups
                     type: string
                   type: array
+                keyExtras:
+                  description: 'F6 (snowplow#130): the request-extras keys (route params / URL query folded into ?extras=) whose values this widget''s resolution depends on. Only declared keys partition the widget cache cell. Absent/empty = the widget does not vary by any request extra (chrome/layout default).'
+                  items:
+                    type: string
+                  type: array
+                freshness:
+                  description: 'Opt-in staleness indicator: when true the widget shows the stale/refreshing dot overlay (exception states only). Absent/false = no badge ever (the default; healthy widgets stay unmarked).'
+                  type: boolean
               required:
                 - widgetData
               type: object
