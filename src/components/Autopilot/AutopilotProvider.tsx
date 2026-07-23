@@ -55,6 +55,8 @@ interface AutopilotContextValue {
   streaming: boolean
   /** Send a user turn. No-op on empty text or while streaming. */
   send: (text: string) => void
+  /** Abort the in-flight assistant turn, keeping the partial answer and thread intact. */
+  stop: () => void
   /** Reset the thread: abort, clear transcript, new session id. */
   newThread: () => void
   /** The kagent HITL approval pause awaiting a decision (null when none). */
@@ -646,6 +648,16 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     sendRef.current = send
   }, [send])
 
+  const stop = useCallback(() => {
+    // Abort the in-flight stream but keep the thread: the partial assistant answer stays,
+    // the session/contextId are untouched (a follow-up continues the same conversation).
+    abortRef.current?.()
+    abortRef.current = null
+    setStreaming(false)
+    // Settle any still-streaming bubble so the UI drops the caret and re-enables the composer.
+    setMessages((prev) => prev.map((message) => (message.streaming ? { ...message, streaming: false } : message)))
+  }, [])
+
   const newThread = useCallback(() => {
     abortRef.current?.()
     abortRef.current = null
@@ -714,8 +726,8 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   }, [send]))
 
   const value = useMemo<AutopilotContextValue>(() => ({
-    approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasAttachment: oasHeld, open, pendingApproval, send, setOpen, streaming, toggle, tour, tourOpen,
-  }), [approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasHeld, open, pendingApproval, send, streaming, toggle, tour, tourOpen])
+    approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasAttachment: oasHeld, open, pendingApproval, send, setOpen, stop, streaming, toggle, tour, tourOpen,
+  }), [approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasHeld, open, pendingApproval, send, stop, streaming, toggle, tour, tourOpen])
 
   return (
     <AutopilotReactContext.Provider value={value}>
