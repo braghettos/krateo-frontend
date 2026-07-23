@@ -190,7 +190,7 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
         : undefined}
       pagination={pagination ?? (dataTable && pageSize && dataTable.length > pageSize ? { defaultPageSize: pageSize } : false)}
       scroll={{ x: 'max-content' }}
-      size={size}
+      size={size ?? 'middle'}
     />
   )
 }
