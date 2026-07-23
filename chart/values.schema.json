@@ -472,6 +472,12 @@
       "type": "object",
       "title": "Global values",
       "description": "Helm global values (injected when used as a subchart)."
+    },
+    "containerPort": {
+      "type": "integer",
+      "title": "Container listen port",
+      "description": "Fixed port the frontend image listens on (default 8080). Decoupled from service.port.",
+      "default": 8080
     }
   }
 }

@@ -40,9 +40,16 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# The container's fixed listen port (the frontend image hardcodes nginx to 8080 and ignores $PORT).
+# Decoupled from service.port so the Service/LB can expose any external port (e.g. 80) while the
+# container + probes stay on 8080. Only change this if the image's listen port changes.
+containerPort: 8080
+
 service:
   annotations: {}
   type: ClusterIP
+  # External Service port. Maps to the container's `http` port (containerPort above) via targetPort.
+  # An installer may set this to the shared exposure port (e.g. 80) — the container stays on 8080.
   port: 8080
 
 ingress:
