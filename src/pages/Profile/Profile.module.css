@@ -1,38 +1,20 @@
-.profile {
+/* Flat classes matching the ACTUAL DOM in Profile.tsx (<Card><Row><Col …>).
+   The previous rules were nested under `.profile > .container > .content`, which this
+   page never renders, so avatar/name/email styling was silently dead. Sizes are tokenized
+   (the old 36px/24px were off the type scale). */
+.avatar {
+  align-items: center;
   display: flex;
-  height: 100%;
-  overflow: auto;
-  width: 100%;
+  justify-content: center;
+}
 
-  & .container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-    width: 100%;
+.fullname {
+  display: block;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
 
-    & .content {
-      box-sizing: border-box;
-      flex: 1;
-      height: 100%;
-      min-width: 0;
-      overflow: hidden scroll;
-      padding: var(--spacing-lg) var(--spacing-md) var(--spacing-lg) var(--spacing-md);
-      width: 100%;
-
-      .avatar {
-        max-width: 250px;
-      }
-
-      .fullname {
-        display: block;
-        font-size: 36px;
-      }
-
-      .email {
-        display: block;
-        font-size: 24px;
-      }
-    }
-  }
+.email {
+  display: block;
+  font-size: var(--font-size-sm);
 }

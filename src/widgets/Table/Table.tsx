@@ -234,7 +234,7 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
         : undefined}
       pagination={paginationProp}
       scroll={scroll}
-      size={size}
+      size={size ?? 'middle'}
       virtual={virtual}
     />
   )

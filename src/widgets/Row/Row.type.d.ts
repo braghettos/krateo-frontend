@@ -39,7 +39,7 @@ export interface Row {
         | 'yamlviewers'
       )[]
       /**
-       * vertical alignment of items in the row (antd Row `align`). Default is 'middle'; 'stretch' makes columns equal-height
+       * vertical alignment of items in the row (antd Row `align`). Default is 'stretch' (columns fill the row height so sibling cards stay equal-height when one wraps); set 'top'/'middle'/'bottom' to opt out
        */
       alignment?: 'top' | 'middle' | 'bottom' | 'stretch'
       /**
