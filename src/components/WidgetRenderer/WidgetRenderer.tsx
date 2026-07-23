@@ -247,8 +247,14 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     // Opt-in gate: the badge renders ONLY for widgets whose CR declares
     // `spec.freshness: true` — and even then only for the exception states.
     const showBadge = widget?.spec?.freshness === true && (isStale || isRefreshing)
+    // The wrapper <div> renders UNCONDITIONALLY (stable subtree root → the widget never
+    // remounts on a background refetch, preserving form-input state; see the remount-invariant
+    // test). It is `display: contents` (layout-transparent) until a badge actually shows, so it
+    // never forces sibling widgets in a horizontal Flex to collapse into equal columns (each
+    // `width:100%` wrapper shrinking to a 1/N share defeats the parent CR's `justify`). When a
+    // badge shows it becomes a real positioning box (`freshnessWrapActive`) for the overlay.
     return (
-      <div className={styles.freshnessWrap}>
+      <div className={showBadge ? `${styles.freshnessWrap} ${styles.freshnessWrapActive}` : styles.freshnessWrap}>
         {content}
         {showBadge
           ? (
