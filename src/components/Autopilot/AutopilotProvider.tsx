@@ -98,6 +98,14 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // Abort any in-flight stream when the provider unmounts.
   useEffect(() => () => abortRef.current?.(), [])
 
+  // Publish the docked rail's width as a :root CSS var so body-portalled overlays (the Filters
+  // Drawer) can inset their right edge and not cover the rail. 0 when the rail is closed/disabled.
+  // Kept in sync with `.apRail.open` width in AutopilotRail.module.css (384px).
+  useEffect(() => {
+    document.documentElement.style.setProperty('--autopilot-rail-width', enabled && open ? '384px' : '0px')
+    return () => { document.documentElement.style.setProperty('--autopilot-rail-width', '0px') }
+  }, [enabled, open])
+
   // On stream end: strip fenced `portal-action` blocks from the assistant text, then
   // auto-apply the read-only proposals (from tool_call frames + fenced blocks) through
   // the REAL dispatcher, attaching a chip per applied action. The bridge denies any

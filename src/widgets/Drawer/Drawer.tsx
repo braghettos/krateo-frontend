@@ -64,6 +64,10 @@ const Drawer = () => {
         setDrawerData({})
       }}
       open={isOpen}
+      // Inset the drawer's right edge by the docked Autopilot rail width (a :root var the rail
+      // publishes; 0 when the rail is closed/absent) so the mask + panel cover the content and
+      // never sit over the rail — honouring "the rail is never overlaid".
+      rootStyle={{ right: 'var(--autopilot-rail-width, 0px)' }}
       size={size || 'default'}
       title={drawerData.title || title}
     >
