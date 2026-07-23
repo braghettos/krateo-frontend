@@ -42,12 +42,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              # The container's actual listen port — FIXED to the image's port, NOT service.port.
-              # The frontend image (Bitnami nginx) listens on a hardcoded 8080 and ignores $PORT, so
-              # tying containerPort to service.port broke exposure (LB on :80 -> containerPort 80 ->
-              # probe :80 refused -> crashloop). The Service maps service.port (external) -> targetPort
-              # http (this port). Mirrors krateo-sse-proxy, which already uses a fixed containerPort.
-              containerPort: {{ .Values.containerPort | default 8080 }}
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
