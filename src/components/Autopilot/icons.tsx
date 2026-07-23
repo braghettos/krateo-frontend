@@ -28,6 +28,8 @@ export const EyeIcon = ({ className, size = 12 }: IconProps) => stroke(size, cla
 
 export const SendIcon = ({ className, size = 14 }: IconProps) => stroke(size, className, <path d='M22 2L11 13M22 2l-7 20-4-9-9-4z' />)
 
+export const StopIcon = ({ className, size = 12 }: IconProps) => stroke(size, className, <rect height='12' rx='2' width='12' x='6' y='6' />)
+
 export const LinkIcon = ({ className, size = 11 }: IconProps) => stroke(size, className, (
   <path d='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1' />
 ))
