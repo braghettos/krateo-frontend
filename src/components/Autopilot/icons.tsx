@@ -9,6 +9,9 @@ const stroke = (size: number, className: string | undefined, children: React.Rea
   </svg>
 )
 
+// SparkIcon is DELIBERATELY solid-fill (not the shared stroke() outline set): it's the Autopilot
+// identity mark — carried by the header toggle and the rail title — so the filled spark reads as a
+// brand glyph, not a generic action icon. Intentional exception, not an oversight (see issue #56 §1.4).
 export const SparkIcon = ({ className, size = 16 }: IconProps) => (
   <svg className={className} fill='currentColor' height={size} viewBox='0 0 24 24' width={size}>
     <path d='M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z' />

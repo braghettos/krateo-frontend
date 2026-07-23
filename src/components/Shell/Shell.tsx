@@ -30,7 +30,9 @@ const HeaderChrome = () => {
       <div className={styles.headerLeft}>
         <WidgetRenderer key='header-context' widgetEndpoint={headerContext} />
       </div>
-      <div className={styles.headerRight}><CommandPalette /><AutopilotToggle /><Notifications /><ThemeToggle /><UserMenu /></div>
+      {/* Autopilot is a distinct surface, not a page utility — pull its toggle out of the
+          search/notifications/theme cluster and set it beside the user menu, behind a divider. */}
+      <div className={styles.headerRight}><CommandPalette /><Notifications /><ThemeToggle /><span className={styles.headerDivider} /><AutopilotToggle /><UserMenu /></div>
     </>
   )
 }
