@@ -71,6 +71,12 @@
                     "minimum": 0,
                     "maximum": 24
                   },
+                  "xs": { "type": "integer", "description": "antd Col xs span — responsive override of `size` at narrow widths / a shrunk content column (e.g. when the Autopilot rail is open)", "minimum": 0, "maximum": 24 },
+                  "sm": { "type": "integer", "description": "antd Col sm span", "minimum": 0, "maximum": 24 },
+                  "md": { "type": "integer", "description": "antd Col md span", "minimum": 0, "maximum": 24 },
+                  "lg": { "type": "integer", "description": "antd Col lg span", "minimum": 0, "maximum": 24 },
+                  "xl": { "type": "integer", "description": "antd Col xl span", "minimum": 0, "maximum": 24 },
+                  "xxl": { "type": "integer", "description": "antd Col xxl span", "minimum": 0, "maximum": 24 },
                   "alignment": {
                     "type": "string",
                     "description": "Krateo-only: horizontal alignment of the widget inside its cell (no antd Col equivalent; applied via flex justify-content). Default is 'left'",

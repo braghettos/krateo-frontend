@@ -52,6 +52,30 @@ export interface Row {
          */
         size?: number
         /**
+         * antd Col xs span — responsive override of `size` at narrow widths / a shrunk content column (e.g. when the Autopilot rail is open)
+         */
+        xs?: number
+        /**
+         * antd Col sm span
+         */
+        sm?: number
+        /**
+         * antd Col md span
+         */
+        md?: number
+        /**
+         * antd Col lg span
+         */
+        lg?: number
+        /**
+         * antd Col xl span
+         */
+        xl?: number
+        /**
+         * antd Col xxl span
+         */
+        xxl?: number
+        /**
          * Krateo-only: horizontal alignment of the widget inside its cell (no antd Col equivalent; applied via flex justify-content). Default is 'left'
          */
         alignment?: 'center' | 'left' | 'right'
