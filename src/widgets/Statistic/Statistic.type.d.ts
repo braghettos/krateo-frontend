@@ -32,7 +32,12 @@ export interface Statistic {
       /**
        * antd Statistic `valueStyle` — inline style for the numeral, primarily `color` for a semantic value (e.g. Healthy=cyan, Failed=crimson). Accepts a CSS color incl. theme vars like var(--cyan-color).
        */
-      valueStyle?: { color?: string }
+      valueStyle?: {
+        /**
+         * CSS color (hex or var(--token))
+         */
+        color?: string
+      }
       /**
        * live-refresh watch: involvedObject(s) this widget is tied to (see src/schemas/watch.schema.json). A matching k8s event refetches the widget.
        */
@@ -61,7 +66,7 @@ export interface Statistic {
     }[]
     resourcesRefs?: {
       items: {
-        allowed: boolean
+        allowed?: boolean
         apiVersion?: string
         id: string
         name?: string

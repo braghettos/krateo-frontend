@@ -1,0 +1,280 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "type": "string",
+      "default": "Theme",
+      "description": "Theme applies tenant brand overrides app-wide (Brand v2, issue #49 \u00a77). It renders no visible UI \u2014 a side-effect widget that sets CSS custom properties on :root. Mount one globally (e.g. in the app-shell)."
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Tenant Theme overrides (Brand v2, issue #49 \u00a77). Every field is optional \u2014 a Theme overrides any SUBSET. Tier-2 tokens (status/agent/focus ring/chart palette) are intentionally NOT here: they are locked and cannot be overridden by a tenant.",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "dark",
+                "light"
+              ],
+              "description": "when set, PIN the color mode (overrides the user's light/dark toggle preference for this tenant)"
+            },
+            "logo": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "tenant brand logo (used on the login panel; sider brand is chart-driven)",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "logo image URL"
+                },
+                "alt": {
+                  "type": "string",
+                  "description": "logo alt text"
+                }
+              }
+            },
+            "token": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "overridable Tier-1 design tokens. Applied as CSS custom properties (--krateo-* / legacy --*-color) at runtime, so CSS-module and index.css styling re-tint. Only these named tokens are overridable.",
+              "properties": {
+                "colorPrimary": {
+                  "type": "string",
+                  "description": "brand/interaction colour \u2192 --primary-color + --krateo-color-action-primary"
+                },
+                "colorBgLayout": {
+                  "type": "string",
+                  "description": "page background \u2192 --background-color + --krateo-color-background-base"
+                },
+                "colorBgContainer": {
+                  "type": "string",
+                  "description": "card/panel surface \u2192 --panelbg-color + --krateo-color-background-surface"
+                },
+                "colorBorder": {
+                  "type": "string",
+                  "description": "hairline border \u2192 --border-color + --krateo-color-border-subtle"
+                },
+                "colorText": {
+                  "type": "string",
+                  "description": "default text \u2192 --text-color + --krateo-color-text-default"
+                },
+                "fontFamily": {
+                  "type": "string",
+                  "description": "UI font stack \u2192 --font-family + --krateo-font-ui"
+                },
+                "fontSize": {
+                  "type": "integer",
+                  "description": "base font size in px"
+                }
+              }
+            },
+            "custom": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "non-token brand chrome overrides (sidebar + nav)",
+              "properties": {
+                "sidebar": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "sidebar rail gradient stops (\u2192 --krateo-nav-gradient-* / --menubgstart/end-color)",
+                  "properties": {
+                    "bgGradientStart": {
+                      "type": "string"
+                    },
+                    "bgGradientEnd": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "menu": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "sidebar nav-item colours (\u2192 --menuitem-color / --menuitembg-color / --krateo-nav-item*)",
+                  "properties": {
+                    "itemColor": {
+                      "type": "string"
+                    },
+                    "itemHoverColor": {
+                      "type": "string"
+                    },
+                    "itemSelectedBg": {
+                      "type": "string"
+                    },
+                    "itemSelectedColor": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "namespace"
+          ],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resourcesRefs": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  },
+                  "slice": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "perPage": {
+                        "type": "integer"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "page",
+                      "perPage"
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ]
+        },
+        "resourcesRefsTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "iterator": {
+                "type": "string"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "apiVersion": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "verb": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "GET"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "widgetData"
+      ]
+    }
+  },
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
+}

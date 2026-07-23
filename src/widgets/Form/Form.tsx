@@ -166,7 +166,7 @@ const ReviewSummary = ({ schema, values }: { schema?: JSONSchema4; values: Recor
  * button runs the same submit action. Default (flag off) is unchanged.
  */
 const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>) => {
-  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, stringSchema, submitActionId, submitDisabledWhenPristine } = widgetData
+  const { actions, buttonConfig, disabled, draftActionId, initialValues, items, layout, propertiesToHide, reviewBeforeSubmit, schema, size, stringSchema, submitActionId, submitActionSelector, submitDisabledWhenPristine } = widgetData
   // Prefer `stringSchema` (the schema as a raw JSON STRING) when present: `JSON.parse`
   // preserves the object's key insertion order, so a server that hands us the blueprint's
   // values.schema.json verbatim (e.g. from the per-blueprint jsonschema ConfigMap, which
@@ -203,7 +203,9 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   // Autopilot AgentDraft (Phase 3 gated form-fill): values Autopilot proposes for the create form;
   // the user still reviews and presses Create. Applied imperatively below via setFieldsValue (NOT
   // via initialValues — see that effect for why). Empty/absent when Autopilot isn't driving.
-  const { draft: agentDraft } = useAgentDraft()
+  // `nonce` is bumped by the provider on each NEW draft — the apply effect keys off it so a
+  // widget refetch (which recomputes `safeAgentDraft`'s identity) can't re-apply a stale draft.
+  const { draft: agentDraft, nonce: draftNonce } = useAgentDraft()
 
   // Client-side draft persistence (NO backend): a half-finished form is saved to localStorage
   // under the per-form key the RA seeds as `__owner` (username__namespace__name) and resumed on
@@ -262,12 +264,44 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
   // form-level initialValues — so the draft only landed on fields WITHOUT a default (e.g. namespace)
   // and silently dropped name/region/cidr/…. setFieldsValue overrides per-field defaults AND avoids
   // a remount (so values the user already typed survive), so the Autopilot fills EVERY field it
-  // drafted. Fires once per new draft (the provider hands a fresh object on each prefillForm).
+  // drafted. Fires ONCE per new draft, keyed by the provider's `nonce` (bumped on each
+  // prefillForm): `safeAgentDraft` alone is not a safe trigger because a widget refetch replaces
+  // the schema identity and recomputes it — re-applying the SAME draft over values the user has
+  // edited since (issue #33). The nonce guard keeps a genuinely-new draft applying (even over
+  // dirty fields — the user asked Autopilot to fill the form) while refetches are inert.
+  const appliedDraftNonceRef = useRef<number | null>(null)
   useEffect(() => {
-    if (safeAgentDraft && Object.keys(safeAgentDraft).length > 0) {
-      form.setFieldsValue(safeAgentDraft)
+    if (!safeAgentDraft || Object.keys(safeAgentDraft).length === 0) {
+      return
     }
-  }, [safeAgentDraft, form])
+    if (appliedDraftNonceRef.current === draftNonce) {
+      return
+    }
+    appliedDraftNonceRef.current = draftNonce
+    form.setFieldsValue(safeAgentDraft)
+  }, [safeAgentDraft, draftNonce, form])
+
+  // Refetch-vs-dirty-form reconciliation (issue #33). A live-refresh/event-driven refetch
+  // replaces `widgetData` (schema + initialValues get NEW identities) WITHOUT remounting the
+  // Form (WidgetRenderer keeps the element tree stable), and antd applies `initialValues` on
+  // mount only — so by default a refetch changes nothing the user can see. This effect adds the
+  // one desirable exception: while the form is fully PRISTINE (no field touched by the user),
+  // re-seed the freshly-fetched initialValues so an idle form tracks server state. It re-seeds
+  // via `setFields` with `touched: false` — NOT `setFieldsValue`, which marks changed fields
+  // touched and would make the first server-side change freeze all future ones. The moment the
+  // user has touched ANY field, refetched initialValues are never applied again: user input
+  // wins, while fresh schema/options still flow in through the normal re-render.
+  const lastSeededInitialsRef = useRef(effectiveInitialValues)
+  useEffect(() => {
+    if (lastSeededInitialsRef.current === effectiveInitialValues) {
+      return
+    }
+    lastSeededInitialsRef.current = effectiveInitialValues
+    if (form.isFieldsTouched()) {
+      return
+    }
+    form.setFields(Object.entries(effectiveInitialValues).map(([name, value]) => ({ name, touched: false, value })))
+  }, [effectiveInitialValues, form])
 
   // Live form values (re-renders on any field change). Used only to gate the submit button when
   // `submitDisabledWhenPristine` is set: disabled until at least one field differs from its initial
@@ -295,9 +329,25 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     }
   }, [buttonConfig, formId, insideDrawer, isActionLoading, setDrawerData])
 
-  const action = Object.values(actions)
-    .flat()
-    .find(({ id }) => id === submitActionId)
+  const allActions = Object.values(actions).flat()
+  const action = allActions.find(({ id }) => id === submitActionId)
+
+  // Field-conditional submit routing: when `submitActionSelector` is set, the effective submit
+  // action is chosen at submit time from the value of the named field (e.g. a "target cluster"
+  // Select where "local" posts the blueprint instance and a remote spoke posts a RemoteInstall).
+  // Falls back to the selector's `default`, then the static `submitActionId`, then `action`.
+  const resolveSubmitAction = (formValues: Record<string, unknown>) => {
+    if (submitActionSelector?.field) {
+      const rawValue = formValues?.[submitActionSelector.field]
+      // The selector field is an enum Select — its value is a string. Non-string values have no
+      // mapping and fall through to `default` / `submitActionId`.
+      const key = typeof rawValue === 'string' ? rawValue : ''
+      const id = submitActionSelector.map?.[key] ?? submitActionSelector.default ?? submitActionId
+      const picked = allActions.find((candidate) => candidate.id === id)
+      if (picked) { return picked }
+    }
+    return action
+  }
 
   // "Save draft" — persist the current field values WITHOUT validation to localStorage (NO
   // backend). getFieldsValue(true) returns the entire form store (including values seeded via
@@ -319,7 +369,9 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
     : undefined
 
   const onSubmit = async (formValues: Record<string, unknown>) => {
-    if (!action) {
+    const effectiveAction = resolveSubmitAction(formValues)
+
+    if (!effectiveAction) {
       notification.error({
         description: `The widget definition does not include an action (ID: ${submitActionId})`,
         message: 'Error while executing the action',
@@ -329,7 +381,7 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       return
     }
 
-    if (action.type !== 'rest') {
+    if (effectiveAction.type !== 'rest') {
       notification.error({
         description: 'Submit action type is not "rest"',
         message: 'Error while executing the action',
@@ -339,13 +391,13 @@ const Form = ({ resourcesRefs, widget, widgetData }: WidgetProps<FormWidgetData>
       return
     }
 
-    if (action.onEventNavigateTo) {
+    if (effectiveAction.onEventNavigateTo) {
       setDrawerData({ extra: <FormExtra buttonConfig={buttonConfig} disabled form={formId} loading={isActionLoading} /> })
     }
 
     const values = convertDayjsToISOString(formValues)
 
-    await handleAction(action, resourcesRefs, values, widget)
+    await handleAction(effectiveAction, resourcesRefs, values, widget)
   }
 
   // On a validated submit: with review-before-submit on and still editing, capture the

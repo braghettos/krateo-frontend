@@ -1,0 +1,80 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.yaml {
+  max-height: 600px;
+  overflow-y: auto;
+
+  /* Match YamlViewer's inset code-surface treatment: re-base the highlighter's own
+     background to the theme surface + a hairline so the YAML reads as one coherent block. */
+  :global(pre) {
+    background: var(--background-color) !important;
+    border: 1px solid var(--border-color, rgba(230, 237, 243, 0.1));
+    border-radius: var(--radius-md);
+  }
+}
+
+/* previewPage v2 "Rendered (live)" tab: give the real page render room to lay out
+   (a Flex root stacks children) and keep long pages scrollable inside the drawer. */
+.live {
+  max-height: 75vh;
+  min-height: 240px;
+  overflow-y: auto;
+}
+
+.headline {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.errorText {
+  font-family: inherit;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* FE-K1 validation/immutability lines inside the drawer's Alert blocks. */
+.issueList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding-left: 16px;
+}
+
+/* Unified preview: the "Files" tab (one committed file per block) + its destination-path header. */
+.file {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.filePath {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* The publish-target header line ("Publishes to <repo> · PR into <base>"). */
+.target {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}

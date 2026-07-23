@@ -1,12 +1,15 @@
 import { Suspense, useEffect } from 'react'
 
+import { useConfigContext } from '../../context/ConfigContext'
+import { isWidgetArmed, isWidgetLiveRefreshEnabled } from '../../hooks/refreshSse'
 import useCatchError from '../../hooks/useCatchError'
 import { useWidgetQuery } from '../../hooks/useWidgetQuery'
-import type { Widget } from '../../types/Widget'
+import type { ServerPagination, Widget } from '../../types/Widget'
 import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
+import { FreshnessBadge } from '../FreshnessBadge/FreshnessBadge'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
-import { WidgetError, WidgetLoading } from '../WidgetStates'
+import { WidgetError, WidgetLoading, WidgetTimeout } from '../WidgetStates'
 
 import styles from './WidgetRenderer.module.css'
 
@@ -21,13 +24,33 @@ type WidgetRendererProps = {
   }
 }
 
+/**
+ * Widget-`/call` RESOURCE plurals that render potentially-unbounded lists and so
+ * default to BOUNDED server-side pagination (paginate + virtualize) instead of
+ * snowplow's `-1/-1` full-set sentinel. Keyed by the `resource` query param the
+ * endpoint carries (known before the fetch, unlike the widget `kind`). Value is
+ * the per-page window size. `tables` covers the compositions Table — the 60K-row
+ * `/compositions` wedge this map exists to prevent.
+ */
+const PAGINATED_RESOURCE_PAGE_SIZE: Record<string, number> = {
+  tables: 50,
+}
+
+export const getDefaultPageSizeForEndpoint = (widgetEndpoint: string): number | undefined => {
+  const queryStart = widgetEndpoint.indexOf('?')
+  if (queryStart === -1) { return undefined }
+  const resource = new URLSearchParams(widgetEndpoint.slice(queryStart)).get('resource')
+  return resource ? PAGINATED_RESOURCE_PAGE_SIZE[resource] : undefined
+}
+
 const parseWidget = (
   widget: Widget,
   fetchNextPage: () => Promise<unknown> | void,
   hasNextPage: boolean,
   isFetching: boolean,
   isFetchingNextPage: boolean,
-  isFetchingResourcesRefs: boolean
+  isFetchingResourcesRefs: boolean,
+  serverPagination?: ServerPagination
 ) => {
   if (typeof widget.status === 'string') {
     return null
@@ -41,6 +64,9 @@ const parseWidget = (
 
   const props = {
     resourcesRefs: { ...resourcesRefs, items: resourcesRefs?.items?.filter(({ allowed }) => allowed) ?? [] },
+    // Classic server-side pager controls, threaded down to widgets that opt into
+    // bounded pagination (e.g. the compositions Table). Undefined for all others.
+    serverPagination,
     uid: metadata.uid,
   }
 
@@ -79,13 +105,28 @@ const parseWidget = (
 const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndpoint, wrapper }: WidgetRendererProps) => {
   const { isWidgetFilteredByProps } = useFilter()
   const { catchError } = useCatchError()
+  const { config } = useConfigContext()
 
   if (!widgetEndpoint?.includes('widgets.templates.krateo.io')) {
     console.warn(`WidgetRenderer received widgetEndpoint=${widgetEndpoint}, which is probably invalid. An url is expected.`)
   }
 
-  const { isFetchingResourcesRefs, queryResult } = useWidgetQuery(widgetEndpoint)
-  const { data: widget, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, refetch } = queryResult
+  // Bounded server-side pagination is opt-in by RESOURCE PLURAL (the `resource`
+  // param on the widget's `/call` endpoint), resolved BEFORE the fetch — the
+  // widget `kind` is only known after the response, but the plural is in the URL.
+  // Keeps `useWidgetQuery` generic; the opt-in set is one explicit, greppable map.
+  const defaultPageSize = getDefaultPageSizeForEndpoint(widgetEndpoint)
+
+  const { isFetchingResourcesRefs, queryResult, serverPagination, timedOut, widgetId } = useWidgetQuery(widgetEndpoint, { defaultPageSize })
+  const { data: widget, dataUpdatedAt, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, isStale, refetch } = queryResult
+
+  // Freshness signal fed to the FreshnessBadge overlaid on the rendered widget.
+  // `liveArmed` is the HONEST arm-state: this widget currently has a live `/refreshes`
+  // subscription open on the tab-wide stream (isWidgetArmed(widgetId)), so the green
+  // "Live" dot means a push channel is genuinely open — not merely that the last fetch
+  // succeeded. Replaces the earlier render-local `isSuccess && !isStale` proxy.
+  const liveRefreshEnabled = isWidgetLiveRefreshEnabled(config)
+  const liveArmed = liveRefreshEnabled && isWidgetArmed(widgetId)
 
   useEffect(() => {
     if (onLoadingChange) {
@@ -102,6 +143,13 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
 
   if (error) {
     console.error(error)
+    // A slow/still-warming server (request deadline, cancelled fetch, 503/504) gets a
+    // CALM, distinct timeout state — not the hard-error red cross — with a working Retry.
+    // `timedOut` is the Freshness layer's classification of THIS error (useWidgetQuery),
+    // reused here instead of re-classifying at the render.
+    if (timedOut) {
+      return <WidgetTimeout onRetry={() => { void refetch() }} />
+    }
     const failedToFetch = error instanceof Error && (error instanceof TypeError || error.message.includes('Failed to fetch'))
     const subtitle = failedToFetch
       ? "Couldn't reach the server. It may still be starting up."
@@ -175,13 +223,61 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     return null
   }
 
-  const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs)
+  const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)
 
-  if (wrapper) {
-    return <wrapper.component {...wrapper.props}>{renderedWidget}</wrapper.component>
+  // Overlay a tiny freshness DOT on the widget ONLY when (1) the widget CR OPTS IN via
+  // `spec.freshness: true` AND (2) its state is worth noticing — actively refreshing, or
+  // stale. The steady/fresh state (live or just-updated) is the assumed default and
+  // renders NO indicator at all: a marker on every widget, all the time, is noise not
+  // signal. So the dot appears only as an exception, and only where an author asked for
+  // it — the DEFAULT (no `freshness` in the spec) shows no badge ever. Skipped entirely
+  // for invisible renders / live-refresh off.
+  //
+  // STRUCTURE STABILITY (issue #33): the wrapper `<div>` is rendered UNCONDITIONALLY
+  // (only the badge inside it toggles). Wrapping only-when-noticeable changed the
+  // subtree's root element type on every stale/refetch flip (Suspense ↔ div), which
+  // React reconciles as unmount+remount — resetting ALL widget-local state, most
+  // visibly wiping every in-progress Form field back to initialValues on each
+  // live-refresh cycle. The wrapper is layout-neutral (fills the widget's slot).
+  const withFreshness = (content: React.ReactNode): React.ReactNode => {
+    if (invisible || !liveRefreshEnabled) {
+      return content
+    }
+    const isRefreshing = isFetching && dataUpdatedAt > 0
+    // Opt-in gate: the badge renders ONLY for widgets whose CR declares
+    // `spec.freshness: true` — and even then only for the exception states.
+    const showBadge = widget?.spec?.freshness === true && (isStale || isRefreshing)
+    // The wrapper <div> renders UNCONDITIONALLY (stable subtree root → the widget never
+    // remounts on a background refetch, preserving form-input state; see the remount-invariant
+    // test). It is `display: contents` (layout-transparent) until a badge actually shows, so it
+    // never forces sibling widgets in a horizontal Flex to collapse into equal columns (each
+    // `width:100%` wrapper shrinking to a 1/N share defeats the parent CR's `justify`). When a
+    // badge shows it becomes a real positioning box (`freshnessWrapActive`) for the overlay.
+    return (
+      <div className={showBadge ? `${styles.freshnessWrap} ${styles.freshnessWrapActive}` : styles.freshnessWrap}>
+        {content}
+        {showBadge
+          ? (
+            <div className={styles.freshnessOverlay}>
+              <FreshnessBadge
+                dataUpdatedAt={dataUpdatedAt}
+                isFetching={isFetching}
+                isStale={isStale}
+                liveArmed={liveArmed}
+                onRefresh={() => { void refetch() }}
+              />
+            </div>
+          )
+          : null}
+      </div>
+    )
   }
 
-  return renderedWidget
+  if (wrapper) {
+    return <wrapper.component {...wrapper.props}>{withFreshness(renderedWidget)}</wrapper.component>
+  }
+
+  return withFreshness(renderedWidget)
 }
 
 export default WidgetRenderer

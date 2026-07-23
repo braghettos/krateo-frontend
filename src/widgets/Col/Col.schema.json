@@ -134,7 +134,7 @@
                     "required": ["page", "perPage"]
                   }
                 },
-                "required": ["allowed", "id"]
+                "required": ["id"]
               }
             }
           },

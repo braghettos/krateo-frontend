@@ -1,4 +1,4 @@
-import { Form as AntdForm, Input, InputNumber, Select, Switch } from 'antd'
+import { Form as AntdForm, Collapse, Input, InputNumber, Select, Switch } from 'antd'
 import type { JSONSchema4 } from 'json-schema'
 import { useState } from 'react'
 
@@ -51,6 +51,12 @@ const controlFor = (node: JSONSchema4): React.ReactNode => {
   }
   if (node.type === 'boolean') { return <Switch /> }
   if (node.type === 'integer' || node.type === 'number') { return <InputNumber style={{ width: '100%' }} /> }
+  // Array with a FIXED items.enum → a closed multi-select (pick N of the known options —
+  // e.g. the W3-1 fleet-rollout target-clusters field); checked before the free-text
+  // `tags` fallback, which is for open string arrays only.
+  if (node.type === 'array' && !Array.isArray(node.items) && Array.isArray(node.items?.enum)) {
+    return <Select allowClear mode='multiple' options={getOptionsFromEnum(node.items.enum)} placeholder='Select…' />
+  }
   if (node.type === 'array' && !Array.isArray(node.items) && node.items?.type === 'string') {
     return <Select allowClear mode='tags' placeholder='Add values…' />
   }
@@ -61,16 +67,19 @@ const controlFor = (node: JSONSchema4): React.ReactNode => {
 const isGroup = (node: JSONSchema4): boolean => node.type === 'object' && !!node.properties
 
 /**
- * One COHERENT header for every property — the property `name` (the schema key) and its
- * `description` (muted, if present). Used identically for scalars, toggles, maps and
- * nested-object groups so the whole form reads as one system.
+ * One COHERENT header for every property — the property's human `title` (the label the blueprint
+ * author wrote in values.schema.json) falling back to the schema `key`, plus its `description`
+ * (muted, if present). Used identically for scalars, toggles, maps and nested-object groups so the
+ * whole form reads as one system. Preferring `title` means a novice sees "Availability zones", not
+ * the raw key `azs`.
  */
 const fieldHeader = (key: string, node: JSONSchema4, isRequired: boolean): React.ReactNode => {
   const description = typeof node.description === 'string' ? node.description : ''
+  const label = typeof node.title === 'string' && node.title.trim() ? node.title : key
   return (
     <span className={styles.fieldLabel}>
       <span className={styles.fieldName}>
-        {key}
+        {label}
         {isRequired ? <span className={styles.req}> *</span> : null}
       </span>
       {description ? <span className={styles.fieldDesc}>{description}</span> : null}
@@ -88,55 +97,90 @@ interface SchemaFieldsProps {
 }
 
 /**
+ * Renders ONE property — a nested-object group (the same header above its indented child
+ * fields) or a leaf `Form.Item`. The `Form.Item` `name` / `required` rule / `valuePropName`
+ * are preserved verbatim regardless of which partition (required up-front or Advanced
+ * collapse) the property lands in, so submission + validation are identical to a flat render.
+ */
+function renderEntry(key: string, node: JSONSchema4, hide: string[], namePath: string[], isRequired: boolean): React.ReactNode {
+  const path = [...namePath, key]
+
+  if (isGroup(node)) {
+    return (
+      <div className={styles.group} key={path.join('.')}>
+        {fieldHeader(key, node, false)}
+        <div className={styles.groupBody}>
+          {/* recursion — SchemaFields partitions this nested group's own required/optional split */}
+          {/* eslint-disable-next-line @typescript-eslint/no-use-before-define */}
+          <SchemaFields hide={hide} namePath={path} schema={node} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    // The label is a stacked name + (wrapping) description meant to sit ABOVE the control. Force
+    // full-width label/wrapper columns so that stays true even under a Form `layout='horizontal'`
+    // (otherwise antd puts the label beside the control and a long description crowds/overlaps it).
+    // A no-op for vertical/inline layouts (already stacked). #54 §0.4 / #57 #5.
+    <AntdForm.Item
+      className={styles.field}
+      colon={false}
+      hasFeedback={isRequired && node.type !== 'boolean'}
+      key={path.join('.')}
+      label={fieldHeader(key, node, isRequired)}
+      labelCol={{ span: 24 }}
+      name={path}
+      rules={isRequired ? [{ message: `${key} is required`, required: true }] : undefined}
+      valuePropName={node.type === 'boolean' ? 'checked' : undefined}
+      wrapperCol={{ span: 24 }}
+    >
+      {controlFor(node)}
+    </AntdForm.Item>
+  )
+}
+
+/**
  * Schema-driven fields, rendered in EXACT `values.schema.json` order (each property in
  * sequence — never reordered). Every property uses one coherent shape: the `name`+
  * `description` header (see `fieldHeader`) above its control. The control is the only thing
  * that varies by type — Input / Switch / Select / InputNumber / JSON editor — and a nested
  * object is the same header above its child fields, indented. The `Form.Item` `name` (and
  * `required`/`valuePropName`) is preserved verbatim, so submission is unchanged.
+ *
+ * Progressive disclosure (FRM1): the properties are PARTITIONED by `schema.required` —
+ * REQUIRED ones stay up-front (as before), the NON-required ones are collected into an antd
+ * `Collapse` titled "Advanced · N settings", collapsed by default. This is disclosure, NOT
+ * hiding: an optional field inside the collapse is still mounted, so it validates and submits
+ * its value exactly as a flat field would. `hide` still omits a property from EITHER partition,
+ * order within each partition follows the existing (stringSchema-driven) property order, and a
+ * form with no optional fields renders no Advanced section at all.
  */
 export const SchemaFields = ({ hide = [], namePath = [], schema }: SchemaFieldsProps): React.ReactNode => {
   if (!schema?.properties) { return null }
   const required = new Set(Array.isArray(schema.required) ? schema.required : [])
 
+  const visible = Object.entries(schema.properties).filter(([key]) => !hide.includes(key))
+  const requiredEntries = visible.filter(([key]) => required.has(key))
+  const optionalEntries = visible.filter(([key]) => !required.has(key))
+
   return (
     <>
-      {Object.entries(schema.properties).map(([key, node]) => {
-        if (hide.includes(key)) { return null }
-        const path = [...namePath, key]
-
-        if (isGroup(node)) {
-          return (
-            <div className={styles.group} key={path.join('.')}>
-              {fieldHeader(key, node, false)}
-              <div className={styles.groupBody}>
-                <SchemaFields hide={hide} namePath={path} schema={node} />
-              </div>
-            </div>
-          )
-        }
-
-        return (
-          // The label is a stacked name + (wrapping) description meant to sit ABOVE the control.
-          // Force full-width label/wrapper columns so that stays true even when the Form's
-          // `layout` is 'horizontal' — otherwise antd puts the label beside the control and a long
-          // description crowds/overlaps it. A no-op for vertical/inline layouts (already stacked).
-          <AntdForm.Item
-            className={styles.field}
-            colon={false}
-            hasFeedback={required.has(key) && node.type !== 'boolean'}
-            key={path.join('.')}
-            label={fieldHeader(key, node, required.has(key))}
-            labelCol={{ span: 24 }}
-            name={path}
-            rules={required.has(key) ? [{ message: `${key} is required`, required: true }] : undefined}
-            valuePropName={node.type === 'boolean' ? 'checked' : undefined}
-            wrapperCol={{ span: 24 }}
-          >
-            {controlFor(node)}
-          </AntdForm.Item>
-        )
-      })}
+      {requiredEntries.map(([key, node]) => renderEntry(key, node, hide, namePath, true))}
+      {optionalEntries.length > 0 ? (
+        <Collapse
+          className={styles.advanced}
+          items={[{
+            children: <>{optionalEntries.map(([key, node]) => renderEntry(key, node, hide, namePath, false))}</>,
+            // Always mount the optional fields (they're just visually hidden while collapsed) so
+            // they register with the form store and submit / validate identically to an up-front
+            // field — the disclosure never drops a value, even if the collapse is never opened.
+            forceRender: true,
+            key: 'advanced',
+            label: `Advanced · ${optionalEntries.length} setting${optionalEntries.length === 1 ? '' : 's'}`,
+          }]}
+        />
+      ) : null}
     </>
   )
 }
@@ -159,7 +203,10 @@ export const SchemaForm = ({ hide = [], schema }: { schema: JSONSchema4; hide?: 
 
   const sections: Section[] = []
   if (hasLoose) { sections.push({ id: '__general__', label: 'Top-level values' }) }
-  groupKeys.forEach((key) => sections.push({ id: key, label: key }))
+  groupKeys.forEach((key) => {
+    const groupTitle = properties[key].title
+    sections.push({ id: key, label: typeof groupTitle === 'string' && groupTitle.trim() ? groupTitle : key })
+  })
 
   const [active, setActive] = useState<string>(sections[0]?.id ?? '__general__')
 

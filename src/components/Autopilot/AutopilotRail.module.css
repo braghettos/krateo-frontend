@@ -19,9 +19,9 @@
 /* The rail itself: flex:none, width animates 0 → 384 so main reflows smoothly. */
 .apRail {
   flex: none;
-  width: 0;
   overflow: hidden;
   transition: width var(--motion-mid, 0.2s) ease;
+  width: 0;
 }
 
 .apRail.open {
@@ -29,68 +29,68 @@
 }
 
 .apRailInner {
-  display: flex;
-  flex-direction: column;
-  width: 384px;
-  height: 100%;
-  min-height: 0;
   background: var(--panelbg-color);
   border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 384px;
 }
 
 /* ── head ── */
 .apHead {
-  display: flex;
   align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex: none;
   gap: 9px;
   height: 64px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--border-color);
-  flex: none;
 }
 
 .apTitle {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 14px;
   color: var(--dark-color);
+  display: flex;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  gap: 8px;
 }
 
 .apSpark {
-  color: var(--amber-color);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--amber-color) 55%, transparent));
+  color: var(--primary-color);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary-color) 55%, transparent));
 }
 
 .apLive {
-  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--cyan-color);
   background: color-mix(in srgb, var(--cyan-color) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--cyan-color) 30%, transparent);
   border-radius: var(--radius-sm);
+  color: var(--cyan-color);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  gap: 5px;
+  letter-spacing: 0.06em;
   padding: 1px 6px;
+  text-transform: uppercase;
 }
 
 .apLiveDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
   background: var(--cyan-color);
+  border-radius: 50%;
   box-shadow: 0 0 5px 1px var(--cyan-color);
+  height: 5px;
+  width: 5px;
 }
 
 .apLive.idle {
-  color: var(--gray-color);
   background: transparent;
   border-color: var(--border-color);
+  color: var(--gray-color);
 }
 
 .apLive.idle .apLiveDot {
@@ -103,47 +103,47 @@
 }
 
 .apIc {
-  width: 26px;
-  height: 26px;
-  display: flex;
   align-items: center;
-  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: var(--gray-color);
-  border: 1px solid transparent;
   cursor: pointer;
-  background: transparent;
+  display: flex;
+  height: 26px;
+  justify-content: center;
   padding: 0;
+  width: 26px;
 }
 
 .apIc:hover {
-  color: var(--dark-color);
   border-color: var(--border-color);
+  color: var(--dark-color);
 }
 
 /* ── body ── */
 .apBody {
-  flex: 1;
-  overflow: auto;
-  padding: 12px 12px 4px;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 11px;
   min-height: 0;
+  overflow: auto;
+  padding: 12px 12px 4px;
 }
 
 /* context strip — what Autopilot can SEE (redacted page-context). */
 .apCtx {
-  display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 9px;
-  border-radius: var(--radius-md);
   background: var(--light-color);
   border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--gray-color);
+  display: flex;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--gray-color);
+  gap: 7px;
+  padding: 6px 9px;
 }
 
 .apCtx b {
@@ -152,8 +152,8 @@
 }
 
 .apCtxIcon {
-  flex: none;
   color: var(--cyan-color);
+  flex: none;
 }
 
 /* messages */
@@ -166,27 +166,27 @@
 
 .apMsgUser {
   align-self: flex-end;
-  max-width: 88%;
   background: var(--light-color);
   border: 1px solid var(--border-color);
-  border-radius: 9px 9px 3px 9px;
-  padding: 8px 11px;
+  border-radius: 9px 9px 3px;
   color: var(--dark-color);
+  max-width: 88%;
+  padding: 8px 11px;
 }
 
 .apMsgBot {
   align-self: flex-start;
-  max-width: 96%;
   color: var(--dark-color);
+  max-width: 96%;
 }
 
 .apMsgBot code {
-  font-family: var(--font-mono);
-  font-size: 11px;
   background: var(--light-color);
-  padding: 1px 5px;
   border-radius: 3px;
   color: var(--cyan-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
 }
 
 /* Assistant markdown (react-markdown). The bubble's pre-wrap is for plain text; inside markdown we
@@ -201,40 +201,46 @@
 .apMd ul, .apMd ol { margin: 6px 0; padding-left: 18px; }
 .apMd li { margin: 2px 0; }
 .apMd li > p { margin: 0; }
+
 .apMd h1, .apMd h2, .apMd h3, .apMd h4, .apMd h5, .apMd h6 {
+  color: var(--dark-color);
   font-size: 1em;
   font-weight: 700;
   margin: 10px 0 4px;
-  color: var(--dark-color);
 }
-.apMd strong { font-weight: 700; color: var(--dark-color); }
+.apMd strong { color: var(--dark-color); font-weight: 700; }
 .apMd a { color: var(--cyan-color); text-decoration: none; }
+
 .apMd pre {
-  font-family: var(--font-mono);
-  font-size: 11px;
   background: var(--light-color);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 8px 10px;
-  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
   margin: 6px 0;
+  overflow-x: auto;
+  padding: 8px 10px;
 }
-.apMd pre code { background: none; padding: 0; color: var(--dark-color); }
+.apMd pre code { background: none; color: var(--dark-color); padding: 0; }
+
 .apMd blockquote {
+  border-left: 3px solid var(--border-color);
   margin: 6px 0;
   padding-left: 10px;
-  border-left: 3px solid var(--border-color);
 }
 
-/* streaming caret */
+/* Streaming caret = the "Autopilot is EXECUTING" indicator. Signal Yellow #E8FF00 is Tier-2
+   locked to EXACTLY this meaning (issue #49) — never a CTA/decoration/link. --krateo-color-
+   agent-signal-fill is #E8FF00 in both modes. (The pending-HITL approval gate below stays the
+   warning token — it's a WAITING/attention state, not executing.) */
 .apCaret {
+  animation: apBlink 1s steps(2, start) infinite;
+  background: var(--krateo-color-agent-signal-fill);
   display: inline-block;
-  width: 7px;
   height: 13px;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background: var(--amber-color);
-  animation: apBlink 1s steps(2, start) infinite;
+  width: 7px;
 }
 
 @keyframes apBlink {
@@ -245,23 +251,23 @@
 
 /* read-only action chip (Phase 2 surface; rendered when a message carries one) */
 .apAct {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 9px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
   background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--gray-color);
+  display: flex;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--gray-color);
+  gap: 8px;
+  padding: 7px 9px;
 }
 
 .apActCheck {
-  width: 15px;
-  height: 15px;
-  flex: none;
   color: var(--cyan-color);
+  flex: none;
+  height: 15px;
+  width: 15px;
 }
 
 .apAct b {
@@ -270,11 +276,138 @@
 }
 
 .apActRo {
-  margin-left: auto;
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--cyan-color);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  margin-left: auto;
+  text-transform: uppercase;
+}
+
+/* ── kagent HITL approval card (Phase 2) ──
+   BlastRadiusConfirm's calm decision language, in the rail: amber = the brand's
+   attention color for a pending human gate (not an error), mono args block, quiet
+   deny-by-default note. Theme vars only, so it reads in both dark and light. */
+.apApproval {
+  background: color-mix(in srgb, var(--amber-color) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber-color) 38%, transparent);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.apApprovalHead {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+/* Mirrors BlastRadiusConfirm .verb — the chip naming the gate. */
+.apApprovalChip {
+  background: color-mix(in srgb, var(--amber-color) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber-color) 32%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--amber-color);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.apApprovalIntent {
+  color: var(--gray-color);
+  font-size: 11px;
+}
+
+.apApprovalReq {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.apApprovalTool {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+}
+
+.apApprovalToolName {
+  color: var(--dark-color);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.apApprovalAgent {
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+/* Mirrors BlastRadiusConfirm .code — the mono args/manifest block the human reads. */
+.apApprovalCode {
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--dark-color);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.apApprovalBtns {
+  display: flex;
+  gap: 8px;
+}
+
+.apBtnApprove {
+  background: color-mix(in srgb, var(--amber-color) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber-color) 45%, transparent);
+  border-radius: 7px;
+  color: var(--amber-color);
+  cursor: pointer;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  height: 28px;
+  letter-spacing: 0.03em;
+}
+
+.apBtnApprove:hover {
+  background: color-mix(in srgb, var(--amber-color) 26%, transparent);
+}
+
+.apBtnDeny {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  color: var(--gray-color);
+  cursor: pointer;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  height: 28px;
+}
+
+.apBtnDeny:hover {
+  border-color: var(--gray-color);
+  color: var(--dark-color);
+}
+
+.apApprovalNote {
+  color: var(--gray-color);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
 }
 
 /* suggested next steps */
@@ -285,73 +418,73 @@
 }
 
 .apSg {
-  height: 24px;
-  padding: 0 9px;
-  border-radius: var(--radius-sm);
-  border: 1px dashed color-mix(in srgb, var(--gray-color) 45%, transparent);
+  align-items: center;
   background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--gray-color) 45%, transparent);
+  border-radius: var(--radius-sm);
   color: var(--gray-color);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
   cursor: pointer;
   display: inline-flex;
-  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  height: 24px;
+  padding: 0 9px;
 }
 
 .apSg:hover {
-  color: var(--dark-color);
   border-color: var(--gray-color);
+  color: var(--dark-color);
 }
 
 /* empty / greeting state */
 .apEmpty {
-  margin: auto 0;
-  text-align: center;
   color: var(--gray-color);
   font-size: 12.5px;
   line-height: 1.6;
+  margin: auto 0;
   padding: 16px 8px;
+  text-align: center;
 }
 
 .apEmpty .apEmptyTitle {
+  color: var(--dark-color);
   font-family: var(--font-display);
   font-size: 15px;
-  color: var(--dark-color);
   margin-bottom: 6px;
 }
 
 /* ── composer ── */
 .apComposer {
   border-top: 1px solid var(--border-color);
-  padding: 10px 12px 12px;
   flex: none;
+  padding: 10px 12px 12px;
 }
 
 .apInput {
-  display: flex;
   align-items: flex-end;
-  gap: 8px;
   background: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 9px;
+  display: flex;
+  gap: 8px;
   padding: 8px 10px;
 }
 
 .apInput:focus-within {
-  border-color: color-mix(in srgb, var(--amber-color) 45%, transparent);
+  border-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
 }
 
 .apTextarea {
-  flex: 1;
-  resize: none;
-  border: none;
-  outline: none;
   background: transparent;
+  border: none;
   color: var(--dark-color);
+  flex: 1;
   font-family: var(--font-family);
   font-size: 12.5px;
   line-height: 1.5;
   max-height: 120px;
+  outline: none;
+  resize: none;
 }
 
 .apTextarea::placeholder {
@@ -359,38 +492,57 @@
 }
 
 .apSend {
-  width: 28px;
-  height: 28px;
-  flex: none;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--amber-color) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--amber-color) 45%, transparent);
-  color: var(--amber-color);
-  display: flex;
   align-items: center;
-  justify-content: center;
+  background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 45%, transparent);
+  border-radius: 7px;
+  color: var(--primary-color);
   cursor: pointer;
+  display: flex;
+  flex: none;
+  height: 28px;
+  justify-content: center;
   padding: 0;
+  width: 28px;
 }
 
 .apSend:disabled {
-  opacity: 0.45;
   cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .apNote {
-  margin-top: 7px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
+  align-items: center;
   color: var(--gray-color);
   display: flex;
-  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
   gap: 6px;
+  margin-top: 7px;
 }
 
 .apNoteIcon {
-  width: 11px;
-  height: 11px;
-  flex: none;
   color: var(--cyan-color);
+  flex: none;
+  height: 11px;
+  width: 11px;
+}
+
+/* W4 KOG (FE-K2): the held-OAS-attachment chip + the over-cap rejection note. */
+.apOas {
+  align-items: center;
+  color: var(--gray-color);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  gap: 6px;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.apOasError {
+  color: var(--magenta-color);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  margin-bottom: 7px;
 }

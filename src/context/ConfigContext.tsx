@@ -13,6 +13,15 @@ export interface Config {
      * absent the Autopilot rail + header toggle do not render (graceful absence
      * for installs without autopilot deployed). */
     AUTOPILOT_API_BASE_URL?: string
+    /** EXTERNALIZED Autopilot prompt overrides (portal-builder). Optional: when set (from
+     * config.json, rendered by the frontend chart's `config:` values), they REPLACE the baked-in
+     * `PORTAL_CAPABILITIES_PROMPT` (turn-1 protocol) / `PORTAL_HOUSE_RULES` (every-turn recap) in
+     * components/Autopilot/actionBridge.ts — so the frontend's autopilot prompt becomes iterable via
+     * a chart-values change + redeploy, with NO frontend image rebuild. Absent/empty ⇒ the baked
+     * default (byte-identical to before this seam). The orchestrator prompt is already an external
+     * ConfigMap; these make BOTH prompt layers configmap-managed. */
+    AUTOPILOT_PORTAL_PROMPT?: string
+    AUTOPILOT_PORTAL_HOUSE_RULES?: string
     /** Kill-switch for snowplow's per-widget live-refresh SSE (`/refreshes`), which makes
      * widgets push-update when their backing cluster object changes (see hooks/refreshSse.ts).
      * **ON by default** (verified delivering on snowplow ≥1.5.13; older snowplow degrades to a
@@ -27,6 +36,30 @@ export interface Config {
      * frontend against an old snowplow is safe. The flag + its legacy branch are removed once the
      * fleet converges. See snowplow docs/definitive-cache-identity-architecture-2026-07-07.md §4.1. */
     SNOWPLOW_IDENTITY_INJECTION?: boolean
+    /** W0-3 provenance flag. When `true`, every gated portal write (human OR agent origin)
+     * fire-and-forgets ONE immutable AuditRecord CR (audit.krateo.io/v1alpha1, namespaced —
+     * the CRD ships separately in the portal chart) after the write resolves. STRICTLY
+     * best-effort: a missing CRD (404), RBAC (403), or network failure is swallowed and
+     * never blocks/fails the primary write (see hooks/provenance.ts). **OFF by default** so
+     * clusters without the AuditRecord CRD see zero new traffic. */
+    PROVENANCE_ENABLED?: boolean | string
+    /** Base URL of the Wave-4 helm-render dry-run service (`POST {chart, values}` to
+     * `${RENDER_API_BASE_URL}/render` → rendered manifests, NO cluster write). Optional
+     * — the service is not deployed everywhere yet: when absent/empty the Autopilot
+     * `previewBlueprint` verb degrades to a graceful "preview unavailable" chip and
+     * issues ZERO network calls (see components/Autopilot/previewHandlers.ts). */
+    RENDER_API_BASE_URL?: string
+    /** Namespace of the QUARANTINED preview sandbox (portal-builder Addendum A.2 —
+     * previewPage v2). When set, the Autopilot `previewPage` verb APPLIES the draft
+     * widget CRs into EXACTLY this namespace (through the gated set fabric, under the
+     * user's identity, agent-audited) and the preview drawer renders the ROOT draft's
+     * REAL served `widgetEndpoint` — the deployed snowplow compiles the drafts like any
+     * production page (zero snowplow changes). When absent the verb keeps its v1
+     * ZERO-NETWORK source-preview behavior EXACTLY, and the applyResourceSet guard's
+     * widgets/restactions sandbox carve-out stays fully closed (total deny). The
+     * namespace itself (quota + author RBAC + TTL janitor) is chart-provisioned
+     * infrastructure (CHART-SBX) — the frontend never creates it. */
+    PREVIEW_SANDBOX_NAMESPACE?: string
     /** OTLP/HTTP traces endpoint of the OpenTelemetry collector. Optional and
      * default-OFF: when absent the browser starts NO trace provider and injects
      * no W3C `traceparent` header (byte-identical default runtime path). When

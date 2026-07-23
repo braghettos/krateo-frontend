@@ -10,6 +10,7 @@ import { WidgetEmpty } from '../../components/WidgetStates'
 import { useHandleAction } from '../../hooks/useHandleActions'
 import { getColorCode } from '../../theme/palette'
 import type { ResourcesRefs, Widget, WidgetAction, WidgetActions } from '../../types/Widget'
+import { navigateOrExternal } from '../../utils/navigation'
 
 import { resolveRow, type ItemTemplate } from './itemTemplate'
 import styles from './ListView.module.css'
@@ -30,6 +31,15 @@ interface ListViewProps {
   loading?: boolean
   header?: ReactNode
   footer?: ReactNode
+  /**
+   * antd List pagination (serializable subset): presence enables client-side paging of the
+   * delivered items (e.g. the ~400-card Marketplace grid). Server-side facet/search filters
+   * shrink the array before it gets here, so antd clamps the current page into the filtered
+   * range; a single-page result hides the pager (exception-only chrome).
+   */
+  pagination?: { pageSize: number; position?: 'top' | 'bottom' | 'both' }
+  /** When there are no items, render nothing instead of the antd Empty placeholder (conditional-section gate). */
+  hideWhenEmpty?: boolean
   /** The widget's action map (widgetData.actions); per-row `rowActions` reference ids in it. */
   actions?: WidgetActions
   /** The widget's resource refs, handed to useHandleAction when a row action fires. */
@@ -45,7 +55,7 @@ interface ListViewProps {
  * `Notifications`.
  */
 export const ListView = ({
-  actions, bordered, footer, grid, header, itemLayout = 'horizontal', itemTemplate, items, loading, renderChild, resourcesRefs, rowKey, size, split, widget,
+  actions, bordered, footer, grid, header, hideWhenEmpty, itemLayout = 'horizontal', itemTemplate, items, loading, pagination, renderChild, resourcesRefs, rowKey, size, split, widget,
 }: ListViewProps) => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -76,7 +86,9 @@ export const ListView = ({
   const isChips = itemTemplate?.rowVariant === 'chip'
 
   if (!loading && !items.length) {
-    return <WidgetEmpty />
+    // Conditional-section gate: when the RA emits no items (the condition is false —
+    // e.g. the user already owns compositions), render nothing instead of a "No data" box.
+    return hideWhenEmpty ? null : <WidgetEmpty />
   }
 
   return (
@@ -89,6 +101,10 @@ export const ListView = ({
       header={header}
       itemLayout={itemLayout}
       loading={loading}
+      // hideOnSinglePage: when a facet/search filter shrinks the result under one page, a lone
+      // "1" pager is pure noise — chrome is exception-only. undefined keeps the antd default
+      // (no pagination), so existing lists are untouched.
+      pagination={pagination ? { hideOnSinglePage: true, pageSize: pagination.pageSize, position: pagination.position } : undefined}
       renderItem={(item, index) => {
         const child = renderChild?.(item, index)
         if (child) {
@@ -100,7 +116,7 @@ export const ListView = ({
             <AntdList.Item
               className={navPath ? styles.clickable : undefined}
               key={`${rowKey}-${index}`}
-              onClick={navPath ? () => { void navigate(navPath) } : undefined}
+              onClick={navPath ? () => navigateOrExternal(navigate, navPath) : undefined}
             >
               {child}
             </AntdList.Item>
@@ -133,7 +149,7 @@ export const ListView = ({
             <AntdList.Item className={styles.chipItem} key={`${rowKey}-${index}`}>
               <Button
                 className={styles.chip}
-                onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+                onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
                 size='small'
                 type={active ? 'primary' : 'default'}
                 variant={active ? 'filled' : 'outlined'}
@@ -152,7 +168,7 @@ export const ListView = ({
             <AntdList.Item
               className={`${styles.treeRow} ${row.navigateTo ? styles.clickable : ''}`}
               key={`${rowKey}-${index}`}
-              onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+              onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
             >
               <span className={styles.treeConnector}>└─</span>
               <span className={styles.treeDot} style={{ backgroundColor: colorCode, boxShadow: `0 0 5px 1px ${colorCode}` }} />
@@ -191,7 +207,7 @@ export const ListView = ({
               <Card
                 className={`${styles.tileCard} ${row.navigateTo ? styles.clickable : ''} ${isSpotlit ? styles.spotlight : ''}`}
                 hoverable={Boolean(row.navigateTo)}
-                onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+                onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
                 size='small'
               >
                 <div className={styles.cardTop}>
@@ -308,7 +324,7 @@ export const ListView = ({
                 : undefined
             }
             key={`${rowKey}-${index}`}
-            onClick={row.navigateTo ? () => { void navigate(row.navigateTo) } : undefined}
+            onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
           >
             {/* Reconciliation-rail aggregate band: no avatar/label → let the bar span full width
                 (a List.Item.Meta with empty title still claims ~half the row otherwise). */}

@@ -35,26 +35,31 @@
     }
   }
 
+  /* The rail equals colorBgContainer by default (issue #52), so nav text is MODE-AWARE: light on
+     the dark-mode surface, dark on the light-mode surface (--menuitem-color / --krateo-nav-item-active
+     are emitted per-mode by cssVariables). Selected label uses the strong per-mode text plus a bright
+     Krateo Blue accent bar (--blue-color #11B2E2, legible on either surface). A tenant custom.sidebar
+     that sets a dark branded rail can pair it with custom.menu light text. */
   :global(.ant-menu-item-selected) {
     background-color: var(--menuitembg-color);
     border-radius: 0;
-    box-shadow: inset 2px 0 0 var(--primary-color);
-    color: var(--primary-color);
+    box-shadow: inset 2px 0 0 var(--blue-color);
+    color: var(--krateo-nav-item-active);
     font-weight: var(--font-weight-bold);
 
     svg {
       opacity: 1;
-      
+
       path {
-        fill: var(--primary-color);
-      }  
+        fill: var(--krateo-nav-item-active);
+      }
     }
   }
 
   :global(.ant-menu-item.ant-menu-item-active),
   :global(.ant-menu-item.ant-menu-item-active:hover) {
     background-color: transparent;
-    color: var(--text-color) !important;
+    color: var(--krateo-nav-item-active) !important;
 
     svg {
       opacity: 1;

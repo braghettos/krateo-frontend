@@ -52,7 +52,7 @@ export interface LineChart {
        */
       height?: number
       /**
-       * G2 annotation marks passed through (e.g. a peak `point` marker + a dashed `lineX` "now" line on a throughput chart). Each item is a G2 mark spec; usually computed server-side via a widgetDataTemplate.
+       * G2 annotation marks passed through (e.g. a peak `point` marker + a dashed `lineX` "now" line); usually computed server-side via a widgetDataTemplate
        */
       annotations?: {
         [k: string]: unknown
@@ -115,7 +115,7 @@ export interface LineChart {
     }[]
     resourcesRefs?: {
       items: {
-        allowed: boolean
+        allowed?: boolean
         apiVersion?: string
         id: string
         name?: string

@@ -176,7 +176,6 @@
                   }
                 },
                 "required": [
-                  "allowed",
                   "id"
                 ]
               }

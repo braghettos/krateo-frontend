@@ -17,7 +17,7 @@ const hasResourceRef = (item: unknown): item is { resourceRefId: string } =>
   !!item && typeof item === 'object' && typeof (item as { resourceRefId?: unknown }).resourceRefId === 'string'
 
 const List = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ListWidgetData>) => {
-  const { actions, bordered, footer, grid, header, itemLayout, itemTemplate, loading, maxItems, prefix, size, split, sseEndpoint, sseTopic } = widgetData
+  const { actions, bordered, footer, grid, header, hideWhenEmpty, itemLayout, itemTemplate, loading, maxItems, pagination, prefix, size, split, sseEndpoint, sseTopic } = widgetData
 
   // `dataSource` is the antd-faithful field; `items` is accepted for back-compat with legacy DataGrid CRs.
   const dataSource = useMemo(
@@ -62,10 +62,12 @@ const List = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<ListWidget
       footer={footer}
       grid={grid}
       header={header}
+      hideWhenEmpty={hideWhenEmpty}
       itemLayout={itemLayout}
       itemTemplate={itemTemplate as ItemTemplate | undefined}
       items={filtered}
       loading={loading}
+      pagination={pagination}
       renderChild={renderChild}
       resourcesRefs={resourcesRefs}
       rowKey={uid}

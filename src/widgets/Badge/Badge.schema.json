@@ -135,7 +135,6 @@
                   }
                 },
                 "required": [
-                  "allowed",
                   "id"
                 ]
               }

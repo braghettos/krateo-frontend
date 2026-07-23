@@ -3,7 +3,12 @@
 .headerLeft {
   align-items: center;
   display: flex;
-  flex: 1;
+
+  /* Size to content (not flex:1) so the tenant tag + project switcher hug the left
+     edge instead of being spread across the whole left zone. `.headerRight` still
+     pins right via the header's justify-content:space-between. min-width:0 keeps a
+     long tenant name truncating gracefully. */
+  flex: 0 1 auto;
   gap: var(--spacing-md);
   min-width: 0;
 }
@@ -30,14 +35,39 @@
   margin-bottom: var(--spacing-md);
 }
 
-/* User block pinned to the bottom of the Sider. */
-.siderFooter {
-  align-items: center;
-  border-top: 1px solid var(--line-color);
-  display: flex;
+/* Instrument-console eyebrow pinned to the TOP of the Sider, above the nav. Mono / uppercase /
+   letter-spaced / muted graphite — mirrors the page-header eyebrow treatment (Breadcrumb.module.css
+   / .paragraph.eyebrow). Horizontal padding matches the nav body (16px) so it aligns with the menu. */
+.siderEyebrow {
+  /* On the Sovereign gradient sider (invariant both modes) — muted-light, not the dark graphite. */
+  color: color-mix(in srgb, var(--text-color) 55%, transparent);
   flex-shrink: 0;
-  gap: var(--spacing-sm);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  padding: 14px 16px 6px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Bottom-of-Sider block: the user row above a subtle build marker, stacked. */
+.siderFooter {
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--spacing-xs);
   padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.siderUser {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-sm);
+  min-width: 0;
 }
 
 .siderFooterName {
@@ -47,4 +77,24 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Build/version marker — muted graphite mono, one subtle line under the user row. */
+.siderBuild {
+  color: color-mix(in srgb, var(--text-color) 50%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Collapsed sider (antd sets .ant-layout-sider-collapsed): the narrow rail has no room for the
+   mono eyebrow or the build line, so hide the text-only chrome and let the nav icons stand alone.
+   The user avatar stays (it centres itself). */
+:global(.ant-layout-sider-collapsed) .siderEyebrow,
+:global(.ant-layout-sider-collapsed) .siderBuild,
+:global(.ant-layout-sider-collapsed) .siderFooterName {
+  display: none;
 }

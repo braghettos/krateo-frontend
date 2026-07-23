@@ -1,6 +1,69 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseAutopilotDirectives, sanitizeChatText } from './actionBridge'
+import { isPortalBuilderRoute, parseAutopilotDirectives, PORTAL_BUILDER_ROUTING_DIRECTIVE, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, sanitizeChatText } from './actionBridge'
+
+describe('Portal Builder routing directive (deterministic authoring gate)', () => {
+  it('forces a build request to the frontend specialist and bans telemetry routing + the short tool name', () => {
+    // The frontend-asserted directive that closes the "Cluster Health"→clickstack mis-route+crash.
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('AUTHORITATIVE ROUTING')
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('FRONTEND AUTHORING task')
+    // Must name the EXACT fully-qualified tool name and forbid the shortened form that crashed.
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('krateo_system__NS__krateo_frontend_agent')
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('NEVER a shortened or hyphenated form')
+    // Must forbid routing a build to telemetry/ops agents regardless of the page's subject.
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('clickstack')
+    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('REGARDLESS of the page')
+  })
+
+  it('isPortalBuilderRoute matches the builder route (and nested), not other routes', () => {
+    expect(isPortalBuilderRoute('/portal-builder')).toBe(true)
+    expect(isPortalBuilderRoute('/portal-builder/new')).toBe(true)
+    expect(isPortalBuilderRoute('/compositions')).toBe(false)
+    expect(isPortalBuilderRoute('/observability')).toBe(false)
+    expect(isPortalBuilderRoute('/portal-builder-ish')).toBe(false)
+    expect(isPortalBuilderRoute(undefined)).toBe(false)
+  })
+})
+
+describe('BLUEPRINT BUILDER prompt (FE-BP6)', () => {
+  it('teaches the two-step publish: a scalar publishBlueprint verb (host fans out the git-write), then register — preview-first', () => {
+    // The turn-1 capabilities prompt teaches the full workflow...
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('BLUEPRINT BUILDER')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('previewBlueprint')
+    // STEP A is now a SINGLE scalar publishBlueprint verb — the host builds the gitrefs +
+    // repocontents + pullrequests set from the held tree (gemini-2.5-pro stalls hand-writing it).
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('publishBlueprint')
+    // STEP B (register) stays a compositiondefinitions write.
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('compositiondefinitions')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('configurationRef')
+    // ...and the every-turn recap keeps the preview-first invariant + the publishBlueprint verb alive.
+    expect(PORTAL_HOUSE_RULES).toContain('Blueprint builder')
+    expect(PORTAL_HOUSE_RULES).toContain('DENIED unless the same chart')
+    expect(PORTAL_HOUSE_RULES).toContain('publishBlueprint')
+  })
+})
+
+describe('PORTAL BUILDER prompt (FE-BP7)', () => {
+  it('teaches the page publish as a SINGLE scalar publishPage verb — no hand-written ops, no sha', () => {
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('PORTAL BUILDER')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('previewPage')
+    // PUBLISH is now the scalar publishPage verb — the host fans out gitrefs + per-file
+    // repocontents (widget CRs + nav fragment) + pullrequests from the held page draft.
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('publishPage')
+    // The old fragile shape is GONE: the model no longer hand-writes ops nor sources a sha.
+    expect(PORTAL_CAPABILITIES_PROMPT).not.toContain('main HEAD sha from page context')
+  })
+})
+
+describe('describeResource / check-the-CRD-schema prompt', () => {
+  it('teaches describeResource + check-the-schema-before-generating-a-CR', () => {
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('describeResource')
+    expect(PORTAL_CAPABILITIES_PROMPT).toContain('CHECK THE SCHEMA FIRST')
+    // the every-turn recap keeps the rule alive after the turn-1 prompt decays.
+    expect(PORTAL_HOUSE_RULES).toContain('CHECK THE CRD SCHEMA BEFORE GENERATING A CR')
+    expect(PORTAL_HOUSE_RULES).toContain('describeResource')
+  })
+})
 
 describe('parseAutopilotDirectives — fenced (baseline)', () => {
   it('parses + strips a fenced portal-action', () => {

@@ -35,11 +35,11 @@ export interface Progress {
        */
       steps?: number
       /**
-       * optional primary readout rendered below the indicator, tinted in the strokeColor
+       * optional primary readout rendered below the indicator, tinted in the strokeColor (e.g. a circle gauge's "Healthy · 100% converged" headline)
        */
       label?: string
       /**
-       * optional secondary readout (muted graphite) rendered under `label`
+       * optional secondary readout (muted graphite) rendered under `label` (e.g. "all conditions True")
        */
       description?: string
     }
@@ -53,7 +53,7 @@ export interface Progress {
     }[]
     resourcesRefs?: {
       items: {
-        allowed: boolean
+        allowed?: boolean
         apiVersion?: string
         id: string
         name?: string

@@ -1,6 +1,7 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Table as AntdTable, Progress, Result, Tag, Typography } from 'antd'
+import type { TablePaginationConfig } from 'antd'
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router'
 
@@ -8,22 +9,29 @@ import { useFilter } from '../../components/FiltesProvider/FiltersProvider'
 import WidgetRenderer from '../../components/WidgetRenderer'
 import { getColorCode, getTagStyle } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
+import { navigateOrExternal } from '../../utils/navigation'
 import { formatISODate, formatRelativeTime, getEndpointUrl } from '../../utils/utils'
 
 import styles from './Table.module.css'
 import type { Table as WidgetType } from './Table.type'
+import { computeTablePagination, shouldVirtualize, VIRTUAL_SCROLL_Y } from './tablePagination'
+import { getColumnSortProps } from './tableSorting'
 
 export type TableWidgetData = WidgetType['spec']['widgetData']
 
-const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>) => {
+const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps<TableWidgetData>) => {
   const { bordered, columns, dataSource, pagination, prefix, rowNavigateTo, size } = widgetData
   const data = dataSource ?? []
-  const pageSize = pagination?.pageSize ?? pagination?.defaultPageSize
   const { getFilteredData } = useFilter()
   const navigate = useNavigate()
 
   // Optional row → route navigation. `rowNavigateTo` is a path with `{valueKey}`
   // placeholders filled from that row's cells (e.g. "/compositions/{ns}/{name}").
+  // When the WHOLE template is a single `{key}` placeholder, the cell holds a complete
+  // pre-built route (the server precomputed a per-row branch — e.g. composition rows →
+  // /compositions/.., others → /resources/..) so it's used VERBATIM, without encoding its
+  // slashes. Multi-segment templates keep encoding each interpolated value as before.
+  const wholeIsPlaceholder = /^\{[^}]+\}$/.test(rowNavigateTo ?? '')
   const buildRowPath = (row: NonNullable<TableWidgetData['dataSource']>[number]): string | undefined => {
     if (!rowNavigateTo) { return undefined }
     let missing = false
@@ -33,7 +41,7 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
         missing = true
         return ''
       }
-      return encodeURIComponent(value)
+      return wholeIsPlaceholder ? value : encodeURIComponent(value)
     })
     return missing ? undefined : path
   }
@@ -54,10 +62,32 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
     dataTable = getFilteredData(data, prefix) as TableWidgetData['dataSource']
   }
 
+  const rowCount = dataTable?.length ?? 0
+
+  // Virtualize once the row set is large enough to matter. `virtual` bounds the
+  // mounted <tr> nodes to the scroll viewport (VIRTUAL_SCROLL_Y) regardless of
+  // dataSource size — the load-bearing fix for the 60K-row `/compositions` wedge.
+  // antd requires a fixed numeric `scroll.y` for virtual mode.
+  const virtual = shouldVirtualize(rowCount)
+  const scroll = virtual
+    ? { x: 'max-content' as const, y: VIRTUAL_SCROLL_Y }
+    : { x: 'max-content' as const }
+
+  // Pagination: controlled server-side classic pager when the widget opts in
+  // (serverPagination), else the CR's own pagination config (or none). See
+  // computeTablePagination for the precedence + why virtual tables skip the
+  // client pager.
+  const paginationProp: TablePaginationConfig | false = computeTablePagination({ crPagination: pagination, rowCount, serverPagination })
+
   return (
     <AntdTable
       bordered={bordered}
       columns={columns?.map(({ color, title, valueKey }, index) => ({
+        // UX #13: inferred client-side sorting — an automatic `sorter` comparing
+        // the RAW dataSource values (numeric / kubectl-age / ISO-date / string,
+        // sniffed per column) + `align: 'right'` for numeric/age columns. No
+        // default sortOrder: the server's jq order stays until a header click.
+        ...getColumnSortProps(dataTable, valueKey),
         dataIndex: valueKey,
         key: `${uid}-col-${index}`,
         render: (_: unknown, row: NonNullable<TableWidgetData['dataSource']>[number]) => {
@@ -183,14 +213,29 @@ const Table = ({ resourcesRefs, uid, widgetData }: WidgetProps<TableWidgetData>)
       onRow={rowNavigateTo
         ? (row) => {
           const path = buildRowPath(row)
-          return path
-            ? { onClick: () => { void navigate(path) }, style: { cursor: 'pointer' } }
-            : {}
+          if (!path) { return {} }
+          const go = () => navigateOrExternal(navigate, path)
+          // a11y: a clickable row must be keyboard-operable — focusable (tabIndex),
+          // announced as an actionable control (role=button), and activated by Enter/Space
+          // (matching native button semantics). Previously mouse-click only.
+          return {
+            onClick: go,
+            onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                go()
+              }
+            },
+            role: 'button',
+            style: { cursor: 'pointer' },
+            tabIndex: 0,
+          }
         }
         : undefined}
-      pagination={pagination ?? (dataTable && pageSize && dataTable.length > pageSize ? { defaultPageSize: pageSize } : false)}
-      scroll={{ x: 'max-content' }}
+      pagination={paginationProp}
+      scroll={scroll}
       size={size ?? 'middle'}
+      virtual={virtual}
     />
   )
 }

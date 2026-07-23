@@ -21,6 +21,8 @@
 
 import { randomId } from '../../utils/utils'
 
+import type { ApprovalDecision, ApprovalPause } from './approval'
+import { buildDecisionMessage, parseApprovalPause } from './approval'
 import type { AutopilotSendRequest, AutopilotStreamHandlers, AutopilotTransport } from './types'
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -66,6 +68,9 @@ interface KagentStreamState {
    * stream-close fallback in `run()` doesn't emit a SECOND `done` — a duplicate would
    * re-run the provider's finalize and wipe the rendered answer. */
   done: boolean
+  /** The A2A task id seen on this stream (the initial `task` result's `id`, or any
+   * `status-update`'s `taskId`) — an approval RESPONSE must target this task. */
+  taskId?: string
 }
 
 /**
@@ -100,6 +105,15 @@ const handleKagentPayload = (
   if (!state.contextSent && typeof result.contextId === 'string') {
     state.contextSent = true
     handlers.onFrame({ contextId: result.contextId, kind: 'session' })
+  }
+
+  // Track the task id across the stream: the initial `task` result carries it as `id`,
+  // subsequent `status-update`s as `taskId`. An `input-required` pause must be answered
+  // on THIS task, so the approval frame below needs it even when its own event omits it.
+  if (typeof result.taskId === 'string') {
+    state.taskId = result.taskId
+  } else if (result.kind === 'task' && typeof result.id === 'string') {
+    state.taskId = result.id
   }
 
   const status = asRecord(result.status)
@@ -142,6 +156,18 @@ const handleKagentPayload = (
     }
     if (artifactText) {
       handlers.onFrame({ delta: artifactText, kind: 'text', replace: true })
+    }
+  }
+
+  // kagent HITL pause: a tool with `requireApproval` flipped the task to
+  // `input-required` (final=true) with `adk_request_confirmation` DataParts in the
+  // status message. Surface it BEFORE the `done` below so the provider stores the
+  // pending approval, then still finalize the streamed text (the turn IS over —
+  // the resume is a separate decision stream via `respondToApproval`).
+  if (status?.state === 'input-required') {
+    const pause = parseApprovalPause(result, state.taskId)
+    if (pause) {
+      handlers.onFrame({ kind: 'require_approval', pause })
     }
   }
 
@@ -189,65 +215,93 @@ const processSseEvent = (event: string, handlers: AutopilotStreamHandlers, state
   }
 }
 
-export const createKagentTransport = (baseUrl: string): AutopilotTransport => ({
-  send: (request: AutopilotSendRequest, handlers: AutopilotStreamHandlers): (() => void) => {
-    const controller = new AbortController()
-    const state: KagentStreamState = { contextSent: false, done: false }
+/**
+ * POST one JSON-RPC body to the A2A endpoint and pump its SSE reply through
+ * `handleKagentPayload`. Shared by `send` (a user turn) and `respondToApproval`
+ * (a HITL decision resuming a paused task) — identical streaming semantics, only
+ * the request body and initial state differ. Returns the abort function.
+ */
+const streamJsonRpc = (
+  baseUrl: string,
+  body: string,
+  handlers: AutopilotStreamHandlers,
+  state: KagentStreamState,
+): (() => void) => {
+  const controller = new AbortController()
 
-    const run = async (): Promise<void> => {
-      let response: Response
-      try {
-        response = await fetch(buildA2aUrl(baseUrl), {
-          // kagent-ui A2A is open (no Bearer) and reflects CORS for the portal
-          // origin. Act-as-user auth is a Phase-3 concern (pending kagent auth).
-          body: buildRequestBody(request),
-          headers: {
-            Accept: 'text/event-stream',
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-          signal: controller.signal,
-        })
-      } catch (error) {
-        handlers.onFrame({ kind: 'error', message: error instanceof Error ? error.message : 'network error' })
-        return
-      }
-
-      if (!response.ok || !response.body) {
-        handlers.onFrame({ kind: 'error', message: `Autopilot request failed (${response.status})` })
-        return
-      }
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-      try {
-        for (;;) {
-          // eslint-disable-next-line no-await-in-loop -- sequential stream reads are inherent to SSE
-          const { done, value } = await reader.read()
-          if (done) {
-            break
-          }
-          buffer += decoder.decode(value, { stream: true })
-          const { events, rest } = drainSseEvents(buffer)
-          buffer = rest
-          events.forEach((event) => processSseEvent(event, handlers, state))
-        }
-        // Fallback `done` only if the stream closed WITHOUT a `completed`/`final` event
-        // (otherwise handleKagentPayload already emitted it — a second one re-finalizes).
-        if (!state.done) {
-          handlers.onFrame({ kind: 'done' })
-        }
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          handlers.onFrame({ kind: 'error', message: error instanceof Error ? error.message : 'stream error' })
-        }
-      }
+  const run = async (): Promise<void> => {
+    let response: Response
+    try {
+      response = await fetch(buildA2aUrl(baseUrl), {
+        // kagent-ui A2A is open (no Bearer) and reflects CORS for the portal
+        // origin. Act-as-user auth is a Phase-3 concern (pending kagent auth).
+        body,
+        headers: {
+          Accept: 'text/event-stream',
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+        signal: controller.signal,
+      })
+    } catch (error) {
+      handlers.onFrame({ kind: 'error', message: error instanceof Error ? error.message : 'network error' })
+      return
     }
 
-    void run()
-    return () => controller.abort()
+    if (!response.ok || !response.body) {
+      handlers.onFrame({ kind: 'error', message: `Autopilot request failed (${response.status})` })
+      return
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    try {
+      for (;;) {
+        // eslint-disable-next-line no-await-in-loop -- sequential stream reads are inherent to SSE
+        const { done, value } = await reader.read()
+        if (done) {
+          break
+        }
+        buffer += decoder.decode(value, { stream: true })
+        const { events, rest } = drainSseEvents(buffer)
+        buffer = rest
+        events.forEach((event) => processSseEvent(event, handlers, state))
+      }
+      // Fallback `done` only if the stream closed WITHOUT a `completed`/`final` event
+      // (otherwise handleKagentPayload already emitted it — a second one re-finalizes).
+      if (!state.done) {
+        handlers.onFrame({ kind: 'done' })
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        handlers.onFrame({ kind: 'error', message: error instanceof Error ? error.message : 'stream error' })
+      }
+    }
+  }
+
+  void run()
+  return () => controller.abort()
+}
+
+export const createKagentTransport = (baseUrl: string): AutopilotTransport => ({
+  // Resume a paused (`input-required`) task with the human's decision: the documented
+  // response is a `user` message on the SAME taskId/contextId whose first part is the
+  // `{decision_type: approve|reject}` DataPart (see approval.ts). The agent's
+  // continuation streams back through the same normalized frames.
+  respondToApproval: (decision: ApprovalDecision, pause: ApprovalPause, handlers: AutopilotStreamHandlers): (() => void) => {
+    const body = JSON.stringify({
+      id: 1,
+      jsonrpc: '2.0',
+      method: 'message/stream',
+      params: { message: buildDecisionMessage(decision, pause, randomId()) },
+    })
+    // `contextSent: true` — the thread's contextId is already known to the provider;
+    // re-emitting a `session` frame here would be redundant.
+    return streamJsonRpc(baseUrl, body, handlers, { contextSent: true, done: false, taskId: pause.taskId })
   },
+  send: (request: AutopilotSendRequest, handlers: AutopilotStreamHandlers): (() => void) =>
+    streamJsonRpc(baseUrl, buildRequestBody(request), handlers, { contextSent: false, done: false }),
 })
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -270,34 +324,70 @@ const ECHO_REPLY = [
 
 const ECHO_CHUNK = 48
 
+// Dev exercise for the Phase-2 HITL surface: an "apply/delete/scale/hitl" prompt makes
+// the echo stub pause with a fake `k8s_apply_manifest` approval (same ApprovalPause
+// shape the kagent transport parses), so the card + deny-by-default paths are
+// clickable with no backend. Clearly labelled as the local stub.
+const ECHO_APPROVAL_TRIGGER = /\b(apply|delete|scale|hitl)\b/i
+
+const ECHO_APPROVAL_PAUSE: ApprovalPause = {
+  contextId: 'echo-ctx',
+  requests: [{
+    agentName: 'snowplow-agent',
+    argumentsPreview: 'apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: demo-autopilot\n  namespace: krateo-system\ndata:\n  greeting: hello',
+    requestId: 'echo-confirm-1',
+    toolCallId: 'echo-call-1',
+    toolName: 'k8s_apply_manifest',
+  }],
+  taskId: 'echo-task-1',
+}
+
+/** Stream `text` in fixed-size character chunks, then run `finish`. Returns the abort fn. */
+const streamEchoText = (text: string, handlers: AutopilotStreamHandlers, finish: () => void): (() => void) => {
+  const chunks = Math.ceil(text.length / ECHO_CHUNK)
+  let cancelled = false
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let index = 0
+
+  // Recursive scheduler (not a loop) so the closure is declared once; chunks by
+  // characters (not words) so newlines in the fenced block survive.
+  const step = (): void => {
+    if (cancelled) {
+      return
+    }
+    handlers.onFrame({ delta: text.slice(index * ECHO_CHUNK, (index + 1) * ECHO_CHUNK), kind: 'text' })
+    index += 1
+    if (index < chunks) {
+      timer = setTimeout(step, 25)
+    } else {
+      finish()
+    }
+  }
+  timer = setTimeout(step, 25)
+
+  return () => {
+    cancelled = true
+    if (timer) {
+      clearTimeout(timer)
+    }
+  }
+}
+
 export const createEchoTransport = (): AutopilotTransport => ({
-  send: (_request: AutopilotSendRequest, handlers: AutopilotStreamHandlers): (() => void) => {
-    const chunks = Math.ceil(ECHO_REPLY.length / ECHO_CHUNK)
-    let cancelled = false
-    let timer: ReturnType<typeof setTimeout> | undefined
-    let index = 0
-
-    // Recursive scheduler (not a loop) so the closure is declared once; chunks by
-    // characters (not words) so newlines in the fenced block survive.
-    const step = (): void => {
-      if (cancelled) {
-        return
-      }
-      handlers.onFrame({ delta: ECHO_REPLY.slice(index * ECHO_CHUNK, (index + 1) * ECHO_CHUNK), kind: 'text' })
-      index += 1
-      if (index < chunks) {
-        timer = setTimeout(step, 25)
-      } else {
+  respondToApproval: (decision: ApprovalDecision, _pause: ApprovalPause, handlers: AutopilotStreamHandlers): (() => void) => {
+    const text = decision.type === 'approve'
+      ? 'Local echo (no live backend) — approval delivered; a real agent would now run the tool and stream its result.'
+      : 'Local echo (no live backend) — denial delivered; a real agent would now conclude without running the tool.'
+    return streamEchoText(text, handlers, () => handlers.onFrame({ kind: 'done' }))
+  },
+  send: (request: AutopilotSendRequest, handlers: AutopilotStreamHandlers): (() => void) => {
+    if (ECHO_APPROVAL_TRIGGER.test(request.text)) {
+      const text = 'Local echo (no live backend) — this write needs your approval. Review the manifest below.'
+      return streamEchoText(text, handlers, () => {
+        handlers.onFrame({ kind: 'require_approval', pause: ECHO_APPROVAL_PAUSE })
         handlers.onFrame({ kind: 'done' })
-      }
+      })
     }
-    timer = setTimeout(step, 25)
-
-    return () => {
-      cancelled = true
-      if (timer) {
-        clearTimeout(timer)
-      }
-    }
+    return streamEchoText(ECHO_REPLY, handlers, () => handlers.onFrame({ kind: 'done' }))
   },
 })

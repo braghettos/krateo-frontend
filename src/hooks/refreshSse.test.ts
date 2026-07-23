@@ -8,9 +8,11 @@ import {
   buildRefreshCoords,
   drainSseEvents,
   getRefreshEntry,
+  isWidgetArmed,
   isWidgetLiveRefreshEnabled,
   parseSseBlock,
   recordRefreshHeaders,
+  refreshManager,
   RefreshManager,
   __resetRefreshEntries,
   type RefreshCoords,
@@ -224,6 +226,42 @@ describe('RefreshManager', () => {
     mgr.dispatchRefresh('new-key')
     expect(refetch).toHaveBeenCalledTimes(1)
     mgr.reset()
+  })
+
+  it('isArmed reflects the armed set: false before arming, true while armed, false after disarm', () => {
+    const mgr = new RefreshManager(() => 0)
+    const refetch = vi.fn()
+    // Not armed yet.
+    expect(mgr.isArmed('w1')).toBe(false)
+    const disarm = mgr.arm('w1', coords('a'), 'key-a', refetch)
+    // Armed → the honest "Live" precondition.
+    expect(mgr.isArmed('w1')).toBe(true)
+    // An unrelated widget stays unarmed.
+    expect(mgr.isArmed('w2')).toBe(false)
+    disarm()
+    // Disarmed on unmount → no longer armed.
+    expect(mgr.isArmed('w1')).toBe(false)
+    mgr.reset()
+  })
+
+  it('isArmed is false for every widget after reset', () => {
+    const mgr = new RefreshManager(() => 0)
+    mgr.arm('w1', coords('a'), 'key-a', vi.fn())
+    expect(mgr.isArmed('w1')).toBe(true)
+    mgr.reset()
+    expect(mgr.isArmed('w1')).toBe(false)
+  })
+})
+
+describe('isWidgetArmed (singleton read-only arm check)', () => {
+  afterEach(() => { refreshManager.reset() })
+
+  it('is false before the widget arms and true once it has armed on the shared stream', () => {
+    expect(isWidgetArmed('w-single')).toBe(false)
+    const disarm = refreshManager.arm('w-single', { class: 'widgets', group: 'g', version: 'v1', resource: 'r', namespace: 'ns', name: 'n' }, 'key-single', vi.fn())
+    expect(isWidgetArmed('w-single')).toBe(true)
+    disarm()
+    expect(isWidgetArmed('w-single')).toBe(false)
   })
 })
 

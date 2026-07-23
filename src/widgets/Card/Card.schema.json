@@ -28,14 +28,6 @@
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
-                      "headers": {
-                        "description": "array of headers as strings, format 'key: value'",
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "description": "key and value as a single, example: 'x-custom-header: value'"
-                        }
-                      },
                       "id": {
                         "type": "string",
                         "description": "unique identifier for the action"
@@ -48,17 +40,65 @@
                         "type": "boolean",
                         "description": "whether user confirmation is required before triggering the action"
                       },
-                      "onSuccessNavigateTo": {
-                        "type": "string",
-                        "description": "url to navigate to after successful execution"
-                      },
                       "errorMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of error"
                       },
+                      "fanOutPath": {
+                        "type": "string",
+                        "description": "name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action"
+                      },
+                      "ops": {
+                        "type": "array",
+                        "description": "ordered list of DISTINCT writes applied as ONE gated set (e.g. one Form submit creating a Role AND its RoleBinding): each op resolves its OWN resourceRefId (verb + path + payload base) and builds its OWN payload/payloadToOverride against the SAME submitted values. The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics). Mutually exclusive with fanOutPath; onEventNavigateTo is not supported on a multi-op action. The action's own top-level payload/payloadToOverride are IGNORED when ops is present and its top-level resourceRefId is ignored for dispatch (it must still name a valid resource ref — point it at the first op's)",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "resourceRefId"
+                          ],
+                          "properties": {
+                            "resourceRefId": {
+                              "type": "string",
+                              "description": "the identifier of the resource ref this op targets: its verb (must be mutating), path and payload base"
+                            },
+                            "payload": {
+                              "type": "object",
+                              "additionalProperties": true,
+                              "description": "static payload sent with this op's request"
+                            },
+                            "payloadToOverride": {
+                              "type": "array",
+                              "description": "list of this op's payload fields to override dynamically (values interpolate against the same submitted values as every other op)",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "name",
+                                  "value"
+                                ],
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "description": "name of the field to override"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "description": "value to use for overriding the field"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
                       "successMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of success"
+                      },
+                      "onSuccessNavigateTo": {
+                        "type": "string",
+                        "description": "url to navigate to after successful execution"
                       },
                       "onEventNavigateTo": {
                         "type": "object",
@@ -97,6 +137,14 @@
                           "rest"
                         ],
                         "description": "type of action to execute"
+                      },
+                      "headers": {
+                        "description": "array of headers as strings, format 'key: value'",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "description": "key and value as a single, example: 'x-custom-header: value'"
+                        }
                       },
                       "payload": {
                         "type": "object",
@@ -347,7 +395,7 @@
             },
             "extra": {
               "type": "string",
-              "description": "antd Card extra \u2014 content shown top-right of the card header (renamed from `headerRight`)"
+              "description": "antd Card extra — content shown top-right of the card header (renamed from `headerRight`)"
             },
             "extraVariant": {
               "type": "string",
@@ -355,7 +403,7 @@
                 "text",
                 "badge"
               ],
-              "description": "how `extra` renders top-right: `text` (default, plain) or `badge` (a status pill \u2014 glow dot + uppercase mono, e.g. a CONVERGED/DRIFT/DEGRADED reconcile chip)"
+              "description": "how `extra` renders top-right: `text` (default, plain) or `badge` (a status pill — glow dot + uppercase mono, e.g. a CONVERGED/DRIFT/DEGRADED reconcile chip)"
             },
             "extraStatus": {
               "type": "string",
@@ -570,7 +618,6 @@
                   }
                 },
                 "required": [
-                  "allowed",
                   "id"
                 ]
               }

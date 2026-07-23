@@ -16,7 +16,7 @@
 
 /* Done→current connector — cyan→amber gradient (mockup `.ln.fill` cyan→amber). */
 .steps :global(.ant-steps-item-finish > .ant-steps-item-container > .ant-steps-item-tail)::after {
-  background: linear-gradient(90deg, var(--cyan-color), var(--amber-color)) !important;
+  background: linear-gradient(90deg, var(--cyan-color), var(--primary-color)) !important;
 }
 
 /* Bezel strip frame — the stepper sits in a raised panel (mockup `.steps` bezel border+bg). */
@@ -29,7 +29,7 @@
 
 /* Current (process) step — amber glow ring around the dot (mockup `.step.cur` glow ring). */
 .steps :global(.ant-steps-item-process .ant-steps-item-icon) {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber-color) 14%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 14%, transparent);
 }
 
 /* Per-item "STEP N" eyebrow stacked above the title (mockup `.step .k` mono eyebrow). */

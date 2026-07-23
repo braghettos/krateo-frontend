@@ -2,6 +2,7 @@ import { Line } from '@ant-design/plots'
 import { Empty } from 'antd'
 
 import { useMeasuredWidth } from '../../hooks/useMeasuredWidth'
+import { getChartCatPalette } from '../../theme/chart-utils'
 import { getColorCode } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 
@@ -11,14 +12,14 @@ import type { LineChart as WidgetType } from './LineChart.type'
 export type LineChartWidgetData = WidgetType['spec']['widgetData']
 
 /**
- * Gradient area fill beneath the line when `widgetData.area` is true: Petrol cyan
- * (healthy/throughput) at 0.30 alpha, fading to transparent — matches the mockup's
- * `#petrolFill` gradient (cyan stop-opacity .30 → 0). Theme-aware — resolved from
- * getColorCode('cyan') at render so it follows the light/dark toggle. (G2 parses
- * the CSS linear-gradient; rgba keeps its colour parser happy — color-mix is not.)
+ * Gradient area fill beneath the line when `widgetData.area` is true: brand blue (Krateo
+ * Blue #11B2E2) at 0.30 alpha fading to transparent, so it matches the auto-assigned line
+ * colour (chart-cat-01 = brand blue). Theme-aware — resolved from getColorCode('blue') at
+ * render so it follows the light/dark toggle. (G2 parses the CSS linear-gradient; rgba keeps
+ * its colour parser happy — color-mix is not.)
  */
-const cyanAreaFill = (): { style: { fill: string } } => {
-  const hex = getColorCode('cyan')
+const brandAreaFill = (): { style: { fill: string } } => {
+  const hex = getColorCode('blue')
   const channel = (start: number) => parseInt(hex.slice(start, start + 2), 16)
   const rgb = `${channel(1)},${channel(3)},${channel(5)}`
   return { style: { fill: `linear-gradient(180deg, rgba(${rgb},0.30) 0%, rgba(${rgb},0) 100%)` } }
@@ -115,20 +116,21 @@ const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
     ? localizeXField(widgetData.data, widgetData.annotations, widgetData.xField, widgetData.xTimeUnit)
     : { localAnnotations: widgetData.annotations, localData: widgetData.data }
 
-  // Petrol SERIES colours: map each colorField category → a palette hex (mirrors PieChart.colorMap),
-  // merged into the CR's scale. Without it the LINE + points take G2's default blue, not the brand
-  // cyan — the area fill is already cyan, so the line read "wrong colour vs the render".
+  // SERIES colours: map each colorField category → a palette hex (mirrors PieChart.colorMap),
+  // merged into the CR's scale. Without an operator colorMap, auto-assigned series (and a single
+  // line) take the v2 categorical chart palette — cat-01 is brand blue, matching the area fill —
+  // instead of G2's default palette. A CR-supplied scale.color still wins.
   const { colorMap } = widgetData
   const scale = colorMap
     ? { ...widgetData.scale, color: { domain: Object.keys(colorMap), range: Object.keys(colorMap).map((key) => getColorCode(colorMap[key])) } }
-    : widgetData.scale
+    : { color: { range: getChartCatPalette() }, ...widgetData.scale }
 
   return (
     <div className={styles.lineChart} ref={ref} style={{ height }}>
       {width > 0 ? (
         <Line
           annotations={localAnnotations}
-          area={widgetData.area ? cyanAreaFill() : undefined}
+          area={widgetData.area ? brandAreaFill() : undefined}
           autoFit
           axis={axisWithInk(widgetData.axis)}
           colorField={widgetData.colorField}

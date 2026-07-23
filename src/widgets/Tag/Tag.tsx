@@ -16,9 +16,33 @@ const Tag = ({ uid, widgetData }: WidgetProps<TagWidgetData>) => {
   // a colour AND its own font/size (e.g. the dashboard delta pills' larger numerals) — the
   // earlier replace dropped `style` whenever `color` was set.
   const { color, label, style, ...rest } = widgetData
-  const tagStyle = (color ? { ...getTagStyle(color), ...style } : style) as CSSProperties | undefined
+  const palette = color ? getTagStyle(color) : undefined
+  const tagStyle = (palette ? { ...palette, ...style } : style) as CSSProperties | undefined
 
-  return <AntdTag key={uid} {...rest} style={tagStyle}>{label}</AntdTag>
+  // Leading status dot — mirrors the honest mockup's `.tag::before` (a 6px ink dot on
+  // status/category pills). Show it ONLY for coloured pills that DON'T set their own
+  // fontSize: the sized delta pills ("5 new", "96%") carry a number, not a status, so a
+  // dot there would be noise. The dot inherits the palette's ink colour.
+  const showDot = !!palette && !(style as CSSProperties | undefined)?.fontSize
+
+  return (
+    <AntdTag key={uid} {...rest} style={tagStyle}>
+      {showDot && (
+        <span
+          style={{
+            background: palette?.color,
+            borderRadius: '50%',
+            display: 'inline-block',
+            height: 6,
+            marginRight: 6,
+            verticalAlign: 'middle',
+            width: 6,
+          }}
+        />
+      )}
+      {label}
+    </AntdTag>
+  )
 }
 
 export default Tag

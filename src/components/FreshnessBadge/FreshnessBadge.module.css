@@ -1,0 +1,58 @@
+/* FreshnessBadge — a quiet, color-coded status DOT overlaid on a widget, shown ONLY for the
+   exception states (refreshing / stale); the steady/fresh state renders nothing at all. The
+   full label rides in a native tooltip. Uses only the theme :root vars (theme/tokens.ts) so
+   it tracks light/dark. */
+
+.badge {
+  align-items: center;
+  appearance: none;
+  background: none;
+  border: none;
+  display: inline-flex;
+  line-height: 1;
+  padding: 2px;
+  user-select: none;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.dot {
+  border-radius: 50%;
+  flex: none;
+  height: 7px;
+  width: 7px;
+}
+
+/* Refreshing — amber (brand/pending), gently pulsing while a background fetch resolves. */
+.refreshing {
+  animation: freshness-pulse 1.2s ease-in-out infinite;
+  background: var(--amber-color);
+  box-shadow: 0 0 5px 1px color-mix(in srgb, var(--amber-color) 55%, transparent);
+}
+
+/* Stale — muted graphite; a quiet, non-alarming "this data is old" cue (click to refresh). */
+.stale {
+  background: var(--gray-color);
+  box-shadow: 0 0 4px 1px color-mix(in srgb, var(--gray-color) 40%, transparent);
+}
+
+/* Live — cyan. Unused in the current render (the fresh/live state shows no dot at all); kept
+   so the tone→class map stays total. */
+.live {
+  animation: freshness-pulse 1.8s ease-in-out infinite;
+  background: var(--cyan-color);
+  box-shadow: 0 0 5px 1px var(--cyan-color);
+}
+
+@keyframes freshness-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}

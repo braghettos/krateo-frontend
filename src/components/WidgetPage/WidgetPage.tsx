@@ -11,7 +11,9 @@ import WidgetRenderer from '../WidgetRenderer'
  * data-source RESTAction name/description filter). Frontend chrome, like the Shell search. */
 const PAGE_SEARCH: Record<string, string> = {
   '/blueprints': 'Search blueprints by name or description…',
-  '/compositions': 'Search compositions by name or type…',
+  // /compositions intentionally omitted: the compositions toolbar renders its OWN
+  // `?q=`-bound search widget (input.compositions-search, in flex.compositions-range-group),
+  // so a frontend PageSearch here would be a SECOND, redundant box driving the same filter.
   '/marketplace': 'Search the catalog by name or description…',
 }
 

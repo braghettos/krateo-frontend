@@ -31,6 +31,9 @@
 
 import { describe, it, expect } from 'vitest'
 
+import { getDefaultPageSizeForEndpoint } from '../components/WidgetRenderer/WidgetRenderer'
+import { isTimeoutError } from '../components/WidgetStates'
+
 import { buildExtrasParam, MAX_WIDGET_FETCH_RETRIES, shouldRetryWidgetFetch, WidgetFetchError, widgetFetchRetryDelay } from './useWidgetQuery'
 
 /**
@@ -63,12 +66,52 @@ type SliceContinue = boolean | undefined
 const computeNextPageParam = (
   lastPage: { status?: { resourcesRefs?: { slice?: { continue?: SliceContinue } } } },
   pageParams: { page?: number; perPage?: number },
+  usesDefaultPaging = false,
 ): { page: number; perPage?: number } | undefined => {
   if (typeof pageParams.page !== 'number') { return undefined }
+  // Classic-pager mode (Table): navigation is the pager (setServerPage), NOT
+  // infinite-scroll. Never accumulate — that would re-grow the DOM toward 60K.
+  if (usesDefaultPaging) { return undefined }
   const hasMorePages = typeof lastPage.status === 'object'
     && lastPage.status?.resourcesRefs?.slice?.continue === true
   if (!hasMorePages) { return undefined }
   return { page: pageParams.page + 1, perPage: pageParams.perPage }
+}
+
+/**
+ * Pure replica of the request-seeding logic in useWidgetQuery.ts: when a widget
+ * opts into bounded pagination (`defaultPageSize` set) and its endpoint carries
+ * no page/perPage, request page=<serverPage>&perPage=<defaultPageSize> instead of
+ * snowplow's -1/-1 full-set sentinel. If the endpoint already carries pagination,
+ * that wins (the default is only a fallback).
+ */
+const computeInitialPaging = (deps: {
+  defaultPageSize?: number
+  endpointPage?: number
+  endpointPerPage?: number
+  serverPage: number
+}): { initialPage?: number; initialPerPage?: number; usesDefaultPaging: boolean } => {
+  const usesDefaultPaging = typeof deps.defaultPageSize === 'number'
+    && deps.endpointPage === undefined
+    && deps.endpointPerPage === undefined
+  return {
+    initialPage: usesDefaultPaging ? deps.serverPage : deps.endpointPage,
+    initialPerPage: usesDefaultPaging ? deps.defaultPageSize : deps.endpointPerPage,
+    usesDefaultPaging,
+  }
+}
+
+/**
+ * Pure replica of WidgetRenderer.getDefaultPageSizeForEndpoint — resolves the
+ * per-page window from the endpoint's `resource` plural. (Kept in lockstep with
+ * the exported production fn, also imported+asserted below.)
+ */
+const PAGINATED_RESOURCE_PAGE_SIZE: Record<string, number> = { tables: 50 }
+const resolvePageSize = (endpoint: string): number | undefined => {
+  const queryStart = endpoint.indexOf('?')
+  if (queryStart === -1) { return undefined }
+  const resource = new URLSearchParams(endpoint.slice(queryStart)).get('resource')
+  return resource ? PAGINATED_RESOURCE_PAGE_SIZE[resource] : undefined
 }
 
 describe('Path B — cold visit fetches only page 1, no auto-advance', () => {
@@ -190,6 +233,74 @@ describe('Path B — non-paginating widget kinds are unaffected', () => {
   })
 })
 
+describe('bounded server-side pagination — request seeding (paginate + virtualize, spec 2026-07-10)', () => {
+  /**
+   * The 60K-row `/compositions` wedge is caused by the SPA sending the -1/-1
+   * "no pagination" sentinel. When a widget opts in (defaultPageSize set) and
+   * the endpoint carries no page/perPage, the request must instead be a BOUNDED
+   * page so snowplow injects `.slice` and the template windows its rows.
+   */
+  it('seeds page=1 & perPage=<default> when the endpoint carries no pagination', () => {
+    const paging = computeInitialPaging({ defaultPageSize: 50, serverPage: 1 })
+    expect(paging.usesDefaultPaging).toBe(true)
+    expect(paging.initialPage).toBe(1)
+    expect(paging.initialPerPage).toBe(50)
+  })
+
+  it('tracks the pager: serverPage becomes the requested page', () => {
+    const paging = computeInitialPaging({ defaultPageSize: 50, serverPage: 4 })
+    expect(paging.initialPage).toBe(4)
+    expect(paging.initialPerPage).toBe(50)
+  })
+
+  it('does NOT seed pagination for widgets that did not opt in (no defaultPageSize)', () => {
+    // Statistic/Card/etc. keep their exact prior request (no page/perPage) so
+    // their L1 cache identity is unchanged.
+    const paging = computeInitialPaging({ serverPage: 1 })
+    expect(paging.usesDefaultPaging).toBe(false)
+    expect(paging.initialPage).toBeUndefined()
+    expect(paging.initialPerPage).toBeUndefined()
+  })
+
+  it('lets an endpoint that already carries pagination win over the default', () => {
+    // If snowplow ever emits an explicit page/perPage on the child endpoint,
+    // honour it rather than overriding with the default fallback.
+    const paging = computeInitialPaging({ defaultPageSize: 50, endpointPage: 2, endpointPerPage: 25, serverPage: 1 })
+    expect(paging.usesDefaultPaging).toBe(false)
+    expect(paging.initialPage).toBe(2)
+    expect(paging.initialPerPage).toBe(25)
+  })
+
+  it('classic-pager mode never accumulates pages (getNextPageParam returns undefined)', () => {
+    // Even if a page response somehow set slice.continue=true, the Table's
+    // classic pager must NOT auto-advance/accumulate — that would re-grow the
+    // un-virtualized DOM toward the full 60K set this fix removes.
+    const pageWithContinue = { status: { resourcesRefs: { slice: { continue: true } } } }
+    expect(computeNextPageParam(pageWithContinue, { page: 1, perPage: 50 }, /* usesDefaultPaging */ true)).toBeUndefined()
+    // Sanity: the SAME response WOULD advance in infinite-scroll (List) mode.
+    expect(computeNextPageParam(pageWithContinue, { page: 1, perPage: 50 }, false)).toEqual({ page: 2, perPage: 50 })
+  })
+})
+
+describe('bounded server-side pagination — resource opt-in resolver', () => {
+  it('resolves the per-page window for a `tables` endpoint (compositions Table)', () => {
+    const endpoint = '/call?resource=tables&apiVersion=widgets.templates.krateo.io%2Fv1beta1&name=compositions-table&namespace=krateo-system'
+    expect(getDefaultPageSizeForEndpoint(endpoint)).toBe(50)
+    // replica stays in lockstep with production
+    expect(resolvePageSize(endpoint)).toBe(getDefaultPageSizeForEndpoint(endpoint))
+  })
+
+  it('returns undefined for non-paginated resources (statistics, cards, …)', () => {
+    expect(getDefaultPageSizeForEndpoint('/call?resource=statistics&name=stat-compositions')).toBeUndefined()
+    expect(getDefaultPageSizeForEndpoint('/call?resource=cards&name=status-card')).toBeUndefined()
+  })
+
+  it('returns undefined when the endpoint has no query string', () => {
+    expect(getDefaultPageSizeForEndpoint('/call')).toBeUndefined()
+    expect(getDefaultPageSizeForEndpoint('')).toBeUndefined()
+  })
+})
+
 describe('initial-render retry — transient failures retry, permanent ones do not', () => {
   it('retries network errors (no status) up to the cap, then stops', () => {
     // "Server has not yet answered": fetch rejects with a TypeError that has
@@ -225,6 +336,42 @@ describe('initial-render retry — transient failures retry, permanent ones do n
     expect(widgetFetchRetryDelay(2)).toBe(2800)
     // capped
     expect(widgetFetchRetryDelay(10)).toBe(5000)
+  })
+})
+
+describe('timedOut — useWidgetQuery classifies the query error via the Freshness isTimeoutError', () => {
+  /**
+   * Pure replica of the `timedOut` derivation in useWidgetQuery.ts:
+   *   `const timedOut = queryResult.error ? isTimeoutError(queryResult.error) : false`
+   * WidgetRenderer drives the CALM WidgetTimeout state off this flag rather than
+   * re-classifying the error at the render, so pin the gating here.
+   */
+  const computeTimedOut = (error: unknown): boolean => (error ? isTimeoutError(error) : false)
+
+  it('is false when there is no error (happy path)', () => {
+    expect(computeTimedOut(undefined)).toBe(false)
+    expect(computeTimedOut(null)).toBe(false)
+  })
+
+  it('is true for a 503/504 gateway-timeout WidgetFetchError', () => {
+    expect(computeTimedOut(new WidgetFetchError('boom', 503))).toBe(true)
+    expect(computeTimedOut(new WidgetFetchError('boom', 504))).toBe(true)
+  })
+
+  it('is true for deadline-exceeded / canceled / aborted messages (no status)', () => {
+    expect(computeTimedOut(new Error('context deadline exceeded'))).toBe(true)
+    expect(computeTimedOut(new Error('The user canceled the request'))).toBe(true)
+    expect(computeTimedOut(new Error('The operation was aborted'))).toBe(true)
+  })
+
+  it('is false for a hard 4xx / 500 error (red-cross path, not the calm timeout)', () => {
+    expect(computeTimedOut(new WidgetFetchError('bad request', 400))).toBe(false)
+    expect(computeTimedOut(new WidgetFetchError('forbidden', 403))).toBe(false)
+    expect(computeTimedOut(new WidgetFetchError('server error', 500))).toBe(false)
+  })
+
+  it('is false for a generic network error (surfaces as the "Couldn\'t reach the server" error, not timeout)', () => {
+    expect(computeTimedOut(new TypeError('Failed to fetch'))).toBe(false)
   })
 })
 

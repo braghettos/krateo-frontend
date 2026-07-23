@@ -30,7 +30,7 @@ const slot = (resourceRefId: string | undefined, resourcesRefs: ResourcesRefs) =
  * beside it (antd's canonical sidebar layout).
  */
 const Layout = ({ resourcesRefs, widgetData }: WidgetProps<LayoutWidgetData>) => {
-  const { content, footer, hasSider, header, sider } = widgetData
+  const { content, effects, footer, hasSider, header, sider } = widgetData
   // The app shell (loaded via INIT) is the one Layout that reads real slots: regions
   // the CR leaves unset fall back to engine chrome (header → interactive controls,
   // content → the routed <Outlet/>, sider footer → the user block). Every Layout then
@@ -39,6 +39,14 @@ const Layout = ({ resourcesRefs, widgetData }: WidgetProps<LayoutWidgetData>) =>
   const shell = useShellSlots()
   const headerContent = header ? slot(header, resourcesRefs) : shell.header
   const contentBody = content ? slot(content, resourcesRefs) : shell.content
+
+  // Side-effect widgets (e.g. Theme): always-mounted, produce no UI. Rendered inside a
+  // display:none host so an effect widget that accidentally emits markup can't disturb the
+  // layout, while its React effects (which is where the global state is applied) still run.
+  const effectNodes = (effects ?? []).map((refId) => {
+    const endpoint = getEndpointUrl(refId, resourcesRefs)
+    return endpoint ? <WidgetRenderer key={refId} widgetEndpoint={endpoint} /> : null
+  })
 
   const regions = (
     <>
@@ -62,6 +70,7 @@ const Layout = ({ resourcesRefs, widgetData }: WidgetProps<LayoutWidgetData>) =>
         width={sider.width}
       >
         <div className={styles.sider}>
+          {shell.siderHeader}
           <div className={styles.siderBody}>{slot(sider.resourceRefId, resourcesRefs)}</div>
           {shell.siderFooter}
         </div>
@@ -72,7 +81,12 @@ const Layout = ({ resourcesRefs, widgetData }: WidgetProps<LayoutWidgetData>) =>
 
   // Scope the app-shell slots to THIS Layout: descendants get empty slots, so a nested
   // Layout (rendered inside `content`) inherits no header / content / sider-footer chrome.
-  return <ShellSlotsProvider value={EMPTY_SHELL_SLOTS}>{layout}</ShellSlotsProvider>
+  return (
+    <ShellSlotsProvider value={EMPTY_SHELL_SLOTS}>
+      {effectNodes.length > 0 ? <div style={{ display: 'none' }}>{effectNodes}</div> : null}
+      {layout}
+    </ShellSlotsProvider>
+  )
 }
 
 export default Layout

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 html, body, #root {
   height: 100%;
@@ -13,17 +13,17 @@ body {
   font-family: var(--font-family, Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
 }
 
-/* Flight-deck stat value: Space Grotesk display numerals, tight, tabular so columns of telemetry align. */
+/* Stat value: Barlow Condensed display numerals, tight, tabular so columns of telemetry align. */
 .ant-statistic-content-value {
-  font-family: var(--font-display, "Space Grotesk", Inter, sans-serif);
+  font-family: var(--font-display, "Barlow Condensed", Inter, sans-serif);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
 }
 
-/* Data is machine-truth: tags and table cells render in IBM Plex Mono with tabular figures. */
+/* Data is machine-truth: tags and table cells render in JetBrains Mono with tabular figures. */
 .ant-tag {
-  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
   font-variant-numeric: tabular-nums;
 }
 
@@ -32,46 +32,49 @@ body {
 }
 
 /*
- * Brand-logo theme-adherence. The Krateo lockup (brand-logo Image widget) ships
- * dark — readable on the light "Paper" canvas, but near-invisible on the Petrol
- * dark void. On dark we flatten-then-invert it to a crisp monochrome-WHITE lockup
- * (matches the flight-deck wordmark language); light keeps the original mark. The
- * filter preserves the SVG's alpha, so only the glyph lightens, not a box. Scoped
- * to the Sider's only image so no other Image widget is touched. Swapping in a
- * real white asset later is a drop-in `src` change — this is the no-asset fix.
+ * Brand-logo on the Sovereign gradient sider. The Krateo lockup (brand-logo Image widget)
+ * ships dark; the sider rail now equals colorBgContainer per mode (issue #52), so the lockup is
+ * flattened to a crisp MONOCHROME mark that follows the mode: WHITE on the dark-mode surface,
+ * BLACK on the light-mode surface (else a white mark vanishes on the light rail). The filter
+ * preserves the SVG's alpha, so only the glyph is recoloured, not a box. Scoped to the Sider's
+ * only image so no other Image widget is touched.
  */
-[data-theme="dark"] .ant-layout-sider .ant-image-img {
+.ant-layout-sider .ant-image-img {
   filter: brightness(0) invert(1);
   opacity: 0.92;
 }
 
+:root[data-theme='light'] .ant-layout-sider .ant-image-img {
+  filter: brightness(0);
+}
+
 /*
- * Petrol primary CTA = amber WASH, not a solid block. The mockup's primary action
- * (New composition / Apply / Deploy) is a translucent-amber instrument key: a faint
- * amber fill, an amber hairline border and an amber label — it reads as "your move"
- * without antd's heavy solid fill, matching the flight-deck render. Overrides the
- * antd v6 solid-primary variant (type="primary" → color-primary + variant-solid) at
- * the cascade level so EVERY Button widget converts at once; color-mix off
- * --amber-color keeps it theme-adaptive (Paper #C0760B / Petrol #F2A33C). `danger`
- * primaries map to color-dangerous, so destructive buttons stay crimson untouched.
+ * Primary CTA = brand-blue WASH, not a solid block (Brand v2). The primary action
+ * (New composition / Apply / Deploy) is a translucent instrument key: a faint brand
+ * fill, a brand hairline border and a brand label — it reads as "your move" without
+ * antd's heavy solid fill. Overrides the antd v6 solid-primary variant (type="primary"
+ * → color-primary + variant-solid) at the cascade level so EVERY Button widget converts
+ * at once; color-mix off --primary-color keeps it theme-adaptive (Sovereign #05629A light
+ * / Krateo Blue #2FBFE6 dark). `danger` primaries map to color-dangerous, so destructive
+ * buttons stay crimson untouched.
  */
 .ant-btn.ant-btn-color-primary.ant-btn-variant-solid {
-  background: color-mix(in srgb, var(--amber-color) 14%, transparent);
-  border-color: color-mix(in srgb, var(--amber-color) 40%, transparent);
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+  border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
   box-shadow: none;
-  color: var(--amber-color);
+  color: var(--primary-color);
 }
 
-.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):hover,
-.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):focus-visible {
-  background: color-mix(in srgb, var(--amber-color) 22%, transparent);
-  border-color: color-mix(in srgb, var(--amber-color) 62%, transparent);
-  color: var(--amber-color);
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled, .ant-btn-disabled):hover,
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled, .ant-btn-disabled):focus-visible {
+  background: color-mix(in srgb, var(--primary-color) 22%, transparent);
+  border-color: color-mix(in srgb, var(--primary-color) 62%, transparent);
+  color: var(--primary-color);
 }
 
-.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-disabled):active {
-  background: color-mix(in srgb, var(--amber-color) 28%, transparent);
-  border-color: color-mix(in srgb, var(--amber-color) 72%, transparent);
+.ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled, .ant-btn-disabled):active {
+  background: color-mix(in srgb, var(--primary-color) 28%, transparent);
+  border-color: color-mix(in srgb, var(--primary-color) 72%, transparent);
 }
 
 /*
@@ -96,4 +99,17 @@ body {
 *::-webkit-scrollbar-thumb {
   background: var(--gray-color, #5b6675);
   border-radius: 3px;
+}
+
+/*
+ * Brand v2 focus ring (Tier-2 locked). Every KEYBOARD-focused interactive element gets a
+ * consistent 2px solid brand-blue outline with a 2px offset — closes the "custom buttons /
+ * clickable rows lack a visible focus indicator" a11y gap (WCAG 2.4.7 Focus Visible). The v2
+ * focus colour is the brand blue in BOTH modes (Sovereign #05629A light / Krateo #2FBFE6 dark),
+ * which is exactly --primary-color, so no separate focus token is needed. :focus-visible shows
+ * it on keyboard nav only (not mouse clicks); it rides ABOVE antd's own focus shadow.
+ */
+*:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }

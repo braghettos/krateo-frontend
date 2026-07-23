@@ -114,7 +114,7 @@
                     "enum": ["POST", "PUT", "PATCH", "DELETE", "GET"]
                   }
                 },
-                "required": ["allowed", "id"]
+                "required": ["id"]
               }
             }
           },

@@ -33,10 +33,6 @@ export interface Form {
          */
         rest?: {
           /**
-           * array of headers as strings, format 'key: value'
-           */
-          headers: string[]
-          /**
            * unique identifier for the action
            */
           id: string
@@ -49,17 +45,49 @@ export interface Form {
            */
           requireConfirmation?: boolean
           /**
-           * url to navigate to after successful execution
-           */
-          onSuccessNavigateTo?: string
-          /**
            * a message that will be displayed inside a toast in case of error
            */
           errorMessage?: string
           /**
+           * name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action
+           */
+          fanOutPath?: string
+          /**
+           * ordered list of DISTINCT writes applied as ONE gated set (e.g. one Form submit creating a Role AND its RoleBinding): each op resolves its OWN resourceRefId (verb + path + payload base) and builds its OWN payload/payloadToOverride against the SAME submitted values. The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics). Mutually exclusive with fanOutPath; onEventNavigateTo is not supported on a multi-op action. The action's own top-level payload/payloadToOverride are IGNORED when ops is present and its top-level resourceRefId is ignored for dispatch (it must still name a valid resource ref — point it at the first op's)
+           */
+          ops?: {
+            /**
+             * the identifier of the resource ref this op targets: its verb (must be mutating), path and payload base
+             */
+            resourceRefId: string
+            /**
+             * static payload sent with this op's request
+             */
+            payload?: {
+              [k: string]: unknown
+            }
+            /**
+             * list of this op's payload fields to override dynamically (values interpolate against the same submitted values as every other op)
+             */
+            payloadToOverride?: {
+              /**
+               * name of the field to override
+               */
+              name: string
+              /**
+               * value to use for overriding the field
+               */
+              value: string
+            }[]
+          }[]
+          /**
            * a message that will be displayed inside a toast in case of success
            */
           successMessage?: string
+          /**
+           * url to navigate to after successful execution
+           */
+          onSuccessNavigateTo?: string
           /**
            * conditional navigation triggered by a specific event
            */
@@ -86,6 +114,10 @@ export interface Form {
            * type of action to execute
            */
           type: 'rest'
+          /**
+           * array of headers as strings, format 'key: value'
+           */
+          headers: string[]
           /**
            * static payload sent with the request
            */
@@ -286,11 +318,11 @@ export interface Form {
         resourceRefId: string
       }[]
       /**
-       * JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields — the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema. Note: a schema sourced from a CRD's openAPIV3Schema has its `properties` map serialized alphabetically (the order is lost); use `stringSchema` to preserve the source `values.schema.json` authoring order.
+       * JSON schema (e.g. a blueprint CRD's openAPIV3Schema spec) rendered as form fields — the schema-driven alternative to `items`. Usually populated server-side via a widgetDataTemplate jq expression that extracts the spec schema. Note: a schema sourced from a CRD's openAPIV3Schema has its `properties` map serialized alphabetically (order lost); use `stringSchema` to preserve the source values.schema.json authoring order.
        */
       schema?: Record<string, unknown>
       /**
-       * Same JSON schema as `schema`, but provided as a raw JSON STRING. Preferred over `schema` when present: the client `JSON.parse`s it, preserving the object's key insertion order, so fields render in the source `values.schema.json` order rather than the alphabetized order a CRD-sourced object schema yields. Typically populated server-side from the blueprint's per-version jsonschema ConfigMap (which keeps authoring order) via a widgetDataTemplate. Falls back to `schema` when absent or not valid JSON.
+       * Same JSON schema as `schema`, but as a raw JSON STRING. Preferred over `schema` when present: the client JSON.parses it, preserving key insertion order, so fields render in the source values.schema.json order rather than the alphabetized order a CRD-sourced object schema yields. Typically populated server-side from the blueprint's per-version jsonschema ConfigMap (which keeps authoring order). Falls back to `schema` when absent or not valid JSON.
        */
       stringSchema?: string
       /**
@@ -313,6 +345,23 @@ export interface Form {
        * optional id of an action fired by a 'Save draft' button that captures the CURRENT field values WITHOUT running form validation (so an incomplete form can be persisted). Pair with buttonConfig.draft to show the button.
        */
       draftActionId?: string
+      /**
+       * optional field-conditional submit routing: when present, the submit action is chosen at submit time from the value of the named field. Routes one form to different create targets (e.g. a 'target cluster' select where 'local' posts the blueprint instance and a remote spoke posts a RemoteInstall). Falls back to `default` (or `submitActionId`) when the field value has no mapping.
+       */
+      submitActionSelector?: {
+        /**
+         * form field whose current value selects the submit action
+         */
+        field: string
+        /**
+         * map of field-value → action id
+         */
+        map: Record<string, string>
+        /**
+         * action id used when the field value is not present in `map`
+         */
+        default?: string
+      }
     }
     apiRef?: {
       name: string
@@ -324,7 +373,7 @@ export interface Form {
     }[]
     resourcesRefs?: {
       items: {
-        allowed: boolean
+        allowed?: boolean
         apiVersion?: string
         id: string
         name?: string

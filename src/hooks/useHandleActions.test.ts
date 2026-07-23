@@ -205,6 +205,7 @@ const makeCtx = (over: Partial<ActionContext> = {}): ActionContext => ({
   notification: { error: vi.fn(), success: vi.fn() } as unknown as ActionContext['notification'],
   openDrawer: vi.fn(),
   openModal: vi.fn(),
+  provenanceEnabled: false,
   registerCleanup: vi.fn(),
   reloadRoutes: vi.fn(),
   resolveJq: vi.fn((expr: string) => Promise.resolve(`jq:${expr}`)),
@@ -393,5 +394,120 @@ describe('dispatchAction — onEventNavigateTo (SSE) race + cleanup', () => {
     // simulate the hook's unmount teardown
     captured?.()
     expect(es?.closed).toBe(true)
+  })
+})
+
+describe('dispatchAction — W3-1 fanOutPath (one submit → N ordered writes via the set fabric)', () => {
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  // A fleet-rollout-shaped action: fan out over `clusters`, deriving each op's name and
+  // deploy target from the SCALAR element the fabric substitutes for the array field.
+  const fanAction = (over: Partial<RestAction> = {}): RestAction => restAction({
+    fanOutPath: 'clusters',
+    onSuccessNavigateTo: '/compositions',
+    payload: { apiVersion: 'core.krateo.io/v1alpha1', kind: 'CompositionDefinition' },
+    payloadToOverride: [
+      { name: 'metadata.name', value: '${ .json.name + "-" + .json.clusters }' },
+      { name: 'metadata.namespace', value: 'krateo-system' },
+      { name: 'spec.deploy.targetRef.name', value: '${ .json.clusters }' },
+    ],
+    ...over,
+  } as Partial<RestAction>)
+
+  // resolveJq stub implementing just the two expressions the action uses.
+  const fanResolveJq = () => vi.fn((expr: string, vals: Record<string, unknown>): Promise<string> => {
+    const json = vals.json as { clusters: string; name: string }
+    if (expr.includes('.json.name')) { return Promise.resolve(`${json.name}-${json.clusters}`) }
+    return Promise.resolve(json.clusters)
+  })
+
+  it('expands one write per element, substituting the scalar element for the array field', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(fakeResponse(true, '{}')))
+    vi.stubGlobal('fetch', fetchMock)
+    const confirm = vi.fn(() => Promise.resolve(true))
+    const ctx = makeCtx({ confirm, resolveJq: fanResolveJq() })
+
+    await dispatchAction(
+      fanAction(),
+      { customPayload: { clusters: ['spoke-a', 'spoke-b'], name: 'demo' }, resourcesRefs: refs([postRef]) },
+      ctx
+    )
+
+    // ONE aggregated confirm for the whole set, then one POST per element in order.
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const urls = fetchMock.mock.calls.map((call) => (call as unknown as [string])[0])
+    expect(urls[0]).toBe('http://sp/api/x?name=demo-spoke-a&namespace=krateo-system')
+    expect(urls[1]).toBe('http://sp/api/x?name=demo-spoke-b&namespace=krateo-system')
+    const bodies = fetchMock.mock.calls.map((call) => JSON.parse(((call as unknown as [string, { body: string }])[1]).body) as { metadata: { name: string }; spec: { deploy: { targetRef: { name: string } } } })
+    expect(bodies[0].metadata.name).toBe('demo-spoke-a')
+    expect(bodies[0].spec.deploy.targetRef.name).toBe('spoke-a')
+    expect(bodies[1].metadata.name).toBe('demo-spoke-b')
+    expect(bodies[1].spec.deploy.targetRef.name).toBe('spoke-b')
+    // Full success → the set success toast + the onSuccessNavigateTo redirect.
+    expect(ctx.notification.success).toHaveBeenCalled()
+    expect(ctx.navigate).toHaveBeenCalledWith('/compositions')
+  })
+
+  it('declined set confirm: NOTHING is dispatched and no navigation happens', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(fakeResponse(true, '{}')))
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeCtx({ confirm: vi.fn(() => Promise.resolve(false)), resolveJq: fanResolveJq() })
+
+    await dispatchAction(
+      fanAction(),
+      { customPayload: { clusters: ['spoke-a', 'spoke-b'], name: 'demo' }, resourcesRefs: refs([postRef]) },
+      ctx
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(ctx.navigate).not.toHaveBeenCalled()
+  })
+
+  it('an empty fan-out array is a config error: no confirm, no fetch', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(fakeResponse(true, '{}')))
+    vi.stubGlobal('fetch', fetchMock)
+    const confirm = vi.fn(() => Promise.resolve(true))
+    const ctx = makeCtx({ confirm, resolveJq: fanResolveJq() })
+
+    await dispatchAction(fanAction(), { customPayload: { clusters: [], name: 'demo' }, resourcesRefs: refs([postRef]) }, ctx)
+
+    expect(confirm).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(ctx.notification.error).toHaveBeenCalled()
+  })
+
+  it('fanOutPath + onEventNavigateTo is a config error (single-uid event redirect is meaningless for a set)', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(fakeResponse(true, '{}')))
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeCtx({ resolveJq: fanResolveJq() })
+
+    await dispatchAction(
+      fanAction({ onEventNavigateTo: { eventReason: 'X', url: '/y' }, onSuccessNavigateTo: undefined } as Partial<RestAction>),
+      { customPayload: { clusters: ['spoke-a'], name: 'demo' }, resourcesRefs: refs([postRef]) },
+      ctx
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(ctx.notification.error).toHaveBeenCalled()
+  })
+
+  it('stop-on-first-error: a failed op halts the set and no success navigation happens', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(fakeResponse(true, '{}'))
+      .mockResolvedValueOnce(fakeResponse(false, '{"message":"boom"}'))
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeCtx({ resolveJq: fanResolveJq() })
+
+    await dispatchAction(
+      fanAction(),
+      { customPayload: { clusters: ['spoke-a', 'spoke-b', 'spoke-c'], name: 'demo' }, resourcesRefs: refs([postRef]) },
+      ctx
+    )
+
+    // Op 3 never fires; the error toast reports the partial state; no redirect.
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(ctx.notification.error).toHaveBeenCalled()
+    expect(ctx.navigate).not.toHaveBeenCalled()
   })
 })

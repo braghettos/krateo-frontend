@@ -18,17 +18,28 @@
         "widgetData": {
           "description": "the data that will be passed to the widget on the frontend",
           "type": "object",
-          "required": ["actions", "submitActionId"],
+          "required": [
+            "actions",
+            "submitActionId"
+          ],
           "properties": {
             "layout": {
               "description": "antd Form layout",
               "type": "string",
-              "enum": ["horizontal", "vertical", "inline"]
+              "enum": [
+                "horizontal",
+                "vertical",
+                "inline"
+              ]
             },
             "size": {
               "description": "antd Form size",
               "type": "string",
-              "enum": ["small", "middle", "large"]
+              "enum": [
+                "small",
+                "middle",
+                "large"
+              ]
             },
             "disabled": {
               "description": "antd Form disabled (disables all fields)",
@@ -45,14 +56,6 @@
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
-                      "headers": {
-                        "description": "array of headers as strings, format 'key: value'",
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "description": "key and value as a single, example: 'x-custom-header: value'"
-                        }
-                      },
                       "id": {
                         "type": "string",
                         "description": "unique identifier for the action"
@@ -65,21 +68,72 @@
                         "type": "boolean",
                         "description": "whether user confirmation is required before triggering the action"
                       },
-                      "onSuccessNavigateTo": {
-                        "type": "string",
-                        "description": "url to navigate to after successful execution"
-                      },
                       "errorMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of error"
+                      },
+                      "fanOutPath": {
+                        "type": "string",
+                        "description": "name of an ARRAY field in the submitted values: the action fans out into ONE ordered write per element (for each write, that field is replaced by the single element before payload/payloadToOverride interpolation). The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics); onEventNavigateTo is not supported on a fan-out action"
+                      },
+                      "ops": {
+                        "type": "array",
+                        "description": "ordered list of DISTINCT writes applied as ONE gated set (e.g. one Form submit creating a Role AND its RoleBinding): each op resolves its OWN resourceRefId (verb + path + payload base) and builds its OWN payload/payloadToOverride against the SAME submitted values. The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics). Mutually exclusive with fanOutPath; onEventNavigateTo is not supported on a multi-op action. The action's own top-level payload/payloadToOverride are IGNORED when ops is present and its top-level resourceRefId is ignored for dispatch (it must still name a valid resource ref — point it at the first op's)",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "resourceRefId"
+                          ],
+                          "properties": {
+                            "resourceRefId": {
+                              "type": "string",
+                              "description": "the identifier of the resource ref this op targets: its verb (must be mutating), path and payload base"
+                            },
+                            "payload": {
+                              "type": "object",
+                              "additionalProperties": true,
+                              "description": "static payload sent with this op's request"
+                            },
+                            "payloadToOverride": {
+                              "type": "array",
+                              "description": "list of this op's payload fields to override dynamically (values interpolate against the same submitted values as every other op)",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "name",
+                                  "value"
+                                ],
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "description": "name of the field to override"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "description": "value to use for overriding the field"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
                       },
                       "successMessage": {
                         "type": "string",
                         "description": "a message that will be displayed inside a toast in case of success"
                       },
+                      "onSuccessNavigateTo": {
+                        "type": "string",
+                        "description": "url to navigate to after successful execution"
+                      },
                       "onEventNavigateTo": {
                         "type": "object",
-                        "required": ["eventReason", "url"],
+                        "required": [
+                          "eventReason",
+                          "url"
+                        ],
                         "additionalProperties": false,
                         "description": "conditional navigation triggered by a specific event",
                         "properties": {
@@ -107,8 +161,18 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["rest"],
+                        "enum": [
+                          "rest"
+                        ],
                         "description": "type of action to execute"
+                      },
+                      "headers": {
+                        "description": "array of headers as strings, format 'key: value'",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "description": "key and value as a single, example: 'x-custom-header: value'"
+                        }
                       },
                       "payload": {
                         "type": "object",
@@ -121,7 +185,10 @@
                         "items": {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["name", "value"],
+                          "required": [
+                            "name",
+                            "value"
+                          ],
                           "properties": {
                             "name": {
                               "type": "string",
@@ -141,11 +208,18 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       }
                     },
-                    "required": ["headers", "id", "type", "resourceRefId"]
+                    "required": [
+                      "headers",
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 },
                 "navigate": {
@@ -166,7 +240,9 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       },
                       "path": {
@@ -183,11 +259,16 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["navigate"],
+                        "enum": [
+                          "navigate"
+                        ],
                         "description": "type of navigation action"
                       }
                     },
-                    "required": ["id", "type"]
+                    "required": [
+                      "id",
+                      "type"
+                    ]
                   }
                 },
                 "openDrawer": {
@@ -203,7 +284,9 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["openDrawer"],
+                        "enum": [
+                          "openDrawer"
+                        ],
                         "description": "type of drawer action"
                       },
                       "resourceRefId": {
@@ -216,7 +299,10 @@
                       },
                       "size": {
                         "type": "string",
-                        "enum": ["default", "large"],
+                        "enum": [
+                          "default",
+                          "large"
+                        ],
                         "description": "drawer size to be displayed"
                       },
                       "title": {
@@ -230,11 +316,17 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       }
                     },
-                    "required": ["id", "type", "resourceRefId"]
+                    "required": [
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 },
                 "openModal": {
@@ -250,7 +342,9 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["openModal"],
+                        "enum": [
+                          "openModal"
+                        ],
                         "description": "type of modal action"
                       },
                       "resourceRefId": {
@@ -272,7 +366,9 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["display"],
+                        "required": [
+                          "display"
+                        ],
                         "additionalProperties": false
                       },
                       "customWidth": {
@@ -282,10 +378,19 @@
                       "size": {
                         "description": "sets the Modal size, 'default' is 520px, 'large' is 80% of the screen width, 'fullscreen' is 100% of the screen width, 'custom' should be used with the 'customWidth' property",
                         "type": "string",
-                        "enum": ["default", "large", "fullscreen", "custom"]
+                        "enum": [
+                          "default",
+                          "large",
+                          "fullscreen",
+                          "custom"
+                        ]
                       }
                     },
-                    "required": ["id", "type", "resourceRefId"]
+                    "required": [
+                      "id",
+                      "type",
+                      "resourceRefId"
+                    ]
                   }
                 }
               },
@@ -348,7 +453,10 @@
                   "type": "object",
                   "description": "Configure-step button label when reviewBeforeSubmit is set (the button that opens the in-place Review; default 'Review →')",
                   "properties": {
-                    "label": { "type": "string", "description": "text label for the Review button" }
+                    "label": {
+                      "type": "string",
+                      "description": "text label for the Review button"
+                    }
                   },
                   "additionalProperties": false
                 },
@@ -356,7 +464,10 @@
                   "type": "object",
                   "description": "Review-step back button label when reviewBeforeSubmit is set (returns to editing; default '← Back to edit')",
                   "properties": {
-                    "label": { "type": "string", "description": "text label for the back-to-edit button" }
+                    "label": {
+                      "type": "string",
+                      "description": "text label for the back-to-edit button"
+                    }
                   },
                   "additionalProperties": false
                 }
@@ -374,10 +485,15 @@
               "type": "array",
               "items": {
                 "type": "object",
-                "required": ["resourceRefId"],
+                "required": [
+                  "resourceRefId"
+                ],
                 "additionalProperties": false,
                 "properties": {
-                  "resourceRefId": { "type": "string", "description": "the identifier of the form-control widget to render" }
+                  "resourceRefId": {
+                    "type": "string",
+                    "description": "the identifier of the form-control widget to render"
+                  }
                 }
               }
             },
@@ -394,7 +510,9 @@
             "propertiesToHide": {
               "description": "top-level schema property names to omit from the schema-driven form",
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "reviewBeforeSubmit": {
               "description": "when true (inline render only), the primary button validates and reveals an in-place read-only Review of the entered values before the real submit — the form stays mounted so 'Back to edit' preserves every value. Pair with buttonConfig.review / buttonConfig.reviewBack for custom labels.",
@@ -411,6 +529,27 @@
             "draftActionId": {
               "description": "optional id of an action fired by a 'Save draft' button that captures the CURRENT field values WITHOUT running form validation (so an incomplete form can be persisted). Pair with buttonConfig.draft to show the button.",
               "type": "string"
+            },
+            "submitActionSelector": {
+              "description": "optional field-conditional submit routing: when present, the submit action is chosen at submit time from the value of the named field. Routes one form to different create targets (e.g. a 'target cluster' select where 'local' posts the blueprint instance and a remote spoke posts a RemoteInstall). Falls back to `default` (or `submitActionId`) when the field value has no mapping.",
+              "type": "object",
+              "properties": {
+                "field": {
+                  "description": "form field whose current value selects the submit action",
+                  "type": "string"
+                },
+                "map": {
+                  "description": "map of field-value → action id",
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                },
+                "default": {
+                  "description": "action id used when the field value is not present in `map`",
+                  "type": "string"
+                }
+              },
+              "required": ["field", "map"],
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -425,7 +564,10 @@
               "type": "string"
             }
           },
-          "required": ["name", "namespace"],
+          "required": [
+            "name",
+            "namespace"
+          ],
           "additionalProperties": false
         },
         "widgetDataTemplate": {
@@ -505,7 +647,6 @@
                   }
                 },
                 "required": [
-                  "allowed",
                   "id"
                 ]
               }
@@ -562,9 +703,15 @@
           }
         }
       },
-      "required": ["widgetData"],
+      "required": [
+        "widgetData"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["kind", "spec", "version"]
+  "required": [
+    "kind",
+    "spec",
+    "version"
+  ]
 }

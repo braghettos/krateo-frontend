@@ -12,6 +12,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
+import { getPreviewProblems } from './previewBus'
 import { redactAutopilotContext } from './redact'
 import type { AutopilotIdentity, PageContextEnvelope, WidgetInventoryEntry } from './types'
 
@@ -24,6 +25,39 @@ const EXTRAS_WHITELIST = ['status', 'range', 'q'] as const
  * page. Set well above any real page so the strip shows the true per-page count, not a pinned
  * cap (the old 40 truncated every page, which read as "always 40 widgets"). */
 const MAX_WIDGETS = 120
+
+/**
+ * Row count above which a widget is flagged `large` — a client-render-scale hazard.
+ * A non-virtualized list/table this big can wedge the browser tab while it paints,
+ * which presents as a "page not loading" / frozen page. This is the grounded reason
+ * to prefer ("the table is very large and still rendering") over a guessed cause.
+ * ~5k rows is well past what a plain table paints smoothly; the compositions-list
+ * incident wedged the tab at ~60k rows.
+ */
+const LARGE_ROWS_THRESHOLD = 5000
+
+/** The live react-query state of one widget endpoint (status + whether it's fetching). */
+interface WidgetLoadState {
+  loadState: 'loading' | 'error' | 'ready'
+}
+
+/**
+ * Map a react-query cache status → the grounded on-screen render state. `pending`
+ * with an active fetch is a skeleton (`loading`); `error` is the red-cross state;
+ * everything else has rendered (`ready`). Mirrors what WidgetRenderer shows.
+ */
+export const loadStateFromStatus = (
+  status: 'pending' | 'error' | 'success',
+  fetchStatus: 'fetching' | 'paused' | 'idle',
+): WidgetLoadState['loadState'] => {
+  if (status === 'error') {
+    return 'error'
+  }
+  if (status === 'pending' || fetchStatus === 'fetching') {
+    return 'loading'
+  }
+  return 'ready'
+}
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   (value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined)
@@ -185,6 +219,83 @@ const widgetActions = (
   return out.length ? out : undefined
 }
 
+/** A resolved cluster-object identity parsed from a ResourceRef `path`. */
+type WidgetResource = NonNullable<WidgetInventoryEntry['resource']>
+
+/**
+ * Parse a snowplow ResourceRef `path` (the /apis/… or /api/… URL it GETs) into a
+ * resolved {group, version, resource, namespace?, name?}. Handles both the named
+ * (…/<resource>/<name>) and list (…/<resource>) forms, namespaced and cluster-scoped,
+ * plus the core group (/api/<version>/… → empty group). Returns undefined when the
+ * path is not a recognizable apiserver URL, so a widget with an odd ref contributes
+ * no fabricated GVR.
+ */
+export const parseGvrFromRefPath = (path: string | undefined): WidgetResource | undefined => {
+  if (typeof path !== 'string' || !path) {
+    return undefined
+  }
+  // Drop the query string / trailing slash, then split into non-empty segments.
+  const clean = path.split('?')[0].replace(/\/+$/, '')
+  const segments = clean.split('/').filter(Boolean)
+  const prefix = segments.shift()
+  // Core group is served under /api/<version>/…; named groups under /apis/<group>/<version>/….
+  let group: string
+  let version: string | undefined
+  if (prefix === 'api') {
+    group = ''
+    version = segments.shift()
+  } else if (prefix === 'apis') {
+    group = segments.shift() ?? ''
+    version = segments.shift()
+  } else {
+    return undefined
+  }
+  if (!version) {
+    return undefined
+  }
+  let namespace: string | undefined
+  if (segments[0] === 'namespaces') {
+    segments.shift()
+    namespace = segments.shift()
+  }
+  const resource = segments.shift()
+  if (!resource) {
+    return undefined
+  }
+  const name = segments.shift()
+  return { group, name, namespace, resource, version }
+}
+
+/**
+ * The resolved cluster-object identity the widget renders, derived from its
+ * `status.resourcesRefs.items`. Prefer the primary GET (the ref the widget READS to
+ * render), falling back to the first parseable ref, so a list widget yields the LIST
+ * gvr (no name) and a detail widget yields the single object's gvr+name. `uid` is only
+ * available when the widget renders one object (its resolved metadata.uid).
+ */
+const widgetResource = (
+  resourcesRefs: Record<string, unknown> | undefined,
+  widgetData: Record<string, unknown> | undefined,
+): WidgetResource | undefined => {
+  const items = Array.isArray(resourcesRefs?.items) ? resourcesRefs.items : undefined
+  if (!items?.length) {
+    return undefined
+  }
+  const paths = items
+    .map((item) => asRecord(item))
+    .filter((ref): ref is Record<string, unknown> => Boolean(ref))
+  // Prefer the ref the widget GETs to render (its backing object) over a mutating ref.
+  const primary = paths.find((ref) => ref.verb === 'GET') ?? paths[0]
+  const resource = parseGvrFromRefPath(typeof primary?.path === 'string' ? primary.path : undefined)
+  if (!resource) {
+    return undefined
+  }
+  // uid is meaningful only for a single-object widget (composition-detail-*): read the
+  // resolved metadata.uid, and only when the ref actually targets that named object.
+  const uid = resource.name ? scalar(asRecord(widgetData?.metadata)?.uid) : undefined
+  return uid ? { ...resource, uid } : resource
+}
+
 /** The on-screen CONTENT of a single-value widget — the number/text the user sees. Without this the
  * agent gets a Statistic's TITLE ("Healthy") but not its VALUE (27) and invents the count; the dashboard
  * is four such cards. */
@@ -226,7 +337,11 @@ const widgetValue = (kind: string | undefined, widgetData: Record<string, unknow
 /** Compact, payload-free summary of one cached widget. Reads the RESOLVED `status`
  * (widgetData + resourcesRefs after the server's templates), like WidgetRenderer,
  * falling back to `spec` — `spec` holds the pre-template static values. */
-const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry => {
+export const summarizeWidget = (
+  endpoint: string,
+  data: unknown,
+  load: WidgetLoadState | undefined,
+): WidgetInventoryEntry => {
   const root = asRecord(unwrapWidget(data))
   const kind = typeof root?.kind === 'string' ? root.kind : undefined
   const metadata = asRecord(root?.metadata)
@@ -238,6 +353,7 @@ const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry 
   const title = typeof widgetData?.title === 'string' ? widgetData.title : undefined
 
   const rows = firstArrayLength(widgetData)
+  const large = rows !== undefined && rows >= LARGE_ROWS_THRESHOLD ? true : undefined
   const summaryParts: string[] = []
   if (kind) {
     summaryParts.push(kind)
@@ -250,8 +366,9 @@ const summarizeWidget = (endpoint: string, data: unknown): WidgetInventoryEntry 
   const actions = kind === 'Button' ? widgetActions(widgetData, resourcesRefs) : undefined
   const items = itemLabels(widgetData)
   const value = rows === undefined ? widgetValue(kind, widgetData) : undefined
+  const resource = widgetResource(resourcesRefs, widgetData)
 
-  return { actions, endpoint, fields, items, kind, name, summary, title, value }
+  return { actions, endpoint, fields, items, kind, large, loadState: load?.loadState, name, resource, summary, title, value }
 }
 
 const collectExtras = (search: string): Record<string, string> | undefined => {
@@ -290,6 +407,29 @@ const focusFromRoute = (route: string): string => {
 }
 
 /**
+ * Roll the per-widget load states up into ONE grounded page status (the answer to
+ * "why isn't the page loading?"). Precedence: any errored widget → `error`; else any
+ * still-loading widget → `loading`; else any large-dataset widget → `heavy` (a
+ * client-render-scale hazard); else `ready`. Returns undefined when the page has no
+ * widgets in cache, so the model is told nothing rather than a fabricated state.
+ */
+export const derivePageStatus = (widgets: WidgetInventoryEntry[]): PageContextEnvelope['pageStatus'] => {
+  if (!widgets.length) {
+    return undefined
+  }
+  if (widgets.some((widget) => widget.loadState === 'error')) {
+    return 'error'
+  }
+  if (widgets.some((widget) => widget.loadState === 'loading')) {
+    return 'loading'
+  }
+  if (widgets.some((widget) => widget.large)) {
+    return 'heavy'
+  }
+  return 'ready'
+}
+
+/**
  * Serialize a (raw) envelope: redact LAST, then wrap in the injection-boundary
  * fence. The preamble tells the model this is observed data, never instructions.
  */
@@ -320,14 +460,23 @@ export const buildContextDelta = (
   const sameRoute = previous.route === next.route
   const prevEndpoints = previous.widgets.map((widget) => widget.endpoint).sort().join('|')
   const nextEndpoints = next.widgets.map((widget) => widget.endpoint).sort().join('|')
-  // Never collapse to the unchanged-note while a prefillable create Form is on screen: the model
-  // needs that form's `fields` inventory on EVERY turn to draft (prefillForm) the parameters the
-  // user names across the conversation. Without this, a follow-up turn on the same form page drops
-  // the field list, so the model can only fill generic fields (e.g. namespace) and silently omits
-  // the blueprint's own parameters (name/region/cidr/…) — the exact partial-prefill bug.
+  // Only collapse to the short unchanged-note when NOTHING render-relevant changed. Two guards, both
+  // required:
+  //  - Never collapse while a prefillable create Form is on screen: the model needs that form's
+  //    `fields` inventory on EVERY turn to draft (prefillForm) the parameters the user names across
+  //    the conversation. Without this, a follow-up turn on the same form page drops the field list,
+  //    so the model can only fill generic fields (e.g. namespace) and silently omits the blueprint's
+  //    own parameters (name/region/cidr/…) — the exact partial-prefill bug.
+  //  - Never collapse when `pageStatus` flipped: it is the grounded answer to page-load questions and
+  //    can change (loading→ready, or a table becoming heavy) without the route or endpoint set
+  //    changing; re-send the full envelope so the model never reasons from a stale "the page is fine".
+  // When we DO collapse, still restate the current pageStatus in the note (it is unchanged here, but
+  // the model should keep seeing it).
   const hasPrefillableForm = next.widgets.some((widget) => widget.kind === 'Form' && (widget.fields?.length ?? 0) > 0)
-  if (sameRoute && prevEndpoints === nextEndpoints && !hasPrefillableForm) {
-    return `<page_context>\nUnchanged: still on ${next.focus ?? next.route} (${next.widgets.length} widgets).\n</page_context>`
+  const sameStatus = previous.pageStatus === next.pageStatus
+  if (sameRoute && prevEndpoints === nextEndpoints && sameStatus && !hasPrefillableForm) {
+    const statusNote = next.pageStatus ? `, page ${next.pageStatus}` : ''
+    return `<page_context>\nUnchanged: still on ${next.focus ?? next.route} (${next.widgets.length} widgets${statusNote}).\n</page_context>`
   }
   return serializePageContext(next)
 }
@@ -343,15 +492,23 @@ export const useAutopilotContext = () => {
     // last few minutes leak in; once the accumulated cache exceeds MAX_WIDGETS the count pins at
     // 40 on every page and the agent is grounded on off-page widgets. This restores the
     // collector's stated intent: "the actual on-screen surface, not model memory" (see header).
-    // Read Query OBJECTS (not just data) so we can also surface freshness: a widget mid-fetch with no
-    // data, or a stale snapshot (snowplow L1 is stale-while-revalidate), would otherwise look like
-    // ground truth and the agent reports "0 compositions" while the list is still loading.
+    // Read Query OBJECTS (not just data) so we can also surface freshness AND the errored render
+    // state: a widget mid-fetch with no data, a stale snapshot (snowplow L1 is stale-while-revalidate),
+    // or a failed fetch would otherwise look like ground truth and the agent reports "0 compositions"
+    // (or confabulates a cause) while the list is still loading / errored. This is also what lets
+    // Autopilot answer "why isn't the page loading?" correctly instead of guessing.
     const queries = queryClient.getQueryCache().findAll({ queryKey: ['widgets'], type: 'active' })
     const widgets: WidgetInventoryEntry[] = queries
       .map((query) => {
         const { queryKey } = query
         const endpoint = Array.isArray(queryKey) && typeof queryKey[1] === 'string' ? queryKey[1] : ''
-        const entry = summarizeWidget(endpoint, query.state.data)
+        // `loadState` (loading/error/ready) drives pageStatus + the render-question answer; the
+        // boolean `loading`/`stale` below are the finer freshness hints (still-fetching-no-data,
+        // and react-query staleness) main already surfaces. Keep both — they are complementary.
+        const load: WidgetLoadState = {
+          loadState: loadStateFromStatus(query.state.status, query.state.fetchStatus),
+        }
+        const entry = summarizeWidget(endpoint, query.state.data, load)
         const loading = query.state.status === 'pending'
           || (query.state.fetchStatus === 'fetching' && query.state.data === undefined)
         const stale = query.isStale()
@@ -361,11 +518,16 @@ export const useAutopilotContext = () => {
       .slice(0, MAX_WIDGETS)
 
     const route = window.location.pathname
+    const previewProblems = getPreviewProblems()
     return {
       capturedAt: Date.now(),
       extras: collectExtras(window.location.search),
       focus: focusFromRoute(route),
       identity: collectIdentity(),
+      pageStatus: derivePageStatus(widgets),
+      // Autopilot SEES its own rejected preview — the exact verdicts ride the context so the
+      // model self-corrects (fix + re-emit the fence) without the user relaying errors.
+      ...(previewProblems?.length ? { previewProblems: previewProblems.slice(0, 8) } : {}),
       route,
       widgets,
     }

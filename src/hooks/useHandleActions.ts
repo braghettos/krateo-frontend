@@ -1,18 +1,27 @@
 import { useQueryClient } from '@tanstack/react-query'
 import useApp from 'antd/es/app/useApp'
 import { merge, set } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { createElement, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+import BlastRadiusConfirm from '../components/BlastRadius/BlastRadiusConfirm'
+import { buildBlastRadius, isMutatingVerb } from '../components/BlastRadius/buildBlastRadius'
 import { useConfigContext } from '../context/ConfigContext'
 import { useRoutesContext } from '../context/RoutesContext'
 import type { ResourceRef, ResourcesRefs, Widget, WidgetAction } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
 import { useResolveJqExpression } from '../utils/jq-expression'
+import { navigateOrExternal } from '../utils/navigation'
 import type { Payload, RestApiResponse } from '../utils/types'
 import { getHeadersObject, getResourceRef } from '../utils/utils'
 import { closeDrawer, openDrawer } from '../widgets/Drawer/Drawer'
 import { openModal } from '../widgets/Modal/Modal'
+
+import type { BlastRadius, BlastRadiusSet } from './blastRadius.types'
+import { recordProvenance, type WriteOrigin } from './provenance'
+import { runRestFanOut } from './runRestFanOut'
+import { runRestOps } from './runRestOps'
+import { runRestSet, type SetDispatchOptions, type WriteOp, type WriteOpResult } from './runRestSet'
 
 interface EventData {
   involvedObject: {
@@ -186,6 +195,9 @@ export interface ActionRuntime {
   resourcesRefs: ResourcesRefs
   customPayload?: Record<string, unknown>
   widget?: Widget
+  /** W0-3 origin tag: who initiated the write. Absent = a hand-clicked control ({actor:'human'});
+   * the Autopilot bridge sets actor:'agent' + the session/prompt context it holds. */
+  origin?: WriteOrigin
 }
 
 /**
@@ -198,7 +210,14 @@ export interface ActionContext {
   apiBaseUrl: string
   eventsBaseUrl: string
   navigate: (path: string) => void | Promise<void>
-  confirm: () => Promise<boolean>
+  /**
+   * The HITL gate. When a `radius` is supplied (mutating verbs) the confirm modal renders
+   * the structured BlastRadiusConfirm — the scalar verb+gvr+cluster/ns+count+diff shape, or
+   * the aggregated W0-4 SET shape (ordered op list) for an applySet; otherwise it falls
+   * back to the plain "Are you sure?" prompt (read-only navigate opt-in). Resolves true only
+   * when the human clicks Confirm.
+   */
+  confirm: (radius?: BlastRadius | BlastRadiusSet) => Promise<boolean>
   resolveJq: (expression: string, values: Record<string, unknown>) => Promise<string>
   setLoading: (loading: boolean) => void
   invalidateQueries: () => Promise<unknown>
@@ -211,6 +230,9 @@ export interface ActionContext {
   notification: ReturnType<typeof useApp>['notification']
   /** Register a teardown to run if the widget unmounts mid-action (e.g. close an SSE stream). */
   registerCleanup: (cleanup: () => void) => void
+  /** W0-3 provenance flag (config.json api.PROVENANCE_ENABLED, default OFF). When true, every
+   * resolved gated write fire-and-forgets ONE best-effort AuditRecord CR — see hooks/provenance.ts. */
+  provenanceEnabled: boolean
 }
 
 const runNavigate = async (action: WidgetAction & { type: 'navigate' }, runtime: ActionRuntime, ctx: ActionContext): Promise<void> => {
@@ -264,15 +286,25 @@ const runRest = async (
   const { customPayload } = runtime
   const { verb } = resourceRef
 
-  let jsonResponse: RestApiResponse | null = null
-
-  // Confirmation gate (was: if (!requireConfirmation || confirm()) { ...whole body... }).
-  if (action.requireConfirmation && !(await ctx.confirm())) {
-    ctx.setLoading(false)
+  // W3-2: `ops` routes the whole submit through the set fabric — N DISTINCT writes
+  // (each entry resolves its own ref + builds its own payload) as ONE gated set.
+  // Checked FIRST so ops×fanOutPath surfaces as runRestOps' mutual-exclusion error.
+  if (action.ops) {
+    await runRestOps(action, runtime, ctx)
 
     return
   }
 
+  // W3-1: `fanOutPath` routes the whole submit through the set fabric instead.
+  if (action.fanOutPath) {
+    await runRestFanOut(action, resourceRef, runtime, ctx)
+
+    return
+  }
+
+  let jsonResponse: RestApiResponse | null = null
+
+  // A config error (both nav modes set) must not slip past into a write — surface it first.
   if (onSuccessNavigateTo && onEventNavigateTo) {
     ctx.message.destroy()
     ctx.notification.error({
@@ -285,7 +317,30 @@ const runRest = async (
     return
   }
 
+  // Build the request body BEFORE the gate so the blast-radius diff shows the real create /
+  // update body the write will send (not the pre-override ref payload).
   const payload = await buildPayload(action, resourceRef.payload, customPayload, ctx.resolveJq)
+
+  // W0-2 HITL gate. Every MUTATING verb (POST/PUT/PATCH/DELETE) is ALWAYS gated — the human
+  // must confirm the structured BlastRadius (verb+gvr+cluster/ns+object-count+diff) — regardless
+  // of the CR's `requireConfirmation` opt-in (which is thus superseded for writes; it still gates
+  // a read-only ref that opts in). This single chokepoint covers Form submit, row actions, AND
+  // the Autopilot runAction (which already routes through this dispatcher).
+  // The gated radius is kept for W0-3 provenance: the SAME shape the human confirmed is
+  // logged verbatim on the audit record (reused, never rebuilt). undefined = read-only ref.
+  let radius: BlastRadius | undefined
+  if (isMutatingVerb(verb)) {
+    radius = buildBlastRadius({ path: resourceRef.path, payload, verb })
+    if (!(await ctx.confirm(radius))) {
+      ctx.setLoading(false)
+
+      return
+    }
+  } else if (action.requireConfirmation && !(await ctx.confirm())) {
+    ctx.setLoading(false)
+
+    return
+  }
 
   let resourceUid: string | null = null
   let eventReceived = false
@@ -427,10 +482,22 @@ const runRest = async (
 
   const shouldSendPayload = ['POST', 'PUT', 'PATCH'].includes(verb)
 
+  // W0-3 provenance: requestedAt is captured pre-dispatch; the record itself is emitted only
+  // AFTER the write resolves (success, HTTP failure, or network throw), and only for a gated
+  // write (radius set). A declined confirm returned above — it records NOTHING.
+  const requestedAt = new Date().toISOString()
+
   const res = await fetchWithTimeout(updatedUrl, {
     body: shouldSendPayload ? JSON.stringify(payload) : undefined,
     headers: requestHeaders,
     method: verb,
+  }).catch((error: unknown) => {
+    // The request itself failed (network error / timeout abort) — still an attempted write:
+    // record it (fire-and-forget, best-effort), then rethrow to the dispatcher's catch.
+    if (radius) {
+      recordProvenance(ctx, runtime.origin, radius, { message: error instanceof Error ? error.message : String(error), ok: false, status: 0 }, requestedAt)
+    }
+    throw error
   })
 
   // Empty/204 bodies (e.g. a successful DELETE) → {} via parseJsonResponse.
@@ -439,6 +506,13 @@ const runRest = async (
   jsonResponse = parseJsonResponse(responseText)
 
   ctx.setLoading(false)
+
+  // W0-3: ONE audit record per resolved gated write — success AND failure both land here,
+  // carrying the radius the human confirmed. Fire-and-forget inside recordProvenance (void,
+  // never awaited): it can never block, delay, or fail the primary write.
+  if (radius) {
+    recordProvenance(ctx, runtime.origin, radius, { message: jsonResponse.message ?? '', ok: res.ok, status: res.status }, requestedAt)
+  }
 
   if (!res.ok) {
     let description = jsonResponse.message
@@ -491,7 +565,12 @@ const runRest = async (
         : successMessage
     }
 
-    ctx.notification.success({ description, message: jsonResponse.message, placement: 'bottomLeft' })
+    // The notification title (antd `message`) MUST be present — a successful k8s write returns the
+    // OBJECT (no `.message` field), so `jsonResponse.message` is usually undefined, and antd renders
+    // a title-less (effectively invisible) toast. Fall back to a verb-aware headline so every widget
+    // action reliably shows a titled success toast.
+    const successTitle = jsonResponse.message || `Successfully ${actionName}`
+    ctx.notification.success({ description, message: successTitle, placement: 'bottomLeft' })
   }
 
   await ctx.invalidateQueries()
@@ -605,44 +684,80 @@ export const useHandleAction = () => {
     cleanupsRef.current.clear()
   }, [])
 
+  const buildCtx = (): ActionContext => ({
+    apiBaseUrl: config?.api.SNOWPLOW_API_BASE_URL ?? '',
+    closeDrawer,
+    // Non-blocking confirmation (antd Modal) instead of the blocking window.confirm. When a
+    // blast radius is supplied (every mutating write — W0-2), render the structured
+    // BlastRadiusConfirm — the scalar verb+gvr+cluster/ns+object-count+diff shape, or the
+    // aggregated ordered-op list for a W0-4 set — as the modal body and title the intent;
+    // otherwise keep the plain "Are you sure?" prompt (read-only opt-in). The Confirm button
+    // goes danger for anything irreversible (a DELETE, or a set containing one).
+    confirm: (radius?: BlastRadius | BlastRadiusSet) => new Promise<boolean>((resolve) => {
+      const isSet = radius !== undefined && 'ops' in radius
+      const irreversible = radius !== undefined
+        && (isSet ? radius.ops.some((op) => op.irreversible) : radius.verb === 'DELETE')
+      let title = radius ? 'Confirm write' : 'Are you sure?'
+      if (isSet) {
+        title = `Confirm ${radius.count} writes`
+      }
+      modal.confirm({
+        cancelText: 'Cancel',
+        content: radius ? createElement(BlastRadiusConfirm, { radius }) : undefined,
+        okButtonProps: irreversible ? { danger: true } : undefined,
+        okText: 'Confirm',
+        onCancel: () => resolve(false),
+        onOk: () => resolve(true),
+        title,
+        width: radius ? 560 : undefined,
+      })
+    }),
+    eventsBaseUrl: config?.api.EVENTS_PUSH_API_BASE_URL ?? '',
+    getAccessToken,
+    // Scope post-action invalidation to widget queries (key ['widgets', ...]) instead of
+    // ALL queries — a blank invalidate also refetched the SSE-maintained `events` cache
+    // and everything else. Any widget may show the mutated resource, so refresh them all.
+    invalidateQueries: () => queryClient.invalidateQueries({ queryKey: ['widgets'] }),
+    message,
+    navigate: (path: string) => navigateOrExternal(navigate, path, resolveNavigationTarget),
+    notification,
+    openDrawer,
+    openModal,
+    // W0-3 provenance kill-switch: default OFF, so clusters without the AuditRecord CRD
+    // see zero new traffic. Arrives from config.json like the other flags — which the
+    // chart delivers as STRINGS (see PR #32: config values were re-typed to string for
+    // the values.schema; the installer's componentValues carry "true"/""), so accept the
+    // boolean AND the string form. Any other value (incl. "false") stays OFF.
+    provenanceEnabled: config?.api.PROVENANCE_ENABLED === true || config?.api.PROVENANCE_ENABLED === 'true',
+    registerCleanup: (cleanup: () => void) => { cleanupsRef.current.add(cleanup) },
+    reloadRoutes,
+    resolveJq,
+    setLoading: setIsActionLoading,
+  })
+
   const handleAction = async (
     action: WidgetAction,
     resourcesRefs: ResourcesRefs,
     customPayload?: Record<string, unknown>,
-    widget?: Widget
+    widget?: Widget,
+    // W0-3 origin tag — omitted by every widget call site (default {actor:'human'});
+    // only the Autopilot bridge passes an agent origin.
+    origin?: WriteOrigin
   ) => {
-    const ctx: ActionContext = {
-      apiBaseUrl: config?.api.SNOWPLOW_API_BASE_URL ?? '',
-      closeDrawer,
-      // Non-blocking confirmation (antd Modal) instead of the blocking window.confirm.
-      confirm: () => new Promise<boolean>((resolve) => {
-        modal.confirm({
-          cancelText: 'Cancel',
-          okText: 'Confirm',
-          onCancel: () => resolve(false),
-          onOk: () => resolve(true),
-          title: 'Are you sure?',
-        })
-      }),
-      eventsBaseUrl: config?.api.EVENTS_PUSH_API_BASE_URL ?? '',
-      getAccessToken,
-      // Scope post-action invalidation to widget queries (key ['widgets', ...]) instead of
-      // ALL queries — a blank invalidate also refetched the SSE-maintained `events` cache
-      // and everything else. Any widget may show the mutated resource, so refresh them all.
-      invalidateQueries: () => queryClient.invalidateQueries({ queryKey: ['widgets'] }),
-      message,
-      navigate: (path: string) => navigate(resolveNavigationTarget(path)),
-      notification,
-      openDrawer,
-      openModal,
-      registerCleanup: (cleanup: () => void) => { cleanupsRef.current.add(cleanup) },
-      reloadRoutes,
-      resolveJq,
-      setLoading: setIsActionLoading,
-    }
-
-    await dispatchAction(action, { customPayload, resourcesRefs, widget }, ctx)
+    await dispatchAction(action, { customPayload, origin, resourcesRefs, widget }, buildCtx())
   }
 
-  return { handleAction, isActionLoading }
+  /**
+   * The P1 applySet fabric entry point: run an ORDERED write-set behind ONE aggregated
+   * W0-4 blast-radius confirm (decline = nothing dispatched), sequential dispatch with
+   * stop-on-first-error, per-item results. Same ctx (same gate modal, same auth, same
+   * invalidation) as a scalar handleAction — see runRestSet. `origin` is the W0-3 tag
+   * (agent-origin sets pass it; absent = human). `options` is the previewPage-v2
+   * sandbox relaxation (confirm-skip verified per-op against the named namespace,
+   * silent toasts) — see SetDispatchOptions; every other caller omits it.
+   */
+  const handleActionSet = async (ops: readonly WriteOp[], origin?: WriteOrigin, options?: SetDispatchOptions): Promise<WriteOpResult[] | null> =>
+    runRestSet(ops, buildCtx(), origin, options)
+
+  return { handleAction, handleActionSet, isActionLoading }
 }

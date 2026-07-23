@@ -43,13 +43,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build and push (linux/amd64, linux/arm64)
+      - name: Build and push (linux/amd64)
         uses: docker/build-push-action@v7
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # the sidebar footer's "build <version> · <sha>" — without these the image
+          # ships package.json's 0.0.0 and a git-less 'dev' fallback
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            APP_BUILD=${{ github.sha }}
 
       - name: Inspect image
         run: docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ steps.meta.outputs.version }}

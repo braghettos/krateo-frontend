@@ -10,6 +10,8 @@
  * transcript and frame handler are ready without a later type churn.
  */
 
+import type { ApprovalDecision, ApprovalPause } from './approval'
+
 /** Who authored a transcript message. */
 export type AutopilotRole = 'user' | 'assistant'
 
@@ -69,6 +71,20 @@ export interface WidgetInventoryEntry {
   /** True when react-query considers this widget's data stale (snowplow L1 may be mid-revalidate);
    * a hint that the on-screen value may lag the cluster. */
   stale?: boolean
+  /**
+   * The widget's LIVE react-query load state — the actual on-screen render status,
+   * read from the query cache (NOT model memory): `loading` (still fetching, showing
+   * a skeleton), `error` (the fetch failed / red-cross state), or `ready` (rendered).
+   * This is the grounded signal for "why isn't this showing?" questions. (Complements the
+   * boolean `loading`/`stale` above: `loadState` also distinguishes the ERRORED render.)
+   */
+  loadState?: 'loading' | 'error' | 'ready'
+  /**
+   * True when this widget carries an unusually large row count (a client-render-scale
+   * hazard: a big non-virtualized list/table can wedge the browser tab while it paints).
+   * Grounds the RIGHT answer for a sluggish/blank page instead of guessing a cause.
+   */
+  large?: boolean
   /** For a Form widget: its top-level field names, so Autopilot can prefill them. */
   fields?: string[]
   /** For a list/table widget: a sample of the visible row labels (e.g. installed blueprint
@@ -78,6 +94,25 @@ export interface WidgetInventoryEntry {
   /** For an action-bearing widget (e.g. Button): the runnable actions on it, so
    * Autopilot can drive the REAL control (gated). `verb` GET = read-only. */
   actions?: { id: string; label?: string; verb: string }[]
+  /**
+   * The resolved cluster-object identity the widget renders, parsed from its
+   * `status.resourcesRefs` path (the /apis/<group>/<version>/… URL snowplow targets):
+   * the GVR plus name/namespace for the primary GET, and uid when the widget shows a
+   * single object. This is the day-2 grounding hook — Autopilot needs the GVR to
+   * reason about "why is THIS composition failing" or propose a targeted patch against
+   * the actual object instead of a title. NON-SENSITIVE identity (no payload/token):
+   * it passes through the redactor UNCHANGED. Absent for widgets with no resolved ref
+   * (a static Paragraph, a purely-navigate Button), so the model is told nothing rather
+   * than a fabricated GVR.
+   */
+  resource?: {
+    group: string
+    version: string
+    resource: string
+    namespace?: string
+    name?: string
+    uid?: string
+  }
 }
 
 /** The whoami identity surfaced to ground greetings (no token, ever). */
@@ -99,10 +134,23 @@ export interface PageContextEnvelope {
   identity?: AutopilotIdentity
   /** The live on-screen widget inventory. */
   widgets: WidgetInventoryEntry[]
+  /** The LAST previewPage's validation verdicts — present ONLY while the draft set is
+   * REJECTED. The model must fix these exact errors and re-emit the full corrected
+   * previewPage fence (see the PREVIEW SELF-CORRECTION routing rule). */
+  previewProblems?: string[]
   /** A one-line kind-aware summary of the focused surface. */
   focus?: string
   /** When this snapshot was taken (ms epoch) — lets the model reason about freshness. */
   capturedAt?: number
+  /**
+   * The page's overall render/load state, derived from the widget cache — the
+   * grounded answer to "why isn't the page loading?". `loading`: at least one widget
+   * is still fetching. `error`: at least one widget's fetch failed. `heavy`: a widget
+   * on the page is rendering a very large dataset (a client-render-scale hazard that
+   * can make the tab unresponsive). `ready`: everything rendered normally. When absent
+   * (no widgets in cache), page state is unknown — do NOT infer a cause.
+   */
+  pageStatus?: 'loading' | 'error' | 'heavy' | 'ready'
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -127,8 +175,9 @@ export interface AutopilotSendRequest {
 
 /**
  * A normalized stream frame. The concrete transport translates kagent/ADK A2A
- * frames into these. Phase 1 only renders `text`; `tool_call` / `require_approval`
- * are forward-declared for the Phase-2/3 action bridge interception.
+ * frames into these. Phase 1 only renders `text`; `tool_call` is forward-declared
+ * for the action bridge interception; `require_approval` is the Phase-2 kagent HITL
+ * pause (task `input-required` with `adk_request_confirmation` parts — see approval.ts).
  */
 export type AutopilotFrame =
   // `replace` true → set the bubble to `delta` (an authoritative full text, e.g. a
@@ -137,7 +186,7 @@ export type AutopilotFrame =
   // A2A conversation id, surfaced so the provider can continue the thread.
   | { kind: 'session'; contextId: string }
   | { kind: 'tool_call'; name: string; args: unknown }
-  | { kind: 'require_approval'; id: string; summary: string }
+  | { kind: 'require_approval'; pause: ApprovalPause }
   | { kind: 'done' }
   | { kind: 'error'; message: string }
 
@@ -150,8 +199,11 @@ export interface AutopilotStreamHandlers {
  * The transport seam. A concrete `KagentA2ATransport` targets the deployed
  * orchestrator's A2A endpoint (carrying the portal Bearer); an `EchoTransport`
  * backs local development before the live handshake is wired. `send` returns an
- * abort function that cancels the in-flight stream.
+ * abort function that cancels the in-flight stream. `respondToApproval` resumes a
+ * paused (`input-required`) task with the human's decision — the reply stream is
+ * the agent's continuation, delivered through the same normalized frames.
  */
 export interface AutopilotTransport {
+  respondToApproval: (decision: ApprovalDecision, pause: ApprovalPause, handlers: AutopilotStreamHandlers) => () => void
   send: (request: AutopilotSendRequest, handlers: AutopilotStreamHandlers) => () => void
 }

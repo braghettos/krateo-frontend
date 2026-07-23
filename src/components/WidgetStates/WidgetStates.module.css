@@ -26,3 +26,16 @@
   padding: var(--spacing-lg);
   width: 100%;
 }
+
+/* Calm timeout state — same card frame as `.message` but a quiet, non-error read. */
+.timeout {
+  align-items: center;
+  background-color: var(--light-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-sm);
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}

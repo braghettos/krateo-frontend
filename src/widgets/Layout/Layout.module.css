@@ -9,11 +9,14 @@
   padding: 26px 30px;
 }
 
-/* Sider: a clean surface panel separated from content by a hairline border.
-   --panelbg-color is white in Enterprise and a translucent glass fill in dark
-   (where index.css adds the backdrop blur), matching the mockup's sidebar. */
+/* Sider: by default the rail equals colorBgContainer (the app surface), so it BLENDS into the app
+   and has no colour of its own (issue #52, per the maintainer's clarification). --krateo-nav-gradient-*
+   is emitted flat (identical stops = the surface colour) by cssVariables() (tokens.ts); nav text is
+   mode-aware (dark on the light-mode surface). A tenant Theme CR's custom.sidebar can still set a
+   distinct/branded two-stop gradient. The divider uses --border-color (not the now-invisible
+   gradient end) so there's a subtle separation from the content when the rail matches the surface. */
 .shell :global(.ant-layout-sider) {
-  background: var(--panelbg-color);
+  background: linear-gradient(180deg, var(--krateo-nav-gradient-start), var(--krateo-nav-gradient-end));
   border-right: 1px solid var(--border-color);
 }
 

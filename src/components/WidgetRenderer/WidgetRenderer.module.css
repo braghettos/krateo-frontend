@@ -9,3 +9,34 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* Freshness overlay wrapper. Rendered UNCONDITIONALLY (stable subtree root — the widget
+   never remounts on a background refetch, preserving form input). `display: contents` makes
+   it layout-transparent: its children participate directly in the parent Flex/Grid/block, so
+   it never collapses sibling widgets in a horizontal Flex into equal 1/N columns — which is
+   what the old unconditional `width: 100%` did, defeating a CR's `justify`. It becomes a real
+   relatively-positioned box (to anchor the top-right FreshnessBadge) only when a badge is
+   actually shown, via `.freshnessWrapActive`. The overlay itself is pointer-transparent;
+   only the badge (and its manual-refresh button) capture pointer events. */
+.freshnessWrap {
+  display: contents;
+}
+
+.freshnessWrapActive {
+  display: block;
+  height: 100%;
+  position: relative;
+  width: 100%;
+}
+
+.freshnessOverlay {
+  pointer-events: none;
+  position: absolute;
+  right: var(--spacing-xs);
+  top: var(--spacing-xs);
+  z-index: 2;
+}
+
+.freshnessOverlay > * {
+  pointer-events: auto;
+}

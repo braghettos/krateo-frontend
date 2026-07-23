@@ -9,6 +9,7 @@ import { AutopilotProvider, AutopilotShell, AutopilotToggle } from '../Autopilot
 import Breadcrumb from '../Breadcrumb'
 import CommandPalette from '../CommandPalette'
 import Notifications from '../Notifications'
+import SessionResumeModal from '../SessionResume'
 import ThemeToggle from '../ThemeToggle'
 import UserMenu from '../UserMenu'
 import WidgetRenderer from '../WidgetRenderer'
@@ -37,14 +38,26 @@ const HeaderChrome = () => {
   )
 }
 
-/** User block pinned to the bottom of the Sider (avatar + name from the token). */
+/** Instrument-console eyebrow pinned to the top of the Sider (mono/uppercase/graphite,
+ * mirrors the page-header eyebrow treatment). A static "CONSOLE" label framing the sider
+ * as the platform instrument console — matches the Petrol mockup. */
+const SiderEyebrow = () => <div className={styles.siderEyebrow}>Console</div>
+
+/** Bottom-of-Sider block: the user (avatar + name from the token) above a subtle
+ * build/version marker. The version is `package.json`'s `version` and the build is the
+ * git short-SHA, both inlined at build time (vite.config.ts `define`) — nothing hardcoded. */
 const SiderFooter = () => {
   const { user } = JSON.parse(localStorage.getItem('K_user') || '{}') as { user?: { avatarURL?: string; displayName?: string; username?: string } }
   const name = user?.displayName || user?.username || ''
   return (
     <div className={styles.siderFooter}>
-      <Avatar size={30} src={user?.avatarURL}>{name.slice(0, 1).toUpperCase()}</Avatar>
-      <span className={styles.siderFooterName}>{name}</span>
+      <div className={styles.siderUser}>
+        <Avatar size={30} src={user?.avatarURL}>{name.slice(0, 1).toUpperCase()}</Avatar>
+        <span className={styles.siderFooterName}>{name}</span>
+      </div>
+      <div className={styles.siderBuild} title={`build ${__APP_VERSION__} · ${__APP_BUILD__}`}>
+        build {__APP_VERSION__} · {__APP_BUILD__}
+      </div>
     </div>
   )
 }
@@ -68,13 +81,14 @@ export const ShellRoute = () => {
   }, [])
 
   return (
-    <ShellSlotsProvider value={{ content: <><div className={styles.contentCrumb}><Breadcrumb /></div><Outlet /></>, header: <HeaderChrome />, siderFooter: <SiderFooter /> }}>
+    <ShellSlotsProvider value={{ content: <><div className={styles.contentCrumb}><Breadcrumb /></div><Outlet /></>, header: <HeaderChrome />, siderFooter: <SiderFooter />, siderHeader: <SiderEyebrow /> }}>
       <AutopilotProvider>
         <AutopilotShell>
           <WidgetRenderer key='shell' widgetEndpoint={config!.api.INIT} />
         </AutopilotShell>
         <Drawer />
         <Modal />
+        <SessionResumeModal />
       </AutopilotProvider>
     </ShellSlotsProvider>
   )
