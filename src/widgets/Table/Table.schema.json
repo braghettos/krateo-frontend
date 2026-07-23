@@ -220,7 +220,7 @@
                 "middle",
                 "small"
               ],
-              "description": "antd Table size"
+              "description": "antd Table size. Defaults to 'middle' when omitted (matching Button), so an unset value has a documented, Brand-consistent density rather than antd's raw default"
             },
             "prefix": {
               "description": "it's the filters prefix to get right values",

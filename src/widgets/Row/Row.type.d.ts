@@ -39,7 +39,7 @@ export interface Row {
         | 'yamlviewers'
       )[]
       /**
-       * vertical alignment of items in the row (antd Row `align`). Default is 'middle'; 'stretch' makes columns equal-height
+       * vertical alignment of items in the row (antd Row `align`). Default is 'stretch' (columns fill the row height so sibling cards stay equal-height when one wraps); set 'top'/'middle'/'bottom' to opt out
        */
       alignment?: 'top' | 'middle' | 'bottom' | 'stretch'
       /**
@@ -51,6 +51,30 @@ export interface Row {
          * the number of cells that the item will occupy, from 0 (not displayed) to 24 (occupies all space)
          */
         size?: number
+        /**
+         * antd Col xs span — responsive override of `size` at narrow widths / a shrunk content column (e.g. when the Autopilot rail is open)
+         */
+        xs?: number
+        /**
+         * antd Col sm span
+         */
+        sm?: number
+        /**
+         * antd Col md span
+         */
+        md?: number
+        /**
+         * antd Col lg span
+         */
+        lg?: number
+        /**
+         * antd Col xl span
+         */
+        xl?: number
+        /**
+         * antd Col xxl span
+         */
+        xxl?: number
         /**
          * Krateo-only: horizontal alignment of the widget inside its cell (no antd Col equivalent; applied via flex justify-content). Default is 'left'
          */

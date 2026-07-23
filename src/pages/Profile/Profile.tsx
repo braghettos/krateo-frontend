@@ -30,10 +30,10 @@ const Profile = () => {
   return (
     <Card>
       <Row>
-        <Col className={styles.avatar} sm={24}>
+        <Col className={styles.avatar} md={8} sm={24}>
           <Avatar size={200} src={userData?.user.avatarURL} />
         </Col>
-        <Col md={12} sm={24}>
+        <Col md={16} sm={24}>
           <Space direction='vertical' size='large'>
             <div>
               <Typography.Text className={styles.fullname}>{userData?.user.displayName}</Typography.Text>

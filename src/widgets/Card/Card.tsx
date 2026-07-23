@@ -3,7 +3,6 @@ import type { IconName, IconPrefix, IconProp } from '@fortawesome/fontawesome-sv
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Card as AntdCard, Badge, Button, Tag, Tooltip } from 'antd'
 import useApp from 'antd/es/app/useApp'
-import { useState } from 'react'
 
 import WidgetRenderer from '../../components/WidgetRenderer'
 import { useHandleAction } from '../../hooks/useHandleActions'
@@ -32,14 +31,15 @@ const resolveFaIcon = (name?: string): IconProp => {
 }
 
 const FooterItem = ({ resourceRefId, resourcesRefs }: { resourceRefId: string; resourcesRefs: ResourcesRefs }) => {
-  const [isLoading, setIsLoading] = useState(true)
-
   const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
   if (!endpoint) { return null }
 
+  // WidgetRenderer shows its own sized skeleton while loading, so the item keeps one stable
+  // box across load → loaded. (Previously a `while-loading` class capped it to 100×100, which
+  // snapped to the natural size on load — a visible pop.)
   return (
-    <div className={`${styles.item} ${isLoading ? styles.itemLoading : ''}`}>
-      <WidgetRenderer onLoadingChange={setIsLoading} widgetEndpoint={endpoint}/>
+    <div className={styles.item}>
+      <WidgetRenderer widgetEndpoint={endpoint}/>
     </div>
   )
 }

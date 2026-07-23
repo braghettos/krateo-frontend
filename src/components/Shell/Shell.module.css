@@ -20,6 +20,14 @@
   gap: var(--spacing-md);
 }
 
+/* Thin separator that sets the Autopilot toggle apart from the page utilities. */
+.headerDivider {
+  align-self: center;
+  background: var(--line-color);
+  height: 20px;
+  width: 1px;
+}
+
 /* Breadcrumb moved OUT of the header INTO each page's content (top of the routed Outlet), so it
    reads per-page rather than as global chrome. Sits inside the padded Content; this just adds the
    gap to the page below it. */

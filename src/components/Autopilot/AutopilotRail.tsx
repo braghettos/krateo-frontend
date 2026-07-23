@@ -16,7 +16,7 @@ import type { ApprovalPause } from './approval'
 import { useAutopilot } from './AutopilotProvider'
 import styles from './AutopilotRail.module.css'
 import AutopilotTour from './AutopilotTour'
-import { CheckIcon, CollapseIcon, EyeIcon, LinkIcon, PlusIcon, SendIcon, SparkIcon } from './icons'
+import { CheckIcon, CollapseIcon, EyeIcon, LinkIcon, PlusIcon, SendIcon, SparkIcon, StopIcon } from './icons'
 import { looksLikeOpenApiDocument } from './oasAttachment'
 import type { AutopilotMessage } from './types'
 
@@ -87,7 +87,7 @@ const STARTER_PROMPTS = [
 ]
 
 const AutopilotRail = () => {
-  const { approvePending, attachOasDocument, clearOasAttachment, collect, denyPending, enabled, messages, newThread, oasAttachment, open, pendingApproval, send, setOpen, streaming } = useAutopilot()
+  const { approvePending, attachOasDocument, clearOasAttachment, collect, denyPending, enabled, messages, newThread, oasAttachment, open, pendingApproval, send, setOpen, stop, streaming } = useAutopilot()
   const [draft, setDraft] = useState('')
   // W4 KOG (FE-K2): the over-cap paste rejection note (cleared on the next successful attach).
   const [oasError, setOasError] = useState<string | null>(null)
@@ -240,9 +240,15 @@ const AutopilotRail = () => {
               rows={1}
               value={draft}
             />
-            <button aria-label='Send' className={styles.apSend} disabled={!draft.trim() || streaming} onClick={submit} type='button'>
-              <SendIcon />
-            </button>
+            {streaming ? (
+              <button aria-label='Stop' className={styles.apSend} onClick={stop} title='Stop generating' type='button'>
+                <StopIcon />
+              </button>
+            ) : (
+              <button aria-label='Send' className={styles.apSend} disabled={!draft.trim()} onClick={submit} type='button'>
+                <SendIcon />
+              </button>
+            )}
           </div>
           <div className={styles.apNote}>
             <LinkIcon className={styles.apNoteIcon} />
