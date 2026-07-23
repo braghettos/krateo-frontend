@@ -177,6 +177,11 @@
     top: 18px;
     width: 34px;
     z-index: 1;
+
+    /* #69 §0.8: the floated icon is a DECORATIVE category glyph, not a control. Make it
+       inert so it never reads as (or behaves like) a clickable affordance — no hover/cursor
+       target, and clicks pass through to the card beneath. */
+    pointer-events: none;
   }
 }
 

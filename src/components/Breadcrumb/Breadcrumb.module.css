@@ -9,18 +9,26 @@
   min-width: 0;
 }
 
-/* Each crumb shows its full content (no squeeze); only a genuinely long one (> max-width)
-   truncates with an ellipsis + the native `title` tooltip. */
+/* Truncation bias (#69 §0.1): every crumb keeps its full width EXCEPT the last one — the
+   section + namespace crumbs (the clickable navigation) never shrink, so a long trailing
+   resource name is the only thing that can be squeezed. */
 :global(.ant-breadcrumb > ol > li) {
-  flex-shrink: 0;
   white-space: nowrap;
+}
+
+:global(.ant-breadcrumb > ol > li:not(:last-child)) {
+  flex-shrink: 0;
+}
+
+/* The leaf crumb (the long K8s resource name) is the single shrink target; it ellipsizes
+   with the native `title` tooltip when the row runs out of room. */
+:global(.ant-breadcrumb > ol > li:last-child) {
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .breadcrumbItem {
   display: inline-block;
-  max-width: 40ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
   vertical-align: bottom;
   white-space: nowrap;
 
@@ -36,6 +44,15 @@
 
   &.capitalize {
     text-transform: uppercase;
+  }
+
+  /* Only the leaf crumb truncates — it fills the remaining row width and ellipsizes,
+     with a sane upper bound so an extremely long name can't monopolize the row. */
+  &.leaf {
+    display: block;
+    max-width: 48ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   & .link:hover {
