@@ -36,19 +36,27 @@ const Row = ({ resourcesRefs, uid, widgetData }: WidgetProps<RowWidgetData>) => 
         wrap
       >
         {items
-          .map(({ alignment, resourceRefId, size }, index) => {
+          .map(({ alignment, lg, md, resourceRefId, size, sm, xl, xs, xxl }, index) => {
             const endpoint = getEndpointUrl(resourceRefId, resourcesRefs)
             if (!endpoint) { return null }
 
             return (
+              // `size` is the base span; the optional xs/sm/md/lg/xl/xxl overrides let a row reflow
+              // responsively (e.g. when the Autopilot rail narrows the content column).
               <AntdColumn
                 className={styles.column}
                 key={`${uid}-col-${index}`}
+                lg={lg}
+                md={md}
+                sm={sm}
                 span={size ?? defaultSize}
                 style={{
                   display: alignment ? 'flex' : undefined,
                   justifyContent: alignment ? justifyContentMap[alignment] : undefined,
                 }}
+                xl={xl}
+                xs={xs}
+                xxl={xxl}
               >
                 <WidgetRenderer key={`${uid}-${index}`} widgetEndpoint={endpoint} />
               </AntdColumn>
