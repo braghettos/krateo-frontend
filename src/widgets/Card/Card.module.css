@@ -63,13 +63,6 @@
           align-items: center;
           display: flex;
           flex: 0 0 auto;
-        
-          &.itemLoading {
-            flex: 1;  
-            max-height: 100px;
-            max-width: 100px;   
-            min-width: 0;
-          }
         }
       }
 
