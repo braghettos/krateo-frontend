@@ -3,6 +3,15 @@
   white-space: pre-line;
 }
 
+/* Page-header SUBTITLE (#72 §0.1) — every page's one-line subtitle is a `type: secondary`
+   Paragraph (no `strong`/`level`). The 16px body size (--font-size-sm) reads oversized under
+   the display H1; the mockup's muted subtitle is a notch down. Scope to the secondary variant
+   (antd adds `.ant-typography-secondary`) so body prose is untouched. antd keeps our single
+   `.paragraph` token, so the compound selector still matches ([[antd-typography-classname-collapse]]). */
+.paragraph:global(.ant-typography-secondary) {
+  font-size: var(--font-size-xs);
+}
+
 /* Flight-deck page-header / panel EYEBROW (variant: eyebrow) — small IBM Plex
    Mono, uppercase, letter-spaced, muted graphite: the instrument-panel context
    caption above an H1 ("PLATFORM · TENANT <t>"). Compound selector .paragraph.eyebrow

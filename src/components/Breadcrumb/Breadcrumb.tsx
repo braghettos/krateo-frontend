@@ -21,7 +21,11 @@ const Breadcrumb = () => {
 
       splitPath.forEach((pathElement, index) => {
         const isLast = index === splitPath.length - 1
-        const className = `${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''}`
+        // Truncation bias (#69 §0.1): only the LEAF crumb (a long K8s resource name) is
+        // allowed to ellipsize; the section + namespace crumbs — the CLICKABLE ones — stay
+        // fully readable. The `leaf` modifier + the per-position flex-shrink in the CSS make
+        // the last crumb the single shrink target, so the first crumb is never the one cut.
+        const className = `${styles.breadcrumbItem} ${index === 0 ? styles.capitalize : ''} ${isLast ? styles.leaf : ''}`
         // The section crumb shows the route's NAV LABEL, not the raw slug (/kog-builder
         // reads "API Builder", matching the sidebar item and the page H1). The label comes
         // from the same chart nav CR that feeds the sidebar, so they cannot drift; routes
