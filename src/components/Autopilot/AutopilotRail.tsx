@@ -15,7 +15,7 @@ import { default as ReactMarkdown } from 'react-markdown'
 import { useAutopilot } from './AutopilotProvider'
 import styles from './AutopilotRail.module.css'
 import AutopilotTour from './AutopilotTour'
-import { CheckIcon, CollapseIcon, EyeIcon, LinkIcon, PlusIcon, SendIcon, SparkIcon } from './icons'
+import { CheckIcon, CollapseIcon, EyeIcon, LinkIcon, PlusIcon, SendIcon, SparkIcon, StopIcon } from './icons'
 import type { AutopilotMessage } from './types'
 
 const MessageBubble = ({ message }: { message: AutopilotMessage }) => {
@@ -42,7 +42,7 @@ const MessageBubble = ({ message }: { message: AutopilotMessage }) => {
 }
 
 const AutopilotRail = () => {
-  const { collect, enabled, messages, newThread, open, send, setOpen, streaming } = useAutopilot()
+  const { collect, enabled, messages, newThread, open, send, setOpen, stop, streaming } = useAutopilot()
   const [draft, setDraft] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
   // Auto-scroll the transcript to the latest content as it streams — but only when the user is
@@ -151,9 +151,15 @@ const AutopilotRail = () => {
               rows={1}
               value={draft}
             />
-            <button aria-label='Send' className={styles.apSend} disabled={!draft.trim() || streaming} onClick={submit} type='button'>
-              <SendIcon />
-            </button>
+            {streaming ? (
+              <button aria-label='Stop' className={styles.apSend} onClick={stop} title='Stop generating' type='button'>
+                <StopIcon />
+              </button>
+            ) : (
+              <button aria-label='Send' className={styles.apSend} disabled={!draft.trim()} onClick={submit} type='button'>
+                <SendIcon />
+              </button>
+            )}
           </div>
           <div className={styles.apNote}>
             <LinkIcon className={styles.apNoteIcon} />
