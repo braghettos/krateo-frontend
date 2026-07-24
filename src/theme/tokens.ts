@@ -383,12 +383,13 @@ const buildComponents = (palette: Record<keyof typeof color, string>, mode: Them
   Select: { borderRadius: radius.md, controlHeight: 32 },
   Statistic: { contentFontSize: 31, titleFontSize: 13 },
   Steps: { iconSize: 28 },
-  // #72 §0.5 table density: nearly every portal Table is `size: small`, which antd pads with
-  // `cellPaddingBlockSM` (= paddingXS by default) — NOT `cellPaddingBlock` (default/large size,
-  // which the portal never uses). So the airy small-table rows are tightened via the SM token
-  // (9→6); `cellPaddingBlock` is kept for any future default-size table. Middle (settings) tables
-  // keep antd's cellPaddingBlockMD.
-  Table: { borderColor: palette.border, borderRadiusLG: radius.lg, cellPaddingBlock: 9, cellPaddingBlockSM: 6, headerBg: palette.lightgray, headerBorderRadius: radius.lg, headerColor: palette.gray, rowHoverBg: palette.light },
+  // #72 §0.5 + #76 table cell padding: the reporters found the rows too TIGHT (Incidents + Alerts,
+  // both `size: small`) and asked to INCREASE the vertical padding to the portal's spacing scale.
+  // Nearly every portal Table is `size: small` → antd pads it with `cellPaddingBlockSM`, so that is
+  // the effective lever; raised 6→8 (spacing.sm). `cellPaddingBlock` (default size) also raised to
+  // spacing.md (16) per the issue text (shared token; the portal has no default-size table today).
+  // Middle (settings) tables keep antd's cellPaddingBlockMD.
+  Table: { borderColor: palette.border, borderRadiusLG: radius.lg, cellPaddingBlock: 16, cellPaddingBlockSM: 8, headerBg: palette.lightgray, headerBorderRadius: radius.lg, headerColor: palette.gray, rowHoverBg: palette.light },
   Tabs: { horizontalItemGutter: 24 },
   Tag: { borderRadiusSM: radius.sm },
 })
