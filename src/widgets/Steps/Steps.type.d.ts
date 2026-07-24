@@ -58,6 +58,10 @@ export interface Steps {
          * a font awesome icon name for the step (eg: `fa-user`)
          */
         icon?: string
+        /**
+         * optional id of a widget to render inline below this step's description (e.g. an action button for the active step)
+         */
+        resourceRefId?: string
       }[]
     }
     apiRef?: {

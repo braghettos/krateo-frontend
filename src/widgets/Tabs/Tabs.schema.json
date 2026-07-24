@@ -30,6 +30,7 @@
               "items": {
                 "type": "string",
                 "enum": [
+                  "alerts",
                   "barcharts",
                   "buttons",
                   "buttongroups",
@@ -45,6 +46,7 @@
                   "piecharts",
                   "rangepickers",
                   "rows",
+                  "steps",
                   "tables",
                   "tabs",
                   "yamlviewers"
