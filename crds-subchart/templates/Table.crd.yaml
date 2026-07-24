@@ -85,7 +85,6 @@ spec:
                                 format: int32
                                 type: integer
                             required:
-                              - page
                               - perPage
                             type: object
                           verb:
@@ -114,7 +113,6 @@ spec:
                           format: int32
                           type: integer
                       required:
-                        - page
                         - perPage
                       type: object
                   required:
@@ -310,7 +308,7 @@ spec:
                       description: optional route path to navigate to on row click; `{valueKey}` placeholders are filled from that row's cells (e.g. /compositions/{ns}/{name})
                       type: string
                     size:
-                      description: antd Table size
+                      description: antd Table size. Defaults to 'middle' when omitted (matching Button), so an unset value has a documented, Brand-consistent density rather than antd's raw default
                       enum:
                         - large
                         - middle
