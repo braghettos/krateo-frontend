@@ -58,7 +58,30 @@ const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
       )}
 
       {/* Non-antd: react-markdown — antd has no markdown renderer (see docs/widget-authoring.md). */}
-      <ReactMarkdown key={uid}>{markdown}</ReactMarkdown>
+      <ReactMarkdown
+        key={uid}
+        components={{
+          pre: ({ children }) => (
+            <pre
+              style={{
+                background: 'rgba(127,127,127,0.12)',
+                border: '1px solid var(--border-color)',
+                borderLeft: '3px solid var(--primary-color)',
+                borderRadius: '4px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '13px',
+                margin: '8px 0',
+                overflowX: 'auto',
+                padding: '8px 16px',
+              }}
+            >
+              {children}
+            </pre>
+          ),
+        }}
+      >
+        {markdown}
+      </ReactMarkdown>
     </div>
   )
 }
