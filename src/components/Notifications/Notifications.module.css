@@ -1,76 +1,8 @@
 .badge {
-  /* Keep the bell on the same centerline as the other header icons. The count balloon
-     overflows upward on its own (antd positions it at the icon's top-right) — we must NOT
-     shift the whole wrapper down when notifications exist, or the bell drops below the gear. */
+  /* Keep the bell on the same centerline as the other header icons. */
   display: inline-flex;
 
   .icon {
     font-size: 16px;
-  }
-}
-
-.drawer {
-  .list {
-    .listItem {
-      padding: var(--spacing-sm) 0;
-      width: 100%;
-
-      &.firstElement {
-        padding-top: 0;
-      }
-
-      &.lastElement {
-        padding-bottom: 0;
-      }
-
-      &:hover {
-        background-color: var(--background-color);
-      }   
-
-      .notificationElement {
-        height: auto;
-        padding: 0;
-        text-align: left;
-        text-wrap: wrap;
-        width: 100%;
-
-        .space {
-          display: flex;
-          flex: 1;
-          flex-direction: column;
-          gap: var(--spacing-xs);
-          width: 100%;
-
-          .description {
-            max-width: 100%;
-            white-space: initial;
-          }
-
-          .details {
-            color: var(--gray-color);
-            font-size: var(--font-size-xxs);
-            margin: 0;
-          }
-
-          .titleWrapper {
-            display: flex;
-            gap: var(--spacing-sm);
-            justify-content: space-between;
-            width: 100%;
-
-            .timestamp {
-              color: var(--gray-color);
-              font-size: var(--font-size-xxs);
-              margin: 0;
-              text-align: right;
-            }
-
-            .title {
-              text-wrap: wrap;
-            }
-          }
-        }
-      }
-    }
   }
 }

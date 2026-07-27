@@ -242,13 +242,13 @@ export interface Card {
        */
       extra?: string
       /**
-       * how `extra` renders top-right: `text` (default, plain) or `badge` (a status pill — glow dot + uppercase mono, e.g. a CONVERGED/DRIFT/DEGRADED reconcile chip)
+       * how `extra` renders top-right: `text` (default, plain), `badge` (a status pill — glow dot + uppercase mono, e.g. CONVERGED/DRIFT/DEGRADED), or `tag` (soft antd Tag pill — e.g. "Up to date"/"Update available")
        */
-      extraVariant?: 'text' | 'badge'
+      extraVariant?: 'text' | 'badge' | 'tag'
       /**
-       * antd Badge status driving the `extraVariant: badge` colour (processing=cyan/healthy, warning=amber/drift, error=crimson/failed)
+       * colour token: antd Badge status for `extraVariant: badge`; antd Tag color for `extraVariant: tag`
        */
-      extraStatus?: 'success' | 'processing' | 'warning' | 'error' | 'default'
+      extraStatus?: 'success' | 'processing' | 'warning' | 'error' | 'default' | 'green' | 'gold' | 'red' | 'blue' | 'violet'
       /**
        * show a pulsing "Live" badge next to the card title (for cards backed by a live/SSE feed)
        */

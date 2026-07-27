@@ -140,7 +140,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
                 </div>
               )}
               {extra && (extraVariant === 'badge'
-                ? <Badge className={styles.statusBadge} status={extraStatus ?? 'processing'} text={extra} />
+                ? <Badge className={styles.statusBadge} status={(extraStatus ?? 'processing') as 'success' | 'processing' | 'warning' | 'error' | 'default'} text={extra} />
                 : extraVariant === 'tag'
                   ? <Tag color={extraStatus ?? 'default'}>{extra}</Tag>
                   : extra)}
