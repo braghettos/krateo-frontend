@@ -1,6 +1,6 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Badge, Button, Drawer, Empty, List, Skeleton, Space, Tag, Tooltip, Typography } from 'antd'
+import { Badge, Button, Drawer, Empty, List, Skeleton, Tag, Tooltip, Typography } from 'antd'
 import { useState } from 'react'
 
 import { useGetEvents } from '../../hooks/useGetEvents'
@@ -49,15 +49,19 @@ function EventItem({ event }: { event: SSEK8sEvent }) {
           </Text>
         }
         title={
-          <Space size={6}>
-            <Tag color={isWarning ? 'warning' : 'default'} style={{ marginRight: 0 }}>
+          <div style={{ alignItems: 'center', display: 'flex', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+            <Tag color={isWarning ? 'warning' : 'default'} style={{ flexShrink: 0, margin: 0 }}>
               {event.type ?? 'Unknown'}
             </Tag>
-            <Text strong style={{ fontSize: 13 }}>{event.reason ?? ''}</Text>
+            <Text strong style={{ flex: 1, fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {event.reason ?? ''}
+            </Text>
             {objRef && (
-              <Text style={{ fontSize: 11 }} type='secondary'>{objRef}</Text>
+              <Text style={{ flexShrink: 1, fontSize: 11, maxWidth: '45%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} type='secondary'>
+                {objRef}
+              </Text>
             )}
-          </Space>
+          </div>
         }
       />
     </List.Item>
