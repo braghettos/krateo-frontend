@@ -50,6 +50,7 @@
      with a sane upper bound so an extremely long name can't monopolize the row. */
   &.leaf {
     display: block;
+    vertical-align: bottom;
     max-width: 48ch;
     overflow: hidden;
     text-overflow: ellipsis;
