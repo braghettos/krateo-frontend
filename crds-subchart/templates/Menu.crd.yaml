@@ -183,6 +183,11 @@ spec:
                           resourceRefId:
                             description: id of the content widget (resolved via resourcesRefs, RBAC-aware). Optional — omit to use the path → flexes/page-<slug> convention.
                             type: string
+                          type:
+                            description: set to 'divider' to render a visual separator at this order position; no path or label needed
+                            enum:
+                              - divider
+                            type: string
                         type: object
                       type: array
                     mode:
