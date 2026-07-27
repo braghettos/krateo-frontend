@@ -58,6 +58,11 @@
                   "page": {
                     "type": "string",
                     "description": "convention page-slug override → content is flexes/page-<slug>; set this for templated paths to avoid list-vs-detail collisions."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["divider"],
+                    "description": "set to 'divider' to render a visual separator at this order position; no path or label needed"
                   }
                 },
                 "additionalProperties": false

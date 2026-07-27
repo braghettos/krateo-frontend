@@ -12,13 +12,16 @@ export interface InlineNavItem {
   /** Convention page-slug override (required for templated paths to avoid
    * list-vs-detail collisions); else derived from `path`. */
   page?: string
+  /** Set to 'divider' to render a visual separator at this order position. */
+  type?: 'divider'
 }
 
 /** Antd Menu entry data (icon resolved to JSX by the component). */
 export interface NavEntry {
   iconName?: string
   key: string
-  label: string
+  label?: string
+  type?: 'divider'
 }
 
 const PAGE_RESOURCE = 'flexes'
@@ -100,10 +103,15 @@ export const buildNavModel = (
       title: item.label,
     }))
 
-  const entries: NavEntry[] = sorted
-    .filter((item): item is InlineNavItem & { label: string; path: string } => !!item.label && !!item.path)
-    .filter((item) => isNavEntryAllowed(item, resourcesRefs))
-    .map((item) => ({ iconName: item.icon, key: item.path, label: item.label }))
+  const entries: NavEntry[] = sorted.flatMap((item, idx): NavEntry[] => {
+    if (item.type === 'divider') {
+      return [{ type: 'divider' as const, key: `divider-${item.order ?? idx}` }]
+    }
+    if (item.label && item.path && isNavEntryAllowed(item, resourcesRefs)) {
+      return [{ iconName: item.icon, key: item.path, label: item.label }]
+    }
+    return []
+  })
 
   return { entries, routes }
 }

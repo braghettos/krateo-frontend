@@ -46,6 +46,10 @@ export interface Menu {
          * convention page-slug override → content is flexes/page-<slug>; set this for templated paths to avoid list-vs-detail collisions.
          */
         page?: string
+        /**
+         * set to 'divider' to render a visual separator at this order position; no path or label needed
+         */
+        type?: 'divider'
       }[]
     }
     apiRef?: {

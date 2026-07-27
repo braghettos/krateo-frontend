@@ -1,7 +1,7 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Menu as AntdMenu } from 'antd'
-import type { MenuItemType } from 'antd/es/menu/interface'
+import type { ItemType } from 'antd/es/menu/interface'
 import { useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
@@ -45,12 +45,16 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
     }
   }, [location.pathname, menuRoutes, navigate])
 
-  const menuItems: MenuItemType[] = useMemo(
-    () => entries.map((entry) => ({
-      icon: entry.iconName ? <FontAwesomeIcon icon={entry.iconName as IconProp} /> : undefined,
-      key: entry.key,
-      label: entry.label,
-    })),
+  const menuItems: ItemType[] = useMemo(
+    () => entries.map((entry) =>
+      entry.type === 'divider'
+        ? { type: 'divider' as const, key: entry.key }
+        : {
+            icon: entry.iconName ? <FontAwesomeIcon icon={entry.iconName as IconProp} /> : undefined,
+            key: entry.key,
+            label: entry.label,
+          }
+    ),
     [entries]
   )
 
@@ -58,19 +62,25 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
   // child routes (e.g. /compositions/:namespace, /compositions/:namespace/:name, the
   // marketplace create flow) keep their section selected. An exact match is naturally
   // the longest prefix; the trailing-slash guard stops /blueprints matching a sibling
-  // like /blueprintsfoo.
+  // like /blueprintsfoo. Dividers are skipped (their keys are 'divider-N', never a path match).
   const selectedKey = useMemo(() => {
     const path = location.pathname
     return menuItems
-      .map((item) => item.key as string)
+      .map((item) => (item as { key?: string }).key ?? '')
+      .filter(Boolean)
       .filter((key) => path === key || path.startsWith(`${key}/`))
       .sort((left, right) => right.length - left.length)[0]
   }, [menuItems, location.pathname])
 
+  const firstNavKey = useMemo(
+    () => menuItems.find((item) => item?.type !== 'divider')?.key as string | undefined,
+    [menuItems]
+  )
+
   return (
     <AntdMenu
       className={styles.menu}
-      defaultSelectedKeys={menuItems.length > 0 ? [menuItems[0].key as string] : []}
+      defaultSelectedKeys={firstNavKey ? [firstNavKey] : []}
       items={menuItems}
       key={uid}
       mode={mode ?? 'inline'}
