@@ -141,7 +141,9 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
               )}
               {extra && (extraVariant === 'badge'
                 ? <Badge className={styles.statusBadge} status={extraStatus ?? 'processing'} text={extra} />
-                : extra)}
+                : extraVariant === 'tag'
+                  ? <Tag color={extraStatus ?? 'default'}>{extra}</Tag>
+                  : extra)}
               {tooltip && (
                 <Tooltip title={tooltip}>
                   <Button icon={<FontAwesomeIcon icon={['fas', 'circle-question'] as IconProp} />} type='text' />

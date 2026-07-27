@@ -78,6 +78,7 @@
     flex: 1 1 auto;
     margin-right: var(--spacing-md);
     min-height: 0;
+    min-width: 0;
 
     [data-inside-drawer='true'] & {
       /* to allow scrool-to-error */

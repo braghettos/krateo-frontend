@@ -47,7 +47,7 @@ const JsonValueInput = ({ onChange, value }: { onChange?: (next: unknown) => voi
 /** Renders an antd form control for a single schema node (the schema-driven control). */
 const controlFor = (node: JSONSchema4): React.ReactNode => {
   if (Array.isArray(node.enum)) {
-    return <Select allowClear options={getOptionsFromEnum(node.enum)} placeholder='Select…' />
+    return <Select allowClear options={getOptionsFromEnum(node.enum)} placeholder='Select…' style={{ width: '100%' }} />
   }
   if (node.type === 'boolean') { return <Switch /> }
   if (node.type === 'integer' || node.type === 'number') { return <InputNumber style={{ width: '100%' }} /> }
@@ -55,10 +55,10 @@ const controlFor = (node: JSONSchema4): React.ReactNode => {
   // e.g. the W3-1 fleet-rollout target-clusters field); checked before the free-text
   // `tags` fallback, which is for open string arrays only.
   if (node.type === 'array' && !Array.isArray(node.items) && Array.isArray(node.items?.enum)) {
-    return <Select allowClear mode='multiple' options={getOptionsFromEnum(node.items.enum)} placeholder='Select…' />
+    return <Select allowClear mode='multiple' options={getOptionsFromEnum(node.items.enum)} placeholder='Select…' style={{ width: '100%' }} />
   }
   if (node.type === 'array' && !Array.isArray(node.items) && node.items?.type === 'string') {
-    return <Select allowClear mode='tags' placeholder='Add values…' />
+    return <Select allowClear mode='tags' placeholder='Add values…' style={{ width: '100%' }} />
   }
   if (node.type === 'object' || node.type === 'array') { return <JsonValueInput /> }
   return <Input />

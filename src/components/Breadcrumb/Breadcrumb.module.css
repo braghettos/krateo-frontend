@@ -49,8 +49,7 @@
   /* Only the leaf crumb truncates — it fills the remaining row width and ellipsizes,
      with a sane upper bound so an extremely long name can't monopolize the row. */
   &.leaf {
-    display: block;
-    vertical-align: bottom;
+    display: inline-block;
     max-width: 48ch;
     overflow: hidden;
     text-overflow: ellipsis;
