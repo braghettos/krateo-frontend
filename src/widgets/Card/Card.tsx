@@ -6,7 +6,7 @@ import useApp from 'antd/es/app/useApp'
 
 import WidgetRenderer from '../../components/WidgetRenderer'
 import { useHandleAction } from '../../hooks/useHandleActions'
-import { getColorCode } from '../../theme/palette'
+import { getColorCode, getTagStyle } from '../../theme/palette'
 import type { ResourcesRefs, WidgetAction, WidgetProps } from '../../types/Widget'
 import { getEndpointUrl } from '../../utils/utils'
 
@@ -142,7 +142,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
               {extra && (extraVariant === 'badge'
                 ? <Badge className={styles.statusBadge} status={(extraStatus ?? 'processing') as 'success' | 'processing' | 'warning' | 'error' | 'default'} text={extra} />
                 : extraVariant === 'tag'
-                  ? <Tag color={extraStatus ?? 'default'}>{extra}</Tag>
+                  ? <Tag style={getTagStyle(extraStatus)}>{extra}</Tag>
                   : extra)}
               {tooltip && (
                 <Tooltip title={tooltip}>
