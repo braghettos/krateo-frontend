@@ -1,3 +1,2 @@
-import Notifications from './Notifications'
-
-export default Notifications
+export { NotificationsBell, NotificationsDrawer } from './Notifications'
+export { NotificationsProvider } from './NotificationsContext'

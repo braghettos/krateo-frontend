@@ -8,7 +8,7 @@ import Modal from '../../widgets/Modal'
 import { AutopilotProvider, AutopilotShell, AutopilotToggle } from '../Autopilot'
 import Breadcrumb from '../Breadcrumb'
 import CommandPalette from '../CommandPalette'
-import Notifications from '../Notifications'
+import { NotificationsBell, NotificationsDrawer, NotificationsProvider } from '../Notifications'
 import SessionResumeModal from '../SessionResume'
 import ThemeToggle from '../ThemeToggle'
 import UserMenu from '../UserMenu'
@@ -33,7 +33,7 @@ const HeaderChrome = () => {
       </div>
       {/* Autopilot is a distinct surface, not a page utility — pull its toggle out of the
           search/notifications/theme cluster and set it beside the user menu, behind a divider. */}
-      <div className={styles.headerRight}><CommandPalette /><Notifications /><ThemeToggle /><span className={styles.headerDivider} /><AutopilotToggle /><UserMenu /></div>
+      <div className={styles.headerRight}><CommandPalette /><NotificationsBell /><ThemeToggle /><span className={styles.headerDivider} /><AutopilotToggle /><UserMenu /></div>
     </>
   )
 }
@@ -82,14 +82,19 @@ export const ShellRoute = () => {
 
   return (
     <ShellSlotsProvider value={{ content: <><div className={styles.contentCrumb}><Breadcrumb /></div><Outlet /></>, header: <HeaderChrome />, siderFooter: <SiderFooter />, siderHeader: <SiderEyebrow /> }}>
-      <AutopilotProvider>
-        <AutopilotShell>
-          <WidgetRenderer key='shell' widgetEndpoint={config!.api.INIT} />
-        </AutopilotShell>
-        <Drawer />
-        <Modal />
-        <SessionResumeModal />
-      </AutopilotProvider>
+      <NotificationsProvider>
+        <AutopilotProvider>
+          <AutopilotShell>
+            <WidgetRenderer key='shell' widgetEndpoint={config!.api.INIT} />
+          </AutopilotShell>
+          <Drawer />
+          <Modal />
+          <SessionResumeModal />
+          {/* Rendered here (not in the header chrome) so the server-driven Layout widget's
+              remounts never tear it down — the header only carries the bell. */}
+          <NotificationsDrawer />
+        </AutopilotProvider>
+      </NotificationsProvider>
     </ShellSlotsProvider>
   )
 }

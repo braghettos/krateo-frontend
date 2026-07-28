@@ -1,12 +1,11 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Badge, Button, Drawer, Empty, List, Skeleton, Tag, Tooltip, Typography } from 'antd'
-import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
-import { useGetEvents } from '../../hooks/useGetEvents'
 import type { SSEK8sEvent } from '../../utils/types'
 
+import { useNotifications } from './NotificationsContext'
 import styles from './Notifications.module.css'
 
 const { Text } = Typography
@@ -97,7 +96,11 @@ function EventItem({ deduped, onNavigate }: { deduped: DedupedEvent; onNavigate:
             style={{ color: isWarning ? '#faad14' : '#8c8c8c', fontSize: 16, marginTop: 2 }}
           />
         }
-        description={<Text style={{ fontSize: 12 }} type='secondary'>{event.message ?? ''}</Text>}
+        description={
+          <Text style={{ fontSize: 12 }} type='secondary'>
+            {event.message ?? ''}
+          </Text>
+        }
         title={
           <div style={{ alignItems: 'center', display: 'flex', gap: 6, minWidth: 0, overflow: 'hidden' }}>
             <Tag color={isWarning ? 'warning' : 'default'} style={{ flexShrink: 0, margin: 0 }}>
@@ -121,62 +124,78 @@ function EventItem({ deduped, onNavigate }: { deduped: DedupedEvent; onNavigate:
   )
 }
 
-const Notifications = ({ topic = 'krateo' }: { topic?: string } = {}) => {
-  const [drawerVisible, setDrawerVisible] = useState(false)
-  const { data: notifications, isLoading } = useGetEvents({ registerToSSE: true, topic })
-  const navigate = useNavigate()
-
-  const hasWarning = (notifications ?? []).some(n => n.type === 'Warning')
+/**
+ * The header bell + warning badge. Client-state only; it reads the shared notifications
+ * context (open-state + data) so it can remount freely with the header chrome without
+ * losing the drawer's open-state — that state lives in NotificationsProvider, above the
+ * remount boundary. The Drawer itself is rendered by NotificationsDrawer at the stable
+ * ShellRoute level (see Shell), so it never remounts and cannot flap shut.
+ */
+export const NotificationsBell = () => {
+  const { notifications, setOpen } = useNotifications()
+  const hasWarning = (notifications ?? []).some(ev => ev.type === 'Warning')
 
   const bellButton = (
     <Button
       className={styles.icon}
       icon={<FontAwesomeIcon icon={['fas', 'bell'] as IconProp} />}
-      onClick={() => setDrawerVisible(true)}
+      onClick={() => setOpen(true)}
       shape='circle'
       type='text'
     />
   )
 
-  const deduped = notifications ? dedupeEvents(notifications) : []
-
-  const handleNavigate = (url: string) => {
-    setDrawerVisible(false)
-    navigate(url)
-  }
-
   return (
-    <>
-      <span className={styles.badge}>
-        {hasWarning
-          ? <Badge dot offset={[-4, 4]} status='warning'>{bellButton}</Badge>
-          : bellButton}
-      </span>
-
-      <Drawer onClose={() => setDrawerVisible(false)} open={drawerVisible} title='Notifications' width={550}>
-        {drawerVisible && (
-          isLoading
-            ? <Skeleton active paragraph={{ rows: 6 }} />
-            : deduped.length > 0
-              ? (
-                  <List
-                    dataSource={deduped}
-                    renderItem={item => (
-                      <EventItem
-                        deduped={item}
-                        key={`${item.event.involvedObject.kind ?? ''}/${item.event.involvedObject.name ?? ''}/${item.event.reason ?? ''}`}
-                        onNavigate={handleNavigate}
-                      />
-                    )}
-                    size='small'
-                    split
-                  />
-                )
-              : <Empty description='No events' image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        )}
-      </Drawer>
-    </>
+    <span className={styles.badge}>
+      {hasWarning
+        ? <Badge dot offset={[-4, 4]} status='warning'>{bellButton}</Badge>
+        : bellButton}
+    </span>
   )
 }
 
-export default Notifications
+/**
+ * The notifications drawer. Rendered ONCE at the stable ShellRoute level (a sibling of the
+ * global Drawer/Modal overlays), NOT inside the header chrome — so the server-driven Layout
+ * widget's remounts never tear it down. Reads open-state + data from the shared context.
+ */
+export const NotificationsDrawer = () => {
+  const { isLoading, notifications, open, setOpen } = useNotifications()
+  const navigate = useNavigate()
+
+  const deduped = notifications ? dedupeEvents(notifications) : []
+
+  const handleNavigate = (url: string) => {
+    setOpen(false)
+    void navigate(url)
+  }
+
+  const renderBody = () => {
+    if (isLoading) {
+      return <Skeleton active paragraph={{ rows: 6 }} />
+    }
+    if (deduped.length === 0) {
+      return <Empty description='No events' image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    }
+    return (
+      <List
+        dataSource={deduped}
+        renderItem={item => (
+          <EventItem
+            deduped={item}
+            key={`${item.event.involvedObject.kind ?? ''}/${item.event.involvedObject.name ?? ''}/${item.event.reason ?? ''}`}
+            onNavigate={handleNavigate}
+          />
+        )}
+        size='small'
+        split
+      />
+    )
+  }
+
+  return (
+    <Drawer onClose={() => setOpen(false)} open={open} title='Notifications' width={550}>
+      {open && renderBody()}
+    </Drawer>
+  )
+}
