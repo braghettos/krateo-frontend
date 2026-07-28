@@ -3,6 +3,14 @@
  * the mockup chrome around antd's option list via `popupRender`, and render each option as a
  * checkbox row via `optionRender`. Petrol discipline: boldness (amber) only on the live control. */
 
+/* #80 §0.6: `showSearch={false}` (Select.tsx) does NOT remove antd 6's inline search input in
+ * multi-mode — the readonly `.ant-select-input` stays mounted and blinks a text caret inside the
+ * closed control. This select filters via its custom checkbox popup, not inline typing, so hide
+ * that input outright. Scoped to `.checkSelect` so ordinary searchable (form) selects are untouched. */
+.checkSelect :global(.ant-select-input) {
+  display: none !important;
+}
+
 /* ── option rows (left amber-fill checkbox + mono name) ── */
 .checkOption {
   display: flex;

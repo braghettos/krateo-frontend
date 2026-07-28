@@ -204,9 +204,16 @@ export const NotificationsDrawer = () => {
     <Drawer
       onClose={() => setOpen(false)}
       open={open}
-      // #80 §0.8: the bare-string title rendered at antd's stock size — give it an explicit larger
-      // title so the drawer header reads as prominently as the rest of the app chrome.
-      title={<span style={{ fontSize: 18, fontWeight: 600 }}>Notifications</span>}
+      // #80 §0.8 (+reiteration): a leading bell icon and an explicit larger title (18/600) in a flex
+      // row, plus extra header padding scoped to THIS drawer's header via `styles` (not the shared
+      // Drawer.paddingLG token, which other drawers share) so the header reads prominently.
+      styles={{ header: { paddingBottom: 18, paddingTop: 18 } }}
+      title={(
+        <div style={{ alignItems: 'center', display: 'flex', gap: 10 }}>
+          <FontAwesomeIcon icon={['fas', 'bell'] as IconProp} style={{ fontSize: 16 }} />
+          <span style={{ fontSize: 18, fontWeight: 600 }}>Notifications</span>
+        </div>
+      )}
       width={550}
     >
       {open && renderBody()}

@@ -129,6 +129,7 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
 
     return (
       <AntdSelect
+        className={styles.checkSelect}
         classNames={{ popup: { root: styles.checkPopup } }}
         disabled={disabled}
         key={uid}
@@ -143,8 +144,9 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
         popupRender={renderPanel}
         prefix={<span className={isAll ? styles.pinAll : styles.pinOn} />}
         // #80 §0.6: this multi-select filters via its custom checkbox popup (popupRender), so antd's
-        // inline search input isn't needed — suppress it to drop the persistent text caret that
-        // showed inside the closed "All projects" control.
+        // inline search input isn't needed. `showSearch={false}` alone does NOT remove it in antd 6
+        // multi-mode (the readonly `.ant-select-input` stays and blinks a text caret), so the
+        // `.checkSelect` class above pairs it with a CSS rule hiding that input (Select.module.css).
         showSearch={false}
         size={size}
         // Min width so the placeholder/pills show when the switcher sits in the horizontal header

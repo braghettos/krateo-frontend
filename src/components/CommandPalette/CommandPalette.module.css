@@ -20,15 +20,31 @@
   transition: border-color var(--motion-fast), color var(--motion-fast);
 }
 
-/* Below the crowded breakpoint, collapse the search to just its icon + ⌘K so it stops
-   overlapping the tenant/project switcher on the left. */
+/* #80 §0.11 (reiteration): a graceful path all the way down, not one hardcoded step.
+   ≤1180px — drop the placeholder label but keep the trigger shrinkable (it stops overlapping the
+   tenant/project switcher, yet still yields space as the header narrows further). */
 @media (max-width: 1180px) {
   .triggerLabel {
     display: none;
   }
 
   .trigger {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+}
+
+/* ≤720px — collapse to an icon-only square button (drop the ⌘K chip + padding) so the search never
+   crowds the switcher on small viewports. The ⌘K palette is still reachable by the shortcut. */
+@media (max-width: 720px) {
+  .kbd {
+    display: none;
+  }
+
+  .trigger {
+    justify-content: center;
+    padding: 0;
+    width: 36px;
   }
 }
 
