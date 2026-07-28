@@ -218,7 +218,9 @@
 }
 
 .cardTop {
-  align-items: flex-start;
+  /* center the tile icon against the name+meta title block so the icon and the title read as
+     vertically aligned (issue #75 §0.3); the status glyph keeps its own top alignment below. */
+  align-items: center;
   display: flex;
   gap: var(--spacing-sm, 8px);
 }
@@ -227,7 +229,9 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 4px;
+  /* a touch more air so the category tag + version badge read as their own line under the
+     name rather than crowding it (issue #75 §0.3). */
+  gap: 6px;
   min-width: 0;
 }
 

@@ -49,6 +49,11 @@ const Input = ({ uid, widgetData }: WidgetProps<InputWidgetData>) => {
         onSearch={commit}
         placeholder={placeholder}
         size={size}
+        // A query-bound search box is a list FILTER, not a form field — cap its width so it
+        // doesn't grow full-width and force its toolbar Flex to wrap onto a second row
+        // (issues #79 / #75). Mirrors the old PageSearch max-width:360 cap; the parent Flex's
+        // `justify` positions it (e.g. space-between → chips left, search right).
+        style={{ maxWidth: 380 }}
       />
     )
   }
