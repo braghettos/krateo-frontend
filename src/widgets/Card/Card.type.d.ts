@@ -7,6 +7,10 @@ export interface Card {
   spec: {
     widgetData: {
       /**
+       * renders this panel with a DOM id so an in-page `[text](#anchorId)` link (e.g. a summary/table-of-contents Markdown widget) scrolls to it
+       */
+      anchorId?: string
+      /**
        * the Krateo event actions of the widget (renamed from `actions`, which collides with antd Card.actions)
        */
       widgetActions?: {

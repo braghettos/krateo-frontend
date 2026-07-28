@@ -61,6 +61,29 @@ const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
       <ReactMarkdown
         key={uid}
         components={{
+          // In-page anchor links `[text](#id)` (e.g. a summary table-of-contents, issue #69) smooth-
+          // scroll to the element with that id — intercepted so react-router doesn't treat the hash as
+          // a route and so we get smooth behaviour + a synced URL hash. External/normal links open safely.
+          a: ({ children, href }) => {
+            if (href?.startsWith('#')) {
+              return (
+                <a
+                  href={href}
+                  onClick={(event) => {
+                    const target = document.getElementById(href.slice(1))
+                    if (target) {
+                      event.preventDefault()
+                      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      window.history.replaceState(null, '', href)
+                    }
+                  }}
+                >
+                  {children}
+                </a>
+              )
+            }
+            return <a href={href} rel='noopener noreferrer' target='_blank'>{children}</a>
+          },
           pre: ({ children }) => (
             <pre
               style={{

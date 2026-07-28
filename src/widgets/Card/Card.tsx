@@ -49,7 +49,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   const { handleAction, isActionLoading } = useHandleAction()
 
   // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions`.
-  const { clickActionId, cover, extra, extraStatus, extraVariant, footer, headerLeft, icon, items, legend, live, size, tags, title, titleVariant, tooltip, variant, widgetActions } = widgetData
+  const { anchorId, clickActionId, cover, extra, extraStatus, extraVariant, footer, headerLeft, icon, items, legend, live, size, tags, title, titleVariant, tooltip, variant, widgetActions } = widgetData
   const coverEndpoint = cover ? getEndpointUrl(cover, resourcesRefs) : undefined
 
   const action: WidgetAction | undefined = Object.values(widgetActions ?? {})
@@ -125,6 +125,11 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       className={`${styles.panel} ${action ? styles.clickable : ''} ${!title && !cover && !footer && !!items?.length ? styles.statCard : ''}`}
       classNames={{ body: styles.bodyWrapper, header: styles.header, title: styles.title }}
       cover={coverEndpoint ? <WidgetRenderer widgetEndpoint={coverEndpoint} /> : undefined}
+      // `anchorId` makes this panel an in-page scroll target: a `[…](#anchorId)` link (e.g. from a
+      // summary/table-of-contents Markdown widget) scrolls here. scroll-margin-top clears the sticky
+      // app header so the panel top isn't hidden under it. (issue #69 — summary bullets as a ToC.)
+      id={anchorId ?? undefined}
+      style={anchorId ? { scrollMarginTop: 80 } : undefined}
       extra={
         (extra || tooltip || (legend && legend.length > 0))
           ? (
