@@ -1,7 +1,12 @@
 .row {
-  /* Allows Row to remain in parent container without overflow */
+  /* Restore antd's declared `gutter={[16,16]}` (Row.tsx): the -8px row margin + 8px col padding
+     give a 16px gap BETWEEN columns while keeping the OUTER edges flush with the container (the
+     negative margin cancels the first/last col's outer padding) — so multi-column rows (e.g. the
+     dashboard stat cards, the detail-page 2-panel rows) read as separated cards without insetting
+     the row from the page edge. Previously both were zeroed to 0, butting every column together.
+     `width: 100%` inside a padded page container absorbs the -8px with no horizontal overflow. */
   :global(.ant-row) {
-    margin: 0 !important;
+    margin: 0 -8px !important;
     width: 100%;
   }
 
@@ -9,7 +14,7 @@
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
-    padding: 0 !important;
+    padding: 0 8px !important;
   }
 
   /* Sets same height to Row children */
