@@ -3,15 +3,18 @@
  * Component tests for the in-place SessionResumeModal (Wave-1 session honesty).
  *
  * Drives the REAL sessionResume store (raiseSessionExpired → CustomEvent → modal) end to
- * end with a mocked authn backend:
- *  - basic strategy: submitting credentials stores the fresh K_user, ROTATES the
- *    module-level token cache, resolves the pending resume 'resumed', and invalidates the
- *    react-query cache so the page refetches in place;
+ * end with a mocked authn backend. The modal reflects EVERY enabled strategy (shared with the
+ * Login page via pages/Login/AuthMethods):
+ *  - basic / ldap: submitting credentials stores the fresh K_user, ROTATES the module-level
+ *    token cache, resolves the pending resume 'resumed', and invalidates the react-query cache
+ *    so the page refetches in place;
  *  - wrong credentials keep the modal up with an inline error (no logout, no toast);
- *  - non-basic-only installs (documented scope) fall back to the legacy forceLogout.
+ *  - a social/OIDC strategy renders its branded redirect button alongside the form;
+ *  - an EMPTY strategies list (nothing to authenticate with) falls back to the legacy forceLogout.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getAccessToken, invalidateAccessTokenCache } from '../../utils/getAccessToken'
@@ -33,7 +36,14 @@ vi.mock('../../utils/logout', () => ({
 const { forceLogout } = await import('../../utils/logout')
 
 const BASIC_STRATEGY = { kind: 'basic', name: 'basic', path: '/basic/login' }
-const OIDC_STRATEGY = { kind: 'oidc', name: 'github', path: '/oidc/github' }
+const LDAP_STRATEGY = { kind: 'ldap', name: 'ldap', path: '/ldap/login' }
+const GITHUB_OIDC = {
+  extensions: { authCodeURL: 'https://idp.test/authorize?client_id=x', redirectURL: 'http://localhost/auth' },
+  graphics: { backgroundColor: '#24292e', displayName: 'Sign in with GitHub', icon: 'fa-github', textColor: '#ffffff' },
+  kind: 'oidc',
+  name: 'github',
+  path: '/oidc/github',
+}
 
 const FRESH_LOGIN = {
   accessToken: 'fresh-token',
@@ -42,7 +52,7 @@ const FRESH_LOGIN = {
   user: { avatarURL: '', displayName: 'Diego', username: 'diego' },
 }
 
-/** fetch stub routed by URL: /strategies discovery + the basic-auth login GET. */
+/** fetch stub routed by URL: /strategies discovery + any strategy's login GET. */
 const installFetchMock = (opts: { loginStatus?: number; strategies?: unknown[] }) => {
   const { loginStatus = 200, strategies = [BASIC_STRATEGY] } = opts
   const toUrl = (input: RequestInfo | URL): string => {
@@ -54,12 +64,10 @@ const installFetchMock = (opts: { loginStatus?: number; strategies?: unknown[] }
     if (url.endsWith('/strategies')) {
       return Promise.resolve(new Response(JSON.stringify(strategies), { status: 200 }))
     }
-    if (url.includes('/basic/login')) {
-      return loginStatus === 200
-        ? Promise.resolve(new Response(JSON.stringify(FRESH_LOGIN), { status: 200 }))
-        : Promise.resolve(new Response('nope', { status: loginStatus, statusText: 'Unauthorized' }))
-    }
-    return Promise.reject(new Error(`unexpected fetch ${url}`))
+    // Any other URL is a strategy login GET (basic or ldap).
+    return loginStatus === 200
+      ? Promise.resolve(new Response(JSON.stringify(FRESH_LOGIN), { status: 200 }))
+      : Promise.resolve(new Response('nope', { status: loginStatus, statusText: 'Unauthorized' }))
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
@@ -70,9 +78,13 @@ let queryClient: QueryClient
 const renderModal = () => {
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <SessionResumeModal />
-    </QueryClientProvider>
+    // The modal is mounted inside the Shell (inside the app Router); LoginForm renders a
+    // <Link>, so the test needs a Router context too.
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <SessionResumeModal />
+      </QueryClientProvider>
+    </MemoryRouter>
   )
 }
 
@@ -86,13 +98,13 @@ const raiseAndOpen = async (): Promise<{ outcome: Promise<'logout' | 'resumed'> 
   return { outcome }
 }
 
-const submitCredentials = (username: string, password: string) => {
+const submitCredentials = (username: string, password: string, buttonName = 'Sign In') => {
   // The session-expired surface is a full-viewport role=dialog overlay (not an .ant-modal card),
   // so query the inputs by the dialog role rather than the antd modal class.
   const [usernameInput, passwordInput] = Array.from(document.querySelectorAll<HTMLInputElement>('[role="dialog"] input'))
   fireEvent.change(usernameInput, { target: { value: username } })
   fireEvent.change(passwordInput, { target: { value: password } })
-  fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+  fireEvent.click(screen.getByRole('button', { name: buttonName }))
 }
 
 beforeAll(() => {
@@ -133,9 +145,9 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-describe('SessionResumeModal — in-place resume (basic strategy)', () => {
+describe('SessionResumeModal — in-place resume (credential strategies)', () => {
   it('re-authenticates in place: fresh K_user, rotated token cache, resumed outcome, query invalidation', async () => {
-    installFetchMock({ strategies: [BASIC_STRATEGY, OIDC_STRATEGY] })
+    installFetchMock({ strategies: [BASIC_STRATEGY, GITHUB_OIDC] })
 
     // The pre-expiry session: the token cache is warm with the STALE token.
     localStorage.setItem('K_user', JSON.stringify({ ...FRESH_LOGIN, accessToken: 'stale-token' }))
@@ -148,7 +160,7 @@ describe('SessionResumeModal — in-place resume (basic strategy)', () => {
     expect(await screen.findByText('Session expired')).toBeTruthy()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Sign In' })).toBeTruthy()
     })
     submitCredentials('diego', 'secret')
 
@@ -166,12 +178,48 @@ describe('SessionResumeModal — in-place resume (basic strategy)', () => {
     expect(invalidateSpy).toHaveBeenCalled()
   })
 
+  it('resumes an LDAP-only install in place (not just basic)', async () => {
+    const fetchMock = installFetchMock({ strategies: [LDAP_STRATEGY] })
+    renderModal()
+
+    const { outcome } = await raiseAndOpen()
+    // LDAP renders a credential form with its own button label.
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'LDAP Sign In' })).toBeTruthy() })
+    submitCredentials('diego', 'secret', 'LDAP Sign In')
+
+    await expect(outcome).resolves.toBe('resumed')
+    // The in-place resume hit the LDAP strategy's path, not a hard-coded /basic/login.
+    expect(fetchMock).toHaveBeenCalledWith('http://authn.test/ldap/login', expect.anything())
+    expect(forceLogout).not.toHaveBeenCalled()
+  })
+
+  it('renders every enabled method: a credential form AND the social redirect button', async () => {
+    installFetchMock({ strategies: [BASIC_STRATEGY, GITHUB_OIDC] })
+    renderModal()
+
+    await raiseAndOpen()
+    // basic → username/password form…
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Sign In' })).toBeTruthy() })
+    // …and the social/OIDC strategy → its branded redirect button (the bug: it used to be hidden).
+    expect(screen.getByRole('button', { name: /Sign in with GitHub/ })).toBeTruthy()
+  })
+
+  it('shows a single "or continue with" divider between stacked credential forms and social', async () => {
+    installFetchMock({ strategies: [BASIC_STRATEGY, LDAP_STRATEGY, GITHUB_OIDC] })
+    renderModal()
+
+    await raiseAndOpen()
+    await waitFor(() => { expect(screen.getByRole('button', { name: /Sign in with GitHub/ })).toBeTruthy() })
+    // Exactly one divider — between the ldap form and the github button, NOT between basic and ldap.
+    expect(screen.getAllByText('or continue with')).toHaveLength(1)
+  })
+
   it('wrong credentials keep the modal open with an inline error (still pending)', async () => {
     installFetchMock({ loginStatus: 401 })
     renderModal()
 
     await raiseAndOpen()
-    await waitFor(() => { expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy() })
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Sign In' })).toBeTruthy() })
     submitCredentials('diego', 'wrong')
 
     expect(await screen.findByText('Wrong username or password, try again.')).toBeTruthy()
@@ -181,8 +229,8 @@ describe('SessionResumeModal — in-place resume (basic strategy)', () => {
 })
 
 describe('SessionResumeModal — documented fallbacks', () => {
-  it('a non-basic-only install falls back to the legacy forceLogout flow', async () => {
-    installFetchMock({ strategies: [OIDC_STRATEGY] })
+  it('an install with NO strategies falls back to the legacy forceLogout flow', async () => {
+    installFetchMock({ strategies: [] })
     renderModal()
 
     const { outcome } = await raiseAndOpen()

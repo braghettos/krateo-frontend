@@ -1,18 +1,18 @@
 import { faCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Divider, Result, Skeleton } from 'antd'
-import { useCallback, useMemo } from 'react'
+import { Result, Skeleton } from 'antd'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import logo from '../../assets/images/logo_big.svg'
 import { useConfigContext } from '../../context/ConfigContext'
 import useCatchError from '../../hooks/useCatchError'
+import { resolveNextPath, SESSION_RESUME_NEXT_KEY } from '../../utils/nextPath'
 
+import AuthMethods from './AuthMethods'
 import styles from './Login.module.css'
 import type { AuthModeType, FormType, LoginFormType } from './Login.types'
-import LoginForm from './LoginForm'
-import SocialLogin from './SocialLogin'
 
 // Branding-panel defaults. The login screen renders BEFORE any backend identity,
 // so its copy is config-driven (`config.login`, ConfigMap-mountable per install)
@@ -29,38 +29,18 @@ const DEFAULT_HIGHLIGHTS = [
   'Policy-guarded self-service catalog',
 ]
 
-/**
- * Resolve the post-login landing route from the `?next=` param the session-resume flow
- * writes (`forceLogout` → `/login?next=<encodeURIComponent(pathname+search)>`). Returns a
- * SAFE in-app path only: it must decode to a single-leading-slash absolute path so an
- * attacker can't smuggle an open-redirect (`//evil.com`, `https://evil.com`, `/\evil.com`)
- * or a `javascript:` URL through the query. Anything absent, malformed, or off-origin
- * falls back to `'/'` (the home route). Exported for unit testing.
- */
-export const resolveNextPath = (rawNext: string | null): string => {
-  const HOME = '/'
-  if (!rawNext) { return HOME }
-
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(rawNext)
-  } catch {
-    return HOME
-  }
-
-  // Must be an absolute in-app path: exactly one leading slash, no scheme, no
-  // protocol-relative (`//host`) or backslash trickery (`/\host`).
-  if (!decoded.startsWith('/') || decoded.startsWith('//') || decoded.startsWith('/\\')) {
-    return HOME
-  }
-  return decoded
-}
-
 const Login = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { catchError } = useCatchError()
   const { config } = useConfigContext()
+
+  // A fresh visit to the login page is NOT a mid-session resume: drop any route the
+  // SessionResume modal stashed for a social/OIDC round-trip, so a plain social sign-in here
+  // lands on home rather than inheriting a stale pre-expiry route through the /auth callback.
+  useEffect(() => {
+    try { localStorage.removeItem(SESSION_RESUME_NEXT_KEY) } catch { /* ignore */ }
+  }, [])
 
   // Where to land after a successful login: the session-resume flow parks the pre-expiry
   // route in `?next=` (see utils/logout.forceLogout); fall back to home. Sanitized against
@@ -154,24 +134,13 @@ const Login = () => {
         )
       }
 
-      return methods.map((method, index) => {
-        const { kind } = method
-
-        if (kind === 'basic' || kind === 'ldap') {
-          return (
-            <div key={`login_${index}`}>
-              <LoginForm
-                isLoading={isLoginLoading}
-                method={method}
-                onSubmit={(values) => { void onFormSubmit(values, kind) }}
-              />
-              {((index + 1) < methods?.length) && <Divider plain>or continue with</Divider> }
-            </div>
-          )
-        }
-
-        return <SocialLogin key={`login_${index}`} method={method} />
-      })
+      return (
+        <AuthMethods
+          isLoading={isLoginLoading}
+          methods={methods}
+          onCredentialSubmit={(values, kind) => { void onFormSubmit(values, kind) }}
+        />
+      )
     }
   }, [isMethodLoading, isMethodsError, isLoginError, methods, isLoginLoading, onFormSubmit])
 

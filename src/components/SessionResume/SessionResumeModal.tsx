@@ -5,29 +5,34 @@
  * fetch layer can raise it on a 401 without prop drilling; concurrent 401s coalesce into
  * this single modal.
  *
- * Resume flow (basic strategy only — the same authn flow Login.tsx implements):
- *   1. On open, fetch `${AUTHN_API_BASE_URL}/strategies` and pick the `kind === 'basic'` one.
- *   2. Submit username/password as a Basic-auth GET to the strategy's path.
- *   3. On success: store the fresh login payload in `K_user`, invalidate the module-level
- *      token cache (utils/getAccessToken), settle the pending resume as 'resumed', and
- *      invalidate ALL react-query queries — active ones (including the 401-errored widget
- *      queries) refetch with the fresh token, so the page resumes exactly where it was.
+ * It reflects EVERY enabled authn strategy — the same set the Login page renders (shared via
+ * pages/Login/AuthMethods) — not just basic:
+ *   - `basic` / `ldap` → a credentials form that re-authenticates IN PLACE: Basic-auth GET to
+ *     the strategy path, store the fresh login in `K_user`, invalidate the module-level token
+ *     cache (utils/getAccessToken), settle the pending resume 'resumed', and invalidate ALL
+ *     react-query queries so the 401-errored widget queries refetch with the fresh token and
+ *     the page resumes exactly where it was — no navigation, no state loss.
+ *   - social / OIDC → the branded redirect button (SocialLogin). An IdP round-trip cannot
+ *     resume in place, so on open we stash the pre-expiry route in `K_sessionResumeNext`; the
+ *     /auth callback consumes it and lands the user back where they were.
  *
- * Documented fallbacks (deliberate scope — non-basic strategies do NOT resume in place):
- *   - No basic strategy available (pure OIDC/social install) → legacy `forceLogout()`,
- *     which preserves the route via `/login?next=` for the full login page's redirects.
+ * Fallbacks:
+ *   - `/strategies` returns an empty list (no way to authenticate) → legacy `forceLogout()`,
+ *     which preserves the route via `/login?next=`.
  *   - Explicit "Log out" choice → `forceLogout('/login', { force: true })` hard wipe.
  */
 
 import { useQueryClient } from '@tanstack/react-query'
-import { Alert, Button, Form, Input, theme } from 'antd'
+import { Alert, Button, theme } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 
 import logo from '../../assets/images/logo_big.svg'
 import { useConfigContext } from '../../context/ConfigContext'
-import type { AuthModeType, AuthResponseType, LoginFormType } from '../../pages/Login/Login.types'
+import AuthMethods from '../../pages/Login/AuthMethods'
+import type { AuthModeType, AuthResponseType, FormType, LoginFormType } from '../../pages/Login/Login.types'
 import { invalidateAccessTokenCache } from '../../utils/getAccessToken'
 import { forceLogout } from '../../utils/logout'
+import { SESSION_RESUME_NEXT_KEY } from '../../utils/nextPath'
 import { registerSessionResumeSurface, SESSION_RESUME_EVENT, settleSessionResume } from '../../utils/sessionResume'
 
 const SessionResumeModal = () => {
@@ -36,7 +41,7 @@ const SessionResumeModal = () => {
   const { token } = theme.useToken()
 
   const [open, setOpen] = useState(false)
-  const [basicStrategy, setBasicStrategy] = useState<AuthModeType | null>(null)
+  const [methods, setMethods] = useState<AuthModeType[] | null>(null)
   const [strategiesError, setStrategiesError] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -51,6 +56,11 @@ const SessionResumeModal = () => {
   useEffect(() => {
     const handleOpen = () => {
       setSubmitError(null)
+      setMethods(null)
+      // Stash where the user was so a social/OIDC re-auth (a full IdP redirect) can land them
+      // back here via the /auth callback. Harmless for the in-place basic/ldap flows, which
+      // clear it on success; a fresh visit to /login clears it too.
+      try { localStorage.setItem(SESSION_RESUME_NEXT_KEY, window.location.pathname + window.location.search) } catch { /* ignore */ }
       setOpen(true)
     }
     window.addEventListener(SESSION_RESUME_EVENT, handleOpen)
@@ -61,7 +71,7 @@ const SessionResumeModal = () => {
     }
   }, [])
 
-  // On open, discover the basic strategy via the same `/strategies` call Login uses. The
+  // On open, discover the enabled strategies via the same `/strategies` call Login uses. The
   // token is dead, but `/strategies` is the pre-auth endpoint so it needs no Authorization.
   useEffect(() => {
     if (!open || !authBaseUrl) { return }
@@ -71,19 +81,19 @@ const SessionResumeModal = () => {
       try {
         const res = await fetch(`${authBaseUrl}/strategies`)
         if (!res.ok) { throw new Error(`strategies ${res.status}`) }
-        const methods = await res.json() as AuthModeType[]
+        const list = await res.json() as AuthModeType[]
         if (cancelled) { return }
-        const basic = methods.find(({ kind }) => kind === 'basic') ?? null
-        if (basic) {
-          setBasicStrategy(basic)
-        } else {
-          // Documented scope: only the basic strategy resumes in place. Anything else
-          // (OIDC/social/LDAP-only installs) falls back to the legacy forceLogout flow,
-          // which parks the current route in /login?next= for the full login page.
+        if (!Array.isArray(list) || list.length === 0) {
+          // No way to authenticate → legacy fallback (forceLogout preserves the route via
+          // /login?next= and offers its own re-authenticate/logout prompt). Drop the stash we
+          // set on open so it can't leak into a later session's social callback.
           setOpen(false)
+          try { localStorage.removeItem(SESSION_RESUME_NEXT_KEY) } catch { /* ignore */ }
           settleSessionResume('logout')
           void forceLogout()
+          return
         }
+        setMethods(list)
       } catch {
         if (!cancelled) { setStrategiesError(true) }
       }
@@ -94,18 +104,24 @@ const SessionResumeModal = () => {
 
   const onLogout = useCallback(() => {
     setOpen(false)
+    try { localStorage.removeItem(SESSION_RESUME_NEXT_KEY) } catch { /* ignore */ }
     settleSessionResume('logout')
     // Explicit user choice → the old hard wipe (clean session, back to login).
     void forceLogout('/login', { force: true })
   }, [])
 
-  const onSubmit = useCallback(async ({ password, username }: LoginFormType) => {
-    if (!basicStrategy || !authBaseUrl) { return }
+  // In-place resume for the credential strategies (basic AND ldap): the same authn flow the
+  // Login page uses — a Basic-auth GET against the chosen strategy's path.
+  const onCredentialSubmit = useCallback(async (
+    { password, username }: LoginFormType,
+    _kind: FormType,
+    method: AuthModeType,
+  ) => {
+    if (!authBaseUrl) { return }
     setSubmitting(true)
     setSubmitError(null)
     try {
-      // Same authn basic flow as Login.tsx: Basic-auth GET against the strategy path.
-      const res = await fetch(`${authBaseUrl}${basicStrategy.path}`, {
+      const res = await fetch(`${authBaseUrl}${method.path}`, {
         headers: {
           Authorization: `Basic ${btoa(`${username}:${password}`)}`,
         },
@@ -122,6 +138,8 @@ const SessionResumeModal = () => {
       localStorage.setItem('K_user', JSON.stringify(data))
       // …and drop the module-level token cache so the very next fetch uses the new token.
       invalidateAccessTokenCache()
+      // In-place resume: no IdP round-trip, so the stashed route is not needed.
+      try { localStorage.removeItem(SESSION_RESUME_NEXT_KEY) } catch { /* ignore */ }
       setOpen(false)
       settleSessionResume('resumed')
       // Resume in place: invalidate everything — active queries (including the 401-errored
@@ -132,7 +150,7 @@ const SessionResumeModal = () => {
     } finally {
       setSubmitting(false)
     }
-  }, [authBaseUrl, basicStrategy, queryClient])
+  }, [authBaseUrl, queryClient])
 
   // A background 401 must NOT leave the errored dashboard peeking through a floating modal
   // (that read as "broken"). Instead this renders a FULL-VIEWPORT opaque login surface that
@@ -185,35 +203,16 @@ const SessionResumeModal = () => {
         {submitError && (
           <Alert message={submitError} showIcon style={{ marginBottom: 16 }} type='error' />
         )}
-        <Form
-          autoComplete='off'
-          disabled={submitting || !basicStrategy}
-          layout='vertical'
-          name='sessionResume'
-          onFinish={(values: LoginFormType) => { void onSubmit(values) }}
-          requiredMark={false}
-        >
-          <Form.Item
-            label='Username'
-            name='username'
-            rules={[{ message: 'Insert a username', required: true }]}
-          >
-            <Input size='large' />
-          </Form.Item>
-          <Form.Item
-            label='Password'
-            name='password'
-            rules={[{ message: 'Insert a password', required: true }]}
-          >
-            <Input.Password size='large' />
-          </Form.Item>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <Button disabled={false} onClick={onLogout}>Log out</Button>
-            <Button htmlType='submit' loading={submitting} type='primary'>
-              Sign in
-            </Button>
-          </div>
-        </Form>
+        {methods && (
+          <AuthMethods
+            isLoading={submitting}
+            methods={methods}
+            onCredentialSubmit={(values, kind, method) => { void onCredentialSubmit(values, kind, method) }}
+          />
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+          <Button onClick={onLogout} type='text'>Log out</Button>
+        </div>
       </div>
     </div>
   )

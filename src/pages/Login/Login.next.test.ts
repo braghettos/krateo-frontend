@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { resolveNextPath } from './Login'
+import { resolveNextPath } from '../../utils/nextPath'
 
 describe('resolveNextPath — post-login redirect from ?next=', () => {
   it('falls back to home when the param is absent', () => {

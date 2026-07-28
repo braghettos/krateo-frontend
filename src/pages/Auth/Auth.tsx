@@ -7,6 +7,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
 import useCatchError from '../../hooks/useCatchError'
+import { invalidateAccessTokenCache } from '../../utils/getAccessToken'
+import { resolveNextPath, SESSION_RESUME_NEXT_KEY } from '../../utils/nextPath'
 import type { AuthModeType, AuthRequestType, AuthResponseType } from '../Login/Login.types'
 
 const Auth = () => {
@@ -75,7 +77,15 @@ const Auth = () => {
 
       if (userData) {
         localStorage.setItem('K_user', JSON.stringify(userData))
-        void navigate('/')
+        // Uphold the invariant that a K_user write drops the module-level token cache so the next
+        // fetch reads the fresh token (mirrors SessionResumeModal / getAccessToken's contract).
+        invalidateAccessTokenCache()
+        // If this OIDC round-trip was a mid-session re-auth (the SessionResume modal stashed the
+        // pre-expiry route), land the user back where they were; otherwise home. Consume-once +
+        // open-redirect-sanitized.
+        const stashedNext = localStorage.getItem(SESSION_RESUME_NEXT_KEY)
+        localStorage.removeItem(SESSION_RESUME_NEXT_KEY)
+        void navigate(resolveNextPath(stashedNext))
       }
     }
 
