@@ -38,11 +38,6 @@ const HeaderChrome = () => {
   )
 }
 
-/** Instrument-console eyebrow pinned to the top of the Sider (mono/uppercase/graphite,
- * mirrors the page-header eyebrow treatment). A static "CONSOLE" label framing the sider
- * as the platform instrument console — matches the Petrol mockup. */
-const SiderEyebrow = () => <div className={styles.siderEyebrow}>Console</div>
-
 /** Bottom-of-Sider block: the user (avatar + name from the token) above a subtle
  * build/version marker. The version is `package.json`'s `version` and the build is the
  * git short-SHA, both inlined at build time (vite.config.ts `define`) — nothing hardcoded. */
@@ -81,7 +76,7 @@ export const ShellRoute = () => {
   }, [])
 
   return (
-    <ShellSlotsProvider value={{ content: <><div className={styles.contentCrumb}><Breadcrumb /></div><Outlet /></>, header: <HeaderChrome />, siderFooter: <SiderFooter />, siderHeader: <SiderEyebrow /> }}>
+    <ShellSlotsProvider value={{ content: <><div className={styles.contentCrumb}><Breadcrumb /></div><Outlet /></>, header: <HeaderChrome />, siderFooter: <SiderFooter /> }}>
       <NotificationsProvider>
         <AutopilotProvider>
           <AutopilotShell>

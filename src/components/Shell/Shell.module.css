@@ -16,8 +16,13 @@
 .headerRight {
   align-items: center;
   display: flex;
-  flex-shrink: 0;
+  /* #80 §0.11: allow the utility cluster to yield horizontal space so the search trigger inside it
+     (flex:0 1 280px, min-width:0) absorbs the shrink and stops overlapping `.headerLeft`. The
+     fixed-size icon buttons + the Autopilot/user controls hold their min-content size, so only the
+     search actually shrinks. */
+  flex-shrink: 1;
   gap: var(--spacing-md);
+  min-width: 0;
 }
 
 /* Thin separator that sets the Autopilot toggle apart from the page utilities. */
@@ -33,24 +38,6 @@
    gap to the page below it. */
 .contentCrumb {
   margin-bottom: var(--spacing-md);
-}
-
-/* Instrument-console eyebrow pinned to the TOP of the Sider, above the nav. Mono / uppercase /
-   letter-spaced / muted graphite — mirrors the page-header eyebrow treatment (Breadcrumb.module.css
-   / .paragraph.eyebrow). Horizontal padding matches the nav body (16px) so it aligns with the menu. */
-.siderEyebrow {
-  /* On the Sovereign gradient sider (invariant both modes) — muted-light, not the dark graphite. */
-  color: color-mix(in srgb, var(--text-color) 55%, transparent);
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.08em;
-  overflow: hidden;
-  padding: 14px 16px 6px;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 /* Bottom-of-Sider block: the user row above a subtle build marker, stacked. */
@@ -93,7 +80,6 @@
 /* Collapsed sider (antd sets .ant-layout-sider-collapsed): the narrow rail has no room for the
    mono eyebrow or the build line, so hide the text-only chrome and let the nav icons stand alone.
    The user avatar stays (it centres itself). */
-:global(.ant-layout-sider-collapsed) .siderEyebrow,
 :global(.ant-layout-sider-collapsed) .siderBuild,
 :global(.ant-layout-sider-collapsed) .siderFooterName {
   display: none;

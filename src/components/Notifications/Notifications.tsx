@@ -102,21 +102,28 @@ function EventItem({ deduped, onNavigate }: { deduped: DedupedEvent; onNavigate:
           </Text>
         }
         title={
-          <div style={{ alignItems: 'center', display: 'flex', gap: 6, minWidth: 0, overflow: 'hidden' }}>
-            <Tag color={isWarning ? 'warning' : 'default'} style={{ flexShrink: 0, margin: 0 }}>
-              {event.type ?? 'Unknown'}
-            </Tag>
-            <Text strong style={{ flex: 1, fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {event.reason ?? ''}
-            </Text>
-            {count > 1 && (
-              <Tag style={{ flexShrink: 0, margin: 0 }}>×{count}</Tag>
-            )}
-            {objRef && (
-              <Text style={{ flexShrink: 1, fontSize: 11, maxWidth: '40%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} type='secondary'>
-                {objRef}
+          // #80 §0.9: the reason gets its OWN line (with a Tooltip surfacing the full text on
+          // hover — it can still ellipsize), and the type/count/objRef metadata drops to a second
+          // line beneath, so the four elements no longer crowd + clip each other on one row.
+          <div style={{ minWidth: 0 }}>
+            <Tooltip title={event.reason ?? ''}>
+              <Text strong style={{ display: 'block', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {event.reason ?? ''}
               </Text>
-            )}
+            </Tooltip>
+            <div style={{ alignItems: 'center', display: 'flex', gap: 6, marginTop: 2, minWidth: 0 }}>
+              <Tag color={isWarning ? 'warning' : 'default'} style={{ flexShrink: 0, margin: 0 }}>
+                {event.type ?? 'Unknown'}
+              </Tag>
+              {count > 1 && (
+                <Tag style={{ flexShrink: 0, margin: 0 }}>×{count}</Tag>
+              )}
+              {objRef && (
+                <Text style={{ flexShrink: 1, fontSize: 11, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} type='secondary'>
+                  {objRef}
+                </Text>
+              )}
+            </div>
           </div>
         }
       />
@@ -194,7 +201,14 @@ export const NotificationsDrawer = () => {
   }
 
   return (
-    <Drawer onClose={() => setOpen(false)} open={open} title='Notifications' width={550}>
+    <Drawer
+      onClose={() => setOpen(false)}
+      open={open}
+      // #80 §0.8: the bare-string title rendered at antd's stock size — give it an explicit larger
+      // title so the drawer header reads as prominently as the rest of the app chrome.
+      title={<span style={{ fontSize: 18, fontWeight: 600 }}>Notifications</span>}
+      width={550}
+    >
       {open && renderBody()}
     </Drawer>
   )

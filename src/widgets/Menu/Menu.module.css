@@ -13,17 +13,18 @@
   }
 
   :global(.ant-menu-item) {
-    /* Match the mockup `.nav-item` density (~30px tall: 6px vertical padding + a 17px glyph
-       on a tight 1.2 line-height), not the prior 10px-padding/22px-icon rows that read
-       "larger than the render". The tight line-height stops the 13px label from inflating the
-       `height: auto` box past the padding. */
+    /* Nav-item density (~36px tall: 9px vertical padding + a 17px glyph on a tight 1.2
+       line-height) — bumped from ~30px per issue #80 §0.5 (rows read too cramped). The tight
+       line-height stops the 13px label from inflating the `height: auto` box past the padding.
+       NB: the box is `height: auto`, so vertical size is driven by THIS padding, not the
+       `Menu.itemHeight` token (kept in sync at 36 in theme/tokens.ts for antd's own metrics). */
     color: var(--menuitem-color);
     height: auto;
     line-height: 1.2;
     margin: 0;
-    padding-bottom: 6px;
+    padding-bottom: 9px;
     padding-left: 0;
-    padding-top: 6px;
+    padding-top: 9px;
     text-transform: capitalize;
     width: 100%;
 

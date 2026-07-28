@@ -7,13 +7,29 @@
   color: var(--faint-color);
   cursor: pointer;
   display: flex;
+  /* #80 §0.11: was a FIXED `width: 280px` with no responsive handling, so at narrow widths it
+     collided with the tenant/project switcher. Now it can shrink (flex-basis 280 + min-width:0),
+     and its parent `.headerRight` yields the space (Shell.module.css). Below a breakpoint the label
+     is dropped (media query below), leaving just the search icon + ⌘K. */
+  flex: 0 1 280px;
   font-size: var(--font-size-xs);
   gap: var(--spacing-sm);
   height: 36px;
-  max-width: 280px;
+  min-width: 0;
   padding: 0 var(--spacing-sm) 0 12px;
   transition: border-color var(--motion-fast), color var(--motion-fast);
-  width: 280px;
+}
+
+/* Below the crowded breakpoint, collapse the search to just its icon + ⌘K so it stops
+   overlapping the tenant/project switcher on the left. */
+@media (max-width: 1180px) {
+  .triggerLabel {
+    display: none;
+  }
+
+  .trigger {
+    flex: 0 0 auto;
+  }
 }
 
 .trigger:hover {

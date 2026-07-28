@@ -376,8 +376,10 @@ const buildComponents = (palette: Record<keyof typeof color, string>, mode: Them
   Drawer: { paddingLG: spacing.lg },
   Input: { borderRadius: radius.md, controlHeight: 32 },
   List: { borderRadiusLG: radius.lg },
-  // Sidebar nav density — match the mockup `.nav-item` (padding 7px 9px · 13px · ~30px tall).
-  Menu: { fontSize: 13, itemBorderRadius: radius.md, itemHeight: 30, itemMarginBlock: 0, itemPaddingInline: 9, subMenuItemBorderRadius: radius.md },
+  // Sidebar nav density — `.nav-item` (~36px tall, bumped from 30 per issue #80 §0.5). NB: the
+  // Menu.module.css item box is `height: auto`, so its 9px vertical padding is the effective lever;
+  // this token is kept in sync for antd's own layout metrics (hover/selected backgrounds).
+  Menu: { fontSize: 13, itemBorderRadius: radius.md, itemHeight: 36, itemMarginBlock: 0, itemPaddingInline: 9, subMenuItemBorderRadius: radius.md },
   Modal: { borderRadiusLG: radius.xl },
   Progress: { defaultColor: palette.green },
   Select: { borderRadius: radius.md, controlHeight: 32 },

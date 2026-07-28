@@ -2,7 +2,11 @@
   /* Keep the bell on the same centerline as the other header icons. */
   display: inline-flex;
 
+  /* #80 §0.7: fixed 36×36 so the bell, the theme toggle and the ⌘K search trigger are all the
+     same size on one centerline (they were 32/32/36 before — the odd one read as misaligned). */
   .icon {
     font-size: 16px;
+    height: 36px;
+    width: 36px;
   }
 }

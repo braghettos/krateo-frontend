@@ -142,6 +142,10 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
         popupMatchSelectWidth={popupWidth}
         popupRender={renderPanel}
         prefix={<span className={isAll ? styles.pinAll : styles.pinOn} />}
+        // #80 §0.6: this multi-select filters via its custom checkbox popup (popupRender), so antd's
+        // inline search input isn't needed — suppress it to drop the persistent text caret that
+        // showed inside the closed "All projects" control.
+        showSearch={false}
         size={size}
         // Min width so the placeholder/pills show when the switcher sits in the horizontal header
         // (a vertical sider gave it the column width; a header flex item would otherwise collapse).
