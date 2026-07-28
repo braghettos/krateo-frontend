@@ -151,6 +151,9 @@ spec:
                   type: array
                 widgetData:
                   properties:
+                    anchorId:
+                      description: renders this panel with a DOM id so an in-page `[text](#anchorId)` link (e.g. a summary/table-of-contents Markdown widget) scrolls to it
+                      type: string
                     clickActionId:
                       description: the id of the action to be executed when the panel is clicked
                       type: string
