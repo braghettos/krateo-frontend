@@ -191,7 +191,9 @@ export const ListView = ({
               icon={rowAction.icon ? <FontAwesomeIcon icon={rowAction.icon as IconProp} /> : undefined}
               key={rowAction.actionId}
               onClick={(event) => { event.stopPropagation(); void fireRowAction(rowAction.actionId, item) }}
-              size='small'
+              // #81 §0.1: card-row action (e.g. the Blueprints grid "Create") was `small` and read
+              // undersized in the card footer; `middle` matches the detail-page action buttons.
+              size='middle'
               type={actionIndex === 0 ? 'primary' : 'default'}
             >
               {rowAction.label}
