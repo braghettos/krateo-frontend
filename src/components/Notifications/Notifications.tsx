@@ -1,6 +1,7 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Badge, Button, Drawer, Empty, List, Skeleton, Tag, Tooltip, Typography } from 'antd'
+import { memo, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { SSEK8sEvent } from '../../utils/types'
@@ -9,6 +10,10 @@ import { useNotifications } from './NotificationsContext'
 import styles from './Notifications.module.css'
 
 const { Text } = Typography
+
+// How many deduped events the drawer actually renders at once (the rest stay in cache). Rendering
+// the full ~200-event set as antd List.Items at once was the dominant first-paint cost.
+const VISIBLE_LIMIT = 50
 
 function formatTimestamp(ts: string | null | undefined): string {
   if (!ts) return ''
@@ -68,7 +73,9 @@ function toResourceUrl(event: SSEK8sEvent): string | null {
   return `/resources/${ns}/${group}/${version}/${plural}/${obj.name}`
 }
 
-function EventItem({ deduped, onNavigate }: { deduped: DedupedEvent; onNavigate: (url: string) => void }) {
+// Memoized so a single new SSE event (which prepends one item to the list) re-renders only the
+// new row, not all ~50 existing rows — keeps the live-updating drawer cheap on a busy cluster.
+const EventItem = memo(function EventItem({ deduped, onNavigate }: { deduped: DedupedEvent; onNavigate: (url: string) => void }) {
   const { count, event } = deduped
   const ts = event.lastTimestamp ?? event.firstTimestamp ?? event.eventTime
   const isWarning = event.type === 'Warning'
@@ -129,7 +136,7 @@ function EventItem({ deduped, onNavigate }: { deduped: DedupedEvent; onNavigate:
       />
     </List.Item>
   )
-}
+})
 
 /**
  * The header bell + warning badge. Client-state only; it reads the shared notifications
@@ -170,12 +177,20 @@ export const NotificationsDrawer = () => {
   const { isLoading, notifications, open, setOpen } = useNotifications()
   const navigate = useNavigate()
 
-  const deduped = notifications ? dedupeEvents(notifications) : []
+  // Dedupe once per data change, not on every render. The initial GET /events seeds up to
+  // MAX_EVENTS (200) and each SSE message prepends one more, so recomputing this on every
+  // render (incl. every SSE tick) was O(200) of churn that stalled the drawer's first paint
+  // and its live updates. Memoized → the GET-seeded list paints immediately, SSE stays cheap.
+  const deduped = useMemo(() => (notifications ? dedupeEvents(notifications) : []), [notifications])
+  // Cap what we actually RENDER: a notifications drawer only needs the most relevant recent
+  // events (warnings already sort first), and mounting 100+ antd List.Items at once was the
+  // dominant cost (it froze the tab). The full set stays in cache; we render the top slice.
+  const visible = useMemo(() => deduped.slice(0, VISIBLE_LIMIT), [deduped])
 
-  const handleNavigate = (url: string) => {
+  const handleNavigate = useCallback((url: string) => {
     setOpen(false)
     void navigate(url)
-  }
+  }, [setOpen, navigate])
 
   const renderBody = () => {
     if (isLoading) {
@@ -185,18 +200,25 @@ export const NotificationsDrawer = () => {
       return <Empty description='No events' image={Empty.PRESENTED_IMAGE_SIMPLE} />
     }
     return (
-      <List
-        dataSource={deduped}
-        renderItem={item => (
-          <EventItem
-            deduped={item}
-            key={`${item.event.involvedObject.kind ?? ''}/${item.event.involvedObject.name ?? ''}/${item.event.reason ?? ''}`}
-            onNavigate={handleNavigate}
-          />
+      <>
+        <List
+          dataSource={visible}
+          renderItem={item => (
+            <EventItem
+              deduped={item}
+              key={`${item.event.involvedObject.kind ?? ''}/${item.event.involvedObject.name ?? ''}/${item.event.reason ?? ''}`}
+              onNavigate={handleNavigate}
+            />
+          )}
+          size='small'
+          split
+        />
+        {deduped.length > VISIBLE_LIMIT && (
+          <Text style={{ display: 'block', fontSize: 12, padding: '12px 0', textAlign: 'center' }} type='secondary'>
+            Showing the {VISIBLE_LIMIT} most recent of {deduped.length} events
+          </Text>
         )}
-        size='small'
-        split
-      />
+      </>
     )
   }
 
