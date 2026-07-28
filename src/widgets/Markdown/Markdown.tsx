@@ -73,7 +73,11 @@ const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
                     const target = document.getElementById(href.slice(1))
                     if (target) {
                       event.preventDefault()
-                      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      // `block: 'nearest'` + an explicit scroll on the actual scroll ancestor:
+                      // scrollIntoView({behavior:'smooth'}) is a no-op inside this app's
+                      // `ant-layout-content` scroller (a re-render cancels the animation before it
+                      // starts), so we jump instantly, which is the expected behaviour for a ToC.
+                      target.scrollIntoView({ behavior: 'auto', block: 'start' })
                       window.history.replaceState(null, '', href)
                     }
                   }}
