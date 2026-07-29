@@ -13,6 +13,21 @@
   min-width: 0;
 }
 
+/* #80 (reiteration 3): the tenant Tag (generic Tag widget) and the "All projects" Select are two
+   independently-sized antd controls — the Tag reads its height from fontSizeSM/lineHeightSM (~20px),
+   the small Select from controlHeightSM, and the Select inflates further once project pills are
+   selected. Pin both to one deliberate height HERE (scoped to the header, so tags/selects elsewhere
+   are untouched) so the left-cluster pair reads as a matched control group. */
+.headerLeft :global(.ant-tag) {
+  align-items: center;
+  display: inline-flex;
+  height: 24px;
+}
+
+.headerLeft :global(.ant-select-sm .ant-select-selector) {
+  min-height: 24px;
+}
+
 .headerRight {
   align-items: center;
   display: flex;

@@ -1,12 +1,24 @@
 .badge {
-  /* Keep the bell on the same centerline as the other header icons. */
+  /* #80 §0.7 (reiteration 3): pin the OUTER wrapper to 36px too, not just the button. When a
+     warning dot is present the bell is wrapped in antd's `.ant-badge`, whose height went
+     uncontrolled (measured 36×56 in the live page) — so sizing only `.icon` still let the wrapper
+     read taller than the 36px theme toggle beside it. Fixing `.badge` to 36px + centering makes it
+     participate in the header row as a 36px box regardless of antd's internal Badge sizing. */
+  align-items: center;
   display: inline-flex;
+  height: 36px;
 
-  /* #80 §0.7: fixed 36×36 so the bell, the theme toggle and the ⌘K search trigger are all the
-     same size on one centerline (they were 32/32/36 before — the odd one read as misaligned). */
   .icon {
     font-size: 16px;
     height: 36px;
     width: 36px;
   }
+}
+
+/* #80 (reiteration 3): the notification-item icon (List.Item.Meta avatar) was TOP-aligned
+   (antd's default `.ant-list-item-meta { align-items: flex-start }`), so on a multi-line item it
+   sat near the top rather than centered against the item's full height. Center it, scoped to THIS
+   drawer's list so other antd Lists are untouched. */
+.list :global(.ant-list-item-meta) {
+  align-items: center;
 }

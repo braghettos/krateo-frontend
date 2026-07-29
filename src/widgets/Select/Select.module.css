@@ -143,6 +143,11 @@
 /* leading pin: amber dot when a filter is active, hollow graphite at "All projects" */
 .pinOn,
 .pinAll {
+  /* #80 §0.6 (reiteration 3): the pin is a bare <span> — without an explicit `display` it stays
+     `display: inline`, on which width/height are IGNORED (CSS 2.1 §10.x), so only `.pinAll`'s 1px
+     border painted → a thin vertical BAR instead of the intended 6px dot/ring. `inline-block`
+     makes the width/height/border-radius actually apply. */
+  display: inline-block;
   width: 6px;
   height: 6px;
   border-radius: 50%;

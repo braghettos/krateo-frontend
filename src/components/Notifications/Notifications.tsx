@@ -100,7 +100,9 @@ const EventItem = memo(function EventItem({ deduped, onNavigate }: { deduped: De
         avatar={
           <FontAwesomeIcon
             icon={isWarning ? (['fas', 'triangle-exclamation'] as IconProp) : (['fas', 'circle-info'] as IconProp)}
-            style={{ color: isWarning ? '#faad14' : '#8c8c8c', fontSize: 16, marginTop: 2 }}
+            // #80 (reiteration 3): centered against the whole item via `.list .ant-list-item-meta`
+            // (Notifications.module.css) rather than the old top-aligned `marginTop: 2` nudge.
+            style={{ color: isWarning ? '#faad14' : '#8c8c8c', fontSize: 16 }}
           />
         }
         description={
@@ -202,6 +204,7 @@ export const NotificationsDrawer = () => {
     return (
       <>
         <List
+          className={styles.list}
           dataSource={visible}
           renderItem={item => (
             <EventItem
@@ -224,6 +227,9 @@ export const NotificationsDrawer = () => {
 
   return (
     <Drawer
+      // #80 (reiteration 3): antd's default `closablePlacement: 'start'` renders the X BEFORE the
+      // title; move it to the end so the title starts flush-left and the close sits on the right.
+      closable={{ placement: 'end' }}
       onClose={() => setOpen(false)}
       open={open}
       // #80 §0.8 (+reiteration): a leading bell icon and an explicit larger title (18/600) in a flex
