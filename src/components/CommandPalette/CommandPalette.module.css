@@ -20,29 +20,37 @@
   transition: border-color var(--motion-fast), color var(--motion-fast);
 }
 
-/* #80 §0.11 (reiteration): a graceful path all the way down, not one hardcoded step.
-   ≤1180px — drop the placeholder label but keep the trigger shrinkable (it stops overlapping the
-   tenant/project switcher, yet still yields space as the header narrows further). */
+/* #80 reiteration-3: two clean states, no crushed middle band.
+   ≤1180px — drop the placeholder label. The trigger stays a REAL, usable search field: it may
+   shrink from a 220px basis but only down to a 180px floor (min-width), so it never degrades into a
+   sliver. Measured header slack in this band is ~234px@1180 → ~16px@960, which the 220 basis + the
+   header's own gap:16px absorb without the two clusters ever overlapping. */
 @media (max-width: 1180px) {
   .triggerLabel {
     display: none;
   }
 
   .trigger {
-    flex: 0 1 auto;
-    min-width: 0;
+    flex: 0 1 220px;
+    min-width: 180px;
   }
 }
 
-/* ≤720px — collapse to an icon-only square button (drop the ⌘K chip + padding) so the search never
-   crowds the switcher on small viewports. The ⌘K palette is still reachable by the shortcut. */
-@media (max-width: 720px) {
+/* ≤960px — collapse to an icon-only square button. Below ~960 a real box would drop under a usable
+   width, so we switch to the icon instead of showing a squished field. The 36px is a HARD floor:
+   flex-grow:0 + flex-shrink:0 with matching min/max width means it can never be crushed (the old
+   `width:36px` alone was defeated by the inherited min-width:0 and crushed to ~2px). The ⌘K palette
+   is still reachable by the keyboard shortcut. Everything still fits at this width (room to ~700). */
+@media (max-width: 960px) {
   .kbd {
     display: none;
   }
 
   .trigger {
+    flex: 0 0 36px;
     justify-content: center;
+    max-width: 36px;
+    min-width: 36px;
     padding: 0;
     width: 36px;
   }
