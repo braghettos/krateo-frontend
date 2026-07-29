@@ -26,9 +26,13 @@
 }
 
 /* #80 (reiteration 3): the notification-item icon (List.Item.Meta avatar) was TOP-aligned
-   (antd's default `.ant-list-item-meta { align-items: flex-start }`), so on a multi-line item it
-   sat near the top rather than centered against the item's full height. Center it, scoped to THIS
-   drawer's list so other antd Lists are untouched. */
-.list :global(.ant-list-item-meta) {
+   (antd's default), so on a multi-line item it sat near the top rather than centered against the
+   item's full height. Center it, scoped to THIS drawer's list so other antd Lists are untouched.
+
+   Specificity note: antd's rule is `.ant-list .ant-list-item .ant-list-item-meta` = (0,3,0). The
+   earlier `.list .ant-list-item-meta` was only (0,2,0) and LOST the tie-break (verified live:
+   computed align-items stayed flex-start). `.list` sits on the SAME node as `.ant-list`, so chain
+   all four classes (._list.ant-list .ant-list-item .ant-list-item-meta = (0,4,0)) to out-rank it. */
+.list:global(.ant-list) :global(.ant-list-item) :global(.ant-list-item-meta) {
   align-items: center;
 }

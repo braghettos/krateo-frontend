@@ -48,6 +48,13 @@ h4.paragraph,
 h5.paragraph {
   font-family: var(--font-display);
   letter-spacing: -0.01em;
+
+  /* #78 (reiteration 4, item 1): the level:N Title path (detail-header `<h2>` etc.) set NO
+     line-height, so it inherited antd's loose Title line-height (~1.35). Under the condensed
+     `--font-display` (Barlow Condensed) that tall line box left the caps floating high with dead
+     space below. Tighten to the display ramp's 1.1 so the glyphs sit on their own centreline — the
+     same value the `:has(strong)` titles already carry (it re-declares its own below; harmless). */
+  line-height: 1.1;
   margin: 0;
 }
 

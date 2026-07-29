@@ -178,6 +178,10 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
         options={options}
         placeholder={placeholder}
         size={size}
+        // #78 (reiteration 4): inside a Form.Item the antd Select defaults to its content width, so a
+        // long option label (e.g. a "Chart version" like `1.2.3-rc.1`) pushed it past its grid column
+        // and overlapped the neighbour. Pin it to fill the column; the Form.Item / Col bounds the width.
+        style={{ width: '100%' }}
       />
     </Form.Item>
   )
