@@ -9,13 +9,13 @@ import WidgetRenderer from '../WidgetRenderer'
 
 /** Exact routes that get a frontend-rendered page search bar (→ `?q=` → the page's
  * data-source RESTAction name/description filter). Frontend chrome, like the Shell search. */
-const PAGE_SEARCH: Record<string, string> = {
-  // /blueprints (#75 §0.2) and /compositions intentionally omitted: each renders its OWN
-  // `?q=`-bound search Input widget inline with its filter pills (blueprints → input.blueprints-search
-  // in flex.blueprints-filterbar; compositions → input.compositions-search in flex.compositions-range-
-  // group), so a frontend PageSearch here would be a SECOND, redundant box driving the same filter.
-  '/marketplace': 'Search the catalog by name or description…',
-}
+// Empty by design (#82 §0.1): /blueprints, /compositions AND now /marketplace each render their OWN
+// `?q=`-bound search Input widget inline with their filter pills (blueprints → input.blueprints-search
+// in flex.blueprints-filterbar; compositions → input.compositions-search in flex.compositions-range-
+// group; marketplace → input.marketplace-search in flex.marketplace-category-group), so a frontend
+// PageSearch here would be a SECOND, redundant box driving the same filter. The map + PageSearch seam
+// is kept for any future route that wants chrome-level search without an inline widget.
+const PAGE_SEARCH: Record<string, string> = {}
 
 /**
  * Content-only routed page: resolves which widget endpoint the current route

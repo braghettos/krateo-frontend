@@ -49,8 +49,12 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
   const { handleAction, isActionLoading } = useHandleAction()
 
   // antd Card reserves `actions` for footer nodes, so the Krateo event map is `widgetActions`.
-  const { anchorId, clickActionId, cover, extra, extraStatus, extraVariant, footer, headerLeft, icon, items, legend, live, size, tags, title, titleVariant, tooltip, variant, widgetActions } = widgetData
+  const { anchorId, clickActionId, cover, extra, extraRefId, extraStatus, extraVariant, footer, headerLeft, icon, items, legend, live, size, tags, title, titleVariant, tooltip, variant, widgetActions } = widgetData
   const coverEndpoint = cover ? getEndpointUrl(cover, resourcesRefs) : undefined
+  // #83 §0.7: a real header-action slot — a nested widget (e.g. a Button with its own action) in the
+  // card header's top-right, distinct from the plain-text `extra`. Unlike `extra` + `clickActionId`
+  // (which makes the WHOLE card the click target), this action is self-contained.
+  const extraEndpoint = extraRefId ? getEndpointUrl(extraRefId, resourcesRefs) : undefined
 
   const action: WidgetAction | undefined = Object.values(widgetActions ?? {})
     .flat()
@@ -131,7 +135,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       id={anchorId ?? undefined}
       style={anchorId ? { scrollMarginTop: 80 } : undefined}
       extra={
-        (extra || tooltip || (legend && legend.length > 0))
+        (extra || tooltip || extraEndpoint || (legend && legend.length > 0))
           ? (
             <>
               {legend && legend.length > 0 && (
@@ -149,6 +153,8 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
                 : extraVariant === 'tag'
                   ? <Tag style={getTagStyle(extraStatus)}>{extra}</Tag>
                   : extra)}
+              {/* #83 §0.7: a real widget (e.g. a Button) in the header top-right, with its own action. */}
+              {extraEndpoint && <WidgetRenderer widgetEndpoint={extraEndpoint} />}
               {tooltip && (
                 <Tooltip title={tooltip}>
                   <Button icon={<FontAwesomeIcon icon={['fas', 'circle-question'] as IconProp} />} type='text' />

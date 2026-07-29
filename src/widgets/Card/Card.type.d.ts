@@ -254,6 +254,10 @@ export interface Card {
        */
       extraStatus?: 'success' | 'processing' | 'warning' | 'error' | 'default' | 'green' | 'gold' | 'red' | 'blue' | 'violet'
       /**
+       * resourceRefId of a widget (e.g. a Button) rendered top-right of the card header — a real, independently-actioned slot with its own icon/size/navigation, distinct from the plain-text `extra`. Mirrors the `cover`/`footer` widget slots; renders a nested WidgetRenderer, so it does NOT make the whole card the click target the way `extra` + `clickActionId` does.
+       */
+      extraRefId?: string
+      /**
        * show a pulsing "Live" badge next to the card title (for cards backed by a live/SSE feed)
        */
       live?: boolean
