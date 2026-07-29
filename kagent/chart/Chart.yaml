@@ -18,5 +18,5 @@ keywords:
   - frontend
   - portal
 sources:
-  - https://github.com/braghettos/krateo-frontend
+  - https://github.com/braghettos/krateo-frontend/tree/APP_VERSION
   - https://github.com/braghettos/krateo-frontend-chart/tree/SOURCE_REF
