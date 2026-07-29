@@ -224,6 +224,38 @@
     "livenessProbe": {
       "type": "object",
       "title": "Liveness probe",
+      "properties": {
+        "httpGet": {
+          "type": "object",
+          "title": "HTTP GET action",
+          "properties": {
+            "path": { "type": "string", "title": "Path" },
+            "port": { "x-kubernetes-int-or-string": true, "title": "Port" },
+            "host": { "type": "string", "title": "Host" },
+            "scheme": { "type": "string", "title": "Scheme" }
+          }
+        },
+        "tcpSocket": {
+          "type": "object",
+          "title": "TCP socket action",
+          "properties": {
+            "port": { "x-kubernetes-int-or-string": true, "title": "Port" },
+            "host": { "type": "string", "title": "Host" }
+          }
+        },
+        "exec": {
+          "type": "object",
+          "title": "Exec action",
+          "properties": {
+            "command": { "type": "array", "title": "Command", "items": { "type": "string" } }
+          }
+        },
+        "initialDelaySeconds": { "type": "integer", "title": "Initial delay seconds" },
+        "periodSeconds": { "type": "integer", "title": "Period seconds" },
+        "timeoutSeconds": { "type": "integer", "title": "Timeout seconds" },
+        "successThreshold": { "type": "integer", "title": "Success threshold" },
+        "failureThreshold": { "type": "integer", "title": "Failure threshold" }
+      },
       "default": {
         "httpGet": {
           "path": "/",
@@ -234,6 +266,38 @@
     "readinessProbe": {
       "type": "object",
       "title": "Readiness probe",
+      "properties": {
+        "httpGet": {
+          "type": "object",
+          "title": "HTTP GET action",
+          "properties": {
+            "path": { "type": "string", "title": "Path" },
+            "port": { "x-kubernetes-int-or-string": true, "title": "Port" },
+            "host": { "type": "string", "title": "Host" },
+            "scheme": { "type": "string", "title": "Scheme" }
+          }
+        },
+        "tcpSocket": {
+          "type": "object",
+          "title": "TCP socket action",
+          "properties": {
+            "port": { "x-kubernetes-int-or-string": true, "title": "Port" },
+            "host": { "type": "string", "title": "Host" }
+          }
+        },
+        "exec": {
+          "type": "object",
+          "title": "Exec action",
+          "properties": {
+            "command": { "type": "array", "title": "Command", "items": { "type": "string" } }
+          }
+        },
+        "initialDelaySeconds": { "type": "integer", "title": "Initial delay seconds" },
+        "periodSeconds": { "type": "integer", "title": "Period seconds" },
+        "timeoutSeconds": { "type": "integer", "title": "Timeout seconds" },
+        "successThreshold": { "type": "integer", "title": "Success threshold" },
+        "failureThreshold": { "type": "integer", "title": "Failure threshold" }
+      },
       "default": {
         "httpGet": {
           "path": "/",
