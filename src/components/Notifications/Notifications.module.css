@@ -8,6 +8,16 @@
   display: inline-flex;
   height: 36px;
 
+  /* The warning variant wraps the bell in antd's `.ant-badge` (ant-badge-status, display:block,
+     ~56px tall — its box is stretched by the dot's offset), which pinned the button to its top,
+     ~4px above the theme toggle's centerline. Constraining the inner wrapper to a 36px inline-flex
+     box centers the button (verified live: bell centreline 28 -> 32, matching the theme toggle). */
+  :global(.ant-badge) {
+    align-items: center;
+    display: inline-flex;
+    height: 36px;
+  }
+
   .icon {
     font-size: 16px;
     height: 36px;

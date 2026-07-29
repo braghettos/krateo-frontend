@@ -24,7 +24,10 @@
   height: 24px;
 }
 
-.headerLeft :global(.ant-select-sm .ant-select-selector) {
+/* min-height on the antd-6 select ROOT (`.ant-select-sm`): antd 6 dropped the v5
+   `.ant-select-selector` box this used to target, so the old selector matched nothing and the
+   control stayed ~16px. On the root it lands at exactly 24px (verified live) = the Tag height. */
+.headerLeft :global(.ant-select-sm) {
   min-height: 24px;
 }
 
