@@ -27,15 +27,19 @@ export interface Config {
      * **ON by default** (verified delivering on snowplow ≥1.5.13; older snowplow degrades to a
      * harmless idle stream). Set to `false` to opt an install OUT (widgets refetch as before). */
     WIDGET_LIVE_REFRESH_ENABLED?: boolean
-    /** Capability flag — authored by the portal chart from the bundled snowplow version, NOT an
-     * operator knob. When truthy, snowplow injects the authenticated identity (`displayName`/
-     * `username`) into the resolve input server-side, so the browser STOPS volunteering them in
-     * `?extras=` (see hooks/useWidgetQuery.ts buildExtrasParam) — this restores per-widget L1
-     * cache sharing for identity-independent widgets. When absent/false the frontend keeps the
-     * LEGACY behavior (sends identity extras), byte-identical to before the flag existed, so a new
-     * frontend against an old snowplow is safe. The flag + its legacy branch are removed once the
-     * fleet converges. See snowplow docs/definitive-cache-identity-architecture-2026-07-07.md §4.1. */
-    SNOWPLOW_IDENTITY_INJECTION?: boolean
+    /** Capability flag — authored by the frontend chart from the bundled snowplow version, NOT an
+     * operator knob. Typed `string | boolean` (#28): the installer/chart plumbing (chart-inspector)
+     * can only emit STRINGS, so config.json carries `""` (hold-off) or `"true"` (flip); `boolean` is
+     * kept for forward-compat. Consumed purely by JS truthiness in buildExtrasParam
+     * (`!config.api.SNOWPLOW_IDENTITY_INJECTION`): when TRUTHY (`"true"`/`true`) snowplow injects the
+     * authenticated identity (`displayName`/`username`) into the resolve input server-side, so the
+     * browser STOPS volunteering them in `?extras=` — restoring per-widget L1 cache sharing for
+     * identity-independent widgets. When falsy (`""`/absent/`false`) the frontend keeps the LEGACY
+     * behavior (sends identity extras), byte-identical to before the flag existed, so a new frontend
+     * against an old snowplow is safe. NB `"false"` is a non-empty string and thus TRUTHY (⇒ inject-OFF,
+     * NOT legacy) — the rollout only ever uses `""` and `"true"`. The flag + its legacy branch are
+     * removed once the fleet converges. See snowplow docs/definitive-cache-identity-architecture-2026-07-07.md §4.1. */
+    SNOWPLOW_IDENTITY_INJECTION?: string | boolean
     /** W0-3 provenance flag. When `true`, every gated portal write (human OR agent origin)
      * fire-and-forgets ONE immutable AuditRecord CR (audit.krateo.io/v1alpha1, namespaced —
      * the CRD ships separately in the portal chart) after the write resolves. STRICTLY
