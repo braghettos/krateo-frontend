@@ -4,11 +4,16 @@
   align-items: center;
   display: flex;
 
-  /* Size to content (not flex:1) so the tenant tag + project switcher hug the left
-     edge instead of being spread across the whole left zone. `.headerRight` still
-     pins right via the header's justify-content:space-between. min-width:0 keeps a
-     long tenant name truncating gracefully. */
-  flex: 0 1 auto;
+  /* #86 §0.2: GROW into the free space between the two header zones (was `flex: 0 1 auto`, which
+     pinned this zone at ~min-content ≈173px even on desktop — so the tenant tag truncated to
+     "krateo-en…" with ~525px of empty gutter to its right). `.headerRight` has no flex-grow, so
+     the header's justify-content:space-between degenerates to a no-op: headerRight stays pinned
+     right, and a growing headerLeft absorbs the surplus so the tenant tag + project switcher render
+     at their natural width. They still hug the LEFT (the inner Flex/Tag/Select don't grow; the
+     surplus lands as trailing empty space to their right), and headerLeft still shrinks +
+     ellipsises the tenant name under genuine narrow-width pressure (flex-shrink:1 + min-width:0).
+     NB assumes headerRight stays grow:0 — if it ever gains flex-grow, the two zones would compete. */
+  flex: 1 1 auto;
   gap: var(--spacing-md);
   min-width: 0;
 }

@@ -3,6 +3,27 @@
   flex-direction: column;
   position: relative;
 
+  /* #86 §0.9b: a header-action widget (extraRefId — e.g. the alert-detail "Investigate with
+     Autopilot" button) lands in `.ant-card-extra` inside `.ant-card-head`, a flex child isolated
+     to the single-line header — so it could only ever centre against the title, never the
+     Watching/Threshold/Phase rows in `.ant-card-body`. Pull it out of the header's flow and pin it
+     against `.panel` (which spans head+body and is already position:relative) so it centres against
+     the FULL panel height. Gated on `.hasExtraAction` (set in Card.tsx only when extraEndpoint is
+     truthy) so plain `extra`/legend/tag/badge/statCard headers are byte-for-byte untouched.
+     `margin:0` neutralises antd's `.ant-card-extra{ margin-inline-start:auto }`; `right` matches
+     the header padding so horizontal placement is unchanged. Single-consumer today — if a future
+     card ever co-locates extraRefId WITH a legend in the same extra fragment, both would be
+     absolutely-positioned and mis-stack. */
+  &.hasExtraAction :global(.ant-card-extra) {
+    align-items: center;
+    bottom: 0;
+    display: flex;
+    margin: 0;
+    position: absolute;
+    right: var(--spacing-md);
+    top: 0;
+  }
+
   &.clickable {
     cursor: pointer;
   }
