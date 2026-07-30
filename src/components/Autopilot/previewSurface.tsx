@@ -26,6 +26,7 @@ import atomOneDark from 'react-syntax-highlighter/dist/esm/styles/hljs/atom-one-
 import lightfair from 'react-syntax-highlighter/dist/esm/styles/hljs/lightfair.js'
 
 import { useThemeMode } from '../../context/ThemeModeContext'
+import { DrawerHeader, drawerCloseProps } from '../DrawerHeader/DrawerHeader'
 import WidgetRenderer from '../WidgetRenderer'
 
 import { useAutopilot } from './AutopilotProvider'
@@ -158,6 +159,8 @@ export const AutopilotPreviewDrawer = () => {
 
   return (
     <Drawer
+      // #86 §0.10: shared close placement (X at the END), from the one drawerCloseProps source.
+      closable={drawerCloseProps.closable}
       destroyOnHidden
       // #3 — don't cover the chat: drop the dimming mask, and when the rail is open shift the drawer
       // left of its 384px so the preview AND the conversation stay visible + interactive at once.
@@ -171,7 +174,9 @@ export const AutopilotPreviewDrawer = () => {
       open={open}
       rootStyle={railOpen ? { insetInlineEnd: RAIL_WIDTH } : undefined}
       size='large'
-      title={payload.title}
+      // #86 §0.10: title via the shared DrawerHeader (default 16px tier). payload.title stays a
+      // string → previewBus/verbRegistry untouched.
+      title={<DrawerHeader title={payload.title} />}
     >
       <div className={styles.body}>
         {payload.caption ? <Typography.Paragraph type='secondary'>{payload.caption}</Typography.Paragraph> : null}

@@ -1,6 +1,7 @@
 import { Drawer as AntdDrawer } from 'antd'
 import { useEffect, useState } from 'react'
 
+import { DrawerHeader, drawerCloseProps } from '../../components/DrawerHeader/DrawerHeader'
 import WidgetRenderer from '../../components/WidgetRenderer'
 
 import { DrawerProvider } from './DrawerContext'
@@ -51,6 +52,8 @@ const Drawer = () => {
 
   return (
     <AntdDrawer
+      // #86 §0.10: shared close placement (X at the END), from the one drawerCloseProps source.
+      closable={drawerCloseProps.closable}
       destroyOnHidden
       extra={drawerData.extra}
       key={
@@ -69,7 +72,9 @@ const Drawer = () => {
       // never sit over the rail — honouring "the rail is never overlaid".
       rootStyle={{ right: 'var(--autopilot-rail-width, 0px)' }}
       size={size || 'default'}
-      title={drawerData.title || title}
+      // #86 §0.10: title via the shared DrawerHeader (default 16px tier) — consistent typography
+      // across every drawer. The title string is unchanged (openDrawer dispatch untouched).
+      title={<DrawerHeader title={drawerData.title || title} />}
     >
       <DrawerProvider setDrawerData={setDrawerData}>
         <WidgetRenderer key={'drawer'} widgetEndpoint={widgetEndpoint} />

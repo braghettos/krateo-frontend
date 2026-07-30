@@ -45,7 +45,9 @@
   display: flex;
   flex: none;
   gap: 9px;
-  height: 64px;
+  /* #86 §0.10: shared header-height token — the rail header now tracks the main header (was a
+     hardcoded 64px that only coincidentally matched). Fallback 64px for the pre-paint window. */
+  height: var(--header-h, 64px);
   padding: 0 12px;
 }
 

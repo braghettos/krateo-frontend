@@ -5,6 +5,7 @@ import { memo, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { SSEK8sEvent } from '../../utils/types'
+import { DrawerHeader, drawerCloseProps } from '../DrawerHeader/DrawerHeader'
 
 import { useNotifications } from './NotificationsContext'
 import styles from './Notifications.module.css'
@@ -227,21 +228,17 @@ export const NotificationsDrawer = () => {
 
   return (
     <Drawer
-      // #80 (reiteration 3): antd's default `closablePlacement: 'start'` renders the X BEFORE the
-      // title; move it to the end so the title starts flush-left and the close sits on the right.
-      closable={{ placement: 'end' }}
+      // #86 §0.10: shared close placement (X at the END, right of the title — the #80 house style),
+      // now referenced from ONE source (drawerCloseProps) instead of re-declared per drawer.
+      closable={drawerCloseProps.closable}
       onClose={() => setOpen(false)}
       open={open}
-      // #80 §0.8 (+reiteration): a leading bell icon and an explicit larger title (18/600) in a flex
-      // row, plus extra header padding scoped to THIS drawer's header via `styles` (not the shared
-      // Drawer.paddingLG token, which other drawers share) so the header reads prominently.
+      // #86 §0.10: title via the shared DrawerHeader at the `prominent` tier (18px + bell icon) —
+      // Notifications is deliberately more prominent than the generic/preview drawers. The extra
+      // header padding stays scoped to THIS drawer (kept until a live diff confirms the tier alone
+      // reproduces the height).
       styles={{ header: { paddingBottom: 18, paddingTop: 18 } }}
-      title={(
-        <div style={{ alignItems: 'center', display: 'flex', gap: 10 }}>
-          <FontAwesomeIcon icon={['fas', 'bell'] as IconProp} style={{ fontSize: 16 }} />
-          <span style={{ fontSize: 18, fontWeight: 600 }}>Notifications</span>
-        </div>
-      )}
+      title={<DrawerHeader emphasis='prominent' icon={['fas', 'bell'] as IconProp} title='Notifications' />}
       width={550}
     >
       {open && renderBody()}

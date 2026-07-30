@@ -1,0 +1,23 @@
+/* #86 §0.10: shared drawer-header title content (icon + title). Two emphasis tiers so Notifications
+   stays visibly more prominent (18px) than the generic/preview drawers (16px) — a deliberate
+   hierarchy, expressed as a font-size TIER (not padding-only), so it survives even if a drawer drops
+   its scoped padding override. All theme vars, no hex → correct in both light and dark. */
+.head {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.icon {
+  font-size: var(--font-size-sm);
+}
+
+.title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.titleProminent {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
