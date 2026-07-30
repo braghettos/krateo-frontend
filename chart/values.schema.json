@@ -229,32 +229,71 @@
           "type": "object",
           "title": "HTTP GET action",
           "properties": {
-            "path": { "type": "string", "title": "Path" },
-            "port": { "x-kubernetes-int-or-string": true, "title": "Port" },
-            "host": { "type": "string", "title": "Host" },
-            "scheme": { "type": "string", "title": "Scheme" }
+            "path": {
+              "type": "string",
+              "title": "Path"
+            },
+            "port": {
+              "x-kubernetes-int-or-string": true,
+              "title": "Port"
+            },
+            "host": {
+              "type": "string",
+              "title": "Host"
+            },
+            "scheme": {
+              "type": "string",
+              "title": "Scheme"
+            }
           }
         },
         "tcpSocket": {
           "type": "object",
           "title": "TCP socket action",
           "properties": {
-            "port": { "x-kubernetes-int-or-string": true, "title": "Port" },
-            "host": { "type": "string", "title": "Host" }
+            "port": {
+              "x-kubernetes-int-or-string": true,
+              "title": "Port"
+            },
+            "host": {
+              "type": "string",
+              "title": "Host"
+            }
           }
         },
         "exec": {
           "type": "object",
           "title": "Exec action",
           "properties": {
-            "command": { "type": "array", "title": "Command", "items": { "type": "string" } }
+            "command": {
+              "type": "array",
+              "title": "Command",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
-        "initialDelaySeconds": { "type": "integer", "title": "Initial delay seconds" },
-        "periodSeconds": { "type": "integer", "title": "Period seconds" },
-        "timeoutSeconds": { "type": "integer", "title": "Timeout seconds" },
-        "successThreshold": { "type": "integer", "title": "Success threshold" },
-        "failureThreshold": { "type": "integer", "title": "Failure threshold" }
+        "initialDelaySeconds": {
+          "type": "integer",
+          "title": "Initial delay seconds"
+        },
+        "periodSeconds": {
+          "type": "integer",
+          "title": "Period seconds"
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "title": "Timeout seconds"
+        },
+        "successThreshold": {
+          "type": "integer",
+          "title": "Success threshold"
+        },
+        "failureThreshold": {
+          "type": "integer",
+          "title": "Failure threshold"
+        }
       },
       "default": {
         "httpGet": {
@@ -271,32 +310,71 @@
           "type": "object",
           "title": "HTTP GET action",
           "properties": {
-            "path": { "type": "string", "title": "Path" },
-            "port": { "x-kubernetes-int-or-string": true, "title": "Port" },
-            "host": { "type": "string", "title": "Host" },
-            "scheme": { "type": "string", "title": "Scheme" }
+            "path": {
+              "type": "string",
+              "title": "Path"
+            },
+            "port": {
+              "x-kubernetes-int-or-string": true,
+              "title": "Port"
+            },
+            "host": {
+              "type": "string",
+              "title": "Host"
+            },
+            "scheme": {
+              "type": "string",
+              "title": "Scheme"
+            }
           }
         },
         "tcpSocket": {
           "type": "object",
           "title": "TCP socket action",
           "properties": {
-            "port": { "x-kubernetes-int-or-string": true, "title": "Port" },
-            "host": { "type": "string", "title": "Host" }
+            "port": {
+              "x-kubernetes-int-or-string": true,
+              "title": "Port"
+            },
+            "host": {
+              "type": "string",
+              "title": "Host"
+            }
           }
         },
         "exec": {
           "type": "object",
           "title": "Exec action",
           "properties": {
-            "command": { "type": "array", "title": "Command", "items": { "type": "string" } }
+            "command": {
+              "type": "array",
+              "title": "Command",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
-        "initialDelaySeconds": { "type": "integer", "title": "Initial delay seconds" },
-        "periodSeconds": { "type": "integer", "title": "Period seconds" },
-        "timeoutSeconds": { "type": "integer", "title": "Timeout seconds" },
-        "successThreshold": { "type": "integer", "title": "Success threshold" },
-        "failureThreshold": { "type": "integer", "title": "Failure threshold" }
+        "initialDelaySeconds": {
+          "type": "integer",
+          "title": "Initial delay seconds"
+        },
+        "periodSeconds": {
+          "type": "integer",
+          "title": "Period seconds"
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "title": "Timeout seconds"
+        },
+        "successThreshold": {
+          "type": "integer",
+          "title": "Success threshold"
+        },
+        "failureThreshold": {
+          "type": "integer",
+          "title": "Failure threshold"
+        }
       },
       "default": {
         "httpGet": {
@@ -519,16 +597,6 @@
           "type": "string",
           "title": "Preview Sandbox Namespace",
           "default": ""
-        },
-        "AUTOPILOT_PORTAL_PROMPT": {
-          "type": "string",
-          "title": "Autopilot Portal Prompt",
-          "default": ""
-        },
-        "AUTOPILOT_PORTAL_HOUSE_RULES": {
-          "type": "string",
-          "title": "Autopilot Portal House Rules",
-          "default": ""
         }
       },
       "default": {
@@ -541,9 +609,7 @@
         "OTEL_COLLECTOR_URL": "",
         "SNOWPLOW_IDENTITY_INJECTION": "",
         "PROVENANCE_ENABLED": "",
-        "PREVIEW_SANDBOX_NAMESPACE": "",
-        "AUTOPILOT_PORTAL_PROMPT": "",
-        "AUTOPILOT_PORTAL_HOUSE_RULES": ""
+        "PREVIEW_SANDBOX_NAMESPACE": ""
       }
     },
     "env": {

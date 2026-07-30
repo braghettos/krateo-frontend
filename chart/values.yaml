@@ -132,17 +132,6 @@ config:
   # previewSandbox.enabled is true: the chart then overrides this key in the rendered
   # config.json with previewSandbox.namespace, so config and provisioning cannot drift.
   PREVIEW_SANDBOX_NAMESPACE: ""
-  # EXTERNALIZED Autopilot portal-builder prompt (string, default "" = use the frontend's
-  # baked-in default). When set to a NON-EMPTY string these REPLACE the compiled-in
-  # PORTAL_CAPABILITIES_PROMPT (turn-1 capability/protocol) and PORTAL_HOUSE_RULES (every-turn
-  # recap) in the frontend's Autopilot rail (see components/Autopilot/actionBridge.ts +
-  # ConfigContext.tsx). This makes the FRONTEND'S copilot prompt iterable via a chart-values
-  # change + redeploy — NO frontend image rebuild — mirroring the orchestrator prompt, which is
-  # already an external ConfigMap. Empty ⇒ byte-identical to the baked default (safe hold-off).
-  # The frontend coerces via JS truthiness (capPrompt = config.api.AUTOPILOT_PORTAL_PROMPT ||
-  # BAKED), so "" and absent both mean "use baked".
-  AUTOPILOT_PORTAL_PROMPT: ""
-  AUTOPILOT_PORTAL_HOUSE_RULES: ""
 
 # ── Preview sandbox (portal-builder live preview; w4 spec Addendum A) ─────────
 # Provisions the quarantined namespace where the portal-builder applies DRAFT
