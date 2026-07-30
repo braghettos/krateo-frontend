@@ -19,18 +19,20 @@
  * an empty `[]`, so the conversation persists across a routerVersion bump — WITHOUT
  * touching the `key={routerVersion}` reload the routes-as-data flow depends on.
  *
- * SCOPE (deliberately minimal): only the DURABLE transcript + thread identity live
- * here. In-flight, per-mount streaming machinery (abort handle, per-turn text/proposal
- * buffers, approval governors) stays as component refs — an in-flight stream is torn
- * down on unmount anyway (the provider's cleanup aborts it), so it must NOT be
- * resurrected from a shared store. `newThread()` resets this store (see reset()).
+ * SCOPE (deliberately minimal): only THREAD-LIFETIME state lives here — the transcript,
+ * the thread identity, and the page-context delta base (`lastEnvelope`, which must stay
+ * consistent with `contextId` for the same reason; see its doc below). In-flight,
+ * per-mount streaming machinery (abort handle, per-turn text/proposal buffers, approval
+ * governors) stays as component refs — an in-flight stream is torn down on unmount anyway
+ * (the provider's cleanup aborts it), so it must NOT be resurrected from a shared store.
+ * `newThread()` resets this store (see reset()).
  *
  * No React imports here (pure store); the provider adapts it via useSyncExternalStore.
  */
 
 import { randomId } from '../../utils/utils'
 
-import type { AutopilotMessage } from './types'
+import type { AutopilotMessage, PageContextEnvelope } from './types'
 
 /** A fresh frontend-owned session id (mirrors the provider's previous `newSessionId`). */
 const newSessionId = (): string => `s_${randomId()}`
@@ -54,7 +56,23 @@ export interface ConversationStore {
   setMessages: (update: AutopilotMessage[] | ((prev: AutopilotMessage[]) => AutopilotMessage[])) => void
   /** Set the server-assigned A2A contextId (or clear it). */
   setContextId: (contextId: string | undefined) => void
-  /** Reset to a brand-new thread: empty transcript, fresh session id, no contextId. */
+  /**
+   * The page context sent on the PREVIOUS turn, against which the next turn's delta is
+   * computed (buildContextDelta: same route + widgets + pageStatus ⇒ a ~22-token
+   * "Unchanged:" note instead of the full 380–3,900-token envelope).
+   *
+   * It lives HERE, not in a provider ref, because it must stay consistent with the
+   * `contextId` above: a routerVersion bump remounts AutopilotProvider (see the header
+   * comment), which resets any component ref to undefined while the surviving contextId keeps
+   * the thread open — so a ref would make the next mid-thread turn re-send the FULL envelope as
+   * if it were turn 1. Same lifetime as the thread it describes; cleared by reset().
+   *
+   * Deliberately NOT part of ConversationState: it is write-only from the provider's
+   * perspective (read once per send, never rendered), so it must not notify subscribers.
+   */
+  getLastEnvelope: () => PageContextEnvelope | undefined
+  setLastEnvelope: (envelope: PageContextEnvelope | undefined) => void
+  /** Reset to a brand-new thread: empty transcript, fresh session id, no contextId, no delta base. */
   reset: () => void
 }
 
@@ -64,6 +82,8 @@ export interface ConversationStore {
  */
 export const createConversationStore = (): ConversationStore => {
   let state: ConversationState = { contextId: undefined, messages: [], sessionId: newSessionId() }
+  // Outside `state` on purpose: the delta base is not rendered, so writing it must not emit.
+  let lastEnvelope: PageContextEnvelope | undefined
   const listeners = new Set<() => void>()
 
   const emit = (): void => {
@@ -78,12 +98,17 @@ export const createConversationStore = (): ConversationStore => {
   }
 
   return {
+    getLastEnvelope: () => lastEnvelope,
     getSnapshot: () => state,
-    reset: () => set({ contextId: undefined, messages: [], sessionId: newSessionId() }),
+    reset: () => {
+      lastEnvelope = undefined
+      set({ contextId: undefined, messages: [], sessionId: newSessionId() })
+    },
     setContextId: (contextId) => {
       if (contextId === state.contextId) { return }
       set({ ...state, contextId })
     },
+    setLastEnvelope: (envelope) => { lastEnvelope = envelope },
     setMessages: (update) => {
       const next = typeof update === 'function' ? update(state.messages) : update
       if (next === state.messages) { return }

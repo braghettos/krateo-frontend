@@ -1,67 +1,69 @@
+import { readdirSync, readFileSync } from 'node:fs'
+
 import { describe, expect, it } from 'vitest'
 
-import { isPortalBuilderRoute, parseAutopilotDirectives, PORTAL_BUILDER_ROUTING_DIRECTIVE, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, sanitizeChatText } from './actionBridge'
+import { parseAutopilotDirectives, sanitizeChatText } from './actionBridge'
 
-describe('Portal Builder routing directive (deterministic authoring gate)', () => {
-  it('forces a build request to the frontend specialist and bans telemetry routing + the short tool name', () => {
-    // The frontend-asserted directive that closes the "Cluster Health"→clickstack mis-route+crash.
-    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('AUTHORITATIVE ROUTING')
-    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('FRONTEND AUTHORING task')
-    // Must name the EXACT fully-qualified tool name and forbid the shortened form that crashed.
-    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('krateo_system__NS__krateo_frontend_agent')
-    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('NEVER a shortened or hyphenated form')
-    // Must forbid routing a build to telemetry/ops agents regardless of the page's subject.
-    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('clickstack')
-    expect(PORTAL_BUILDER_ROUTING_DIRECTIVE).toContain('REGARDLESS of the page')
+const railSource = (file: string): string =>
+  readFileSync(new URL(`./${file}`, import.meta.url), 'utf-8')
+
+/**
+ * THE FRONTEND'S WIRE CONTRACT: a turn carries the `<page_context>` delta and the user's
+ * text, and NOTHING else. No instruction preamble, no override seam, no config key that can
+ * add to it — the portal-rail protocol lives in the orchestrator's system prompt (the
+ * `portal-protocol` key of the krateo-prompts-eng ConfigMap, krateo-autopilot >= 0.1.49),
+ * where it is sent once per LLM call and never compacted. Assert its CONTENT there, not here.
+ *
+ * These are STRUCTURAL assertions over the source rather than behavioural ones over a
+ * helper, because there is no assembly step left to call. They are tripwires: if you
+ * deliberately change the wire shape, update them in the same commit and say why.
+ */
+describe('the turn carries NO instruction preamble', () => {
+  it('passes the page-context delta to the transport unmodified', () => {
+    const provider = railSource('AutopilotProvider.tsx')
+    // `baseContext` is assigned straight from buildContextDelta and handed to transport.send
+    // as `context` with nothing wrapped around it. A prefix/concat would break one of these.
+    expect(provider).toMatch(/const baseContext = buildContextDelta\(/)
+    expect(provider).toMatch(/context: baseContext,/)
+    // No template-literal or concatenation building the context field.
+    expect(provider).not.toMatch(/context: [`'"]/)
+    expect(provider).not.toMatch(/\$\{\w*[Pp]rompt\w*\}|\$\{\w*[Rr]ules\w*\}/)
   })
 
-  it('isPortalBuilderRoute matches the builder route (and nested), not other routes', () => {
-    expect(isPortalBuilderRoute('/portal-builder')).toBe(true)
-    expect(isPortalBuilderRoute('/portal-builder/new')).toBe(true)
-    expect(isPortalBuilderRoute('/compositions')).toBe(false)
-    expect(isPortalBuilderRoute('/observability')).toBe(false)
-    expect(isPortalBuilderRoute('/portal-builder-ish')).toBe(false)
-    expect(isPortalBuilderRoute(undefined)).toBe(false)
+  it('reads no prompt-override config key', () => {
+    // A config-supplied prompt is per-turn instruction text by another name: same cost, same
+    // decay under compaction. Iterate the prompt in the agent's ConfigMap instead.
+    for (const file of ['AutopilotProvider.tsx', 'actionBridge.ts']) {
+      expect(railSource(file)).not.toMatch(/config\?\.api\.AUTOPILOT_PORTAL/)
+    }
   })
-})
 
-describe('BLUEPRINT BUILDER prompt (FE-BP6)', () => {
-  it('teaches the two-step publish: a scalar publishBlueprint verb (host fans out the git-write), then register — preview-first', () => {
-    // The turn-1 capabilities prompt teaches the full workflow...
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('BLUEPRINT BUILDER')
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('previewBlueprint')
-    // STEP A is now a SINGLE scalar publishBlueprint verb — the host builds the gitrefs +
-    // repocontents + pullrequests set from the held tree (gemini-2.5-pro stalls hand-writing it).
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('publishBlueprint')
-    // STEP B (register) stays a compositiondefinitions write.
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('compositiondefinitions')
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('configurationRef')
-    // ...and the every-turn recap keeps the preview-first invariant + the publishBlueprint verb alive.
-    expect(PORTAL_HOUSE_RULES).toContain('Blueprint builder')
-    expect(PORTAL_HOUSE_RULES).toContain('DENIED unless the same chart')
-    expect(PORTAL_HOUSE_RULES).toContain('publishBlueprint')
-  })
-})
-
-describe('PORTAL BUILDER prompt (FE-BP7)', () => {
-  it('teaches the page publish as a SINGLE scalar publishPage verb — no hand-written ops, no sha', () => {
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('PORTAL BUILDER')
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('previewPage')
-    // PUBLISH is now the scalar publishPage verb — the host fans out gitrefs + per-file
-    // repocontents (widget CRs + nav fragment) + pullrequests from the held page draft.
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('publishPage')
-    // The old fragile shape is GONE: the model no longer hand-writes ops nor sources a sha.
-    expect(PORTAL_CAPABILITIES_PROMPT).not.toContain('main HEAD sha from page context')
-  })
-})
-
-describe('describeResource / check-the-CRD-schema prompt', () => {
-  it('teaches describeResource + check-the-schema-before-generating-a-CR', () => {
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('describeResource')
-    expect(PORTAL_CAPABILITIES_PROMPT).toContain('CHECK THE SCHEMA FIRST')
-    // the every-turn recap keeps the rule alive after the turn-1 prompt decays.
-    expect(PORTAL_HOUSE_RULES).toContain('CHECK THE CRD SCHEMA BEFORE GENERATING A CR')
-    expect(PORTAL_HOUSE_RULES).toContain('describeResource')
+  it('carries none of the instruction text that belongs to the system prompt', () => {
+    const promptMarkers = [
+      // Constant names, so a re-declaration is caught by name alone.
+      'PORTAL_CAPABILITIES_PROMPT =', 'PORTAL_HOUSE_RULES =',
+      'GROUNDING_GUARDRAIL_PROMPT =', 'PORTAL_BUILDER_ROUTING_DIRECTIVE =',
+      // Load-bearing headings, matched in FULL form: the bare phrase "BLUEPRINT BUILDER"
+      // legitimately appears in prose that REFERS to the prompt (e.g. blueprintPublish.ts naming
+      // where its repo defaults come from), and that is not a regression.
+      'BLUEPRINT BUILDER — AUTHOR', 'PORTAL BUILDER — AUTHOR', 'HOUSE RULES —',
+      'AUTHORITATIVE ROUTING', 'CHECK THE SCHEMA FIRST', 'TOURS ARE OFF BY DEFAULT',
+      'REMEDIATION ORDER (always in this order)',
+      // The fence tags such a block would be wrapped in.
+      '<portal_capabilities>', '<house_rules>', '<grounding_rules>', '<portal_builder_routing>',
+    ]
+    // Scans EVERY module in the rail (not just this one), so a new constant cannot simply be
+    // parked in a neighbouring file. Excludes tests — this file names the markers on purpose.
+    const modules = readdirSync(new URL('.', import.meta.url))
+      .filter((name) => /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name))
+    const offenders = modules.flatMap((file) => {
+      const source = railSource(file)
+      return promptMarkers.filter((marker) => source.includes(marker)).map((marker) => `${file}: ${marker}`)
+    })
+    expect(offenders).toEqual([])
+    // Sanity: the scan actually looked at the rail, so an empty glob can't fake a pass.
+    expect(modules).toContain('actionBridge.ts')
+    expect(modules.length).toBeGreaterThan(20)
   })
 })
 

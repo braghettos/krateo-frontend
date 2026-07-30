@@ -25,8 +25,10 @@ export const GITHUB_KOG_VERSION = 'v1alpha1'
 /**
  * Repo coordinates for a blueprint publish. The model supplies these simple scalars from its
  * prompt (which it does reliably); each falls back to the blueprint-catalog default if omitted,
- * so a publish is robust even when the model drops a field. These mirror the constants baked
- * into the BLUEPRINT BUILDER prompt — the single source stays the prompt/model, not this file.
+ * so a publish is robust even when the model drops a field. These mirror the coordinates in the
+ * BLUEPRINT BUILDER section of the orchestrator's system prompt (the `portal-protocol` key of the
+ * krateo-prompts-eng ConfigMap, krateo-autopilot >= 0.1.49) — the single source stays the
+ * prompt/model, not this file, so change them there first.
  */
 export const BLUEPRINTS_REPO_DEFAULTS = {
   base: 'main',
