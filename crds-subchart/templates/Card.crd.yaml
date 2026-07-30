@@ -164,7 +164,7 @@ spec:
                       description: antd Card extra — content shown top-right of the card header (renamed from `headerRight`)
                       type: string
                     extraRefId:
-                      description: 'resourceRefId of a widget (e.g. a Button) rendered top-right of the card header — a real, independently-actioned slot with its own icon/size/navigation, distinct from the plain-text `extra`. Mirrors the `cover`/`footer` widget slots; renders a nested WidgetRenderer, so it does NOT make the whole card the click target the way `extra` + `clickActionId` does.'
+                      description: resourceRefId of a widget (e.g. a Button) rendered top-right of the card header — a real, independently-actioned slot with its own icon/size/navigation, distinct from the plain-text `extra`. Mirrors the `cover`/`footer` widget slots; renders a nested WidgetRenderer, so it does NOT make the whole card the click target the way `extra` + `clickActionId` does.
                       type: string
                     extraStatus:
                       description: 'colour token: antd Badge status for `extraVariant: badge`; antd Tag color for `extraVariant: tag`'
