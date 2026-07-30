@@ -154,7 +154,7 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
         // couldn't shrink with the header (colliding with the search box at narrow widths). Now a
         // 170px flex-basis that CAN shrink to 0 (the placeholder ellipsises) — matching the search
         // trigger's responsive behaviour so the whole left cluster yields together.
-        style={{ flex: '0 1 170px', minWidth: 0 }}
+        style={{ flex: '1 1 170px', minWidth: 0 }}
         tagRender={(props) => (
           <span className={styles.ptag} onMouseDown={(event) => event.stopPropagation()}>
             {props.label}

@@ -31,7 +31,10 @@
   align-items: center;
   display: inline-flex;
   flex-shrink: 1;
-  height: 24px;
+  /* #86 Release C (fedepini): match the header SEARCH trigger's 36px (CommandPalette.module.css), not
+     just the Select — all three controls share the header row, so 24px vs 36px read as a real
+     mismatch next to the search box. */
+  height: 36px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -45,7 +48,8 @@
    rest; the "All projects" placeholder ellipsises. */
 .headerLeft :global(.ant-select-sm) {
   flex-shrink: 1;
-  min-height: 24px;
+  /* #86 Release C (fedepini): 36px to match the header search trigger + the tenant Tag above. */
+  min-height: 36px;
   min-width: 0;
 }
 

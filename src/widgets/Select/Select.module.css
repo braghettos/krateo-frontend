@@ -140,11 +140,14 @@
 }
 
 /* ── trigger chip (mockup .proj-chip) ── */
-/* #86 §0.1: the leading pin dot (was `.pinOn`/`.pinAll`, set via the removed `prefix` prop in
-   Select.tsx) is gone — it read as a stray indicator. Centre the "All projects" placeholder in the
-   closed control instead. antd 6 renders the multi-select placeholder in
-   `.ant-select-selection-placeholder`; centring its text reads as a balanced chip. */
-.checkSelect :global(.ant-select-selection-placeholder) {
+/* #86 §0.1 (Release C — fedepini via DevTools): the "All projects" text read off-centre. The real
+   cause is antd 6's `.ant-select-selection-content` forcing `line-height: 1`, which pins the glyphs to
+   that box's own baseline rather than centring them in the taller flex row — so `align-items: center`
+   on the content couldn't take effect. `line-height: normal` lets it centre; `text-align: center`
+   centres horizontally in the closed control. (The earlier `.ant-select-selection-placeholder` rule
+   was a v5-era no-op in antd 6 — the placeholder text lives in `.ant-select-selection-content`.) */
+.checkSelect :global(.ant-select-selection-content) {
+  line-height: normal;
   text-align: center;
 }
 

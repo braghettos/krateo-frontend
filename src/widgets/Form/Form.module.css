@@ -185,6 +185,17 @@
   margin-right: 12px;
 }
 
+/* #86 §0.5 (Release C — fedepini via DevTools): antd wraps every Form.Item's control in its own
+   internal `.ant-form-item-control` (an `.ant-col`) which never receives `min-width: 0` under this
+   project's `labelCol={{span:24}}` (full-row label) pattern. So a Select with `width: 100%` (already
+   set) still can't shrink below its min-content width and overflows the panel column when the panel
+   narrows. This is DEEPER than the project's own Row/Form wrapper classes reached (several DOM levels
+   above antd's generated control column). Global (ungated) so it reaches every Form.Item control,
+   including Select.tsx's bare Form.Item branch. */
+:global(.ant-form-item-control) {
+  min-width: 0;
+}
+
 /* ── Schema-driven form (SchemaFields) ────────────────────────────────────────────────
    ONE coherent unit per property — name + title + description header above its control —
    rendered in EXACT values.schema.json order at every nesting level (no extraction, no
