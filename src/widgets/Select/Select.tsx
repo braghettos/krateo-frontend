@@ -142,16 +142,19 @@ const Select = ({ uid, widgetData }: WidgetProps<SelectWidgetData>) => {
         placeholder={placeholder}
         popupMatchSelectWidth={popupWidth}
         popupRender={renderPanel}
-        prefix={<span className={isAll ? styles.pinAll : styles.pinOn} />}
+        // #86 §0.1: the leading prefix dot was removed — it read as a stray indicator, and the
+        // "All projects" placeholder now centres in the control (Select.module.css .checkSelect).
         // #80 §0.6: this multi-select filters via its custom checkbox popup (popupRender), so antd's
         // inline search input isn't needed. `showSearch={false}` alone does NOT remove it in antd 6
         // multi-mode (the readonly `.ant-select-input` stays and blinks a text caret), so the
         // `.checkSelect` class above pairs it with a CSS rule hiding that input (Select.module.css).
         showSearch={false}
         size={size}
-        // Min width so the placeholder/pills show when the switcher sits in the horizontal header
-        // (a vertical sider gave it the column width; a header flex item would otherwise collapse).
-        style={{ minWidth: 170 }}
+        // #86 §0.2: was a fixed `minWidth: 170` that pinned the switcher to its content width so it
+        // couldn't shrink with the header (colliding with the search box at narrow widths). Now a
+        // 170px flex-basis that CAN shrink to 0 (the placeholder ellipsises) — matching the search
+        // trigger's responsive behaviour so the whole left cluster yields together.
+        style={{ flex: '0 1 170px', minWidth: 0 }}
         tagRender={(props) => (
           <span className={styles.ptag} onMouseDown={(event) => event.stopPropagation()}>
             {props.label}

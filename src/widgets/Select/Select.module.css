@@ -140,28 +140,12 @@
 }
 
 /* ── trigger chip (mockup .proj-chip) ── */
-/* leading pin: amber dot when a filter is active, hollow graphite at "All projects" */
-.pinOn,
-.pinAll {
-  /* #80 §0.6 (reiteration 3): the pin is a bare <span> — without an explicit `display` it stays
-     `display: inline`, on which width/height are IGNORED (CSS 2.1 §10.x), so only `.pinAll`'s 1px
-     border painted → a thin vertical BAR instead of the intended 6px dot/ring. `inline-block`
-     makes the width/height/border-radius actually apply. */
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex: none;
-}
-
-.pinOn {
-  background-color: var(--primary-color);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--primary-color) 85%, transparent);
-}
-
-.pinAll {
-  background: transparent;
-  border: 1px solid var(--gray-color);
+/* #86 §0.1: the leading pin dot (was `.pinOn`/`.pinAll`, set via the removed `prefix` prop in
+   Select.tsx) is gone — it read as a stray indicator. Centre the "All projects" placeholder in the
+   closed control instead. antd 6 renders the multi-select placeholder in
+   `.ant-select-selection-placeholder`; centring its text reads as a balanced chip. */
+.checkSelect :global(.ant-select-selection-placeholder) {
+  text-align: center;
 }
 
 /* selected namespaces → amber pills in the trigger (mockup .ptag) */

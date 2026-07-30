@@ -23,7 +23,12 @@
 }
 
 .freshnessWrapActive {
-  display: block;
+  /* #86 §0.6: when a freshness badge is shown the wrapper becomes a real box; as `display: block`
+     it top-aligned its content, so a widget that its parent Flex had vertically centred jumped to
+     the top the moment a badge appeared (a visible shift on stale/refresh). `flex` + centre keeps
+     the content vertically centred in the box it now occupies, matching the inactive layout. */
+  align-items: center;
+  display: flex;
   height: 100%;
   position: relative;
   width: 100%;

@@ -18,17 +18,36 @@
    the small Select from controlHeightSM, and the Select inflates further once project pills are
    selected. Pin both to one deliberate height HERE (scoped to the header, so tags/selects elsewhere
    are untouched) so the left-cluster pair reads as a matched control group. */
+/* #86 §0.2: the tenant Tag + Projects Select were rigid (fixed height only, no shrink), so only the
+   search box adapted at narrow widths while these stayed pinned to content width and collided. Let
+   them yield: min-width:0 + flex-shrink so they participate in the header's shrink, and the tenant
+   name ellipsises rather than overflowing. */
 .headerLeft :global(.ant-tag) {
   align-items: center;
   display: inline-flex;
+  flex-shrink: 1;
   height: 24px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* min-height on the antd-6 select ROOT (`.ant-select-sm`): antd 6 dropped the v5
    `.ant-select-selector` box this used to target, so the old selector matched nothing and the
-   control stayed ~16px. On the root it lands at exactly 24px (verified live) = the Tag height. */
+   control stayed ~16px. On the root it lands at exactly 24px (verified live) = the Tag height.
+   #86 §0.2: also allow it to shrink (flex-shrink) — the Select.tsx flex-basis (0 1 170px) does the
+   rest; the "All projects" placeholder ellipsises. */
 .headerLeft :global(.ant-select-sm) {
+  flex-shrink: 1;
   min-height: 24px;
+  min-width: 0;
+}
+
+/* #86 §0.2: the tenant Tag + Select are children of a Flex-widget wrapper (flex.header-context)
+   inside .headerLeft; without min-width:0 on that wrapper the shrink chain is blocked one level up. */
+.headerLeft :global(.ant-flex) {
+  min-width: 0;
 }
 
 .headerRight {
