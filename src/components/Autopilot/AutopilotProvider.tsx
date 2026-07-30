@@ -17,7 +17,7 @@ import type { WriteOrigin } from '../../hooks/provenance'
 import { randomId } from '../../utils/utils'
 
 import type { PortalActionProposal, PortalTour } from './actionBridge'
-import { GROUNDING_GUARDRAIL_PROMPT, isPortalBuilderRoute, PORTAL_BUILDER_ROUTING_DIRECTIVE, PORTAL_CAPABILITIES_PROMPT, PORTAL_HOUSE_RULES, parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
+import { parseAutopilotDirectives, sanitizeChatText, useAutopilotActionBridge } from './actionBridge'
 import { AgentDraftProvider } from './agentDraft'
 import { MAX_APPLY_SET_OPS } from './applyResourceSet'
 import type { ApprovalDecision, ApprovalGovernor, ApprovalPause } from './approval'
@@ -147,11 +147,10 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // depends on applyFrame (which arms governors) — break the useCallback cycle with a
   // ref kept current by the effect below.
   const timeoutDenyRef = useRef((_pause: ApprovalPause): void => undefined)
-  const sentFirstRef = useRef(false)
-  const lastEnvelopeRef = useRef<PageContextEnvelope | undefined>(undefined)
-  // A2A conversation id lives in the durable conversation store (alongside the
-  // transcript), so a provider remount does not drop thread continuity. Assigned by
-  // the server on the first turn, replayed on follow-ups, cleared on new-thread.
+  // A2A conversation id AND the page-context delta base both live in the durable
+  // conversation store (alongside the transcript), so a provider remount does not drop
+  // thread continuity nor re-send a full page-context envelope mid-thread. The contextId is
+  // assigned by the server on the first turn, replayed on follow-ups, cleared on new-thread.
   // Accumulated raw assistant text + pending proposals per in-flight turn, used to
   // finalize (strip fenced proposals, auto-apply read-only actions) on `done`.
   const assistantTextRef = useRef<Map<string, string>>(new Map())
@@ -604,35 +603,8 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     }
 
     const envelope = collect()
-    const firstTurn = !sentFirstRef.current
-    sentFirstRef.current = true
-    const baseContext = buildContextDelta(envelope, lastEnvelopeRef.current)
-    lastEnvelopeRef.current = envelope
-    // Assemble the trusted-instruction preamble (outside the page_context data-fence). The
-    // anti-confabulation GROUNDING_GUARDRAIL_PROMPT leads EVERY turn — guardrails decay across a long
-    // A2A thread, and it must be present on the exact turn a page-load question is asked (the
-    // crashloop-pod confabulation bug). Then:
-    //  - Turn 1: teach the full read-only proposal protocol (PORTAL_CAPABILITIES_PROMPT). The A2A
-    //    contextId thread remembers it, so later turns don't re-send the ~30-line block.
-    //  - Later turns: re-inject the tight HOUSE RULES recap instead — the full protocol decays as the
-    //    thread grows, and create/diagnose/install all happen on later turns, exactly where the model
-    //    was dropping the no-YAML / no-tour / no-invented-state guards.
-    // EXTERNALIZED (config-overridable): the turn-1 capabilities protocol and the every-turn house
-    // rules default to the baked-in constants, but an operator can override either via config.json
-    // (chart values → configmap) WITHOUT a frontend image rebuild — the orchestrator prompt is
-    // already an external ConfigMap, so this makes BOTH prompt layers configmap-managed. Absent/empty
-    // config falls back to the baked default (byte-identical to before this seam existed).
-    const capPrompt = config?.api.AUTOPILOT_PORTAL_PROMPT || PORTAL_CAPABILITIES_PROMPT
-    const houseRules = config?.api.AUTOPILOT_PORTAL_HOUSE_RULES || PORTAL_HOUSE_RULES
-    // DETERMINISTIC routing gate: on the Portal Builder route the frontend ASSERTS (from the live
-    // route in the collected envelope) that a build request is an authoring task for the frontend
-    // specialist — injected EVERY turn (a mis-route can happen on any turn), leading the caps/rules so
-    // it is the first thing after the grounding guard. Off every other route it is absent (empty), so
-    // the preamble is byte-identical to before. Closes the "Cluster Health"→clickstack mis-route+crash.
-    const routingDirective = isPortalBuilderRoute(envelope.route) ? `${PORTAL_BUILDER_ROUTING_DIRECTIVE}\n\n` : ''
-    const contextString = firstTurn
-      ? `${GROUNDING_GUARDRAIL_PROMPT}\n\n${routingDirective}${capPrompt}\n\n${baseContext}`
-      : `${GROUNDING_GUARDRAIL_PROMPT}\n\n${routingDirective}${houseRules}\n\n${baseContext}`
+    const baseContext = buildContextDelta(envelope, autopilotConversationStore.getLastEnvelope())
+    autopilotConversationStore.setLastEnvelope(envelope)
 
     const assistantId = randomId()
     const now = Date.now()
@@ -646,10 +618,10 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     setStreaming(true)
 
     abortRef.current = transport.send(
-      { context: contextString, contextId, firstTurn, sessionId, text: trimmed },
+      { context: baseContext, contextId, sessionId, text: trimmed },
       { onFrame: (frame) => applyFrame(assistantId, frame) },
     )
-  }, [applyFrame, collect, config?.api.AUTOPILOT_PORTAL_HOUSE_RULES, config?.api.AUTOPILOT_PORTAL_PROMPT, contextId, sessionId, setMessages, streaming, transport])
+  }, [applyFrame, collect, contextId, sessionId, setMessages, streaming, transport])
 
   // Keep the finalize-side recovery trampoline pointing at the CURRENT send closure.
   useEffect(() => {
@@ -682,14 +654,13 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     }
     approvalRef.current = null
     setPendingApproval(null)
-    sentFirstRef.current = false
     recoveryCountRef.current = 0
-    lastEnvelopeRef.current = undefined
     assistantTextRef.current.clear()
     proposalsRef.current.clear()
     finalizedRef.current.clear()
-    // Reset the durable conversation store in one shot: empty transcript, fresh session
-    // id, cleared A2A contextId (was setMessages([]) + setSessionId + contextIdRef clear).
+    // Reset the durable conversation store in one shot: empty transcript, fresh session id,
+    // cleared A2A contextId, cleared page-context delta base (so the first turn of the new
+    // thread sends the full envelope again, not an "Unchanged:" note against the old one).
     autopilotConversationStore.reset()
     setStreaming(false)
     setTour(null)

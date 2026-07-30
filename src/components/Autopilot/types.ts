@@ -167,10 +167,12 @@ export interface AutopilotSendRequest {
   contextId?: string
   /** The user's prompt text. */
   text: string
-  /** The redacted, fenced page-context string (full or delta). */
+  /**
+   * The redacted `<page_context>` fence (full envelope or delta), prepended to `text` on the wire.
+   * This is the ONLY thing that rides ahead of the user's text — the portal-rail instruction
+   * protocol lives in the orchestrator's system prompt, never in the turn.
+   */
   context: string
-  /** True only for the first turn of a session (full context, greeting hint). */
-  firstTurn: boolean
 }
 
 /**
