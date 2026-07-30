@@ -50,8 +50,15 @@
 }
 
 /* #86 §0.2: the tenant Tag + Select are children of a Flex-widget wrapper (flex.header-context)
-   inside .headerLeft; without min-width:0 on that wrapper the shrink chain is blocked one level up. */
+   inside .headerLeft. Two things this rule must do:
+   • min-width:0 — without it the shrink chain is blocked one level up (narrow-width ellipsis).
+   • flex:1 1 auto — GROW to fill the now-widened .headerLeft (which itself grew, §0.2 above). Without
+     this the wrapper stays at min-content (~173px) even when .headerLeft is ~666px, so the Tag stayed
+     truncated to "krateo-en…" despite the room (verified live, frontend 1.3.121). Growing it lets the
+     Tag render at natural width; Tag+Select still hug the LEFT (antd Flex justifies flex-start, so the
+     surplus is trailing empty space), and it still shrinks under genuine narrow pressure. */
 .headerLeft :global(.ant-flex) {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
