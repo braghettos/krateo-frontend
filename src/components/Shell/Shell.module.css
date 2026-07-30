@@ -35,6 +35,13 @@
      just the Select — all three controls share the header row, so 24px vs 36px read as a real
      mismatch next to the search box. */
   height: 36px;
+  /* #86 header-flex rework (live-validated): cap the tenant tag deterministically so a longer tenant
+     name (custom Theme CR) can't widen the left cluster unbounded — it ellipsises past 145px (≈ the
+     natural width of "⬡ krateo-enterprise"). NB the WORKING layout is the grow chain (.headerLeft +
+     inner .ant-flex both `flex:1 1 auto`); `width:max-content` on .ant-flex was tried and REJECTED —
+     live it resolves to ~min-content (~173px) and re-truncates the tag. Keep the grow; this max-width
+     + the one on .ant-select-sm are the robustness bound, not the layout mechanism. */
+  max-width: 145px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -50,6 +57,12 @@
   flex-shrink: 1;
   /* #86 Release C (fedepini): 36px to match the header search trigger + the tenant Tag above. */
   min-height: 36px;
+  /* #86 header-flex rework (live-validated): a deterministic CEILING so the Projects select can NEVER
+     balloon toward ~520px again — even if a future edit gives it flex-grow (proven live: with the
+     inner .ant-flex growing + Select.tsx `flex:0 1 170px`, the select settles ~170px; adding grow was
+     capped at 240 by this max-width instead of ballooning). This defends the exact failure mode that
+     forced 4 prior cuts, without changing the working grow-based layout. */
+  max-width: 240px;
   min-width: 0;
 }
 
