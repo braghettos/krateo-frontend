@@ -140,14 +140,18 @@
 }
 
 /* ── trigger chip (mockup .proj-chip) ── */
-/* #86 §0.1 (Release C — fedepini via DevTools): the "All projects" text read off-centre. The real
-   cause is antd 6's `.ant-select-selection-content` forcing `line-height: 1`, which pins the glyphs to
-   that box's own baseline rather than centring them in the taller flex row — so `align-items: center`
-   on the content couldn't take effect. `line-height: normal` lets it centre; `text-align: center`
-   centres horizontally in the closed control. (The earlier `.ant-select-selection-placeholder` rule
-   was a v5-era no-op in antd 6 — the placeholder text lives in `.ant-select-selection-content`.) */
-.checkSelect :global(.ant-select-selection-content) {
-  line-height: normal;
+/* #86 §0.1 (Release C, corrected live): the "All projects" text read ~10px above the 36px control's
+   centre. The real cause is the multi-select ROOT defaulting to `align-items: flex-start` (so multiple
+   selected-tag rows stack from the top) — which top-aligns the single placeholder too. Centring the
+   root's cross-axis drops the vertical offset to 0 (verified live). The placeholder itself is the
+   antd 6 element `.ant-select-placeholder` (NOT the v5 `.ant-select-selection-*` names — those were
+   no-ops here); `text-align: center` centres it horizontally. `:global(.ant-select)` on the same
+   `.checkSelect` element out-specifies antd's base root rule. */
+.checkSelect:global(.ant-select) {
+  align-items: center;
+}
+
+.checkSelect :global(.ant-select-placeholder) {
   text-align: center;
 }
 
