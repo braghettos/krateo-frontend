@@ -32,7 +32,7 @@ describe('navigateOrExternal', () => {
     navigateOrExternal(navigate, '/compositions/ns/name')
     expect(navigate).toHaveBeenCalledWith('/compositions/ns/name')
 
-    const resolve = (p: string) => `${p}?merged=1`
+    const resolve = (path: string) => `${path}?merged=1`
     navigateOrExternal(navigate, '/compositions', resolve)
     expect(navigate).toHaveBeenCalledWith('/compositions?merged=1')
   })

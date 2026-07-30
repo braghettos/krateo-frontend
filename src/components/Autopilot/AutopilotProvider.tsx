@@ -664,7 +664,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     setStreaming(false)
     // Settle any still-streaming bubble so the UI drops the caret and re-enables the composer.
     setMessages((prev) => prev.map((message) => (message.streaming ? { ...message, streaming: false } : message)))
-  }, [])
+  }, [setMessages])
 
   const newThread = useCallback(() => {
     abortRef.current?.()

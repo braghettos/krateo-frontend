@@ -124,6 +124,18 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
     </div>
   )
 
+  // #86: the extra-value node (status Badge / soft Tag / plain text) as a helper — keeps the `extra`
+  // JSX below free of a nested ternary (no-nested-ternary).
+  const renderExtraValue = () => {
+    if (extraVariant === 'badge') {
+      return <Badge className={styles.statusBadge} status={(extraStatus ?? 'processing') as 'success' | 'processing' | 'warning' | 'error' | 'default'} text={extra} />
+    }
+    if (extraVariant === 'tag') {
+      return <Tag style={getTagStyle(extraStatus)}>{extra}</Tag>
+    }
+    return extra
+  }
+
   return (
     <AntdCard
       className={`${styles.panel} ${action ? styles.clickable : ''} ${!title && !cover && !footer && !!items?.length ? styles.statCard : ''} ${extraEndpoint ? styles.hasExtraAction : ''}`}
@@ -132,8 +144,6 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
       // `anchorId` makes this panel an in-page scroll target: a `[…](#anchorId)` link (e.g. from a
       // summary/table-of-contents Markdown widget) scrolls here. scroll-margin-top clears the sticky
       // app header so the panel top isn't hidden under it. (issue #69 — summary bullets as a ToC.)
-      id={anchorId ?? undefined}
-      style={anchorId ? { scrollMarginTop: 80 } : undefined}
       extra={
         (extra || tooltip || extraEndpoint || (legend && legend.length > 0))
           ? (
@@ -148,11 +158,7 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
                   ))}
                 </div>
               )}
-              {extra && (extraVariant === 'badge'
-                ? <Badge className={styles.statusBadge} status={(extraStatus ?? 'processing') as 'success' | 'processing' | 'warning' | 'error' | 'default'} text={extra} />
-                : extraVariant === 'tag'
-                  ? <Tag style={getTagStyle(extraStatus)}>{extra}</Tag>
-                  : extra)}
+              {extra && renderExtraValue()}
               {/* #83 §0.7: a real widget (e.g. a Button) in the header top-right, with its own action. */}
               {extraEndpoint && <WidgetRenderer widgetEndpoint={extraEndpoint} />}
               {tooltip && (
@@ -164,12 +170,14 @@ const Card = ({ resourcesRefs, uid, widget, widgetData }: WidgetProps<CardWidget
           )
           : undefined
       }
+      id={anchorId ?? undefined}
       key={uid}
       loading={isActionLoading}
       onClick={isClickable ? handleClick : undefined}
       onKeyDown={onKeyDown}
       role={isClickable ? 'button' : undefined}
       size={size}
+      style={anchorId ? { scrollMarginTop: 80 } : undefined}
       tabIndex={isClickable ? 0 : undefined}
       title={
         title

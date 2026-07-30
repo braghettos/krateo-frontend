@@ -59,7 +59,6 @@ const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
 
       {/* Non-antd: react-markdown — antd has no markdown renderer (see docs/widget-authoring.md). */}
       <ReactMarkdown
-        key={uid}
         components={{
           // In-page anchor links `[text](#id)` (e.g. a summary table-of-contents, issue #69) smooth-
           // scroll to the element with that id — intercepted so react-router doesn't treat the hash as
@@ -106,6 +105,7 @@ const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
             </pre>
           ),
         }}
+        key={uid}
       >
         {markdown}
       </ReactMarkdown>

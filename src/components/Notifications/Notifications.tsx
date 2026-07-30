@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router'
 import type { SSEK8sEvent } from '../../utils/types'
 import { DrawerHeader, drawerCloseProps } from '../DrawerHeader/DrawerHeader'
 
-import { useNotifications } from './NotificationsContext'
 import styles from './Notifications.module.css'
+import { useNotifications } from './NotificationsContext'
 
 const { Text } = Typography
 
@@ -17,11 +17,11 @@ const { Text } = Typography
 const VISIBLE_LIMIT = 50
 
 function formatTimestamp(ts: string | null | undefined): string {
-  if (!ts) return ''
+  if (!ts) { return '' }
   const diff = Date.now() - new Date(ts).getTime()
-  if (diff < 60_000) return 'just now'
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`
+  if (diff < 60_000) { return 'just now' }
+  if (diff < 3_600_000) { return `${Math.floor(diff / 60_000)}m ago` }
+  if (diff < 86_400_000) { return `${Math.floor(diff / 3_600_000)}h ago` }
   return `${Math.floor(diff / 86_400_000)}d ago`
 }
 
@@ -41,26 +41,26 @@ function dedupeEvents(events: SSEK8sEvent[]): DedupedEvent[] {
     ].join('\0')
     const existing = groups.get(key)
     if (existing) {
-      existing.count++
+      existing.count += 1
       const ta = new Date(existing.event.lastTimestamp ?? existing.event.firstTimestamp ?? existing.event.eventTime ?? 0).getTime()
       const tb = new Date(event.lastTimestamp ?? event.firstTimestamp ?? event.eventTime ?? 0).getTime()
-      if (tb > ta) existing.event = event
+      if (tb > ta) { existing.event = event }
     } else {
       groups.set(key, { count: 1, event })
     }
   }
-  return Array.from(groups.values()).sort((a, b) => {
-    if (a.event.type === 'Warning' && b.event.type !== 'Warning') return -1
-    if (a.event.type !== 'Warning' && b.event.type === 'Warning') return 1
-    const ta = new Date(a.event.lastTimestamp ?? a.event.firstTimestamp ?? a.event.eventTime ?? 0).getTime()
-    const tb = new Date(b.event.lastTimestamp ?? b.event.firstTimestamp ?? b.event.eventTime ?? 0).getTime()
+  return Array.from(groups.values()).sort((ea, eb) => {
+    if (ea.event.type === 'Warning' && eb.event.type !== 'Warning') { return -1 }
+    if (ea.event.type !== 'Warning' && eb.event.type === 'Warning') { return 1 }
+    const ta = new Date(ea.event.lastTimestamp ?? ea.event.firstTimestamp ?? ea.event.eventTime ?? 0).getTime()
+    const tb = new Date(eb.event.lastTimestamp ?? eb.event.firstTimestamp ?? eb.event.eventTime ?? 0).getTime()
     return tb - ta
   })
 }
 
 function toResourceUrl(event: SSEK8sEvent): string | null {
   const obj = event.involvedObject
-  if (!obj.kind || !obj.name) return null
+  if (!obj.kind || !obj.name) { return null }
   const ns = obj.namespace || 'cluster'
   const apiVer = obj.apiVersion ?? 'v1'
   let group = ''
@@ -70,7 +70,7 @@ function toResourceUrl(event: SSEK8sEvent): string | null {
     group = apiVer.slice(0, idx)
     version = apiVer.slice(idx + 1)
   }
-  const plural = obj.kind.toLowerCase() + 's'
+  const plural = `${obj.kind.toLowerCase()}s`
   return `/resources/${ns}/${group}/${version}/${plural}/${obj.name}`
 }
 
@@ -87,12 +87,12 @@ const EventItem = memo(function EventItem({ deduped, onNavigate }: { deduped: De
     <List.Item
       actions={ts
         ? [
-            <Tooltip key='ts' title={ts}>
-              <Text style={{ fontSize: 11, whiteSpace: 'nowrap' }} type='secondary'>
-                {formatTimestamp(ts)}
-              </Text>
-            </Tooltip>,
-          ]
+          <Tooltip key='ts' title={ts}>
+            <Text style={{ fontSize: 11, whiteSpace: 'nowrap' }} type='secondary'>
+              {formatTimestamp(ts)}
+            </Text>
+          </Tooltip>,
+        ]
         : []}
       onClick={resourceUrl ? () => onNavigate(resourceUrl) : undefined}
       style={resourceUrl ? { cursor: 'pointer' } : undefined}

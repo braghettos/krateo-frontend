@@ -55,11 +55,11 @@ const titleCaseSlug = (slug: string): string =>
  */
 export const pageNavFragment = (slug: string, hint?: NavHint): string => {
   const item = {
-    label: hint?.label?.trim() || titleCaseSlug(slug),
     icon: hint?.icon?.trim() || 'fa-file',
+    label: hint?.label?.trim() || titleCaseSlug(slug),
     order: typeof hint?.order === 'number' && Number.isFinite(hint.order) ? hint.order : 950,
-    path: `/${slug}`,
     page: slug,
+    path: `/${slug}`,
   }
   return dump({ item }, { lineWidth: -1, noRefs: true, sortKeys: false })
 }

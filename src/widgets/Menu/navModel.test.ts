@@ -75,8 +75,10 @@ describe('Menu navModel', () => {
   it('fail-open ONLY for no-resourceRefId (convention pages); a resourceRefId whose ref is absent (denied/removed) is HIDDEN', () => {
     const { entries } = buildNavModel(
       [
-        { label: 'Marketplace', order: 1, path: '/marketplace' }, // no resourceRefId → convention page → shown
-        { label: 'Ghost', order: 2, path: '/ghost', resourceRefId: 'missing' }, // ref absent → denied/removed → hidden
+        // no resourceRefId → convention page → shown
+        { label: 'Marketplace', order: 1, path: '/marketplace' },
+        // ref absent → denied/removed → hidden
+        { label: 'Ghost', order: 2, path: '/ghost', resourceRefId: 'missing' },
       ],
       { items: [] },
       'krateo-system',

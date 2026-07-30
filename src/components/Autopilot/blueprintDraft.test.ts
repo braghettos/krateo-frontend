@@ -29,19 +29,19 @@ describe('stripCodeFence — de-fence a model-wrapped file body', () => {
     expect(stripCodeFence(`"""${json}"""`)).toBe(json)
   })
   it('strips a markdown fence, including an opening language tag', () => {
-    expect(stripCodeFence('```json\n' + json + '\n```')).toBe(json)
-    expect(stripCodeFence('```\n' + json + '\n```')).toBe(json)
+    expect(stripCodeFence(`\`\`\`json\n${json}\n\`\`\``)).toBe(json)
+    expect(stripCodeFence(`\`\`\`\n${json}\n\`\`\``)).toBe(json)
   })
   it('leaves genuine content untouched (no wrapper)', () => {
     expect(stripCodeFence(json)).toBe(json)
     expect(stripCodeFence('replicaCount: 1\nimage:\n  tag: latest')).toBe('replicaCount: 1\nimage:\n  tag: latest')
   })
   it('parseRawTemplates de-fences every file body so the schema then parses', () => {
-    const cleaned = parseRawTemplates({ 'values.schema.json': `'''${json}'''`, 'Chart.yaml': '```yaml\nname: x\n```' })
+    const cleaned = parseRawTemplates({ 'Chart.yaml': '```yaml\nname: x\n```', 'values.schema.json': `'''${json}'''` })
     expect(cleaned).not.toBeNull()
     expect(cleaned!['values.schema.json']).toBe(json)
     expect(cleaned!['Chart.yaml']).toBe('name: x')
-    expect(() => JSON.parse(cleaned!['values.schema.json'])).not.toThrow()
+    expect(() => { JSON.parse(cleaned!['values.schema.json']) }).not.toThrow()
   })
 })
 

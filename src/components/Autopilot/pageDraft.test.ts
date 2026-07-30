@@ -34,14 +34,14 @@ describe('pageDraftFiles', () => {
     expect(load(files!['card.pg-summary.yaml'])).toEqual(card)
     // The nav fragment is { item: {label,icon,order,path,page} } with slug-derived defaults.
     expect(load(files!['nav-fragment.postgres.yaml'])).toEqual({
-      item: { label: 'Postgres', icon: 'fa-file', order: 950, path: '/postgres', page: 'postgres' },
+      item: { icon: 'fa-file', label: 'Postgres', order: 950, page: 'postgres', path: '/postgres' },
     })
   })
 
   it('applies the optional nav hint (label/icon/order) to the fragment', () => {
-    const files = pageDraftFiles([flexRoot], { label: 'PG Health', icon: 'fa-database', order: 12 })!
+    const files = pageDraftFiles([flexRoot], { icon: 'fa-database', label: 'PG Health', order: 12 })!
     expect(load(files['nav-fragment.postgres.yaml'])).toEqual({
-      item: { label: 'PG Health', icon: 'fa-database', order: 12, path: '/postgres', page: 'postgres' },
+      item: { icon: 'fa-database', label: 'PG Health', order: 12, page: 'postgres', path: '/postgres' },
     })
   })
 
@@ -62,7 +62,7 @@ describe('pageDraftFiles', () => {
 
 describe('nav fragment helpers (#106)', () => {
   it('pageRootSlug extracts <slug> from the flex.page-<slug>.yaml key, else null', () => {
-    expect(pageRootSlug({ 'flex.page-postgres.yaml': '...', 'card.x.yaml': '...' })).toBe('postgres')
+    expect(pageRootSlug({ 'card.x.yaml': '...', 'flex.page-postgres.yaml': '...' })).toBe('postgres')
     expect(pageRootSlug({ 'card.x.yaml': '...', 'table.y.yaml': '...' })).toBeNull()
   })
 
@@ -73,7 +73,7 @@ describe('nav fragment helpers (#106)', () => {
 
   it('pageNavFragment title-cases a multi-word slug for the default label', () => {
     expect(load(pageNavFragment('cost-report'))).toEqual({
-      item: { label: 'Cost Report', icon: 'fa-file', order: 950, path: '/cost-report', page: 'cost-report' },
+      item: { icon: 'fa-file', label: 'Cost Report', order: 950, page: 'cost-report', path: '/cost-report' },
     })
   })
 })

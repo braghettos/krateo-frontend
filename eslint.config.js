@@ -232,6 +232,16 @@ export default tsEslint.config(
       'no-regex-spaces': 'error',
       // @ts-ignore
       'no-restricted-globals': ['error'].concat(restrictedGlobals),
+      // #86 §0.10: don't hand-roll a new antd Drawer — use components/DrawerHeader + drawerCloseProps
+      // with an existing drawer surface. The three legitimate surfaces are allow-listed at the end
+      // of this config so this ban applies everywhere else.
+      'no-restricted-imports': ['error', {
+        paths: [{
+          importNames: ['Drawer'],
+          message: 'Use components/DrawerHeader + drawerCloseProps with an existing drawer surface; do not hand-roll a new antd Drawer (issue #86 §0.10).',
+          name: 'antd',
+        }],
+      }],
       'no-restricted-properties': [
         'error',
         {
@@ -496,5 +506,13 @@ export default tsEslint.config(
     settings: {
       react: { version: 'detect' },
     },
+  },
+
+  // #86 §0.10: the shared drawer surfaces legitimately import antd `Drawer`; allow-list them so the
+  // ban above applies everywhere else (a 5th hand-rolled drawer can't bypass components/DrawerHeader).
+  {
+    files: ['src/widgets/Drawer/Drawer.tsx', 'src/components/Notifications/Notifications.tsx', 'src/components/Autopilot/previewSurface.tsx'],
+    name: 'Allow raw antd Drawer in the shared drawer surfaces (#86 §0.10)',
+    rules: { 'no-restricted-imports': 'off' },
   }
 )

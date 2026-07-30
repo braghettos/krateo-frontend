@@ -105,7 +105,7 @@ export const buildNavModel = (
 
   const entries: NavEntry[] = sorted.flatMap((item, idx): NavEntry[] => {
     if (item.type === 'divider') {
-      return [{ type: 'divider' as const, key: `divider-${item.order ?? idx}` }]
+      return [{ key: `divider-${item.order ?? idx}`, type: 'divider' as const }]
     }
     if (item.label && item.path && isNavEntryAllowed(item, resourcesRefs)) {
       return [{ iconName: item.icon, key: item.path, label: item.label }]

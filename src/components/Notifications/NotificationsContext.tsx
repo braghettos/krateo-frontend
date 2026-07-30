@@ -24,11 +24,11 @@ const openStore = {
   setOpen: (next: boolean): void => {
     if (drawerOpen === next) { return }
     drawerOpen = next
-    listeners.forEach((l) => { l() })
+    listeners.forEach((listener) => { listener() })
   },
-  subscribe: (cb: () => void): (() => void) => {
-    listeners.add(cb)
-    return () => { listeners.delete(cb) }
+  subscribe: (callback: () => void): (() => void) => {
+    listeners.add(callback)
+    return () => { listeners.delete(callback) }
   },
 }
 

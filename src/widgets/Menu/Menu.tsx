@@ -47,13 +47,13 @@ export function Menu({ resourcesRefs, uid, widgetData }: WidgetProps<MenuWidgetD
 
   const menuItems: ItemType[] = useMemo(
     () => entries.map((entry) =>
-      entry.type === 'divider'
-        ? { type: 'divider' as const, key: entry.key }
+      (entry.type === 'divider'
+        ? { key: entry.key, type: 'divider' as const }
         : {
-            icon: entry.iconName ? <FontAwesomeIcon icon={entry.iconName as IconProp} /> : undefined,
-            key: entry.key,
-            label: entry.label,
-          }
+          icon: entry.iconName ? <FontAwesomeIcon icon={entry.iconName as IconProp} /> : undefined,
+          key: entry.key,
+          label: entry.label,
+        })
     ),
     [entries]
   )

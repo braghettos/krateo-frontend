@@ -22,26 +22,26 @@ const crd = {
     versions: [
       {
         name: 'v1alpha1',
-        served: true,
-        storage: true,
         schema: {
           openAPIV3Schema: {
             properties: {
               spec: {
-                type: 'object',
-                required: ['owner', 'repo', 'path'],
                 properties: {
-                  owner: { type: 'string', description: 'The repo owner.' },
-                  repo: { type: 'string' },
-                  path: { type: 'string' },
+                  configurationRef: { description: 'Auth Configuration ref.\nsecond line', type: 'object' },
                   content: { type: 'string' },
-                  configurationRef: { type: 'object', description: 'Auth Configuration ref.\nsecond line' },
+                  owner: { description: 'The repo owner.', type: 'string' },
+                  path: { type: 'string' },
+                  repo: { type: 'string' },
                   retries: { 'x-kubernetes-int-or-string': true },
                 },
+                required: ['owner', 'repo', 'path'],
+                type: 'object',
               },
             },
           },
         },
+        served: true,
+        storage: true,
       },
     ],
   },
