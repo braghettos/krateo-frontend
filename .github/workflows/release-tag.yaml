@@ -43,6 +43,8 @@ jobs:
       - name: Build and push (linux/amd64)
         uses: docker/build-push-action@v7
         with:
+          context: ui
+          file: ui/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
