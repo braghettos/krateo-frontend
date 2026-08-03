@@ -2,10 +2,17 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# Global values shared across (sub)charts.
+global:
+  # Optional registry-host override applied to EVERY image (mirror / air-gapped installs).
+  # When set, it replaces the per-image `registry` host; repository paths are preserved.
+  imageRegistry: ""
+
 replicaCount: 1
 
 image:
-  repository: ghcr.io/krateo-platformops/frontend
+  registry: ghcr.io
+  repository: krateo-platformops/frontend
   pullPolicy: IfNotPresent
   # Empty -> the chart appVersion (= APP_VERSION = latest tag of the frontend app repo), so the
   # chart always deploys the image the app fork actually built. Override here to pin a tag.
@@ -215,4 +222,10 @@ previewSandbox:
   # delete is the fast path; this is the backstop for dead tabs.
   janitor:
     schedule: "0 * * * *"
-    image: bitnami/kubectl:latest
+    # bitnami/kubectl is a Docker Hub short name (no dotted host) -> registry left empty
+    # so nothing is prepended by default; global.imageRegistry still relocates it for
+    # mirror / air-gapped installs.
+    image:
+      registry: ""
+      repository: bitnami/kubectl
+      tag: latest

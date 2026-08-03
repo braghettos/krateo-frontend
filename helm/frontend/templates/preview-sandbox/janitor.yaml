@@ -91,7 +91,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: janitor
-              image: {{ .Values.previewSandbox.janitor.image }}
+              image: {{ include "krateo.image" (dict "img" .Values.previewSandbox.janitor.image "global" .Values.global "defaultTag" "latest") | quote }}
               command: ["/bin/bash", "-ec"]
               args:
                 - |

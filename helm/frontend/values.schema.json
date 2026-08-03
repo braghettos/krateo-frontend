@@ -15,10 +15,16 @@
       "title": "Image",
       "additionalProperties": false,
       "properties": {
+        "registry": {
+          "type": "string",
+          "title": "Image registry",
+          "description": "Registry host. Overridden by global.imageRegistry when that is set.",
+          "default": "ghcr.io"
+        },
         "repository": {
           "type": "string",
           "title": "Image repository",
-          "default": "ghcr.io/krateo-platformops/frontend"
+          "default": "krateo-platformops/frontend"
         },
         "pullPolicy": {
           "type": "string",
@@ -531,10 +537,28 @@
               "default": "0 * * * *"
             },
             "image": {
-              "type": "string",
+              "type": "object",
               "title": "Janitor image",
               "description": "kubectl-capable image used by the sweep CronJob.",
-              "default": "bitnami/kubectl:latest"
+              "additionalProperties": false,
+              "properties": {
+                "registry": {
+                  "type": "string",
+                  "title": "Image registry",
+                  "description": "Registry host (empty for the Docker Hub short name). Overridden by global.imageRegistry when that is set.",
+                  "default": ""
+                },
+                "repository": {
+                  "type": "string",
+                  "title": "Image repository",
+                  "default": "bitnami/kubectl"
+                },
+                "tag": {
+                  "type": "string",
+                  "title": "Image tag",
+                  "default": "latest"
+                }
+              }
             }
           }
         }
@@ -624,7 +648,15 @@
     "global": {
       "type": "object",
       "title": "Global values",
-      "description": "Helm global values (injected when used as a subchart)."
+      "description": "Helm global values (injected when used as a subchart).",
+      "properties": {
+        "imageRegistry": {
+          "type": "string",
+          "title": "Global image registry",
+          "description": "Optional registry-host override applied to EVERY image (mirror / air-gapped installs). When set, it replaces the per-image registry host; repository paths are preserved.",
+          "default": ""
+        }
+      }
     }
   }
 }
