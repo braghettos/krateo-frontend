@@ -5,7 +5,7 @@
 > (resolved to JSON by snowplow) and maps each `kind` to a React component via an auto-discovered
 > widget registry. Routes, sidebar, and content all come from CRs at runtime. This index is the
 > agent entry point to the **internals & runtime** view. The **deployment, CRD-schema and wiring**
-> view lives in the chart repo `braghettos/krateo-frontend-chart` `docs/`.
+> view lives in the chart repo `krateo-platformops/frontend` `docs/`.
 
 ## How to use this index (agents)
 
@@ -16,7 +16,7 @@ matches the running build**, not `main`:
   (== the chart's `appVersion`, stamped from this repo's latest semver tag). Read this repo's
   `docs/` at the **image-version** tag.
 - **chart version** = `CompositionDefinition.spec.chart.version` for frontend → the
-  `braghettos/krateo-frontend-chart` repo tag. Read the deployment/CRD/wiring docs there at the
+  `krateo-platformops/frontend` repo tag. Read the deployment/CRD/wiring docs there at the
   **chart-version** tag.
 
 If something isn't in the docs, read the source at that same tag — don't guess, and don't trust

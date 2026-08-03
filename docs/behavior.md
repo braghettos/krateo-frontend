@@ -2,7 +2,7 @@
 
 What the SPA does at runtime and the contracts it has with the backends. Traced at `file:line`
 against the current tree; code wins over prose. Internals are in `architecture.md`; deployment/CRD
-schema lives in `braghettos/krateo-frontend-chart` `docs/`.
+schema lives in `krateo-platformops/frontend` `docs/`.
 
 ## Runtime configuration — `config.json`
 

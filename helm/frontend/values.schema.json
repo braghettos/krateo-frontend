@@ -1,0 +1,630 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "title": "Frontend",
+  "description": "Krateo Frontend blueprint \u2014 full-coverage schema (chart 1.0.10).",
+  "additionalProperties": false,
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "title": "Replica count",
+      "default": 1
+    },
+    "image": {
+      "type": "object",
+      "title": "Image",
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string",
+          "title": "Image repository",
+          "default": "ghcr.io/krateo-platformops/frontend"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "title": "Image pull policy",
+          "enum": [
+            "IfNotPresent",
+            "Always",
+            "Never"
+          ],
+          "default": "IfNotPresent"
+        },
+        "tag": {
+          "type": "string",
+          "title": "Image tag",
+          "description": "Overrides the image tag whose default is the chart appVersion.",
+          "default": ""
+        }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "title": "Image pull secrets",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "nameOverride": {
+      "type": "string",
+      "title": "Name override",
+      "default": ""
+    },
+    "fullnameOverride": {
+      "type": "string",
+      "title": "Fullname override",
+      "default": ""
+    },
+    "serviceAccount": {
+      "type": "object",
+      "title": "Service account",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "title": "Create service account",
+          "default": true
+        },
+        "automount": {
+          "type": "boolean",
+          "title": "Automount service account token",
+          "default": true
+        },
+        "annotations": {
+          "type": "object",
+          "title": "Service account annotations",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "name": {
+          "type": "string",
+          "title": "Service account name",
+          "default": ""
+        }
+      }
+    },
+    "podAnnotations": {
+      "type": "object",
+      "title": "Pod annotations",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "podLabels": {
+      "type": "object",
+      "title": "Pod labels",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "title": "Pod security context",
+      "default": {}
+    },
+    "securityContext": {
+      "type": "object",
+      "title": "Container security context",
+      "default": {}
+    },
+    "service": {
+      "type": "object",
+      "title": "Service",
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "type": "object",
+          "title": "Service annotations",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "type": {
+          "type": "string",
+          "title": "Service type",
+          "enum": [
+            "ClusterIP",
+            "NodePort",
+            "LoadBalancer"
+          ],
+          "default": "ClusterIP"
+        },
+        "port": {
+          "type": "integer",
+          "title": "Service port",
+          "default": 8080
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "title": "Ingress",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable ingress",
+          "default": false
+        },
+        "className": {
+          "type": "string",
+          "title": "Ingress class name",
+          "default": ""
+        },
+        "annotations": {
+          "type": "object",
+          "title": "Ingress annotations",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "hosts": {
+          "type": "array",
+          "title": "Ingress hosts",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string",
+                "title": "Host"
+              },
+              "paths": {
+                "type": "array",
+                "title": "Paths",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "title": "Path"
+                    },
+                    "pathType": {
+                      "type": "string",
+                      "title": "Path type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": [
+            {
+              "host": "chart-example.local",
+              "paths": [
+                {
+                  "path": "/",
+                  "pathType": "ImplementationSpecific"
+                }
+              ]
+            }
+          ]
+        },
+        "tls": {
+          "type": "array",
+          "title": "TLS configuration",
+          "items": {
+            "type": "object"
+          },
+          "default": []
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "title": "Resources",
+      "default": {}
+    },
+    "livenessProbe": {
+      "type": "object",
+      "title": "Liveness probe",
+      "properties": {
+        "httpGet": {
+          "type": "object",
+          "title": "HTTP GET action",
+          "properties": {
+            "path": {
+              "type": "string",
+              "title": "Path"
+            },
+            "port": {
+              "x-kubernetes-int-or-string": true,
+              "title": "Port"
+            },
+            "host": {
+              "type": "string",
+              "title": "Host"
+            },
+            "scheme": {
+              "type": "string",
+              "title": "Scheme"
+            }
+          }
+        },
+        "tcpSocket": {
+          "type": "object",
+          "title": "TCP socket action",
+          "properties": {
+            "port": {
+              "x-kubernetes-int-or-string": true,
+              "title": "Port"
+            },
+            "host": {
+              "type": "string",
+              "title": "Host"
+            }
+          }
+        },
+        "exec": {
+          "type": "object",
+          "title": "Exec action",
+          "properties": {
+            "command": {
+              "type": "array",
+              "title": "Command",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "initialDelaySeconds": {
+          "type": "integer",
+          "title": "Initial delay seconds"
+        },
+        "periodSeconds": {
+          "type": "integer",
+          "title": "Period seconds"
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "title": "Timeout seconds"
+        },
+        "successThreshold": {
+          "type": "integer",
+          "title": "Success threshold"
+        },
+        "failureThreshold": {
+          "type": "integer",
+          "title": "Failure threshold"
+        }
+      },
+      "default": {
+        "httpGet": {
+          "path": "/",
+          "port": "http"
+        }
+      }
+    },
+    "readinessProbe": {
+      "type": "object",
+      "title": "Readiness probe",
+      "properties": {
+        "httpGet": {
+          "type": "object",
+          "title": "HTTP GET action",
+          "properties": {
+            "path": {
+              "type": "string",
+              "title": "Path"
+            },
+            "port": {
+              "x-kubernetes-int-or-string": true,
+              "title": "Port"
+            },
+            "host": {
+              "type": "string",
+              "title": "Host"
+            },
+            "scheme": {
+              "type": "string",
+              "title": "Scheme"
+            }
+          }
+        },
+        "tcpSocket": {
+          "type": "object",
+          "title": "TCP socket action",
+          "properties": {
+            "port": {
+              "x-kubernetes-int-or-string": true,
+              "title": "Port"
+            },
+            "host": {
+              "type": "string",
+              "title": "Host"
+            }
+          }
+        },
+        "exec": {
+          "type": "object",
+          "title": "Exec action",
+          "properties": {
+            "command": {
+              "type": "array",
+              "title": "Command",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "initialDelaySeconds": {
+          "type": "integer",
+          "title": "Initial delay seconds"
+        },
+        "periodSeconds": {
+          "type": "integer",
+          "title": "Period seconds"
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "title": "Timeout seconds"
+        },
+        "successThreshold": {
+          "type": "integer",
+          "title": "Success threshold"
+        },
+        "failureThreshold": {
+          "type": "integer",
+          "title": "Failure threshold"
+        }
+      },
+      "default": {
+        "httpGet": {
+          "path": "/",
+          "port": "http"
+        }
+      }
+    },
+    "autoscaling": {
+      "type": "object",
+      "title": "Autoscaling",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable autoscaling",
+          "default": false
+        },
+        "minReplicas": {
+          "type": "integer",
+          "title": "Minimum replicas",
+          "default": 1
+        },
+        "maxReplicas": {
+          "type": "integer",
+          "title": "Maximum replicas",
+          "default": 100
+        },
+        "targetCPUUtilizationPercentage": {
+          "type": "integer",
+          "title": "Target CPU utilization percentage",
+          "default": 80
+        },
+        "targetMemoryUtilizationPercentage": {
+          "type": "integer",
+          "title": "Target memory utilization percentage"
+        }
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "title": "Node selector",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "tolerations": {
+      "type": "array",
+      "title": "Tolerations",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "affinity": {
+      "type": "object",
+      "title": "Affinity",
+      "default": {}
+    },
+    "previewSandbox": {
+      "type": "object",
+      "title": "Preview sandbox",
+      "description": "Portal-builder live preview (previewPage v2): provisions the quarantined namespace where draft widget/RESTAction CRs are applied and served by the real snowplow. Disabled by default: zero artifacts rendered, config.json ships an empty PREVIEW_SANDBOX_NAMESPACE. Object/array properties carry NO schema defaults on purpose (crdgen marker emission, krateo-core-provider#46); values.yaml is their authoritative default.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable preview sandbox",
+          "default": false
+        },
+        "namespace": {
+          "type": "string",
+          "title": "Sandbox namespace",
+          "description": "Chart-owned durable namespace for draft CRs (quota, author RBAC and TTL janitor live in it). When enabled, the rendered config.json PREVIEW_SANDBOX_NAMESPACE is forced to this value.",
+          "default": "krateo-preview"
+        },
+        "ttl": {
+          "type": "string",
+          "title": "Draft TTL",
+          "description": "Draft time-to-live (<n>h, <n>m, <n>s or plain seconds). Stamped as the namespace krateo.io/ttl label and enforced by the janitor CronJob.",
+          "default": "24h"
+        },
+        "quota": {
+          "type": "object",
+          "title": "Draft object-count quota",
+          "additionalProperties": false,
+          "properties": {
+            "perWidgetKind": {
+              "type": "integer",
+              "title": "Max drafts per widget kind",
+              "description": "Hard count/<plural>.widgets.templates.krateo.io per plural in widgetPlurals (k8s has no aggregate count across a CRD group).",
+              "default": 200
+            },
+            "restactions": {
+              "type": "integer",
+              "title": "Max draft RESTActions",
+              "default": 50
+            }
+          }
+        },
+        "widgetPlurals": {
+          "type": "array",
+          "title": "Widget plurals",
+          "description": "Plurals of the widgets.templates.krateo.io kinds (mirrors crds-subchart). Drives the generated quota entries and the janitor sweep; the author Role uses the group wildcard and needs no change for new kinds.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "authors": {
+          "type": "array",
+          "title": "Author subjects",
+          "description": "RoleBinding subjects granted full CRUD on widget CRs + restactions inside the sandbox namespace only. Non-admin cohorts are fail-closed without an entry.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiGroup": {
+                "type": "string",
+                "title": "Subject API group"
+              },
+              "kind": {
+                "type": "string",
+                "title": "Subject kind",
+                "enum": [
+                  "Group",
+                  "User",
+                  "ServiceAccount"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "title": "Subject name"
+              },
+              "namespace": {
+                "type": "string",
+                "title": "Subject namespace (ServiceAccount only)"
+              }
+            },
+            "required": [
+              "kind",
+              "name"
+            ]
+          }
+        },
+        "janitor": {
+          "type": "object",
+          "title": "TTL janitor",
+          "additionalProperties": false,
+          "properties": {
+            "schedule": {
+              "type": "string",
+              "title": "Cron schedule",
+              "default": "0 * * * *"
+            },
+            "image": {
+              "type": "string",
+              "title": "Janitor image",
+              "description": "kubectl-capable image used by the sweep CronJob.",
+              "default": "bitnami/kubectl:latest"
+            }
+          }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "title": "Frontend runtime config",
+      "description": "Runtime configuration rendered into the frontend ConfigMap (API base URLs and loader routes).",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {
+        "SNOWPLOW_API_BASE_URL": {
+          "type": "string",
+          "title": "Snowplow API base URL",
+          "default": "http://localhost:8081"
+        },
+        "AUTHN_API_BASE_URL": {
+          "type": "string",
+          "title": "Authn API base URL",
+          "default": "http://localhost:8082"
+        },
+        "EVENTS_PUSH_API_BASE_URL": {
+          "type": "string",
+          "title": "Events push API base URL",
+          "default": "http://localhost:8083"
+        },
+        "EVENTS_API_BASE_URL": {
+          "type": "string",
+          "title": "Events API base URL",
+          "default": "http://localhost:8083"
+        },
+        "AUTOPILOT_API_BASE_URL": {
+          "type": "string",
+          "title": "Autopilot API base URL",
+          "default": "/autopilot"
+        },
+        "INIT": {
+          "type": "string",
+          "title": "Init route",
+          "default": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system"
+        },
+        "OTEL_COLLECTOR_URL": {
+          "type": "string",
+          "title": "Otel Collector URL",
+          "default": ""
+        },
+        "SNOWPLOW_IDENTITY_INJECTION": {
+          "type": "string",
+          "title": "Snowplow Identity Injection",
+          "default": ""
+        },
+        "PROVENANCE_ENABLED": {
+          "type": "string",
+          "title": "Provenance Enabled",
+          "default": ""
+        },
+        "PREVIEW_SANDBOX_NAMESPACE": {
+          "type": "string",
+          "title": "Preview Sandbox Namespace",
+          "default": ""
+        }
+      },
+      "default": {
+        "SNOWPLOW_API_BASE_URL": "http://localhost:8081",
+        "AUTHN_API_BASE_URL": "http://localhost:8082",
+        "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
+        "EVENTS_API_BASE_URL": "http://localhost:8083",
+        "AUTOPILOT_API_BASE_URL": "/autopilot",
+        "INIT": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system",
+        "OTEL_COLLECTOR_URL": "",
+        "SNOWPLOW_IDENTITY_INJECTION": "",
+        "PROVENANCE_ENABLED": "",
+        "PREVIEW_SANDBOX_NAMESPACE": ""
+      }
+    },
+    "env": {
+      "type": "object",
+      "title": "Environment variables",
+      "description": "Free-form extra environment variables for the frontend container.",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "global": {
+      "type": "object",
+      "title": "Global values",
+      "description": "Helm global values (injected when used as a subchart)."
+    }
+  }
+}

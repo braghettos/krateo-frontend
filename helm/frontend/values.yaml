@@ -1,0 +1,218 @@
+# Default values for frontend.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/krateo-platformops/frontend
+  pullPolicy: IfNotPresent
+  # Empty -> the chart appVersion (= APP_VERSION = latest tag of the frontend app repo), so the
+  # chart always deploys the image the app fork actually built. Override here to pin a tag.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: "frontend"
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  annotations: {}
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+config:
+  SNOWPLOW_API_BASE_URL: http://localhost:8081
+  AUTHN_API_BASE_URL: http://localhost:8082
+  EVENTS_PUSH_API_BASE_URL: http://localhost:8083
+  EVENTS_API_BASE_URL: http://localhost:8083
+  # Autopilot copilot: same-origin path served by the nginx `location /autopilot/`
+  # reverse proxy to the kagent A2A endpoint (no cross-origin → no CORS). The rail
+  # renders only when this is set; requires kagent-ui in-cluster (see frontend nginx.conf).
+  AUTOPILOT_API_BASE_URL: /autopilot
+  # Entry point: the app-shell Layout (antd-pure INIT→Layout convention).
+  # NavMenu + RoutesLoader were removed (#15/#18) — routing is data via the sidebar Menu.
+  INIT: /call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system
+  # Browser OpenTelemetry collector endpoint. Empty by default: the browser OTel
+  # SDK stays OFF until a non-empty endpoint is set (frontend gates on config.api.OTEL_COLLECTOR_URL).
+  OTEL_COLLECTOR_URL: ""
+  # Capability flag (chart-authored, NOT an operator knob) — STRING-typed on purpose: the krateo
+  # installer's config plumbing (chart-inspector) emits only strings, and a boolean field wedges the
+  # krateofrontends composition version migration (v1-1-8 -> v1-2-0). Pinned to string in
+  # gen-config-schema.py TYPE_OVERRIDES. The frontend runtime coerces it via JS truthiness
+  # (injectIdentity = !config.api.SNOWPLOW_IDENTITY_INJECTION):
+  #   ""/absent → falsy → inject ON  = LEGACY (frontend volunteers identity in ?extras=). Shipped
+  #                                    ROLLOUT HOLD-OFF, safe-by-default.
+  #   "true"    → truthy → inject OFF = frontend stops volunteering; snowplow injects server-side.
+  # The flip to "true" is the LAST rollout step (A6 §6), driven by the installer AFTER portal 1.5.0's
+  # identityContext declarations land — so the chart ships "" (hold-off), not "true". ("false" is a
+  # trap: JS !"false" is falsy, so "false" would mean inject OFF — never set it; use "" for hold-off.)
+  # See snowplow docs/frontend-1.2.0-config-type-conflict-spec-2026-07-07.md + A6 §1.2/§4.1.
+  SNOWPLOW_IDENTITY_INJECTION: ""
+  # W0-3 provenance: "true" emits one AuditRecord (audit.krateo.io) per gated portal
+  # write (human or agent). Default "" = OFF; needs the AuditRecord CRD (portal chart).
+  PROVENANCE_ENABLED: ""
+  # Portal-builder live preview (previewPage v2): the namespace the frontend applies
+  # draft widget CRs into and renders them from through the real snowplow. Empty/absent
+  # = feature OFF (v1 source-only preview drawer). Do NOT set this by hand when
+  # previewSandbox.enabled is true: the chart then overrides this key in the rendered
+  # config.json with previewSandbox.namespace, so config and provisioning cannot drift.
+  PREVIEW_SANDBOX_NAMESPACE: ""
+
+# ── Preview sandbox (portal-builder live preview; w4 spec Addendum A) ─────────
+# Provisions the quarantined namespace where the portal-builder applies DRAFT
+# widget/RESTAction CRs so the REAL deployed snowplow compiles+serves them for
+# the in-drawer live preview (previewPage v2). Default OFF: zero artifacts are
+# rendered and config.json ships an empty PREVIEW_SANDBOX_NAMESPACE (the
+# frontend keeps the v1 source-only drawer).
+previewSandbox:
+  enabled: false
+  # The sandbox namespace: DURABLE chart-owned infra (quota + author RBAC +
+  # janitor live in it); only the draft CRs churn. Deliberately outside every
+  # composition's render target, so drafts can never orphan a Helm release.
+  namespace: krateo-preview
+  # Draft time-to-live: stamped on the namespace as the krateo.io/ttl label and
+  # consumed by the janitor CronJob (<n>h, <n>m, <n>s, or plain seconds).
+  ttl: 24h
+  # Per-kind object-count quota. Kubernetes has NO aggregate object count across
+  # a CRD group, so one count/<plural>.<group> entry is generated per widget
+  # plural listed below (modest defaults: runaway-agent bound, not capacity).
+  quota:
+    perWidgetKind: 200
+    restactions: 50
+  # The widget plurals (group widgets.templates.krateo.io) — mirrors the 43 CRDs
+  # in crds-subchart/templates. Drives the generated quota entries and the
+  # janitor sweep. A NEW widget kind => append its plural here (the author Role
+  # needs no change: it grants the whole group via resource wildcard '*').
+  widgetPlurals:
+    - alerts
+    - badges
+    - barcharts
+    - breadcrumbs
+    - buttongroups
+    - buttons
+    - cards
+    - checkboxes
+    - cols
+    - datepickers
+    - descriptions
+    - dividers
+    - filters
+    - flexes
+    - flowcharts
+    - forms
+    - images
+    - inputnumbers
+    - inputs
+    - layouts
+    - linecharts
+    - listies
+    - markdowns
+    - menus
+    - paragraphs
+    - piecharts
+    - progresses
+    - qrcodes
+    - radios
+    - rangepickers
+    - results
+    - rows
+    - selects
+    - sliders
+    - statistics
+    - steps
+    - switches
+    - tables
+    - tabs
+    - tags
+    - themes
+    - uploads
+    - yamlviewers
+  # RoleBinding subjects granted author rights (full CRUD on widget CRs and
+  # restactions) INSIDE the sandbox namespace only. Non-admin cohorts are
+  # fail-closed without an entry here (verified live: snowplow skips cohorts
+  # with no binding — prototype A.1.4). Default: the admins group.
+  authors:
+    - apiGroup: rbac.authorization.k8s.io
+      kind: Group
+      name: admins
+  # TTL janitor: hourly CronJob (namespace-local SA + Role) deleting draft CRs
+  # whose creationTimestamp is older than the TTL. The frontend's drawer-close
+  # delete is the fast path; this is the backstop for dead tabs.
+  janitor:
+    schedule: "0 * * * *"
+    image: bitnami/kubectl:latest

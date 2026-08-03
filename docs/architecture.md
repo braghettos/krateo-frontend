@@ -2,7 +2,7 @@
 
 How the Krateo Composable Portal SPA is built. Every claim is traced to the current tree at
 `file:line`; if this page and the code disagree, the code wins. This is the **internals** view; the
-deployment/CRD/wiring view lives in `braghettos/krateo-frontend-chart` `docs/` (versioned by that
+deployment/CRD/wiring view lives in `krateo-platformops/frontend` `docs/` (versioned by that
 repo's tags).
 
 ## What it is

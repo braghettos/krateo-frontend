@@ -89,7 +89,7 @@ repeated rebuilds.
 
 Widget CRDs are not hand-written: CI (`.github/workflows/release-tag.yaml` `crds` job) runs
 `npm run generate-crds` (`scripts/gen-crds.ts`, via `krateoctl gen-widget`) over every
-`*.schema.json` and opens a PR into `braghettos/krateo-frontend-chart` `crds-subchart/templates/`,
+`*.schema.json` and opens a PR into `krateo-platformops/frontend` `crds-subchart/templates/`,
 injecting `helm.sh/resource-policy: keep`. So the source of truth for a widget's cluster schema is
 `src/widgets/<Kind>/<Kind>.schema.json` here, but the deployed CRD lives in the chart repo — they
 can drift if the chart-side PR isn't merged for a given tag. The schema (this repo) and the CRD

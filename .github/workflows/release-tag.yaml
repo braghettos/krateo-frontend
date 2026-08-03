@@ -91,13 +91,13 @@ jobs:
           path: ${{ github.workspace }}/scripts/krateoctl-output/*.yaml
 
       # The cross-repo push CANNOT use the default GITHUB_TOKEN: it is scoped to this repo
-      # (braghettos/krateo-frontend) only, so any push/PR to braghettos/krateo-frontend-chart
+      # (krateo-platformops/frontend) only, so any push/PR to krateo-platformops/frontend
       # 401s ("Bad credentials" / "Permission denied"). A cross-repo token (`PAT`) is required —
       # see docs/RELEASING.md for the one-time setup (secret name + exact scopes). This step is
       # GATED on that secret: when it is absent (or empty/expired) we skip with a clear, actionable
       # log instead of hard-failing the release with a cryptic 401, and print the exact manual
       # command to run. When present, the CRD sync PR opens automatically.
-      - name: Push CRDs to braghettos/krateo-frontend-chart (crds-subchart) via PR
+      - name: Push CRDs to krateo-platformops/frontend (crds-subchart) via PR
         env:
           GH_TOKEN: ${{ secrets.PAT }}
         run: |
@@ -114,7 +114,7 @@ jobs:
             {
               echo "### ⚠️ Widget-CRD auto-sync SKIPPED — cross-repo token \`PAT\` is not set"
               echo ""
-              echo "The default \`GITHUB_TOKEN\` cannot push to \`braghettos/krateo-frontend-chart\`"
+              echo "The default \`GITHUB_TOKEN\` cannot push to \`krateo-platformops/frontend\`"
               echo "(it is scoped to this repo only). Add a fine-grained PAT as the repo secret"
               echo "\`PAT\` — see [docs/RELEASING.md](docs/RELEASING.md) for the exact scopes."
               echo ""
@@ -124,17 +124,17 @@ jobs:
               echo '```'
               echo "npm run generate-crds   # regenerates scripts/krateoctl-output/*.yaml for tag ${LATEST_TAG}"
               echo "# then copy scripts/krateoctl-output/*.yaml into"
-              echo "# braghettos/krateo-frontend-chart:crds-subchart/templates/ and open a PR to main"
+              echo "# krateo-platformops/frontend:crds-subchart/templates/ and open a PR to main"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
 
-            echo "::warning title=Widget-CRD auto-sync skipped::Repo secret 'PAT' is not set; the CRD sync PR to braghettos/krateo-frontend-chart was NOT opened. See docs/RELEASING.md, or sync manually (crds attached as the frontend-crds-yaml-files artifact)."
+            echo "::warning title=Widget-CRD auto-sync skipped::Repo secret 'PAT' is not set; the CRD sync PR to krateo-platformops/frontend was NOT opened. See docs/RELEASING.md, or sync manually (crds attached as the frontend-crds-yaml-files artifact)."
             echo "Skipping cross-repo CRD sync: secret 'PAT' is absent/empty. Not a release-blocking failure."
             exit 0
           fi
           # ------------------------------------------------------------------------------------
 
-          TARGET_REPO="braghettos/krateo-frontend-chart"
+          TARGET_REPO="krateo-platformops/frontend"
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "main")
           BRANCH="krateoctl-${LATEST_TAG}"
           echo "Target repo: $TARGET_REPO | tag: $LATEST_TAG | branch: $BRANCH"
@@ -206,7 +206,7 @@ jobs:
 
           git commit -m "Update widget CRDs (crds-subchart) from tag ${LATEST_TAG}
 
-          Regenerated from braghettos/krateo-frontend @ ${LATEST_TAG} via krateoctl.
+          Regenerated from krateo-platformops/frontend @ ${LATEST_TAG} via krateoctl.
           Migrates any legacy crd-chart/crds-chart -> crds-subchart (CRDs published
           without resource-policy: keep so teardown deletes them). Chart name unchanged: frontend-crd.
           Workflow run: ${GITHUB_RUN_ID}"
@@ -215,7 +215,7 @@ jobs:
 
           # Open a PR against the chart repo, or update the existing one for this branch.
           PR_TITLE="Update widget CRDs (crds-subchart) — ${LATEST_TAG}"
-          PR_BODY="Automated update of widget CRDs in \`crds-subchart/templates/\` from \`braghettos/krateo-frontend\` @ \`${LATEST_TAG}\` (krateoctl). Migrates any legacy \`crd-chart\`/\`crds-chart\` → \`crds-subchart\` (CRDs published without \`resource-policy: keep\` so teardown deletes them). Helm chart name unchanged: \`frontend-crd\`.
+          PR_BODY="Automated update of widget CRDs in \`crds-subchart/templates/\` from \`krateo-platformops/frontend\` @ \`${LATEST_TAG}\` (krateoctl). Migrates any legacy \`crd-chart\`/\`crds-chart\` → \`crds-subchart\` (CRDs published without \`resource-policy: keep\` so teardown deletes them). Helm chart name unchanged: \`frontend-crd\`.
 
           Workflow run: \`${GITHUB_RUN_ID}\`."
 

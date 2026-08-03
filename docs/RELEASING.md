@@ -1,13 +1,13 @@
 # Releasing the frontend
 
-Pushing a semver tag (`X.Y.Z`) to `braghettos/krateo-frontend` triggers the
+Pushing a semver tag (`X.Y.Z`) to `krateo-platformops/frontend` triggers the
 [`release-tag`](../.github/workflows/release-tag.yaml) workflow, which:
 
 1. **`build`** — builds and pushes the multi-platform image to
-   `ghcr.io/braghettos/krateo-frontend:X.Y.Z` (uses the default `GITHUB_TOKEN`).
+   `ghcr.io/krateo-platformops/frontend:X.Y.Z` (uses the default `GITHUB_TOKEN`).
 2. **`crds`** — regenerates the widget CRDs from the TypeScript widget definitions
    via `krateoctl` (`npm run generate-crds`) and **opens a PR** that syncs them into
-   [`braghettos/krateo-frontend-chart`](https://github.com/braghettos/krateo-frontend-chart)
+   [`krateo-platformops/frontend`](https://github.com/krateo-platformops/frontend)
    at `crds-subchart/templates/`.
 
 To cut a release:
@@ -30,9 +30,9 @@ downstream as usual.
 ### Why a PAT is required (the 401 root cause)
 
 The `crds` job pushes a branch and opens a PR in a **different** repository
-(`braghettos/krateo-frontend-chart`). GitHub Actions' built-in
+(`krateo-platformops/frontend`). GitHub Actions' built-in
 `secrets.GITHUB_TOKEN` is automatically scoped to **only the repository the
-workflow runs in** (`braghettos/krateo-frontend`). Using it to push/PR to another
+workflow runs in** (`krateo-platformops/frontend`). Using it to push/PR to another
 repo returns **HTTP 401 “Bad credentials” / “Permission denied”**. That is the
 cross-repo push failure this workflow is designed around — it is *not* a bug in
 the script, it is a hard limitation of the default token.
@@ -44,14 +44,14 @@ to the workflow as the repository secret named **`PAT`**.
 
 Use a **fine-grained personal access token** (preferred) or a GitHub App
 installation token. The token owner must have write access to
-`braghettos/krateo-frontend-chart`.
+`krateo-platformops/frontend`.
 
 **Fine-grained PAT** — https://github.com/settings/personal-access-tokens/new
 
 | Setting                    | Value                                                                 |
 | -------------------------- | --------------------------------------------------------------------- |
 | **Resource owner**         | `braghettos`                                                          |
-| **Repository access**      | *Only select repositories* → `braghettos/krateo-frontend-chart`       |
+| **Repository access**      | *Only select repositories* → `krateo-platformops/frontend`       |
 | **Repository permissions** | **Contents: Read and write** (push the `krateoctl-<tag>` branch)      |
 |                            | **Pull requests: Read and write** (create / view / reopen the PR)     |
 | **Expiration**             | Set a calendar reminder to rotate before it lapses                    |
@@ -65,10 +65,10 @@ repository permissions above — the workflow only pushes a branch and opens a P
 
 ### Store it as the `PAT` secret
 
-Add it to **this** repo (`braghettos/krateo-frontend`):
+Add it to **this** repo (`krateo-platformops/frontend`):
 
 ```bash
-gh secret set PAT --repo braghettos/krateo-frontend
+gh secret set PAT --repo krateo-platformops/frontend
 # paste the token value when prompted
 ```
 
@@ -101,7 +101,7 @@ To sync manually in that case:
 ```bash
 npm run generate-crds
 # copy scripts/krateoctl-output/*.yaml into
-# braghettos/krateo-frontend-chart : crds-subchart/templates/
+# krateo-platformops/frontend : crds-subchart/templates/
 # then open a PR to that repo's main branch
 ```
 
