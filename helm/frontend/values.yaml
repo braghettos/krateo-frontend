@@ -111,6 +111,12 @@ config:
   # reverse proxy to the kagent A2A endpoint (no cross-origin → no CORS). The rail
   # renders only when this is set; requires kagent-ui in-cluster (see frontend nginx.conf).
   AUTOPILOT_API_BASE_URL: /autopilot
+  # Autopilot availability. Controls CLICKABILITY of the header toggle, NOT its visibility (the
+  # toggle stays visible whenever AUTOPILOT_API_BASE_URL is set, so the capability is discoverable).
+  # "" (default) leaves clickability to the frontend's runtime reachability probe of the endpoint.
+  # The installer sets this to "false" when agents are not deployed (features.coreAgents=false), which
+  # grays the toggle out + makes it non-clickable (with a tooltip) instead of a dead click that 502s.
+  AUTOPILOT_AVAILABLE: ""
   # Entry point: the app-shell Layout (antd-pure INIT→Layout convention).
   # NavMenu + RoutesLoader were removed (#15/#18) — routing is data via the sidebar Menu.
   INIT: /call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system

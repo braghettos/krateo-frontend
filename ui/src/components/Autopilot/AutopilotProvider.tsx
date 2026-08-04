@@ -43,8 +43,15 @@ import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTr
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
 
 interface AutopilotContextValue {
-  /** Whether Autopilot is configured/available (controls rail + toggle visibility). */
+  /** Whether Autopilot is CONFIGURED (endpoint present / dev echo) — controls rail + toggle
+   * VISIBILITY. The toggle renders whenever this is true, even if the agent is not currently
+   * reachable, so the capability stays discoverable. */
   enabled: boolean
+  /** Whether the configured agent is actually USABLE right now — controls CLICKABILITY. False when
+   * the installer marks Autopilot unavailable (AUTOPILOT_AVAILABLE="false", e.g. agents not
+   * deployed/licensed) OR the runtime reachability probe of the endpoint fails (agent down). When
+   * `enabled && !reachable` the toggle renders grayed-out and non-clickable. `null` while probing. */
+  reachable: boolean
   /** Whether the docked rail is open. */
   open: boolean
   setOpen: (open: boolean) => void
@@ -92,6 +99,40 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // local stub transport so the rail is exercisable before the live A2A handshake.
   const useEcho = endpoint === 'echo' || (import.meta.env.DEV && import.meta.env.VITE_AUTOPILOT_ECHO === 'true')
   const enabled = Boolean(endpoint) || useEcho
+
+  // Availability (CLICKABILITY — distinct from `enabled`/visibility). The toggle grays out when EITHER
+  //  (a) the installer marks Autopilot unavailable: config.api.AUTOPILOT_AVAILABLE === 'false' (set when
+  //      agents are not deployed/licensed, features.coreAgents=false); OR
+  //  (b) a runtime reachability probe of the endpoint fails (agent deployed but down/unreachable).
+  // Echo/dev is always reachable. The probe re-runs when the endpoint changes and on window focus, so a
+  // later-deployed or recovered agent flips the toggle live without a page reload.
+  const flagAvailable = config?.api.AUTOPILOT_AVAILABLE !== 'false'
+  const [probeOk, setProbeOk] = useState(true)
+  useEffect(() => {
+    if (!enabled || useEcho || !flagAvailable || !endpoint) {
+      return
+    }
+    const ctrl = new AbortController()
+    // GET the A2A base: a 5xx gateway error means the proxy could not reach the agent upstream
+    // (not deployed / down); any other response (200/404/405/…) means the backend answered.
+    const probe = () => {
+      fetch(`${endpoint.replace(/\/$/, '')}/`, { method: 'GET', signal: ctrl.signal })
+        .then((res) => setProbeOk(res.status < 502 || res.status > 504))
+        .catch(() => {
+          if (!ctrl.signal.aborted) {
+            setProbeOk(false)
+          }
+        })
+    }
+    probe()
+    const onFocus = () => probe()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      ctrl.abort()
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [enabled, useEcho, flagAvailable, endpoint])
+  const reachable = enabled && flagAvailable && (useEcho || probeOk)
 
   const { collect } = useAutopilotContext()
   const { apply } = useAutopilotActionBridge()
@@ -705,8 +746,8 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   }, [send]))
 
   const value = useMemo<AutopilotContextValue>(() => ({
-    approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasAttachment: oasHeld, open, pendingApproval, send, setOpen, stop, streaming, toggle, tour, tourOpen,
-  }), [approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasHeld, open, pendingApproval, send, stop, streaming, toggle, tour, tourOpen])
+    approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasAttachment: oasHeld, open, pendingApproval, reachable, send, setOpen, stop, streaming, toggle, tour, tourOpen,
+  }), [approvePending, attachOasDocument, clearOasAttachment, closeTour, collect, denyPending, enabled, messages, newThread, oasHeld, open, pendingApproval, reachable, send, stop, streaming, toggle, tour, tourOpen])
 
   return (
     <AutopilotReactContext.Provider value={value}>

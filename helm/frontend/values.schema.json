@@ -597,6 +597,11 @@
           "title": "Autopilot API base URL",
           "default": "/autopilot"
         },
+        "AUTOPILOT_AVAILABLE": {
+          "type": "string",
+          "title": "Autopilot availability flag",
+          "default": ""
+        },
         "INIT": {
           "type": "string",
           "title": "Init route",
@@ -629,6 +634,7 @@
         "EVENTS_PUSH_API_BASE_URL": "http://localhost:8083",
         "EVENTS_API_BASE_URL": "http://localhost:8083",
         "AUTOPILOT_API_BASE_URL": "/autopilot",
+        "AUTOPILOT_AVAILABLE": "",
         "INIT": "/call?resource=layouts&apiVersion=widgets.templates.krateo.io/v1beta1&name=app-shell&namespace=krateo-system",
         "OTEL_COLLECTOR_URL": "",
         "SNOWPLOW_IDENTITY_INJECTION": "",

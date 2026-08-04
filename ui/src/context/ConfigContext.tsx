@@ -13,6 +13,11 @@ export interface Config {
      * absent the Autopilot rail + header toggle do not render (graceful absence
      * for installs without autopilot deployed). */
     AUTOPILOT_API_BASE_URL?: string
+    /** Installer availability flag for Autopilot. When set to the string "false" (the installer
+     * sets it when agents are not deployed/licensed, features.coreAgents=false) the header toggle
+     * still RENDERS — so the capability is discoverable — but is grayed-out and non-clickable.
+     * Any other value (absent/"true") leaves clickability to the runtime reachability probe. */
+    AUTOPILOT_AVAILABLE?: string
     /** Kill-switch for snowplow's per-widget live-refresh SSE (`/refreshes`), which makes
      * widgets push-update when their backing cluster object changes (see hooks/refreshSse.ts).
      * **ON by default** (verified delivering on snowplow ≥1.5.13; older snowplow degrades to a
