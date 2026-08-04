@@ -36,6 +36,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "frontend.fullname" . }}
+          env:
+            # The nginx image binds this port (substituted into its listen directive at boot). Wired
+            # to service.port so the installer's per-component exposePort drives the container's
+            # actual listen port — containerPort, targetPort and the probes below all reference the
+            # same value, so there is no port to keep in sync by hand.
+            - name: FRONTEND_CONTAINER_PORT
+              value: {{ .Values.service.port | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "krateo.image" (dict "img" .Values.image "global" .Values.global "defaultTag" .Chart.AppVersion) | quote }}
