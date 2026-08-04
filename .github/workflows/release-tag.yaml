@@ -74,15 +74,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install tsx, chalk
+      # generate-crds lives in ui/package.json and gen-crds.ts writes to
+      # process.cwd()/scripts/krateoctl-output — so every npm step MUST run from ui/.
+      # Use the lockfile (npm ci): the old `npm install tsx chalk` both ran at the repo
+      # root (no package.json → hard fail) AND omitted glob + js-yaml, which gen-crds.ts
+      # also imports. npm ci installs the exact declared devDep set (tsx, chalk, glob, js-yaml, …).
+      - name: Install ui deps (npm ci)
+        working-directory: ui
         run: |
-          npm install tsx chalk
+          npm ci
 
       - name: Generate crds
+        working-directory: ui
         run: |
           npm run generate-crds
 
       - name: List files in /scripts/krateoctl-output
+        working-directory: ui
         run: |
           ls -la ./scripts/krateoctl-output
 
@@ -90,7 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-crds-yaml-files
-          path: ${{ github.workspace }}/scripts/krateoctl-output/*.yaml
+          path: ${{ github.workspace }}/ui/scripts/krateoctl-output/*.yaml
 
       # The cross-repo push CANNOT use the default GITHUB_TOKEN: it is scoped to this repo
       # (krateo-platformops/frontend) only, so any push/PR to krateo-platformops/frontend
@@ -124,8 +132,8 @@ jobs:
               echo "the \`frontend-crds-yaml-files\` artifact):"
               echo ""
               echo '```'
-              echo "npm run generate-crds   # regenerates scripts/krateoctl-output/*.yaml for tag ${LATEST_TAG}"
-              echo "# then copy scripts/krateoctl-output/*.yaml into"
+              echo "cd ui && npm ci && npm run generate-crds   # regenerates ui/scripts/krateoctl-output/*.yaml for tag ${LATEST_TAG}"
+              echo "# then copy ui/scripts/krateoctl-output/*.yaml into"
               echo "# krateo-platformops/frontend:crds-subchart/templates/ and open a PR to main"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
@@ -143,7 +151,7 @@ jobs:
 
           # The generated CRDs must exist locally before we touch the chart repo.
           shopt -s nullglob
-          LOCAL_CRDS=("$GITHUB_WORKSPACE"/scripts/krateoctl-output/*.yaml)
+          LOCAL_CRDS=("$GITHUB_WORKSPACE"/ui/scripts/krateoctl-output/*.yaml)
           if [ "${#LOCAL_CRDS[@]}" -eq 0 ]; then
             echo "ERROR: no generated CRDs found in scripts/krateoctl-output" >&2
             exit 1
@@ -175,7 +183,7 @@ jobs:
 
           # Refresh the CRD templates: drop the previous set, copy the freshly generated ones.
           rm -f crds-subchart/templates/*.yaml
-          cp "$GITHUB_WORKSPACE"/scripts/krateoctl-output/*.yaml crds-subchart/templates/
+          cp "$GITHUB_WORKSPACE"/ui/scripts/krateoctl-output/*.yaml crds-subchart/templates/
 
           # Teardown-completeness: CRDs are published WITHOUT helm.sh/resource-policy: keep, so
           # `helm uninstall` of the crds-subchart release deletes them and teardown reaches a clean
