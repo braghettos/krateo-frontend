@@ -86,7 +86,7 @@ export default defineConfig({
         proxy: {
           '/autopilot': {
             changeOrigin: true,
-            rewrite: (path: string) => path.replace(/^\/autopilot/, '/api/a2a/krateo-system/krateo-autopilot'),
+            rewrite: (path: string) => path.replace(/^\/autopilot/, '/api/a2a/krateo-system/autopilot'),
             target: autopilotProxyTarget,
           },
         },
