@@ -12,12 +12,11 @@ jobs:
       contents: read
       packages: write
     with:
-      context: ui
+      modules: '[{"mod":"frontend","context":"ui"}]'
       push: false
       build_args: |
         VERSION=${{ github.ref_name }}
         APP_BUILD=${{ github.sha }}
-
   crds:
     name: Generate crds
     runs-on: ubuntu-latest
