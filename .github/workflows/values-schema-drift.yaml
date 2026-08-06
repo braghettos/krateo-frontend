@@ -1,4 +1,4 @@
-# Guards chart/values.schema.json's `config` block against drifting from chart/values.yaml.
+# Guards helm/frontend/values.schema.json's `config` block against drifting from helm/frontend/values.yaml.
 # The krateo installer applies the values.schema.json DEFAULTS when it deploys a component,
 # so the schema — not values.yaml — is the effective source of truth for the rendered
 # ConfigMap. A stale schema silently breaks the deploy (e.g. an old INIT route blanks the
@@ -23,5 +23,5 @@ jobs:
         run: |
           python3 -m pip install --quiet pyyaml
           python3 scripts/gen-config-schema.py
-          git diff --exit-code chart/values.schema.json \
-            || { echo "::error::chart/values.schema.json config drifted from chart/values.yaml — run 'python3 scripts/gen-config-schema.py' and commit"; exit 1; }
+          git diff --exit-code helm/frontend/values.schema.json \
+            || { echo "::error::helm/frontend/values.schema.json config drifted from helm/frontend/values.yaml — run 'python3 scripts/gen-config-schema.py' and commit"; exit 1; }
