@@ -1,0 +1,56 @@
+# A Table fed by a RESTAction: snowplow calls the Kubernetes API server (under the
+# requesting user's RBAC), JQ-filters the namespace list to names, and the Table's
+# widgetDataTemplate builds the typed cell rows from the result at resolve time.
+# Routable at /namespaces via a sidebar Menu item (see README.md).
+kind: Flex
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: page-namespaces
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources:
+      - tables
+    vertical: true
+    gap: middle
+    items:
+      - resourceRefId: namespaces-table
+  resourcesRefs:
+    items:
+      - id: namespaces-table
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: table-of-namespaces
+        namespace: krateo-system
+        resource: tables
+        verb: GET
+---
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: table-of-namespaces
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: []
+    columns:
+      - valueKey: name
+        title: Cluster namespaces
+    dataSource: []
+  widgetDataTemplate:
+    - forPath: dataSource
+      expression: >
+        ${ [ .namespaces[] | [ { valueKey: "name", kind: "jsonSchemaType", type: "string", stringValue: . } ] ] }
+  apiRef:
+    name: cluster-namespaces
+    namespace: krateo-system
+---
+apiVersion: templates.krateo.io/v1
+kind: RESTAction
+metadata:
+  name: cluster-namespaces
+  namespace: krateo-system
+spec:
+  api:
+    - name: namespaces
+      path: /api/v1/namespaces
+      filter: "[.namespaces.items[] | .metadata.name]"

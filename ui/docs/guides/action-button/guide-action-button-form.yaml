@@ -1,0 +1,78 @@
+# Overwrites the simple-guide Button again: now the drawer shows a Form whose submit
+# rest-action POSTs a Pod built from the form value (payloadToOverride jq-interpolates
+# the `name` field into the static payload).
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: simple-guide-button
+  namespace: krateo-system
+spec:
+  widgetData:
+    icon: fa-sun
+    label: I open a drawer with a form
+    clickActionId: openDrawer-action-id # <- must match the id of an action declared below
+    actions:
+      openDrawer:
+        - id: openDrawer-action-id
+          resourceRefId: form-id # <- must match the id of a resource in spec.resourcesRefs
+          type: openDrawer
+          title: Create an nginx pod
+          size: large
+  resourcesRefs:
+    items:
+      - id: form-id
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: simple-guide-form
+        namespace: krateo-system
+        resource: forms
+        verb: GET
+---
+kind: Form
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: simple-guide-form
+  namespace: krateo-system
+spec:
+  widgetData:
+    stringSchema: |
+      {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Pod Name",
+            "description": "The name of your nginx pod"
+          }
+        },
+        "required": ["name"]
+      }
+    submitActionId: submit-action-id
+    actions:
+      rest:
+        - id: submit-action-id
+          resourceRefId: resource-ref-1
+          type: rest
+          headers:
+            - "Content-Type: application/json"
+          payloadToOverride:
+            - name: metadata.name
+              value: ${ name }
+          payload:
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: placeholder-name
+            spec:
+              containers:
+                - image: nginx:latest
+                  name: nginx
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: resource-ref-1
+        apiVersion: v1
+        resource: pods
+        name: my-pod-name
+        namespace: krateo-system
+        verb: POST

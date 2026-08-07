@@ -1,0 +1,24 @@
+# The page: a Flex named with the convention `page-<slug>` in the frontend namespace
+# (config.params.FRONTEND_NAMESPACE), so a sidebar Menu item with `path: /simple-guide`
+# resolves it automatically — no explicit resourceRefId wiring needed on the menu item.
+kind: Flex
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: page-simple-guide
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources:
+      - buttons
+    vertical: true
+    gap: middle
+    items:
+      - resourceRefId: simple-button-id # <- must match the id of an item in spec.resourcesRefs
+  resourcesRefs:
+    items:
+      - id: simple-button-id
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: simple-guide-button # <- matches metadata.name of the Button we created
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
