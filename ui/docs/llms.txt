@@ -1,0 +1,47 @@
+# frontend internals (ui/) — LLM doc index
+
+> The Krateo Composable Portal: a React 19 + Vite single-page app whose entire UI is
+> **server-driven**. The SPA renders no hardcoded pages — it fetches `Widget` custom resources
+> (resolved to JSON by snowplow) and maps each `kind` to a React component via an auto-discovered
+> widget registry. The shell Layout, sidebar Menu and all routes come from CRs at runtime. This
+> index is the agent entry point to the **internals & runtime** view. The **deployment, chart and
+> CRD wiring** view is the root bundle: ../../docs/llms.txt (same repo — app and charts ship
+> together from one tag since the monorepo fold).
+
+## How to use this index (agents)
+
+You are reading the docs for a SPECIFIC deployed version. Fetch every file below at the git tag
+that matches the running build: the frontend Deployment's image tag == the repo tag == the chart
+appVersion (one version line; plain semver, no v prefix). If something isn't in the docs, read the
+source at that same tag — don't guess, and don't trust `main` for a deployed older version. Claims
+in these docs are traced to `file:line` (paths relative to ui/); if a doc and the code disagree,
+the code wins.
+
+## Start here (internals & runtime)
+
+docs/architecture.md: how the SPA is built — entry point, provider stack, the auto-discovered widget registry, WidgetRenderer, useWidgetQuery, the Shell layout route and routes-as-data. Read first.
+docs/behavior.md: runtime behavior — config.json contract, upstream contracts (authn/snowplow/events/autopilot), auth + token handling, bootstrap, pagination, actions, events + live refresh.
+docs/gotchas.md: real runtime pitfalls grounded in the code/config.
+
+## Widget-author & contributor reference
+
+docs/widget-authoring.md: how an antd component becomes a widget; the schema.json → types/CRD pipeline; scaffolding; auto-registration; antd-fidelity rules.
+docs/widgets-api-reference.md: generated per-widget API reference (npm run update-readme-widgets).
+docs/docs.md: the widget concept — widgetData, widgetDataTemplate, actions, resourcesRefs(Template).
+docs/form-values.md: Form initialValues semantics (precedence, drafts, re-seed).
+docs/restactions.md: pointer — RESTActions are snowplow's; how widgets consume them.
+docs/cr-migration-map.json: the hard-break CR migration map (legacy kinds/props → current).
+docs/guides/simple-page/simple-page.md: worked guide — Button + convention Flex page + sidebar Menu item.
+docs/guides/action-button/action-button.md: worked guide — openDrawer action, then a Form rest action.
+
+## Records (dated; re-verify against code before relying on them)
+
+docs/antd-migration-plan.md: the executed antd-fidelity migration decision record (status: diverged — see its implemented-reality note).
+docs/autocomplete-and-dependencies.md: removed-feature note (Form autocomplete/dependencies no longer exist).
+
+## Source of truth
+
+src/widgets/<Kind>/ — each widget: <Kind>.schema.json (the CRD source of truth), <Kind>.tsx (the component), index.ts (the defineWidget registration). NB folder List registers kind Listy.
+src/types/Widget.d.ts — the Widget / ResourceRef / actions shapes the SPA consumes.
+src/context/ConfigContext.tsx — the typed runtime config contract (config.json), key by key.
+public/config/config.json — DEV sample only; the deployed config comes from the chart (stale keys — see docs/gotchas.md).

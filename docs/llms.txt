@@ -1,50 +1,31 @@
-# krateo-frontend (code repo) — LLM doc index
-
-> The Krateo Composable Portal: a React 19 + Vite single-page app whose entire UI is
-> **server-driven**. The SPA renders no hardcoded pages — it fetches `Widget` custom resources
-> (resolved to JSON by snowplow) and maps each `kind` to a React component via an auto-discovered
-> widget registry. Routes, sidebar, and content all come from CRs at runtime. This index is the
-> agent entry point to the **internals & runtime** view. The **deployment, CRD-schema and wiring**
-> view lives in the chart repo `krateo-platformops/frontend` `docs/`.
-
-## How to use this index (agents)
-
-You are reading the docs for a SPECIFIC deployed version. Fetch every file below **at the tag that
-matches the running build**, not `main`:
-
-- **image version** = the frontend Deployment's container image tag → THIS repo's git tag
-  (== the chart's `appVersion`, stamped from this repo's latest semver tag). Read this repo's
-  `docs/` at the **image-version** tag.
-- **chart version** = `CompositionDefinition.spec.chart.version` for frontend → the
-  `krateo-platformops/frontend` repo tag. Read the deployment/CRD/wiring docs there at the
-  **chart-version** tag.
-
-If something isn't in the docs, read the source at that same tag — don't guess, and don't trust
-`main` for a deployed older version. Every claim in these docs is traced to `file:line`; if a doc
-and the code disagree, the code wins.
-
-## Start here (internals & runtime)
-
-- [architecture.md](architecture.md): how the SPA is built — entry point, the provider stack, the
-  server-driven widget registry, the data-fetch layer, and the routing model. Read first.
-- [behavior.md](behavior.md): runtime behavior — runtime config (`config.json`), the upstream
-  contracts (authn / snowplow / events), auth + token handling, the `/call` widget-fetch protocol,
-  pagination, and actions (rest/navigate/drawer/modal/SSE).
-- [gotchas.md](gotchas.md): real runtime pitfalls grounded in the code/config.
-
-## Widget-author & contributor reference (human-oriented, also useful to agents)
-
-- [widget-authoring.md](widget-authoring.md): how an antd component becomes a widget; the
-  `schema.json → types/CRD` pipeline; scaffolding; auto-registration.
-- [widgets-api-reference.md](widgets-api-reference.md): generated per-widget API reference.
-- [docs.md](docs.md): the widget concept (a widget is a CRD mapped to a UI element).
-- [form-values.md](form-values.md), [autocomplete-and-dependencies.md](autocomplete-and-dependencies.md),
-  [restactions.md](restactions.md): authoring topics.
-- [guides/](guides/): worked end-to-end guides (action-button, simple-page).
-
-## Source of truth
-
-- `src/widgets/<Kind>/` — each widget: `<Kind>.schema.json` (the CRD source of truth),
-  `<Kind>.tsx` (the component), `index.ts` (the `defineWidget` registration).
-- `src/types/Widget.d.ts` — the `Widget` / `ResourceRef` / `WidgetActions` shapes the SPA consumes.
-- `public/config/config.json` — the runtime config contract (API base URLs + INIT/ROUTES_LOADER).
+# frontend — LLM doc index (pinned: 1.4.3)
+# One line per file; regenerate the pin on release. Read files at the tag that matches
+# the running build (chart version == image tag == the repo tag; no v prefix).
+docs/index.md: the map — what frontend is + links to the whole bundle and the deep corpus
+docs/overview.md: what it does and how it works — the server-driven widget model, nginx runtime, charts, platform peers
+docs/usage.md: install via the Krateo installer pin or direct helm install oci://…; local render recipe; local dev + examples portal
+docs/configuration.md: the whole config surface — chart values, the rendered config.json contract, port wiring, preview sandbox
+docs/api.md: the 43 widget CRDs + the shared widget spec model; the container's HTTP surface
+docs/examples.md: index of the runnable examples
+docs/release.md: how a release ships — one plain-semver tag drives image + both charts; the crds-subchart seam
+docs/log.md: curated history
+examples/hello-page/README.md: a convention Flex page (page-hello) with a Paragraph + Button; routes-as-data
+examples/hello-page/manifest.yaml: the manifest — kubectl apply -f
+examples/namespaces-table/README.md: a Table fed by a RESTAction over the Kubernetes API (widgetDataTemplate jq rows)
+examples/namespaces-table/manifest.yaml: the manifest — kubectl apply -f
+# Deep corpus (code-adjacent, authoritative for internals; indexed in detail by ui/docs/llms.txt):
+ui/docs/llms.txt: the agent index of the internals corpus (version-pinned retrieval procedure)
+ui/docs/architecture.md: how the SPA is built — widget registry, WidgetRenderer, data-fetch, Shell + routes-as-data. Read first for internals
+ui/docs/behavior.md: runtime behavior — config.json contract, upstream contracts, auth/tokens, bootstrap, actions, events, live refresh
+ui/docs/gotchas.md: real runtime pitfalls grounded in the code/config
+ui/docs/widget-authoring.md: the schema.json → types/CRD pipeline, scaffolding, antd-fidelity rules
+ui/docs/widgets-api-reference.md: generated per-widget reference of all 43 kinds (npm run update-readme-widgets)
+ui/docs/docs.md: the widget concept — widgetData, widgetDataTemplate, actions, resourcesRefs(Template)
+ui/docs/form-values.md: Form initialValues semantics (precedence, drafts, re-seed)
+ui/docs/restactions.md: pointer — RESTActions are snowplow's; how widgets consume them
+ui/docs/cr-migration-map.json: the hard-break CR migration map (legacy kinds/props → current; List/DataGrid → Listy)
+ui/docs/guides/simple-page/simple-page.md: worked guide — Button + convention Flex page + sidebar Menu item
+ui/docs/guides/action-button/action-button.md: worked guide — openDrawer action, then a Form rest action
+# Records (dated; frontmatter-flagged — re-verify against code before relying on them):
+ui/docs/antd-migration-plan.md: the executed antd-fidelity migration decision record (status: diverged — Listy note inside)
+ui/docs/autocomplete-and-dependencies.md: removed-feature note (Form autocomplete/dependencies no longer exist)

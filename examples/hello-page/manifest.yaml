@@ -1,0 +1,56 @@
+# A complete "hello" portal page: a convention Flex page (page-hello) stacking a
+# Paragraph and a decorative Button. Widgets are resolved (not reconciled) — applying
+# stores inert spec; snowplow's GET /call renders it for the requesting user.
+# The page becomes routable at /hello once a sidebar Menu item with `path: /hello`
+# exists (see README.md).
+kind: Flex
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: page-hello
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources:
+      - paragraphs
+      - buttons
+    vertical: true
+    gap: middle
+    items:
+      - resourceRefId: hello-paragraph
+      - resourceRefId: hello-button
+  resourcesRefs:
+    items:
+      - id: hello-paragraph
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: hello-paragraph
+        namespace: krateo-system
+        resource: paragraphs
+        verb: GET
+      - id: hello-button
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: hello-button
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+---
+kind: Paragraph
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: hello-paragraph
+  namespace: krateo-system
+spec:
+  widgetData:
+    text: "Hello from a server-driven page: everything you see here is a custom resource."
+---
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: hello-button
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Hello
+    icon: fa-sun
+    type: primary
+    clickActionId: none
+    actions: {}

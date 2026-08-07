@@ -1,0 +1,35 @@
+# Overwrites the simple-guide Button with one that opens a Drawer showing a Paragraph.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: simple-guide-button
+  namespace: krateo-system
+spec:
+  widgetData:
+    icon: fa-sun
+    label: I open a drawer
+    clickActionId: openDrawer-action-id # <- must match the id of an action declared below
+    actions:
+      openDrawer:
+        - id: openDrawer-action-id
+          resourceRefId: paragraph-id # <- must match the id of a resource in spec.resourcesRefs
+          type: openDrawer
+          title: A paragraph in a drawer
+          size: large
+  resourcesRefs:
+    items:
+      - id: paragraph-id
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: simple-guide-paragraph
+        namespace: krateo-system
+        resource: paragraphs
+        verb: GET
+---
+kind: Paragraph
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: simple-guide-paragraph
+  namespace: krateo-system
+spec:
+  widgetData:
+    text: "This is a paragraph"
