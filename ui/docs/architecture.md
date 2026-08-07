@@ -124,9 +124,10 @@ keyed on the widget URL (`:224`).
 
 - **Retry policy**: the global client sets `retry:false` (`App.tsx:28`); this hook
   overrides it with `shouldRetryWidgetFetch` (`:52`, wired at `:231`) — retry transient
-  failures (network errors with no status, 5xx) up to `MAX_WIDGET_FETCH_RETRIES=3`
-  (`:35`), never 4xx. This is what prevents the "red cross on first paint" while the
-  backend is still warming up.
+  failures (network errors with no status, 5xx, and 404 — treated as transient because
+  snowplow can 404 while its informer cache is still cold, `:44-51`, `:54`) up to
+  `MAX_WIDGET_FETCH_RETRIES=3` (`:35`); other 4xx (400/401/403) are never retried. This
+  is what prevents the "red cross on first paint" while the backend is still warming up.
 - **Pagination** is cumulative-slice: each page call returns the complete widget state for
   the slice so far; `getNextPageParam` (`:237`) stops when the server reports no
   continuation. Page advance is driven by `ScrollPagination`'s intersection observer for

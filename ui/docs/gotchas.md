@@ -48,9 +48,11 @@ irregular name: the list widget's kind is **`Listy`**, not `List` (Kubernetes re
 (`App.tsx:28`) with `shouldRetryWidgetFetch` (`useWidgetQuery.ts:52,231`). Together these
 keep a warming-up backend showing a skeleton instead of the error "red cross" on first
 paint; a timeout-classified failure gets the calm `WidgetTimeout` state
-(`WidgetRenderer.tsx:149-151`). 4xx is deliberately NOT retried; 5xx/network is, up to 3
-times (`:35`). If you change the retry config or swap `isPending` for `isLoading`, the
-cold-start UX regresses to an immediate error flash.
+(`WidgetRenderer.tsx:149-151`). 4xx is deliberately NOT retried — EXCEPT 404, which is
+treated as transient (cold snowplow informer cache on first paint,
+`useWidgetQuery.ts:44-54`); 5xx/network/404 retry up to 3 times (`:35`). If you change
+the retry config or swap `isPending` for `isLoading`, the cold-start UX regresses to an
+immediate error flash.
 
 ## Pagination: intersection observer for slices, an explicit map for bounded pagers
 
