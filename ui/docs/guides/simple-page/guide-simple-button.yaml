@@ -1,0 +1,13 @@
+# A minimal Button widget. `actions` and `clickActionId` are required by the schema;
+# an empty actions object + a non-matching id make it purely decorative.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: simple-guide-button
+  namespace: krateo-system
+spec:
+  widgetData:
+    icon: fa-sun
+    label: Hello from the simple guide
+    clickActionId: none
+    actions: {}
