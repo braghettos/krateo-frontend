@@ -145,6 +145,12 @@
           "type": "integer",
           "title": "Service port",
           "default": 8080
+        },
+        "nodePort": {
+          "type": "integer",
+          "minimum": 30000,
+          "maximum": 32767,
+          "description": "Explicit NodePort (only honored when service.type=NodePort). Set by the installer to pin a deterministic, host-mappable port."
         }
       }
     },

@@ -51,6 +51,7 @@ service:
   annotations: {}
   type: ClusterIP
   port: 8080
+  # nodePort: <30000-32767>  # set by installer for NodePort exposure (only honored when type=NodePort)
 
 ingress:
   enabled: false
